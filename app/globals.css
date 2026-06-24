@@ -369,3 +369,33 @@ td { color: #28384b; line-height: 1.45; }
 @media (max-width: 680px) {
   .line-form { grid-template-columns: 1fr; }
 }
+
+.sheet-button-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.45rem;
+  align-items: stretch;
+}
+.sheet-button-row.active .sheet-button {
+  border-color: var(--primary) !important;
+  box-shadow: inset 0 0 0 2px rgba(15, 107, 143, 0.16);
+}
+.edit-chip, .ghost-button, .boat-list button {
+  border: 1px solid var(--border) !important;
+  border-radius: 999px !important;
+  background: #eff6ff !important;
+  color: var(--primary-dark) !important;
+  font-weight: 900 !important;
+}
+.edit-chip {
+  min-height: auto !important;
+  padding: 0.55rem 0.75rem !important;
+}
+.ghost-button {
+  background: #f8fbfd !important;
+}
+.boat-list button {
+  min-height: auto !important;
+  padding: 0.45rem 0.65rem !important;
+  font-size: 0.82rem;
+}

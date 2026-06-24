@@ -22,6 +22,8 @@ type LineForm = { time: string; position: string; latitude: string; longitude: s
 const defaultSheetForm = (boatId: string): SheetForm => ({ title: "", dateRange: new Date().toISOString().slice(0, 10), boatId, dayGoal: "", from: "", to: "", morningPosition: "", eveningPosition: "" });
 const defaultBoatForm: BoatForm = { name: "", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", manufacturer: "", mmsi: "", engine: "", safety: "" };
 const defaultLineForm: LineForm = { time: "", position: "", latitude: "", longitude: "", logNm: "", course: "", magneticCourse: "", seaState: "", barometer: "", wind: "", weather: "", sails: "", engine: "", remarks: "" };
+const boatToForm = (boat: Boat): BoatForm => ({ name: boat.name, type: boat.type, registration: boat.registration, flagState: boat.flagState, homePort: boat.homePort, owner: boat.owner, dimensions: boat.dimensions, manufacturer: boat.yachtData.Manufacturer === "—" ? "" : boat.yachtData.Manufacturer, mmsi: boat.yachtData.MMSI === "—" ? "" : boat.yachtData.MMSI, engine: boat.yachtData.Engine === "—" ? "" : boat.yachtData.Engine, safety: boat.yachtData.Safety === "To be completed" ? "" : boat.yachtData.Safety });
+const sheetToForm = (sheet: LogSheet): SheetForm => ({ title: sheet.title, dateRange: sheet.dateRange, boatId: sheet.boatId, dayGoal: sheet.route.dayGoal, from: sheet.route.from, to: sheet.route.to, morningPosition: sheet.route.morningPosition, eveningPosition: sheet.route.eveningPosition });
 
 function readStoredLogbook(): PersistedLogbook {
   if (typeof window === "undefined") return { boats: seedBoats, sheets: seedSheets };
@@ -49,6 +51,8 @@ export function LogbookApp() {
   const [sheetForm, setSheetForm] = useState<SheetForm>(defaultSheetForm(seedBoats[0].id));
   const [boatForm, setBoatForm] = useState<BoatForm>(defaultBoatForm);
   const [lineForm, setLineForm] = useState<LineForm>(defaultLineForm);
+  const [editingBoatId, setEditingBoatId] = useState<string | null>(null);
+  const [editingSheetId, setEditingSheetId] = useState<string | null>(null);
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(logbook));
@@ -62,9 +66,10 @@ export function LogbookApp() {
     return { totalNm, sailNm, motorNm: totalNm - sailNm, sheets: logbook.sheets.length, boats: logbook.boats.length };
   }, [logbook]);
 
-  function addBoat(event: FormEvent<HTMLFormElement>) {
+  function saveBoat(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const id = `${slug(boatForm.name)}-${Date.now().toString(36)}`;
+    const id = editingBoatId ?? `${slug(boatForm.name)}-${Date.now().toString(36)}`;
+    const previousBoat = logbook.boats.find((boat) => boat.id === id);
     const boat: Boat = {
       id,
       name: boatForm.name,
@@ -79,25 +84,27 @@ export function LogbookApp() {
         MMSI: boatForm.mmsi || "—",
         Manufacturer: boatForm.manufacturer || "—",
         "Hull length": boatForm.dimensions || "—",
-        Beam: "—",
-        Draft: "—",
-        Displacement: "—",
+        Beam: previousBoat?.yachtData.Beam ?? "—",
+        Draft: previousBoat?.yachtData.Draft ?? "—",
+        Displacement: previousBoat?.yachtData.Displacement ?? "—",
         "Rig / sail area": boatForm.type === "Sail" ? "To be completed" : "n/a",
         Engine: boatForm.engine || "—",
-        Propeller: "—",
-        Electronics: "To be completed",
+        Propeller: previousBoat?.yachtData.Propeller ?? "—",
+        Electronics: previousBoat?.yachtData.Electronics ?? "To be completed",
         Safety: boatForm.safety || "To be completed",
       },
     };
-    setLogbook((current) => ({ ...current, boats: [...current.boats, boat] }));
+    setLogbook((current) => ({ ...current, boats: editingBoatId ? current.boats.map((candidate) => candidate.id === editingBoatId ? boat : candidate) : [...current.boats, boat] }));
     setBoatForm(defaultBoatForm);
+    setEditingBoatId(null);
     setSheetForm((current) => ({ ...current, boatId: id }));
   }
 
-  function addSheet(event: FormEvent<HTMLFormElement>) {
+  function saveSheet(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const base = seedSheets[0];
-    const id = `${slug(sheetForm.title || sheetForm.dayGoal)}-${Date.now().toString(36)}`;
+    const existingSheet = editingSheetId ? logbook.sheets.find((sheet) => sheet.id === editingSheetId) : undefined;
+    const base = existingSheet ?? seedSheets[0];
+    const id = editingSheetId ?? `${slug(sheetForm.title || sheetForm.dayGoal)}-${Date.now().toString(36)}`;
     const sheet: LogSheet = {
       ...base,
       id,
@@ -122,9 +129,33 @@ export function LogbookApp() {
       technicalChecks: [],
       lines: [],
     };
-    setLogbook((current) => ({ ...current, sheets: [sheet, ...current.sheets] }));
+    setLogbook((current) => ({ ...current, sheets: editingSheetId ? current.sheets.map((candidate) => candidate.id === editingSheetId ? sheet : candidate) : [sheet, ...current.sheets] }));
     setActiveSheetId(id);
+    setEditingSheetId(null);
     setSheetForm(defaultSheetForm(sheetForm.boatId));
+    setShowNewSheet(false);
+  }
+
+  function startEditingBoat(boat: Boat) {
+    setShowBoatManager(true);
+    setEditingBoatId(boat.id);
+    setBoatForm(boatToForm(boat));
+  }
+
+  function cancelBoatEdit() {
+    setEditingBoatId(null);
+    setBoatForm(defaultBoatForm);
+  }
+
+  function startEditingSheet(sheet: LogSheet) {
+    setShowNewSheet(true);
+    setEditingSheetId(sheet.id);
+    setSheetForm(sheetToForm(sheet));
+  }
+
+  function cancelSheetEdit() {
+    setEditingSheetId(null);
+    setSheetForm(defaultSheetForm(logbook.boats[0]?.id ?? seedBoats[0].id));
     setShowNewSheet(false);
   }
 
@@ -171,14 +202,14 @@ export function LogbookApp() {
         <aside className="sidebar" aria-label="Log sheets">
           <div className="sidebar-header">
             <p className="eyebrow">Sheets</p>
-            <button type="button" onClick={() => setShowNewSheet((show) => !show)}>+ New sheet</button>
+            <button type="button" onClick={() => { setEditingSheetId(null); setSheetForm(defaultSheetForm(logbook.boats[0]?.id ?? seedBoats[0].id)); setShowNewSheet((show) => !show); }}>+ New sheet</button>
           </div>
           <button className="manager-toggle" type="button" onClick={() => setShowBoatManager((show) => !show)}>Manage boats ({logbook.boats.length})</button>
 
           {showBoatManager && (
-            <form className="form-card" onSubmit={addBoat}>
-              <h3>Boat manager</h3>
-              <div className="boat-list">{logbook.boats.map((boat) => <span key={boat.id}>{boat.name} · {boat.type}</span>)}</div>
+            <form className="form-card" onSubmit={saveBoat}>
+              <h3>{editingBoatId ? "Edit boat" : "Boat manager"}</h3>
+              <div className="boat-list">{logbook.boats.map((boat) => <button type="button" key={boat.id} onClick={() => startEditingBoat(boat)}>{boat.name} · {boat.type}</button>)}</div>
               <label>Name<input required value={boatForm.name} onChange={(e) => setBoatForm({ ...boatForm, name: e.target.value })} /></label>
               <label>Type<select value={boatForm.type} onChange={(e) => setBoatForm({ ...boatForm, type: e.target.value as BoatType })}><option>Sail</option><option>Motor</option></select></label>
               <label>Registration<input value={boatForm.registration} onChange={(e) => setBoatForm({ ...boatForm, registration: e.target.value })} /></label>
@@ -190,13 +221,13 @@ export function LogbookApp() {
               <label>MMSI<input value={boatForm.mmsi} onChange={(e) => setBoatForm({ ...boatForm, mmsi: e.target.value })} /></label>
               <label>Engine<input value={boatForm.engine} onChange={(e) => setBoatForm({ ...boatForm, engine: e.target.value })} /></label>
               <label>Safety<textarea value={boatForm.safety} onChange={(e) => setBoatForm({ ...boatForm, safety: e.target.value })} /></label>
-              <button type="submit">Create boat</button>
+              <button type="submit">{editingBoatId ? "Save boat" : "Create boat"}</button>{editingBoatId && <button type="button" className="ghost-button" onClick={cancelBoatEdit}>Cancel edit</button>}
             </form>
           )}
 
           {showNewSheet && (
-            <form className="form-card" onSubmit={addSheet}>
-              <h3>New sheet</h3>
+            <form className="form-card" onSubmit={saveSheet}>
+              <h3>{editingSheetId ? "Edit sheet" : "New sheet"}</h3>
               <label>Boat<select value={sheetForm.boatId} onChange={(e) => setSheetForm({ ...sheetForm, boatId: e.target.value })}>{logbook.boats.map((boat) => <option key={boat.id} value={boat.id}>{boat.name}</option>)}</select></label>
               <label>Title<input required value={sheetForm.title} onChange={(e) => setSheetForm({ ...sheetForm, title: e.target.value })} /></label>
               <label>Date<input type="date" value={sheetForm.dateRange} onChange={(e) => setSheetForm({ ...sheetForm, dateRange: e.target.value })} /></label>
@@ -205,13 +236,13 @@ export function LogbookApp() {
               <label>To<input value={sheetForm.to} onChange={(e) => setSheetForm({ ...sheetForm, to: e.target.value })} /></label>
               <label>Morning position<input value={sheetForm.morningPosition} onChange={(e) => setSheetForm({ ...sheetForm, morningPosition: e.target.value })} /></label>
               <label>Evening position<input value={sheetForm.eveningPosition} onChange={(e) => setSheetForm({ ...sheetForm, eveningPosition: e.target.value })} /></label>
-              <button type="submit">Create sheet</button>
+              <button type="submit">{editingSheetId ? "Save sheet" : "Create sheet"}</button>{editingSheetId && <button type="button" className="ghost-button" onClick={cancelSheetEdit}>Cancel edit</button>}
             </form>
           )}
 
           {logbook.sheets.map((sheet) => {
             const boat = logbook.boats.find((candidate) => candidate.id === sheet.boatId);
-            return <button className={`sheet-button ${sheet.id === activeSheet.id ? "active" : ""}`} key={sheet.id} onClick={() => setActiveSheetId(sheet.id)} type="button"><span>{sheet.title}</span><small>{sheet.dateRange} · {boat?.name}</small></button>;
+            return <div className={`sheet-button-row ${sheet.id === activeSheet.id ? "active" : ""}`} key={sheet.id}><button className="sheet-button" onClick={() => setActiveSheetId(sheet.id)} type="button"><span>{sheet.title}</span><small>{sheet.dateRange} · {boat?.name}</small></button><button className="edit-chip" type="button" onClick={() => startEditingSheet(sheet)}>Edit</button></div>;
           })}
         </aside>
 
