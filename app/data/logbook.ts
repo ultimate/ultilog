@@ -9,6 +9,7 @@ export type Boat = {
   homePort: string;
   owner: string;
   dimensions: string;
+  yachtData: Record<string, string>;
 };
 
 export type CrewMember = {
@@ -26,6 +27,9 @@ export type LogLine = {
   longitude: number;
   logNm: number;
   course: string;
+  magneticCourse: string;
+  seaState: string;
+  barometer: string;
   wind: string;
   weather: string;
   sails: string;
@@ -46,11 +50,32 @@ export type LogSheet = {
     certificate: string;
   };
   route: {
+    dayGoal: string;
+    morningPosition: string;
+    eveningPosition: string;
     from: string;
     to: string;
     departed: string;
     arrived: string;
   };
+  weatherBriefing: {
+    station: string;
+    time: string;
+    area: string;
+    forecast: string;
+    warnings: string;
+  };
+  daySummary: {
+    area: string;
+    nightHours: number;
+    daysOnBoard: number;
+    sailingMiles: number;
+    motorMiles: number;
+    outsideFb2Miles: number;
+    engineHoursStart: number;
+    engineHoursEnd: number;
+  };
+  remarks: string[];
   crew: CrewMember[];
   watchPlan: string[];
   technicalChecks: string[];
@@ -67,6 +92,20 @@ export const boats: Boat[] = [
     homePort: "Basel",
     owner: "M. Keller",
     dimensions: "12.4 m · 7.8 t · CE A",
+    yachtData: {
+      "Class / type": "Cruising yacht · sloop",
+      MMSI: "269123456",
+      Manufacturer: "Hallberg-Rassy",
+      "Hull length": "12.4 m",
+      Beam: "3.6 m",
+      Draft: "1.9 m",
+      Displacement: "7.8 t",
+      "Rig / sail area": "Masthead sloop · 78 m²",
+      Engine: "Volvo Penta · 55 HP",
+      Propeller: "3-blade folding",
+      Electronics: "AIS, GPS plotter, VHF, radar",
+      Safety: "Liferaft, EPIRB, jacklines",
+    },
   },
   {
     id: "aurora",
@@ -77,6 +116,20 @@ export const boats: Boat[] = [
     homePort: "Split",
     owner: "Adriatic Charter d.o.o.",
     dimensions: "10.8 m · twin diesel · CE B",
+    yachtData: {
+      "Class / type": "Motor yacht",
+      MMSI: "238987650",
+      Manufacturer: "Beneteau",
+      "Hull length": "10.8 m",
+      Beam: "3.4 m",
+      Draft: "0.9 m",
+      Displacement: "6.1 t",
+      "Rig / sail area": "n/a",
+      Engine: "Twin diesel · 2 × 220 HP",
+      Propeller: "Shaft drive",
+      Electronics: "AIS, GPS plotter, VHF",
+      Safety: "Liferaft, flares, lifejackets",
+    },
   },
 ];
 
@@ -94,11 +147,36 @@ export const logSheets: LogSheet[] = [
       certificate: "ICC Ocean · No. CH-88421 · Bern · 12 Mar 2022 · SSA",
     },
     route: {
+      dayGoal: "Preveza to Fiskardo with MOB practice",
+      morningPosition: "Preveza Marina",
+      eveningPosition: "Fiskardo harbor",
       from: "Preveza Marina",
       to: "Fiskardo",
       departed: "14 May 2026, 07:35",
       arrived: "14 May 2026, 18:10",
     },
+    weatherBriefing: {
+      station: "Ionian Sea forecast",
+      time: "06:30 LT",
+      area: "Lefkada / Kefalonia",
+      forecast: "NW 3-4 increasing 4-5 in afternoon, good visibility, slight to moderate sea.",
+      warnings: "No gale warning. Thermal gusts expected near headlands.",
+    },
+    daySummary: {
+      area: "Ionian Sea",
+      nightHours: 0,
+      daysOnBoard: 3,
+      sailingMiles: 59,
+      motorMiles: 4,
+      outsideFb2Miles: 63,
+      engineHoursStart: 318.4,
+      engineHoursEnd: 319.4,
+    },
+    remarks: [
+      "Safety briefing and MOB maneuver completed under sail.",
+      "Harbor entry plan reviewed before arrival; no incidents or damage.",
+      "Photographed paper boat log for later reconciliation.",
+    ],
     crew: [
       { name: "Luca Frei", nationality: "Swiss", role: "Co-skipper / navigation", embarkation: "Preveza · 12 May", disembarkation: "Fiskardo · 16 May" },
       { name: "Sofia Marin", nationality: "Italian", role: "Watch lead", embarkation: "Preveza · 12 May", disembarkation: "Fiskardo · 16 May" },
@@ -107,11 +185,11 @@ export const logSheets: LogSheet[] = [
     watchPlan: ["08-12: Luca / Jonas", "12-16: Nina / Sofia", "16-20: Sofia / Jonas"],
     technicalChecks: ["Engine oil checked", "Bilge dry", "Fresh water 62%", "Diesel 74%", "Navigation lights tested"],
     lines: [
-      { time: "07:35", position: "Preveza fairway", latitude: 38.956, longitude: 20.754, logNm: 0, course: "215°", wind: "NW 3", weather: "Clear, 1016 hPa", sails: "Main + genoa", engine: "0.4 h departure", remarks: "Departed after safety briefing." },
-      { time: "10:00", position: "Off Lefkada", latitude: 38.777, longitude: 20.589, logNm: 18, course: "196°", wind: "NW 4", weather: "Sunny, slight sea", sails: "Reef 1 + genoa", engine: "Off", remarks: "Crew practiced MOB under sail." },
-      { time: "13:30", position: "Meganisi abeam", latitude: 38.622, longitude: 20.741, logNm: 36, course: "168°", wind: "NW 4-5", weather: "Good visibility", sails: "Reef 1", engine: "Off", remarks: "Lunch underway; position cross-checked." },
-      { time: "16:45", position: "North Kefalonia", latitude: 38.504, longitude: 20.615, logNm: 54, course: "153°", wind: "NW 3", weather: "Scattered clouds", sails: "Full main", engine: "Off", remarks: "Prepared harbor entry plan." },
-      { time: "18:10", position: "Fiskardo harbor", latitude: 38.459, longitude: 20.577, logNm: 63, course: "Docked", wind: "NW 2", weather: "Calm", sails: "Stowed", engine: "0.6 h arrival", remarks: "Moored stern-to; no incidents." },
+      { time: "07:35", position: "Preveza fairway", latitude: 38.956, longitude: 20.754, logNm: 0, course: "215°", magneticCourse: "211°", seaState: "1", barometer: "1016", wind: "NW 3", weather: "Clear", sails: "Main + genoa", engine: "0.4 h departure", remarks: "Departed after safety briefing." },
+      { time: "10:00", position: "Off Lefkada", latitude: 38.777, longitude: 20.589, logNm: 18, course: "196°", magneticCourse: "192°", seaState: "2", barometer: "1015", wind: "NW 4", weather: "Sunny", sails: "Reef 1 + genoa", engine: "Off", remarks: "Crew practiced MOB under sail." },
+      { time: "13:30", position: "Meganisi abeam", latitude: 38.622, longitude: 20.741, logNm: 36, course: "168°", magneticCourse: "164°", seaState: "2", barometer: "1014", wind: "NW 4-5", weather: "Good visibility", sails: "Reef 1", engine: "Off", remarks: "Lunch underway; position cross-checked." },
+      { time: "16:45", position: "North Kefalonia", latitude: 38.504, longitude: 20.615, logNm: 54, course: "153°", magneticCourse: "149°", seaState: "2", barometer: "1014", wind: "NW 3", weather: "Scattered clouds", sails: "Full main", engine: "Off", remarks: "Prepared harbor entry plan." },
+      { time: "18:10", position: "Fiskardo harbor", latitude: 38.459, longitude: 20.577, logNm: 63, course: "Docked", magneticCourse: "—", seaState: "0", barometer: "1015", wind: "NW 2", weather: "Calm", sails: "Stowed", engine: "0.6 h arrival", remarks: "Moored stern-to; no incidents." },
     ],
   },
   {
@@ -127,11 +205,35 @@ export const logSheets: LogSheet[] = [
       certificate: "ICC Ocean · No. CH-88421 · Bern · 12 Mar 2022 · SSA",
     },
     route: {
+      dayGoal: "Split to Vis transfer and traffic practice",
+      morningPosition: "Split",
+      eveningPosition: "Vis town quay",
       from: "Split",
       to: "Vis",
       departed: "03 Jun 2026, 09:20",
       arrived: "03 Jun 2026, 14:55",
     },
+    weatherBriefing: {
+      station: "Croatia coastal forecast",
+      time: "08:00 LT",
+      area: "Central Dalmatia",
+      forecast: "W 2-3, afternoon sea breeze, visibility moderate to good.",
+      warnings: "Local ferry traffic dense around Split gate.",
+    },
+    daySummary: {
+      area: "Central Dalmatia",
+      nightHours: 0,
+      daysOnBoard: 1,
+      sailingMiles: 0,
+      motorMiles: 35,
+      outsideFb2Miles: 35,
+      engineHoursStart: 742.1,
+      engineHoursEnd: 747.4,
+    },
+    remarks: [
+      "Traffic separation and ferry-route observation practiced.",
+      "Fuel and cooling-water checks normal.",
+    ],
     crew: [
       { name: "Mara Novak", nationality: "Croatian", role: "Local skipper", embarkation: "Split · 03 Jun", disembarkation: "Vis · 03 Jun" },
       { name: "Nina Baumann", nationality: "Swiss", role: "Personal log owner", embarkation: "Split · 03 Jun", disembarkation: "Vis · 03 Jun" },
@@ -139,9 +241,9 @@ export const logSheets: LogSheet[] = [
     watchPlan: ["09-12: Mara / Nina", "12-15: Nina / Mara"],
     technicalChecks: ["Fuel valves open", "VHF radio check", "Cooling water visible", "Harbor documents photographed"],
     lines: [
-      { time: "09:20", position: "Split harbor", latitude: 43.503, longitude: 16.441, logNm: 0, course: "190°", wind: "W 2", weather: "Hazy", sails: "n/a", engine: "On", remarks: "Left berth with local skipper." },
-      { time: "11:45", position: "South of Solta", latitude: 43.267, longitude: 16.236, logNm: 22, course: "214°", wind: "W 3", weather: "Sunny", sails: "n/a", engine: "1900 rpm", remarks: "Traffic separation discussed." },
-      { time: "14:55", position: "Vis town quay", latitude: 43.061, longitude: 16.184, logNm: 35, course: "Docked", wind: "W 2", weather: "Clear", sails: "n/a", engine: "Off", remarks: "Arrival check complete." },
+      { time: "09:20", position: "Split harbor", latitude: 43.503, longitude: 16.441, logNm: 0, course: "190°", magneticCourse: "187°", seaState: "1", barometer: "1012", wind: "W 2", weather: "Hazy", sails: "n/a", engine: "On", remarks: "Left berth with local skipper." },
+      { time: "11:45", position: "South of Solta", latitude: 43.267, longitude: 16.236, logNm: 22, course: "214°", magneticCourse: "211°", seaState: "1", barometer: "1012", wind: "W 3", weather: "Sunny", sails: "n/a", engine: "1900 rpm", remarks: "Traffic separation discussed." },
+      { time: "14:55", position: "Vis town quay", latitude: 43.061, longitude: 16.184, logNm: 35, course: "Docked", magneticCourse: "—", seaState: "0", barometer: "1011", wind: "W 2", weather: "Clear", sails: "n/a", engine: "Off", remarks: "Arrival check complete." },
     ],
   },
 ];
