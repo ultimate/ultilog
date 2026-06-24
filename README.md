@@ -13,7 +13,7 @@ The app is designed as a long-term personal logbook that complements the legally
 - watch plans, daily technical/resource checks, compliance checklist, and a route-map preview;
 - an optional/collapsible course conversion table for later customization;
 - paper-log inspired sections for daily goals, morning/evening positions, yacht master data, weather briefings, remarks, technical checks, signatures, and tour summaries;
-- localStorage-backed creation of boats, trip/day sheets, and log lines until a database is added.
+- localStorage-backed creation and editing of boats and trip/day sheets, plus creation of log lines until a database is added.
 
 ## Legal reference
 
