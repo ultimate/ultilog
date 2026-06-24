@@ -12,6 +12,21 @@ const legalRequirements = [
   "Watch plan plus important events, observations, accidents, and damage",
 ];
 
+const yachtDataOrder = [
+  "Class / type",
+  "MMSI",
+  "Manufacturer",
+  "Hull length",
+  "Beam",
+  "Draft",
+  "Displacement",
+  "Rig / sail area",
+  "Engine",
+  "Propeller",
+  "Electronics",
+  "Safety",
+];
+
 export function LogbookApp() {
   const [activeSheetId, setActiveSheetId] = useState(logSheets[0].id);
   const [showCourseTable, setShowCourseTable] = useState(false);
@@ -77,6 +92,15 @@ export function LogbookApp() {
             <span className="status-pill">{activeSheet.status}</span>
           </div>
 
+          <section className="paper-header" aria-label="Daily paper log header">
+            <div><span>Day goal</span><strong>{activeSheet.route.dayGoal}</strong></div>
+            <div><span>Date</span><strong>{activeSheet.dateRange}</strong></div>
+            <div><span>Daily logbook lead</span><strong>{activeSheet.skipper.name}</strong></div>
+            <div><span>Stage / sheet</span><strong>{activeSheet.id}</strong></div>
+            <div><span>Position morning</span><strong>{activeSheet.route.morningPosition}</strong></div>
+            <div><span>Position evening</span><strong>{activeSheet.route.eveningPosition}</strong></div>
+          </section>
+
           <div className="detail-grid">
             <article className="info-card">
               <h3>Boat</h3>
@@ -103,6 +127,21 @@ export function LogbookApp() {
             </article>
           </div>
 
+          <article className="yacht-card">
+            <div>
+              <p className="eyebrow">Yacht data</p>
+              <h3>Boat master data inspired by the paper examples</h3>
+            </div>
+            <dl className="yacht-data-grid">
+              {yachtDataOrder.map((label) => (
+                <div key={label}>
+                  <dt>{label}</dt>
+                  <dd>{activeBoat.yachtData[label]}</dd>
+                </div>
+              ))}
+            </dl>
+          </article>
+
           <article className="map-card">
             <div>
               <p className="eyebrow">Route map draft</p>
@@ -122,11 +161,25 @@ export function LogbookApp() {
             </div>
           </article>
 
+          <article className="weather-card">
+            <div>
+              <p className="eyebrow">Weather briefing</p>
+              <h3>Forecast, warnings, and planning context</h3>
+            </div>
+            <div className="briefing-grid">
+              <div><span>Station</span><strong>{activeSheet.weatherBriefing.station}</strong></div>
+              <div><span>Time</span><strong>{activeSheet.weatherBriefing.time}</strong></div>
+              <div><span>Area</span><strong>{activeSheet.weatherBriefing.area}</strong></div>
+              <div className="wide"><span>Forecast</span><strong>{activeSheet.weatherBriefing.forecast}</strong></div>
+              <div className="wide"><span>Warnings</span><strong>{activeSheet.weatherBriefing.warnings}</strong></div>
+            </div>
+          </article>
+
           <article className="table-card">
             <div className="table-header">
               <div>
-                <p className="eyebrow">Log lines</p>
-                <h3>Required nautical and meteorological record</h3>
+                <p className="eyebrow">Combined day sheet</p>
+                <h3>Meteorological and nautical log lines</h3>
               </div>
               <button type="button">+ Add line</button>
             </div>
@@ -135,12 +188,17 @@ export function LogbookApp() {
                 <thead>
                   <tr>
                     <th>Time</th>
+                    <th>Weather</th>
+                    <th>Baro</th>
+                    <th>Sea</th>
+                    <th>Wind</th>
+                    <th>MgK</th>
+                    <th>Course</th>
+                    <th>Log</th>
+                    <th>Sail</th>
+                    <th>Motor</th>
                     <th>Position</th>
                     <th>Lat / Lon</th>
-                    <th>Log</th>
-                    <th>Course</th>
-                    <th>Wind & weather</th>
-                    <th>Sails / engine</th>
                     <th>Remarks</th>
                   </tr>
                 </thead>
@@ -148,12 +206,17 @@ export function LogbookApp() {
                   {activeSheet.lines.map((line) => (
                     <tr key={`${line.time}-${line.position}`}>
                       <td>{line.time}</td>
+                      <td>{line.weather}</td>
+                      <td>{line.barometer}</td>
+                      <td>{line.seaState}</td>
+                      <td>{line.wind}</td>
+                      <td>{line.magneticCourse}</td>
+                      <td>{line.course}</td>
+                      <td>{line.logNm} nm</td>
+                      <td>{line.sails}</td>
+                      <td>{line.engine}</td>
                       <td>{line.position}</td>
                       <td>{line.latitude.toFixed(3)} / {line.longitude.toFixed(3)}</td>
-                      <td>{line.logNm} nm</td>
-                      <td>{line.course}</td>
-                      <td>{line.wind}<br />{line.weather}</td>
-                      <td>{line.sails}<br />{line.engine}</td>
                       <td>{line.remarks}</td>
                     </tr>
                   ))}
@@ -161,6 +224,34 @@ export function LogbookApp() {
               </table>
             </div>
           </article>
+
+          <div className="paper-grid">
+            <article className="remarks-card">
+              <div>
+                <p className="eyebrow">Remarks</p>
+                <h3>Maneuvers, observations, events, and lightkeeping</h3>
+              </div>
+              <ol>
+                {activeSheet.remarks.map((remark) => <li key={remark}>{remark}</li>)}
+              </ol>
+            </article>
+
+            <article className="summary-card">
+              <div>
+                <p className="eyebrow">Tour summary</p>
+                <h3>Törnzusammenfassung</h3>
+              </div>
+              <dl>
+                <div><dt>Area</dt><dd>{activeSheet.daySummary.area}</dd></div>
+                <div><dt>Night hours</dt><dd>{activeSheet.daySummary.nightHours}</dd></div>
+                <div><dt>Days on board</dt><dd>{activeSheet.daySummary.daysOnBoard}</dd></div>
+                <div><dt>Sailing miles</dt><dd>{activeSheet.daySummary.sailingMiles} nm</dd></div>
+                <div><dt>Motor miles</dt><dd>{activeSheet.daySummary.motorMiles} nm</dd></div>
+                <div><dt>Outside FB2</dt><dd>{activeSheet.daySummary.outsideFb2Miles} nm</dd></div>
+                <div><dt>Engine hours</dt><dd>{activeSheet.daySummary.engineHoursStart} → {activeSheet.daySummary.engineHoursEnd}</dd></div>
+              </dl>
+            </article>
+          </div>
 
           <div className="bottom-grid">
             <article className="info-card">
@@ -192,6 +283,12 @@ export function LogbookApp() {
             <ul>
               {legalRequirements.map((requirement) => <li key={requirement}>{requirement}</li>)}
             </ul>
+          </article>
+
+          <article className="signature-card">
+            <div><span>Logbook lead</span><strong>{activeSheet.skipper.name}</strong></div>
+            <div><span>Skipper</span><strong>{activeSheet.skipper.name}</strong></div>
+            <div><span>Digital personal-log status</span><strong>{activeSheet.status}</strong></div>
           </article>
 
           <article className="optional-card">

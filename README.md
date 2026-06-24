@@ -11,7 +11,8 @@ The app is designed as a long-term personal logbook that complements the legally
 - crew lists per sheet with nationality, role, and embarkation/disembarkation details;
 - log lines with time, position, coordinates, log reading, course, weather, sails, engine use, and remarks;
 - watch plans, daily technical/resource checks, compliance checklist, and a route-map preview;
-- an optional/collapsible course conversion table for later customization.
+- an optional/collapsible course conversion table for later customization;
+- paper-log inspired sections for daily goals, morning/evening positions, yacht master data, weather briefings, remarks, technical checks, signatures, and tour summaries.
 
 ## Legal reference
 

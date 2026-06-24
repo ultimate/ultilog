@@ -194,3 +194,108 @@ td { color: #28384b; line-height: 1.45; }
   .sheet-title-row, .table-header { display: grid; }
   h1 { font-size: clamp(2rem, 14vw, 3.2rem); }
 }
+
+.paper-header, .yacht-card, .weather-card, .remarks-card, .summary-card, .signature-card {
+  border: 1px solid rgba(207, 218, 229, 0.9);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.paper-header {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  overflow: hidden;
+  border-radius: 1.5rem;
+}
+
+.paper-header div, .briefing-grid div, .signature-card div {
+  min-width: 0;
+  padding: 0.95rem;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.paper-header div:nth-last-child(-n + 2) { grid-column: span 2; }
+.paper-header span, .briefing-grid span, .signature-card span {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--primary-dark);
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.paper-header strong, .briefing-grid strong, .signature-card strong { display: block; font-size: 1rem; }
+
+.yacht-card, .weather-card, .remarks-card, .summary-card, .signature-card {
+  border-radius: 1.5rem;
+  padding: clamp(1rem, 2vw, 1.5rem);
+}
+
+.yacht-data-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: white;
+}
+.yacht-data-grid div {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  padding: 0.75rem;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.weather-card { display: grid; gap: 1rem; }
+.briefing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: white;
+}
+.briefing-grid .wide { grid-column: 1 / -1; }
+
+.paper-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+  gap: 1rem;
+}
+.remarks-card ol {
+  display: grid;
+  gap: 0.65rem;
+  min-height: 13rem;
+  margin: 0;
+  padding: 0 0 0 1.25rem;
+  background: repeating-linear-gradient(to bottom, transparent 0 2.1rem, rgba(15, 107, 143, 0.2) 2.1rem calc(2.1rem + 1px));
+}
+.remarks-card li { padding-top: 0.2rem; }
+.summary-card dl { grid-template-columns: 1fr; }
+.signature-card {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow: hidden;
+  padding: 0;
+}
+.signature-card strong::after {
+  content: "";
+  display: block;
+  height: 1.4rem;
+  margin-top: 0.5rem;
+  border-bottom: 2px dotted var(--primary-dark);
+}
+
+@media (max-width: 1050px) {
+  .paper-header, .paper-grid, .signature-card { grid-template-columns: 1fr; }
+  .paper-header div:nth-last-child(-n + 2) { grid-column: auto; }
+  .yacht-data-grid, .briefing-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 680px) {
+  .yacht-data-grid div { grid-template-columns: 1fr; gap: 0.25rem; }
+}
