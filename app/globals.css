@@ -299,3 +299,73 @@ td { color: #28384b; line-height: 1.45; }
 @media (max-width: 680px) {
   .yacht-data-grid div { grid-template-columns: 1fr; gap: 0.25rem; }
 }
+
+.manager-toggle {
+  border: 1px solid var(--border) !important;
+  background: #102033 !important;
+}
+.form-card, .line-form {
+  display: grid;
+  gap: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  padding: 1rem;
+  background: #ffffff;
+}
+.form-card h3 { margin-bottom: 0; }
+.form-card label, .line-form label {
+  display: grid;
+  gap: 0.25rem;
+  color: var(--primary-dark);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.form-card input, .form-card select, .form-card textarea, .line-form input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 0.8rem;
+  padding: 0.7rem 0.8rem;
+  color: var(--foreground);
+  background: #f8fbfd;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+}
+.form-card textarea { min-height: 5rem; resize: vertical; }
+.form-card button, .line-form button {
+  border: 0;
+  border-radius: 999px;
+  min-height: 2.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--success);
+  color: white;
+  font-weight: 900;
+}
+.boat-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.boat-list span {
+  border-radius: 999px;
+  padding: 0.45rem 0.65rem;
+  background: #eff6ff;
+  color: var(--primary-dark);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+.line-form {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 1rem 0;
+}
+.line-form button { align-self: end; }
+
+@media (max-width: 900px) {
+  .line-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 680px) {
+  .line-form { grid-template-columns: 1fr; }
+}

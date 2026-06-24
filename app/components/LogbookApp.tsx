@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { boats, logSheets } from "../data/logbook";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { boats as seedBoats, logSheets as seedSheets, type Boat, type BoatType, type LogLine, type LogSheet } from "../data/logbook";
 
+const STORAGE_KEY = "ultilog:v1";
 const legalRequirements = [
   "Boat registration, flag state, home port, owner, and vessel particulars",
   "Skipper identity, address, nationality, and certificate details",
@@ -11,35 +12,144 @@ const legalRequirements = [
   "Passage reports: weather, courses, log readings, sail plan, engine operation, and positions",
   "Watch plan plus important events, observations, accidents, and damage",
 ];
+const yachtDataOrder = ["Class / type", "MMSI", "Manufacturer", "Hull length", "Beam", "Draft", "Displacement", "Rig / sail area", "Engine", "Propeller", "Electronics", "Safety"];
 
-const yachtDataOrder = [
-  "Class / type",
-  "MMSI",
-  "Manufacturer",
-  "Hull length",
-  "Beam",
-  "Draft",
-  "Displacement",
-  "Rig / sail area",
-  "Engine",
-  "Propeller",
-  "Electronics",
-  "Safety",
-];
+type PersistedLogbook = { boats: Boat[]; sheets: LogSheet[] };
+type SheetForm = { title: string; dateRange: string; boatId: string; dayGoal: string; from: string; to: string; morningPosition: string; eveningPosition: string };
+type BoatForm = { name: string; type: BoatType; registration: string; flagState: string; homePort: string; owner: string; dimensions: string; manufacturer: string; mmsi: string; engine: string; safety: string };
+type LineForm = { time: string; position: string; latitude: string; longitude: string; logNm: string; course: string; magneticCourse: string; seaState: string; barometer: string; wind: string; weather: string; sails: string; engine: string; remarks: string };
+
+const defaultSheetForm = (boatId: string): SheetForm => ({ title: "", dateRange: new Date().toISOString().slice(0, 10), boatId, dayGoal: "", from: "", to: "", morningPosition: "", eveningPosition: "" });
+const defaultBoatForm: BoatForm = { name: "", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", manufacturer: "", mmsi: "", engine: "", safety: "" };
+const defaultLineForm: LineForm = { time: "", position: "", latitude: "", longitude: "", logNm: "", course: "", magneticCourse: "", seaState: "", barometer: "", wind: "", weather: "", sails: "", engine: "", remarks: "" };
+
+function readStoredLogbook(): PersistedLogbook {
+  if (typeof window === "undefined") return { boats: seedBoats, sheets: seedSheets };
+  const stored = window.localStorage.getItem(STORAGE_KEY);
+  if (!stored) return { boats: seedBoats, sheets: seedSheets };
+  try {
+    const parsed = JSON.parse(stored) as PersistedLogbook;
+    return parsed.boats?.length && parsed.sheets?.length ? parsed : { boats: seedBoats, sheets: seedSheets };
+  } catch {
+    window.localStorage.removeItem(STORAGE_KEY);
+    return { boats: seedBoats, sheets: seedSheets };
+  }
+}
+
+const slug = (value: string) => value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || crypto.randomUUID();
+const numberOrZero = (value: string) => Number.parseFloat(value) || 0;
 
 export function LogbookApp() {
-  const [activeSheetId, setActiveSheetId] = useState(logSheets[0].id);
+  const [logbook, setLogbook] = useState<PersistedLogbook>(() => readStoredLogbook());
+  const [activeSheetId, setActiveSheetId] = useState(() => readStoredLogbook().sheets[0].id);
   const [showCourseTable, setShowCourseTable] = useState(false);
-  const activeSheet = logSheets.find((sheet) => sheet.id === activeSheetId) ?? logSheets[0];
-  const activeBoat = boats.find((boat) => boat.id === activeSheet.boatId) ?? boats[0];
+  const [showNewSheet, setShowNewSheet] = useState(false);
+  const [showBoatManager, setShowBoatManager] = useState(false);
+  const [showAddLine, setShowAddLine] = useState(false);
+  const [sheetForm, setSheetForm] = useState<SheetForm>(defaultSheetForm(seedBoats[0].id));
+  const [boatForm, setBoatForm] = useState<BoatForm>(defaultBoatForm);
+  const [lineForm, setLineForm] = useState<LineForm>(defaultLineForm);
 
+  useEffect(() => {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(logbook));
+  }, [logbook]);
+
+  const activeSheet = logbook.sheets.find((sheet) => sheet.id === activeSheetId) ?? logbook.sheets[0];
+  const activeBoat = logbook.boats.find((boat) => boat.id === activeSheet.boatId) ?? logbook.boats[0];
   const stats = useMemo(() => {
-    const totalNm = logSheets.reduce((sum, sheet) => sum + Math.max(...sheet.lines.map((line) => line.logNm)), 0);
-    const sailNm = logSheets
-      .filter((sheet) => boats.find((boat) => boat.id === sheet.boatId)?.type === "Sail")
-      .reduce((sum, sheet) => sum + Math.max(...sheet.lines.map((line) => line.logNm)), 0);
-    return { totalNm, sailNm, motorNm: totalNm - sailNm, sheets: logSheets.length };
-  }, []);
+    const totalNm = logbook.sheets.reduce((sum, sheet) => sum + Math.max(0, ...sheet.lines.map((line) => line.logNm)), 0);
+    const sailNm = logbook.sheets.filter((sheet) => logbook.boats.find((boat) => boat.id === sheet.boatId)?.type === "Sail").reduce((sum, sheet) => sum + Math.max(0, ...sheet.lines.map((line) => line.logNm)), 0);
+    return { totalNm, sailNm, motorNm: totalNm - sailNm, sheets: logbook.sheets.length, boats: logbook.boats.length };
+  }, [logbook]);
+
+  function addBoat(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const id = `${slug(boatForm.name)}-${Date.now().toString(36)}`;
+    const boat: Boat = {
+      id,
+      name: boatForm.name,
+      type: boatForm.type,
+      registration: boatForm.registration,
+      flagState: boatForm.flagState,
+      homePort: boatForm.homePort,
+      owner: boatForm.owner,
+      dimensions: boatForm.dimensions,
+      yachtData: {
+        "Class / type": boatForm.type === "Sail" ? "Cruising yacht" : "Motor yacht",
+        MMSI: boatForm.mmsi || "—",
+        Manufacturer: boatForm.manufacturer || "—",
+        "Hull length": boatForm.dimensions || "—",
+        Beam: "—",
+        Draft: "—",
+        Displacement: "—",
+        "Rig / sail area": boatForm.type === "Sail" ? "To be completed" : "n/a",
+        Engine: boatForm.engine || "—",
+        Propeller: "—",
+        Electronics: "To be completed",
+        Safety: boatForm.safety || "To be completed",
+      },
+    };
+    setLogbook((current) => ({ ...current, boats: [...current.boats, boat] }));
+    setBoatForm(defaultBoatForm);
+    setSheetForm((current) => ({ ...current, boatId: id }));
+  }
+
+  function addSheet(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const base = seedSheets[0];
+    const id = `${slug(sheetForm.title || sheetForm.dayGoal)}-${Date.now().toString(36)}`;
+    const sheet: LogSheet = {
+      ...base,
+      id,
+      title: sheetForm.title || sheetForm.dayGoal || "Untitled sheet",
+      dateRange: sheetForm.dateRange,
+      status: "Draft",
+      boatId: sheetForm.boatId,
+      route: {
+        dayGoal: sheetForm.dayGoal,
+        morningPosition: sheetForm.morningPosition || sheetForm.from,
+        eveningPosition: sheetForm.eveningPosition || sheetForm.to,
+        from: sheetForm.from,
+        to: sheetForm.to,
+        departed: `${sheetForm.dateRange}, departure open`,
+        arrived: `${sheetForm.dateRange}, arrival open`,
+      },
+      weatherBriefing: { station: "", time: "", area: "", forecast: "", warnings: "" },
+      daySummary: { area: "", nightHours: 0, daysOnBoard: 1, sailingMiles: 0, motorMiles: 0, outsideFb2Miles: 0, engineHoursStart: 0, engineHoursEnd: 0 },
+      remarks: [],
+      crew: [],
+      watchPlan: [],
+      technicalChecks: [],
+      lines: [],
+    };
+    setLogbook((current) => ({ ...current, sheets: [sheet, ...current.sheets] }));
+    setActiveSheetId(id);
+    setSheetForm(defaultSheetForm(sheetForm.boatId));
+    setShowNewSheet(false);
+  }
+
+  function addLine(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const line: LogLine = {
+      time: lineForm.time,
+      position: lineForm.position,
+      latitude: numberOrZero(lineForm.latitude),
+      longitude: numberOrZero(lineForm.longitude),
+      logNm: numberOrZero(lineForm.logNm),
+      course: lineForm.course,
+      magneticCourse: lineForm.magneticCourse,
+      seaState: lineForm.seaState,
+      barometer: lineForm.barometer,
+      wind: lineForm.wind,
+      weather: lineForm.weather,
+      sails: lineForm.sails,
+      engine: lineForm.engine,
+      remarks: lineForm.remarks,
+    };
+    setLogbook((current) => ({ ...current, sheets: current.sheets.map((sheet) => sheet.id === activeSheet.id ? { ...sheet, lines: [...sheet.lines, line], remarks: line.remarks ? [...sheet.remarks, line.remarks] : sheet.remarks } : sheet) }));
+    setLineForm(defaultLineForm);
+    setShowAddLine(false);
+  }
 
   return (
     <main className="app-shell">
@@ -47,16 +157,13 @@ export function LogbookApp() {
         <div>
           <p className="eyebrow">Personal skipper logbook</p>
           <h1>Track ICC / Hochseeausweis miles across boats, crews, and passages.</h1>
-          <p className="hero-text">
-            Ultilog is now shaped around the Swiss Hochseeausweis logbook requirements: one skipper can manage multiple boats,
-            create trip sheets, capture legally relevant log lines, and keep a long-term personal sailing history.
-          </p>
+          <p className="hero-text">Local-first draft: boats, sheets, and log lines now save in this browser&apos;s local storage until we add a database.</p>
         </div>
         <div className="stat-grid" aria-label="Personal log statistics">
           <article><span>Total miles</span><strong>{stats.totalNm} nm</strong></article>
           <article><span>Sail</span><strong>{stats.sailNm} nm</strong></article>
           <article><span>Motor</span><strong>{stats.motorNm} nm</strong></article>
-          <article><span>Sheets</span><strong>{stats.sheets}</strong></article>
+          <article><span>Boats / sheets</span><strong>{stats.boats} / {stats.sheets}</strong></article>
         </div>
       </section>
 
@@ -64,244 +171,66 @@ export function LogbookApp() {
         <aside className="sidebar" aria-label="Log sheets">
           <div className="sidebar-header">
             <p className="eyebrow">Sheets</p>
-            <button type="button">+ New sheet</button>
+            <button type="button" onClick={() => setShowNewSheet((show) => !show)}>+ New sheet</button>
           </div>
-          {logSheets.map((sheet) => {
-            const boat = boats.find((candidate) => candidate.id === sheet.boatId);
-            return (
-              <button
-                className={`sheet-button ${sheet.id === activeSheet.id ? "active" : ""}`}
-                key={sheet.id}
-                onClick={() => setActiveSheetId(sheet.id)}
-                type="button"
-              >
-                <span>{sheet.title}</span>
-                <small>{sheet.dateRange} · {boat?.name}</small>
-              </button>
-            );
+          <button className="manager-toggle" type="button" onClick={() => setShowBoatManager((show) => !show)}>Manage boats ({logbook.boats.length})</button>
+
+          {showBoatManager && (
+            <form className="form-card" onSubmit={addBoat}>
+              <h3>Boat manager</h3>
+              <div className="boat-list">{logbook.boats.map((boat) => <span key={boat.id}>{boat.name} · {boat.type}</span>)}</div>
+              <label>Name<input required value={boatForm.name} onChange={(e) => setBoatForm({ ...boatForm, name: e.target.value })} /></label>
+              <label>Type<select value={boatForm.type} onChange={(e) => setBoatForm({ ...boatForm, type: e.target.value as BoatType })}><option>Sail</option><option>Motor</option></select></label>
+              <label>Registration<input value={boatForm.registration} onChange={(e) => setBoatForm({ ...boatForm, registration: e.target.value })} /></label>
+              <label>Flag state<input value={boatForm.flagState} onChange={(e) => setBoatForm({ ...boatForm, flagState: e.target.value })} /></label>
+              <label>Home port<input value={boatForm.homePort} onChange={(e) => setBoatForm({ ...boatForm, homePort: e.target.value })} /></label>
+              <label>Owner<input value={boatForm.owner} onChange={(e) => setBoatForm({ ...boatForm, owner: e.target.value })} /></label>
+              <label>Dimensions<input value={boatForm.dimensions} onChange={(e) => setBoatForm({ ...boatForm, dimensions: e.target.value })} /></label>
+              <label>Manufacturer<input value={boatForm.manufacturer} onChange={(e) => setBoatForm({ ...boatForm, manufacturer: e.target.value })} /></label>
+              <label>MMSI<input value={boatForm.mmsi} onChange={(e) => setBoatForm({ ...boatForm, mmsi: e.target.value })} /></label>
+              <label>Engine<input value={boatForm.engine} onChange={(e) => setBoatForm({ ...boatForm, engine: e.target.value })} /></label>
+              <label>Safety<textarea value={boatForm.safety} onChange={(e) => setBoatForm({ ...boatForm, safety: e.target.value })} /></label>
+              <button type="submit">Create boat</button>
+            </form>
+          )}
+
+          {showNewSheet && (
+            <form className="form-card" onSubmit={addSheet}>
+              <h3>New sheet</h3>
+              <label>Boat<select value={sheetForm.boatId} onChange={(e) => setSheetForm({ ...sheetForm, boatId: e.target.value })}>{logbook.boats.map((boat) => <option key={boat.id} value={boat.id}>{boat.name}</option>)}</select></label>
+              <label>Title<input required value={sheetForm.title} onChange={(e) => setSheetForm({ ...sheetForm, title: e.target.value })} /></label>
+              <label>Date<input type="date" value={sheetForm.dateRange} onChange={(e) => setSheetForm({ ...sheetForm, dateRange: e.target.value })} /></label>
+              <label>Day goal<input value={sheetForm.dayGoal} onChange={(e) => setSheetForm({ ...sheetForm, dayGoal: e.target.value })} /></label>
+              <label>From<input value={sheetForm.from} onChange={(e) => setSheetForm({ ...sheetForm, from: e.target.value })} /></label>
+              <label>To<input value={sheetForm.to} onChange={(e) => setSheetForm({ ...sheetForm, to: e.target.value })} /></label>
+              <label>Morning position<input value={sheetForm.morningPosition} onChange={(e) => setSheetForm({ ...sheetForm, morningPosition: e.target.value })} /></label>
+              <label>Evening position<input value={sheetForm.eveningPosition} onChange={(e) => setSheetForm({ ...sheetForm, eveningPosition: e.target.value })} /></label>
+              <button type="submit">Create sheet</button>
+            </form>
+          )}
+
+          {logbook.sheets.map((sheet) => {
+            const boat = logbook.boats.find((candidate) => candidate.id === sheet.boatId);
+            return <button className={`sheet-button ${sheet.id === activeSheet.id ? "active" : ""}`} key={sheet.id} onClick={() => setActiveSheetId(sheet.id)} type="button"><span>{sheet.title}</span><small>{sheet.dateRange} · {boat?.name}</small></button>;
           })}
         </aside>
 
         <section className="sheet-detail" aria-labelledby="sheet-title">
-          <div className="sheet-title-row">
-            <div>
-              <p className="eyebrow">Active sheet</p>
-              <h2 id="sheet-title">{activeSheet.title}</h2>
-              <p>{activeSheet.route.from} → {activeSheet.route.to} · {activeSheet.dateRange}</p>
-            </div>
-            <span className="status-pill">{activeSheet.status}</span>
-          </div>
+          <div className="sheet-title-row"><div><p className="eyebrow">Active sheet</p><h2 id="sheet-title">{activeSheet.title}</h2><p>{activeSheet.route.from} → {activeSheet.route.to} · {activeSheet.dateRange}</p></div><span className="status-pill">{activeSheet.status}</span></div>
+          <section className="paper-header" aria-label="Daily paper log header"><div><span>Day goal</span><strong>{activeSheet.route.dayGoal || "—"}</strong></div><div><span>Date</span><strong>{activeSheet.dateRange}</strong></div><div><span>Daily logbook lead</span><strong>{activeSheet.skipper.name}</strong></div><div><span>Stage / sheet</span><strong>{activeSheet.id}</strong></div><div><span>Position morning</span><strong>{activeSheet.route.morningPosition || "—"}</strong></div><div><span>Position evening</span><strong>{activeSheet.route.eveningPosition || "—"}</strong></div></section>
 
-          <section className="paper-header" aria-label="Daily paper log header">
-            <div><span>Day goal</span><strong>{activeSheet.route.dayGoal}</strong></div>
-            <div><span>Date</span><strong>{activeSheet.dateRange}</strong></div>
-            <div><span>Daily logbook lead</span><strong>{activeSheet.skipper.name}</strong></div>
-            <div><span>Stage / sheet</span><strong>{activeSheet.id}</strong></div>
-            <div><span>Position morning</span><strong>{activeSheet.route.morningPosition}</strong></div>
-            <div><span>Position evening</span><strong>{activeSheet.route.eveningPosition}</strong></div>
-          </section>
+          <div className="detail-grid"><article className="info-card"><h3>Boat</h3><dl><div><dt>Name</dt><dd>{activeBoat.name}</dd></div><div><dt>Type</dt><dd>{activeBoat.type}</dd></div><div><dt>Registration</dt><dd>{activeBoat.registration || "—"}</dd></div><div><dt>Flag / home port</dt><dd>{activeBoat.flagState || "—"} · {activeBoat.homePort || "—"}</dd></div><div><dt>Owner</dt><dd>{activeBoat.owner || "—"}</dd></div><div><dt>Ship data</dt><dd>{activeBoat.dimensions || "—"}</dd></div></dl></article><article className="info-card"><h3>Skipper & ports</h3><dl><div><dt>Skipper</dt><dd>{activeSheet.skipper.name}</dd></div><div><dt>Address</dt><dd>{activeSheet.skipper.address}</dd></div><div><dt>Nationality</dt><dd>{activeSheet.skipper.nationality}</dd></div><div><dt>Certificate</dt><dd>{activeSheet.skipper.certificate}</dd></div><div><dt>Departure</dt><dd>{activeSheet.route.departed}</dd></div><div><dt>Arrival</dt><dd>{activeSheet.route.arrived}</dd></div></dl></article></div>
+          <article className="yacht-card"><div><p className="eyebrow">Yacht data</p><h3>Boat master data</h3></div><dl className="yacht-data-grid">{yachtDataOrder.map((label) => <div key={label}><dt>{label}</dt><dd>{activeBoat.yachtData[label] || "—"}</dd></div>)}</dl></article>
+          <article className="map-card"><div><p className="eyebrow">Route map draft</p><h3>Positions connected from log lines</h3></div><div className="route-map" aria-label="Stylized route map preview">{activeSheet.lines.map((line, index) => <span className="map-marker" key={`${line.time}-${line.position}-${index}`} style={{ left: `${12 + index * (76 / Math.max(activeSheet.lines.length - 1, 1))}%`, top: `${62 - index * 8}%` }} title={`${line.time} · ${line.position}`}>{index + 1}</span>)}</div></article>
+          <article className="weather-card"><div><p className="eyebrow">Weather briefing</p><h3>Forecast, warnings, and planning context</h3></div><div className="briefing-grid"><div><span>Station</span><strong>{activeSheet.weatherBriefing.station || "—"}</strong></div><div><span>Time</span><strong>{activeSheet.weatherBriefing.time || "—"}</strong></div><div><span>Area</span><strong>{activeSheet.weatherBriefing.area || "—"}</strong></div><div className="wide"><span>Forecast</span><strong>{activeSheet.weatherBriefing.forecast || "—"}</strong></div><div className="wide"><span>Warnings</span><strong>{activeSheet.weatherBriefing.warnings || "—"}</strong></div></div></article>
 
-          <div className="detail-grid">
-            <article className="info-card">
-              <h3>Boat</h3>
-              <dl>
-                <div><dt>Name</dt><dd>{activeBoat.name}</dd></div>
-                <div><dt>Type</dt><dd>{activeBoat.type}</dd></div>
-                <div><dt>Registration</dt><dd>{activeBoat.registration}</dd></div>
-                <div><dt>Flag / home port</dt><dd>{activeBoat.flagState} · {activeBoat.homePort}</dd></div>
-                <div><dt>Owner</dt><dd>{activeBoat.owner}</dd></div>
-                <div><dt>Ship data</dt><dd>{activeBoat.dimensions}</dd></div>
-              </dl>
-            </article>
+          <article className="table-card"><div className="table-header"><div><p className="eyebrow">Combined day sheet</p><h3>Meteorological and nautical log lines</h3></div><button type="button" onClick={() => setShowAddLine((show) => !show)}>+ Add line</button></div>{showAddLine && <form className="line-form" onSubmit={addLine}>{Object.keys(defaultLineForm).map((key) => <label key={key}>{key}<input value={lineForm[key as keyof LineForm]} onChange={(e) => setLineForm({ ...lineForm, [key]: e.target.value })} /></label>)}<button type="submit">Save line</button></form>}<div className="table-scroll"><table><thead><tr><th>Time</th><th>Weather</th><th>Baro</th><th>Sea</th><th>Wind</th><th>MgK</th><th>Course</th><th>Log</th><th>Sail</th><th>Motor</th><th>Position</th><th>Lat / Lon</th><th>Remarks</th></tr></thead><tbody>{activeSheet.lines.map((line, index) => <tr key={`${line.time}-${line.position}-${index}`}><td>{line.time}</td><td>{line.weather}</td><td>{line.barometer}</td><td>{line.seaState}</td><td>{line.wind}</td><td>{line.magneticCourse}</td><td>{line.course}</td><td>{line.logNm} nm</td><td>{line.sails}</td><td>{line.engine}</td><td>{line.position}</td><td>{line.latitude.toFixed(3)} / {line.longitude.toFixed(3)}</td><td>{line.remarks}</td></tr>)}</tbody></table></div></article>
 
-            <article className="info-card">
-              <h3>Skipper & ports</h3>
-              <dl>
-                <div><dt>Skipper</dt><dd>{activeSheet.skipper.name}</dd></div>
-                <div><dt>Address</dt><dd>{activeSheet.skipper.address}</dd></div>
-                <div><dt>Nationality</dt><dd>{activeSheet.skipper.nationality}</dd></div>
-                <div><dt>Certificate</dt><dd>{activeSheet.skipper.certificate}</dd></div>
-                <div><dt>Departure</dt><dd>{activeSheet.route.departed}</dd></div>
-                <div><dt>Arrival</dt><dd>{activeSheet.route.arrived}</dd></div>
-              </dl>
-            </article>
-          </div>
-
-          <article className="yacht-card">
-            <div>
-              <p className="eyebrow">Yacht data</p>
-              <h3>Boat master data inspired by the paper examples</h3>
-            </div>
-            <dl className="yacht-data-grid">
-              {yachtDataOrder.map((label) => (
-                <div key={label}>
-                  <dt>{label}</dt>
-                  <dd>{activeBoat.yachtData[label]}</dd>
-                </div>
-              ))}
-            </dl>
-          </article>
-
-          <article className="map-card">
-            <div>
-              <p className="eyebrow">Route map draft</p>
-              <h3>Positions connected from log lines</h3>
-            </div>
-            <div className="route-map" aria-label="Stylized route map preview">
-              {activeSheet.lines.map((line, index) => (
-                <span
-                  className="map-marker"
-                  key={`${line.time}-${line.position}`}
-                  style={{ left: `${12 + index * (76 / Math.max(activeSheet.lines.length - 1, 1))}%`, top: `${62 - index * 8}%` }}
-                  title={`${line.time} · ${line.position}`}
-                >
-                  {index + 1}
-                </span>
-              ))}
-            </div>
-          </article>
-
-          <article className="weather-card">
-            <div>
-              <p className="eyebrow">Weather briefing</p>
-              <h3>Forecast, warnings, and planning context</h3>
-            </div>
-            <div className="briefing-grid">
-              <div><span>Station</span><strong>{activeSheet.weatherBriefing.station}</strong></div>
-              <div><span>Time</span><strong>{activeSheet.weatherBriefing.time}</strong></div>
-              <div><span>Area</span><strong>{activeSheet.weatherBriefing.area}</strong></div>
-              <div className="wide"><span>Forecast</span><strong>{activeSheet.weatherBriefing.forecast}</strong></div>
-              <div className="wide"><span>Warnings</span><strong>{activeSheet.weatherBriefing.warnings}</strong></div>
-            </div>
-          </article>
-
-          <article className="table-card">
-            <div className="table-header">
-              <div>
-                <p className="eyebrow">Combined day sheet</p>
-                <h3>Meteorological and nautical log lines</h3>
-              </div>
-              <button type="button">+ Add line</button>
-            </div>
-            <div className="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Time</th>
-                    <th>Weather</th>
-                    <th>Baro</th>
-                    <th>Sea</th>
-                    <th>Wind</th>
-                    <th>MgK</th>
-                    <th>Course</th>
-                    <th>Log</th>
-                    <th>Sail</th>
-                    <th>Motor</th>
-                    <th>Position</th>
-                    <th>Lat / Lon</th>
-                    <th>Remarks</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {activeSheet.lines.map((line) => (
-                    <tr key={`${line.time}-${line.position}`}>
-                      <td>{line.time}</td>
-                      <td>{line.weather}</td>
-                      <td>{line.barometer}</td>
-                      <td>{line.seaState}</td>
-                      <td>{line.wind}</td>
-                      <td>{line.magneticCourse}</td>
-                      <td>{line.course}</td>
-                      <td>{line.logNm} nm</td>
-                      <td>{line.sails}</td>
-                      <td>{line.engine}</td>
-                      <td>{line.position}</td>
-                      <td>{line.latitude.toFixed(3)} / {line.longitude.toFixed(3)}</td>
-                      <td>{line.remarks}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </article>
-
-          <div className="paper-grid">
-            <article className="remarks-card">
-              <div>
-                <p className="eyebrow">Remarks</p>
-                <h3>Maneuvers, observations, events, and lightkeeping</h3>
-              </div>
-              <ol>
-                {activeSheet.remarks.map((remark) => <li key={remark}>{remark}</li>)}
-              </ol>
-            </article>
-
-            <article className="summary-card">
-              <div>
-                <p className="eyebrow">Tour summary</p>
-                <h3>Törnzusammenfassung</h3>
-              </div>
-              <dl>
-                <div><dt>Area</dt><dd>{activeSheet.daySummary.area}</dd></div>
-                <div><dt>Night hours</dt><dd>{activeSheet.daySummary.nightHours}</dd></div>
-                <div><dt>Days on board</dt><dd>{activeSheet.daySummary.daysOnBoard}</dd></div>
-                <div><dt>Sailing miles</dt><dd>{activeSheet.daySummary.sailingMiles} nm</dd></div>
-                <div><dt>Motor miles</dt><dd>{activeSheet.daySummary.motorMiles} nm</dd></div>
-                <div><dt>Outside FB2</dt><dd>{activeSheet.daySummary.outsideFb2Miles} nm</dd></div>
-                <div><dt>Engine hours</dt><dd>{activeSheet.daySummary.engineHoursStart} → {activeSheet.daySummary.engineHoursEnd}</dd></div>
-              </dl>
-            </article>
-          </div>
-
-          <div className="bottom-grid">
-            <article className="info-card">
-              <h3>Crew for this sheet</h3>
-              <ul className="stack-list">
-                {activeSheet.crew.map((person) => (
-                  <li key={person.name}>
-                    <strong>{person.name}</strong>
-                    <span>{person.nationality} · {person.role}</span>
-                    <small>{person.embarkation} → {person.disembarkation}</small>
-                  </li>
-                ))}
-              </ul>
-            </article>
-
-            <article className="info-card">
-              <h3>Watch & daily checks</h3>
-              <ul className="check-list">
-                {[...activeSheet.watchPlan, ...activeSheet.technicalChecks].map((item) => <li key={item}>{item}</li>)}
-              </ul>
-            </article>
-          </div>
-
-          <article className="compliance-card">
-            <div>
-              <p className="eyebrow">Swiss compliance checklist</p>
-              <h3>Built from Hochseeausweis logbook requirements</h3>
-            </div>
-            <ul>
-              {legalRequirements.map((requirement) => <li key={requirement}>{requirement}</li>)}
-            </ul>
-          </article>
-
-          <article className="signature-card">
-            <div><span>Logbook lead</span><strong>{activeSheet.skipper.name}</strong></div>
-            <div><span>Skipper</span><strong>{activeSheet.skipper.name}</strong></div>
-            <div><span>Digital personal-log status</span><strong>{activeSheet.status}</strong></div>
-          </article>
-
-          <article className="optional-card">
-            <button type="button" onClick={() => setShowCourseTable((current) => !current)}>
-              {showCourseTable ? "Hide" : "Show"} optional course conversion table
-            </button>
-            {showCourseTable && (
-              <div className="course-table">
-                <span>Magnetic course</span><span>Deviation</span><span>Variation</span><span>Course over ground</span>
-                <strong>214°</strong><strong>-2°</strong><strong>+4° E</strong><strong>216°</strong>
-              </div>
-            )}
-          </article>
+          <div className="paper-grid"><article className="remarks-card"><div><p className="eyebrow">Remarks</p><h3>Maneuvers, observations, events, and lightkeeping</h3></div><ol>{activeSheet.remarks.map((remark, index) => <li key={`${remark}-${index}`}>{remark}</li>)}</ol></article><article className="summary-card"><div><p className="eyebrow">Tour summary</p><h3>Törnzusammenfassung</h3></div><dl><div><dt>Area</dt><dd>{activeSheet.daySummary.area || "—"}</dd></div><div><dt>Night hours</dt><dd>{activeSheet.daySummary.nightHours}</dd></div><div><dt>Days on board</dt><dd>{activeSheet.daySummary.daysOnBoard}</dd></div><div><dt>Sailing miles</dt><dd>{activeSheet.daySummary.sailingMiles} nm</dd></div><div><dt>Motor miles</dt><dd>{activeSheet.daySummary.motorMiles} nm</dd></div><div><dt>Outside FB2</dt><dd>{activeSheet.daySummary.outsideFb2Miles} nm</dd></div><div><dt>Engine hours</dt><dd>{activeSheet.daySummary.engineHoursStart} → {activeSheet.daySummary.engineHoursEnd}</dd></div></dl></article></div>
+          <div className="bottom-grid"><article className="info-card"><h3>Crew for this sheet</h3><ul className="stack-list">{activeSheet.crew.map((person) => <li key={person.name}><strong>{person.name}</strong><span>{person.nationality} · {person.role}</span><small>{person.embarkation} → {person.disembarkation}</small></li>)}</ul></article><article className="info-card"><h3>Watch & daily checks</h3><ul className="check-list">{[...activeSheet.watchPlan, ...activeSheet.technicalChecks].map((item) => <li key={item}>{item}</li>)}</ul></article></div>
+          <article className="compliance-card"><div><p className="eyebrow">Swiss compliance checklist</p><h3>Built from Hochseeausweis logbook requirements</h3></div><ul>{legalRequirements.map((requirement) => <li key={requirement}>{requirement}</li>)}</ul></article>
+          <article className="signature-card"><div><span>Logbook lead</span><strong>{activeSheet.skipper.name}</strong></div><div><span>Skipper</span><strong>{activeSheet.skipper.name}</strong></div><div><span>Digital personal-log status</span><strong>{activeSheet.status}</strong></div></article>
+          <article className="optional-card"><button type="button" onClick={() => setShowCourseTable((current) => !current)}>{showCourseTable ? "Hide" : "Show"} optional course conversion table</button>{showCourseTable && <div className="course-table"><span>Magnetic course</span><span>Deviation</span><span>Variation</span><span>Course over ground</span><strong>214°</strong><strong>-2°</strong><strong>+4° E</strong><strong>216°</strong></div>}</article>
         </section>
       </section>
     </main>
