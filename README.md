@@ -2,6 +2,9 @@
 
 Ultilog is a responsive personal skipper logbook for tracking ICC / Swiss Hochseeausweis nautical miles across multiple boats, trips, crew lists, and log sheets.
 
+> [!NOTE]
+> This web application is vibe coded with ChatGPT Codex.
+
 ## Product direction
 
 The app is designed as a long-term personal logbook that complements the legally required boat log and handwritten mileage proof. The first version models:
