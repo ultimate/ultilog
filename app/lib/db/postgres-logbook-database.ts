@@ -1,7 +1,7 @@
 import { Pool } from "pg";
 import type { PersistedLogbook } from "../../models/logbook";
 import { LogbookDatabase, type QueryResult } from "./logbook-database";
-import { readSchemaSql } from "./schema";
+import { runMigrations } from "./migrations";
 
 export class PostgresLogbookDatabase extends LogbookDatabase {
   private pool: Pool;
@@ -21,7 +21,7 @@ export class PostgresLogbookDatabase extends LogbookDatabase {
   }
 
   protected async ensureSchema() {
-    await this.pool.query(await readSchemaSql());
+    await runMigrations(this);
   }
 
   override async writeLogbook(logbook: PersistedLogbook) {

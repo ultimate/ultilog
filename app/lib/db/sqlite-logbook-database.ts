@@ -3,7 +3,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import type { PersistedLogbook } from "../../models/logbook";
 import { LogbookDatabase, type QueryResult } from "./logbook-database";
-import { readSchemaSql } from "./schema";
+import { runMigrations } from "./migrations";
 
 export class SqliteLogbookDatabase extends LogbookDatabase {
   private db: SqlJsDatabase | undefined;
@@ -19,13 +19,13 @@ export class SqliteLogbookDatabase extends LogbookDatabase {
   async query<Row>(sql: string, values: unknown[] = []): Promise<QueryResult<Row>> {
     const db = await this.getDb();
     if (sql.trim().toLowerCase().startsWith("select")) return { rows: selectRows<Row>(db, sql, values) };
-    db.run(sql, values as SqlValue[]);
+    if (values.length) db.run(sql, values as SqlValue[]);
+    else db.exec(sql);
     return { rows: [] };
   }
 
   protected async ensureSchema() {
-    const db = await this.getDb();
-    db.run(await readSchemaSql());
+    await runMigrations(this);
   }
 
   override async writeLogbook(logbook: PersistedLogbook) {
