@@ -1,5 +1,5 @@
 import type { PersistedLogbook } from "../../models/logbook";
-import { sampleBoats, sampleLogSheets } from "../../sample-data/logbook";
+import { sampleBoats, sampleLogSheets } from "../../../resources/sample-data/logbook";
 import { BoatsRepository } from "../repositories/boats-repository";
 import { CrewRepository } from "../repositories/crew-repository";
 import { LogLinesRepository } from "../repositories/log-lines-repository";

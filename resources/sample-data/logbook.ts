@@ -1,4 +1,4 @@
-import type { Boat, LogSheet } from "../models/logbook";
+import type { Boat, LogSheet } from "../../app/models/logbook";
 
 export const sampleBoats: Boat[] = [
   {
