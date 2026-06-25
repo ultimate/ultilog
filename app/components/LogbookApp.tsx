@@ -22,19 +22,20 @@ type LineForm = { time: string; position: string; latitude: string; longitude: s
 const defaultSheetForm = (boatId: string): SheetForm => ({ title: "", dateRange: new Date().toISOString().slice(0, 10), boatId, dayGoal: "", from: "", to: "", morningPosition: "", eveningPosition: "" });
 const defaultBoatForm: BoatForm = { name: "", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", manufacturer: "", mmsi: "", engine: "", safety: "" };
 const defaultLineForm: LineForm = { time: "", position: "", latitude: "", longitude: "", logNm: "", course: "", magneticCourse: "", seaState: "", barometer: "", wind: "", weather: "", sails: "", engine: "", remarks: "" };
+const defaultLogbook: PersistedLogbook = { boats: seedBoats, sheets: seedSheets };
 const boatToForm = (boat: Boat): BoatForm => ({ name: boat.name, type: boat.type, registration: boat.registration, flagState: boat.flagState, homePort: boat.homePort, owner: boat.owner, dimensions: boat.dimensions, manufacturer: boat.yachtData.Manufacturer === "—" ? "" : boat.yachtData.Manufacturer, mmsi: boat.yachtData.MMSI === "—" ? "" : boat.yachtData.MMSI, engine: boat.yachtData.Engine === "—" ? "" : boat.yachtData.Engine, safety: boat.yachtData.Safety === "To be completed" ? "" : boat.yachtData.Safety });
 const sheetToForm = (sheet: LogSheet): SheetForm => ({ title: sheet.title, dateRange: sheet.dateRange, boatId: sheet.boatId, dayGoal: sheet.route.dayGoal, from: sheet.route.from, to: sheet.route.to, morningPosition: sheet.route.morningPosition, eveningPosition: sheet.route.eveningPosition });
 
 function readStoredLogbook(): PersistedLogbook {
-  if (typeof window === "undefined") return { boats: seedBoats, sheets: seedSheets };
+  if (typeof window === "undefined") return defaultLogbook;
   const stored = window.localStorage.getItem(STORAGE_KEY);
-  if (!stored) return { boats: seedBoats, sheets: seedSheets };
+  if (!stored) return defaultLogbook;
   try {
     const parsed = JSON.parse(stored) as PersistedLogbook;
-    return parsed.boats?.length && parsed.sheets?.length ? parsed : { boats: seedBoats, sheets: seedSheets };
+    return parsed.boats?.length && parsed.sheets?.length ? parsed : defaultLogbook;
   } catch {
     window.localStorage.removeItem(STORAGE_KEY);
-    return { boats: seedBoats, sheets: seedSheets };
+    return defaultLogbook;
   }
 }
 
@@ -42,8 +43,9 @@ const slug = (value: string) => value.toLowerCase().trim().replace(/[^a-z0-9]+/g
 const numberOrZero = (value: string) => Number.parseFloat(value) || 0;
 
 export function LogbookApp() {
-  const [logbook, setLogbook] = useState<PersistedLogbook>(() => readStoredLogbook());
-  const [activeSheetId, setActiveSheetId] = useState(() => readStoredLogbook().sheets[0].id);
+  const [logbook, setLogbook] = useState<PersistedLogbook>(defaultLogbook);
+  const [activeSheetId, setActiveSheetId] = useState(defaultLogbook.sheets[0].id);
+  const [isStorageReady, setIsStorageReady] = useState(false);
   const [showCourseTable, setShowCourseTable] = useState(false);
   const [showNewSheet, setShowNewSheet] = useState(false);
   const [showBoatManager, setShowBoatManager] = useState(false);
@@ -55,8 +57,19 @@ export function LogbookApp() {
   const [editingSheetId, setEditingSheetId] = useState<string | null>(null);
 
   useEffect(() => {
+    queueMicrotask(() => {
+      const storedLogbook = readStoredLogbook();
+      setLogbook(storedLogbook);
+      setActiveSheetId(storedLogbook.sheets[0].id);
+      setSheetForm((current) => ({ ...current, boatId: storedLogbook.boats[0]?.id ?? seedBoats[0].id }));
+      setIsStorageReady(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!isStorageReady) return;
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(logbook));
-  }, [logbook]);
+  }, [isStorageReady, logbook]);
 
   const activeSheet = logbook.sheets.find((sheet) => sheet.id === activeSheetId) ?? logbook.sheets[0];
   const activeBoat = logbook.boats.find((boat) => boat.id === activeSheet.boatId) ?? logbook.boats[0];
