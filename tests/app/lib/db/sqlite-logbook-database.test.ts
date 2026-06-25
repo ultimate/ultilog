@@ -2,8 +2,8 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it } from "vitest";
-import { sampleBoats, sampleLogSheets } from "../../../resources/sample-data/logbook";
-import { SqliteLogbookDatabase } from "./sqlite-logbook-database";
+import { sampleBoats, sampleLogSheets } from "../../../../resources/sample-data/logbook";
+import { SqliteLogbookDatabase } from "../../../../app/lib/db/sqlite-logbook-database";
 
 const tempDirs: string[] = [];
 
