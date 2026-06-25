@@ -94,6 +94,12 @@ h3 { margin-bottom: 0.8rem; }
   border-radius: 2rem;
   padding: 1rem;
 }
+
+.module-tabs { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-bottom: 1rem; }
+.module-tabs button { border: 1px solid var(--border); border-radius: 999px; min-height: 2.75rem; padding: 0.75rem 1rem; background: rgba(255, 255, 255, 0.9); color: var(--primary-dark); font-weight: 900; box-shadow: var(--shadow-soft); }
+.module-tabs button.active { border-color: var(--primary); background: var(--primary); color: white; }
+.module-workspace { grid-template-columns: 1fr; }
+.module-panel { width: 100%; }
 .sidebar {
   position: sticky;
   top: 1rem;
@@ -226,6 +232,7 @@ td { color: #28384b; line-height: 1.45; }
   .hero-panel, .workspace { border-radius: 1.25rem; }
   .stat-grid, .sidebar, .sheet-list, dl div, .course-table { grid-template-columns: 1fr; }
   .sheet-title-row, .table-header, .inline-edit-card { display: grid; grid-template-columns: 1fr; }
+  .module-tabs { display: grid; }
   .table-actions { justify-content: stretch; }
   .table-actions button, .inline-edit-actions button { width: 100%; }
   .inline-edit-grid { grid-template-columns: 1fr; }
