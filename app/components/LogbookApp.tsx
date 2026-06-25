@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
 import { boats as seedBoats, logSheets as seedSheets, type Boat, type BoatType, type LogLine, type LogSheet } from "../data/logbook";
 
 const STORAGE_KEY = "ultilog:v1";
@@ -22,6 +22,14 @@ const moduleTabs = [
   { id: "crew", label: "Crew manager" },
   { id: "compliance", label: "Compliance" },
 ] as const;
+
+
+type SplitDirection = "vertical" | "horizontal";
+type ManagerShellProps = { title: string; split: SplitDirection; newLabel: string; onNew: () => void; onToggleSplit: () => void; list: ReactNode; form: ReactNode };
+
+function ManagerShell({ title, split, newLabel, onNew, onToggleSplit, list, form }: ManagerShellProps) {
+  return <div className={`manager-split ${split}`}><article className="info-card"><div className="card-title-row"><h3>{title}</h3><div className="table-actions"><button type="button" className="edit-chip" onClick={onNew}>{newLabel}</button><button type="button" className="edit-chip" onClick={onToggleSplit}>{split === "vertical" ? "Horizontal split" : "Vertical split"}</button></div></div>{list}</article><article className="info-card">{form}</article></div>;
+}
 
 type PersistedLogbook = { boats: Boat[]; sheets: LogSheet[] };
 type ModuleTab = typeof moduleTabs[number]["id"];
@@ -61,8 +69,8 @@ export function LogbookApp() {
   const [activeSheetId, setActiveSheetId] = useState(defaultLogbook.sheets[0].id);
   const [isStorageReady, setIsStorageReady] = useState(false);
   const [activeModule, setActiveModule] = useState<ModuleTab>("dashboard");
-  const [boatSplit, setBoatSplit] = useState<"vertical" | "horizontal">("vertical");
-  const [crewSplit, setCrewSplit] = useState<"vertical" | "horizontal">("vertical");
+  const [boatSplit, setBoatSplit] = useState<SplitDirection>("vertical");
+  const [crewSplit, setCrewSplit] = useState<SplitDirection>("vertical");
   const [showCourseColumns, setShowCourseColumns] = useState(false);
   const [showNewSheet, setShowNewSheet] = useState(false);
   const [showBoatManager, setShowBoatManager] = useState(false);
@@ -76,6 +84,7 @@ export function LogbookApp() {
   const [editingLineIndex, setEditingLineIndex] = useState<number | null>(null);
   const [selectedBoatId, setSelectedBoatId] = useState(defaultLogbook.boats[0].id);
   const [selectedCrewIndex, setSelectedCrewIndex] = useState(0);
+  const [lastCrewIndex, setLastCrewIndex] = useState(0);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -181,9 +190,9 @@ export function LogbookApp() {
   }
 
   function cancelBoatEdit() {
-    setEditingBoatId(null);
-    setBoatForm(defaultBoatForm);
     setShowBoatManager(false);
+    setEditingBoatId(selectedBoat.id);
+    setBoatForm(boatToForm(selectedBoat));
   }
 
   function startEditingSheet(sheet: LogSheet) {
@@ -262,7 +271,14 @@ export function LogbookApp() {
 
   function selectCrew(index: number) {
     setSelectedCrewIndex(index);
+    setLastCrewIndex(index);
     setCrewForm(crewToForm(activeSheet.crew[index] ?? defaultCrewForm));
+  }
+
+  function cancelCrewEdit() {
+    const nextIndex = Math.min(lastCrewIndex, Math.max(activeSheet.crew.length - 1, 0));
+    setSelectedCrewIndex(nextIndex);
+    setCrewForm(crewToForm(activeSheet.crew[nextIndex] ?? defaultCrewForm));
   }
 
   return (
@@ -310,7 +326,7 @@ export function LogbookApp() {
                 <label>Position morning<input value={sheetForm.morningPosition} onChange={(e) => setSheetForm({ ...sheetForm, morningPosition: e.target.value })} /></label>
                 <label>Position evening<input value={sheetForm.eveningPosition} onChange={(e) => setSheetForm({ ...sheetForm, eveningPosition: e.target.value })} /></label>
               </div>
-              <div className="inline-edit-actions"><button type="submit">Save</button>{showNewSheet ? <button type="button" className="ghost-button" onClick={cancelSheetEdit}>Cancel</button> : <button type="button" className="ghost-button" onClick={() => setSheetForm(sheetToForm(activeSheet))}>Discard changes</button>}</div>
+              <div className="inline-edit-actions"><button type="submit">Save</button>{showNewSheet ? <button type="button" className="ghost-button" onClick={() => { cancelSheetEdit(); setActiveModule("logbooks"); }}>Cancel</button> : <button type="button" className="ghost-button" onClick={() => setSheetForm(sheetToForm(activeSheet))}>Discard changes</button>}</div>
             </form>
           ) : (
             <>
@@ -331,9 +347,9 @@ export function LogbookApp() {
           <article className="signature-card"><div><span>Logbook lead</span><strong>{activeSheet.skipper.name}</strong></div><div><span>Skipper</span><strong>{activeSheet.skipper.name}</strong></div><div><span>Digital personal-log status</span><strong>{activeSheet.status}</strong></div></article>
         </section>}
 
-        {activeModule === "boats" && <section className="sheet-detail module-panel"><div className={`manager-split ${boatSplit}`}><article className="info-card"><div className="card-title-row"><h3>Boats</h3><button type="button" className="edit-chip" onClick={() => setBoatSplit((split) => split === "vertical" ? "horizontal" : "vertical")}>{boatSplit === "vertical" ? "Horizontal split" : "Vertical split"}</button></div><ul className="manager-list">{logbook.boats.map((boat) => <li key={boat.id}><button type="button" className={boat.id === selectedBoat.id ? "active" : ""} onClick={() => { setSelectedBoatId(boat.id); setEditingBoatId(boat.id); setBoatForm(boatToForm(boat)); setShowBoatManager(false); }}><span className="picture-thumb" aria-hidden="true" /><span><strong>{boat.name}</strong><small>{boat.type} · {boat.registration || "No registration"}</small></span></button></li>)}</ul></article><article className="info-card"><form className="inline-edit-grid" onSubmit={saveBoat}><div className="card-title-row wide-field"><p className="eyebrow">{showBoatManager ? "New boat" : "Boat form"}</p><button type="button" className="edit-chip" onClick={() => { setEditingBoatId(null); setBoatForm(defaultBoatForm); setShowBoatManager(true); }}>New boat</button></div><label>Name<input required value={boatForm.name} onChange={(e) => setBoatForm({ ...boatForm, name: e.target.value })} /></label><label>Type<select value={boatForm.type} onChange={(e) => setBoatForm({ ...boatForm, type: e.target.value as BoatType })}><option>Sail</option><option>Motor</option></select></label><label>Registration<input value={boatForm.registration} onChange={(e) => setBoatForm({ ...boatForm, registration: e.target.value })} /></label><label>Flag state<input value={boatForm.flagState} onChange={(e) => setBoatForm({ ...boatForm, flagState: e.target.value })} /></label><label>Home port<input value={boatForm.homePort} onChange={(e) => setBoatForm({ ...boatForm, homePort: e.target.value })} /></label><label>Owner<input value={boatForm.owner} onChange={(e) => setBoatForm({ ...boatForm, owner: e.target.value })} /></label><label>Dimensions<input value={boatForm.dimensions} onChange={(e) => setBoatForm({ ...boatForm, dimensions: e.target.value })} /></label><label>Manufacturer<input value={boatForm.manufacturer} onChange={(e) => setBoatForm({ ...boatForm, manufacturer: e.target.value })} /></label><label>MMSI<input value={boatForm.mmsi} onChange={(e) => setBoatForm({ ...boatForm, mmsi: e.target.value })} /></label><label>Engine<input value={boatForm.engine} onChange={(e) => setBoatForm({ ...boatForm, engine: e.target.value })} /></label><label className="wide-field">Safety<textarea value={boatForm.safety} onChange={(e) => setBoatForm({ ...boatForm, safety: e.target.value })} /></label><div className="inline-edit-actions"><button type="submit">{showBoatManager ? "Create boat" : "Save boat"}</button><button type="button" className="ghost-button" onClick={cancelBoatEdit}>Cancel</button></div></form></article></div></section>}
+        {activeModule === "boats" && <section className="sheet-detail module-panel"><ManagerShell title="Boats" split={boatSplit} newLabel="New boat" onNew={() => { setEditingBoatId(null); setBoatForm(defaultBoatForm); setShowBoatManager(true); }} onToggleSplit={() => setBoatSplit((split) => split === "vertical" ? "horizontal" : "vertical")} list={<ul className="manager-list">{logbook.boats.map((boat) => <li key={boat.id}><button type="button" className={boat.id === selectedBoat.id ? "active" : ""} onClick={() => { setSelectedBoatId(boat.id); setEditingBoatId(boat.id); setBoatForm(boatToForm(boat)); setShowBoatManager(false); }}><span className="picture-thumb" aria-hidden="true" /><span><strong>{boat.name}</strong><small>{boat.type} · {boat.registration || "No registration"}</small></span></button></li>)}</ul>} form={<form className="inline-edit-grid" onSubmit={saveBoat}><p className="eyebrow">{showBoatManager ? "New boat" : "Boat form"}</p><label>Name<input required value={boatForm.name} onChange={(e) => setBoatForm({ ...boatForm, name: e.target.value })} /></label><label>Type<select value={boatForm.type} onChange={(e) => setBoatForm({ ...boatForm, type: e.target.value as BoatType })}><option>Sail</option><option>Motor</option></select></label><label>Registration<input value={boatForm.registration} onChange={(e) => setBoatForm({ ...boatForm, registration: e.target.value })} /></label><label>Flag state<input value={boatForm.flagState} onChange={(e) => setBoatForm({ ...boatForm, flagState: e.target.value })} /></label><label>Home port<input value={boatForm.homePort} onChange={(e) => setBoatForm({ ...boatForm, homePort: e.target.value })} /></label><label>Owner<input value={boatForm.owner} onChange={(e) => setBoatForm({ ...boatForm, owner: e.target.value })} /></label><label>Dimensions<input value={boatForm.dimensions} onChange={(e) => setBoatForm({ ...boatForm, dimensions: e.target.value })} /></label><label>Manufacturer<input value={boatForm.manufacturer} onChange={(e) => setBoatForm({ ...boatForm, manufacturer: e.target.value })} /></label><label>MMSI<input value={boatForm.mmsi} onChange={(e) => setBoatForm({ ...boatForm, mmsi: e.target.value })} /></label><label>Engine<input value={boatForm.engine} onChange={(e) => setBoatForm({ ...boatForm, engine: e.target.value })} /></label><label className="wide-field">Safety<textarea value={boatForm.safety} onChange={(e) => setBoatForm({ ...boatForm, safety: e.target.value })} /></label><div className="inline-edit-actions"><button type="submit">{showBoatManager ? "Create boat" : "Save boat"}</button><button type="button" className="ghost-button" onClick={cancelBoatEdit}>Cancel</button></div></form>} /></section>}
 
-        {activeModule === "crew" && <section className="sheet-detail module-panel"><div className={`manager-split ${crewSplit}`}><article className="info-card"><div className="card-title-row"><h3>Crew</h3><div className="table-actions"><button type="button" className="edit-chip" onClick={() => { setSelectedCrewIndex(-1); setCrewForm(defaultCrewForm); }}>New crew</button><button type="button" className="edit-chip" onClick={() => setCrewSplit((split) => split === "vertical" ? "horizontal" : "vertical")}>{crewSplit === "vertical" ? "Horizontal split" : "Vertical split"}</button></div></div><ul className="manager-list">{activeSheet.crew.map((person, index) => <li key={person.name}><button type="button" className={index === selectedCrewIndex ? "active" : ""} onClick={() => selectCrew(index)}><span className="picture-thumb" aria-hidden="true" /><span><strong>{person.name}</strong><small>{person.role}</small></span></button></li>)}</ul></article><article className="info-card"><form className="inline-edit-grid" onSubmit={(event) => { event.preventDefault(); saveCrew(); }}><p className="eyebrow">Crew form</p><label>Name<input value={crewForm.name} onChange={(e) => setCrewForm({ ...crewForm, name: e.target.value })} /></label><label>Nationality<input value={crewForm.nationality} onChange={(e) => setCrewForm({ ...crewForm, nationality: e.target.value })} /></label><label>Role<input value={crewForm.role} onChange={(e) => setCrewForm({ ...crewForm, role: e.target.value })} /></label><label>Embarkation<input value={crewForm.embarkation} onChange={(e) => setCrewForm({ ...crewForm, embarkation: e.target.value })} /></label><label>Disembarkation<input value={crewForm.disembarkation} onChange={(e) => setCrewForm({ ...crewForm, disembarkation: e.target.value })} /></label><div className="inline-edit-actions"><button type="submit">Save crew</button></div></form></article></div></section>}
+        {activeModule === "crew" && <section className="sheet-detail module-panel"><ManagerShell title="Crew" split={crewSplit} newLabel="New crew" onNew={() => { setLastCrewIndex(selectedCrewIndex >= 0 ? selectedCrewIndex : lastCrewIndex); setSelectedCrewIndex(-1); setCrewForm(defaultCrewForm); }} onToggleSplit={() => setCrewSplit((split) => split === "vertical" ? "horizontal" : "vertical")} list={<ul className="manager-list">{activeSheet.crew.map((person, index) => <li key={person.name}><button type="button" className={index === selectedCrewIndex ? "active" : ""} onClick={() => selectCrew(index)}><span className="picture-thumb" aria-hidden="true" /><span><strong>{person.name}</strong><small>{person.role}</small></span></button></li>)}</ul>} form={<form className="inline-edit-grid" onSubmit={(event) => { event.preventDefault(); saveCrew(); }}><p className="eyebrow">{selectedCrewIndex < 0 ? "New crew" : "Crew form"}</p><label>Name<input value={crewForm.name} onChange={(e) => setCrewForm({ ...crewForm, name: e.target.value })} /></label><label>Nationality<input value={crewForm.nationality} onChange={(e) => setCrewForm({ ...crewForm, nationality: e.target.value })} /></label><label>Role<input value={crewForm.role} onChange={(e) => setCrewForm({ ...crewForm, role: e.target.value })} /></label><label>Embarkation<input value={crewForm.embarkation} onChange={(e) => setCrewForm({ ...crewForm, embarkation: e.target.value })} /></label><label>Disembarkation<input value={crewForm.disembarkation} onChange={(e) => setCrewForm({ ...crewForm, disembarkation: e.target.value })} /></label><div className="inline-edit-actions"><button type="submit">Save crew</button><button type="button" className="ghost-button" onClick={cancelCrewEdit}>Cancel</button></div></form>} /></section>}
 
         {activeModule === "compliance" && <section className="sheet-detail module-panel"><article className="compliance-card"><div><p className="eyebrow">Swiss compliance checklist</p><h3>Built from Hochseeausweis logbook requirements</h3></div><ul>{legalRequirements.map((requirement) => <li key={requirement}>{requirement}</li>)}</ul></article></section>}
       </section>
