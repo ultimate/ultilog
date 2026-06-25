@@ -50,7 +50,7 @@ Open [http://localhost:3000](http://localhost:3000) to view the app.
 
 Keep the app organized by responsibility so feature work does not collect in a single component:
 
-- `app/models/` contains one TypeScript data model per file. Re-export shared domain types from `app/models/logbook.ts` when a caller needs the aggregate logbook shape.
+- `app/models/` contains one TypeScript data model per file plus reusable form and database row shapes. Re-export shared domain types from `app/models/logbook.ts` when a caller needs the aggregate logbook shape.
 - `app/sample-data/` contains seed data only. Treat this folder as database-initialization input; the API storage layer seeds empty databases from it.
 - `app/api/` contains backend API routes used by the frontend instead of calling the database directly from client components.
 - `app/lib/` contains server-only infrastructure such as the logbook persistence adapter and database-specific storage classes.

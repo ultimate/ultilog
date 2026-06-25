@@ -10,3 +10,6 @@ export type { Boat, BoatType } from "./boat";
 export type { CrewMember } from "./crew-member";
 export type { LogLine } from "./log-line";
 export type { LogSheet } from "./log-sheet";
+
+export type { BoatForm, CrewForm, LineForm, SheetForm } from "./logbook-forms";
+export type { BoatRow, CrewMemberRow, LogLineRow, LogSheetRow, StoredLogSheet } from "./logbook-rows";

@@ -1,18 +1,13 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { boats as seedBoats, logSheets as seedSheets, type Boat, type BoatType, type LogLine, type LogSheet, type PersistedLogbook } from "../data/logbook";
+import { boats as seedBoats, logSheets as seedSheets, type Boat, type BoatForm, type BoatType, type CrewForm, type LineForm, type LogLine, type LogSheet, type PersistedLogbook, type SheetForm } from "../data/logbook";
 import { ManagerShell, type SplitDirection } from "./managers/ManagerShell";
 import { courseConversionColumns } from "../domain/nautical/course-conversion";
 import { type ModuleTab } from "../templates/app-shell";
 import { ModuleTabs } from "../templates/ModuleTabs";
 import { DashboardPanel } from "../templates/DashboardPanel";
 import { legalRequirements } from "../templates/compliance";
-
-type SheetForm = { title: string; dateRange: string; boatId: string; dayGoal: string; from: string; to: string; morningPosition: string; eveningPosition: string };
-type BoatForm = { name: string; type: BoatType; registration: string; flagState: string; homePort: string; owner: string; dimensions: string; manufacturer: string; mmsi: string; engine: string; safety: string };
-type LineForm = { time: string; position: string; latitude: string; longitude: string; logNm: string; course: string; magneticCourse: string; seaState: string; barometer: string; wind: string; weather: string; sails: string; engine: string; remarks: string };
-type CrewForm = { name: string; nationality: string; role: string; embarkation: string; disembarkation: string };
 
 const defaultSheetForm = (boatId: string): SheetForm => ({ title: "", dateRange: new Date().toISOString().slice(0, 10), boatId, dayGoal: "", from: "", to: "", morningPosition: "", eveningPosition: "" });
 const defaultBoatForm: BoatForm = { name: "", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", manufacturer: "", mmsi: "", engine: "", safety: "" };
