@@ -203,6 +203,17 @@ td { color: #28384b; line-height: 1.45; }
 .course-table span, .course-table strong { border-radius: 0.8rem; padding: 0.8rem; background: #f4f8fb; }
 .course-table span { color: var(--muted); font-size: 0.85rem; }
 
+.card-title-row, .inline-edit-actions { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; }
+.inline-edit-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
+.inline-edit-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; width: 100%; }
+.inline-edit-grid .eyebrow, .inline-edit-grid .wide-field { grid-column: 1 / -1; }
+.inline-edit-grid label { display: grid; gap: 0.25rem; color: var(--primary-dark); font-size: 0.78rem; font-weight: 900; letter-spacing: 0.04em; text-transform: uppercase; }
+.inline-edit-grid input, .inline-edit-grid select, .inline-edit-grid textarea, .inline-line-row input { width: 100%; border: 1px solid var(--border); border-radius: 0.75rem; padding: 0.65rem 0.75rem; color: var(--foreground); background: #f8fbfd; font-size: 0.95rem; font-weight: 600; letter-spacing: normal; text-transform: none; }
+.inline-edit-grid textarea { min-height: 5rem; resize: vertical; }
+.inline-edit-actions button, .inline-line-row button { border: 0; border-radius: 999px; min-height: 2.5rem; padding: 0.65rem 0.9rem; background: var(--primary); color: white; font-weight: 900; }
+.coordinate-inputs { display: grid; grid-template-columns: repeat(2, minmax(5rem, 1fr)); gap: 0.4rem; }
+.inline-line-row td { background: #f8fbfd; }
+
 @media (max-width: 1050px) {
   .hero-panel, .workspace, .detail-grid, .bottom-grid, .map-card, .compliance-card { grid-template-columns: 1fr; display: grid; }
   .sidebar { position: static; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: none; }
@@ -214,9 +225,10 @@ td { color: #28384b; line-height: 1.45; }
   .app-shell { width: min(100% - 1rem, 1440px); }
   .hero-panel, .workspace { border-radius: 1.25rem; }
   .stat-grid, .sidebar, .sheet-list, dl div, .course-table { grid-template-columns: 1fr; }
-  .sheet-title-row, .table-header { display: grid; }
+  .sheet-title-row, .table-header, .inline-edit-card { display: grid; grid-template-columns: 1fr; }
   .table-actions { justify-content: stretch; }
-  .table-actions button { width: 100%; }
+  .table-actions button, .inline-edit-actions button { width: 100%; }
+  .inline-edit-grid { grid-template-columns: 1fr; }
   h1 { font-size: clamp(2rem, 14vw, 3.2rem); }
 }
 
