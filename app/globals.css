@@ -28,7 +28,7 @@ button, input, textarea, select { font: inherit; }
 button { cursor: pointer; }
 
 .app-shell {
-  width: min(1440px, calc(100% - 1.5rem));
+  width: calc(100% - 1rem);
   margin: 0 auto;
   padding: clamp(1rem, 3vw, 2rem) 0 4rem;
 }
