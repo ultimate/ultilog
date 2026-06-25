@@ -1,0 +1,52 @@
+import { describe, expect, it } from "vitest";
+import { sampleLogSheets } from "../../../../resources/sample-data/logbook";
+import type { CrewMemberRow } from "../../../../app/models/logbook";
+import type { QueryableDatabase, QueryResult } from "../../../../app/lib/db/logbook-database";
+import { CrewRepository } from "../../../../app/lib/repositories/crew-repository";
+
+type QueryCall = { sql: string; values?: unknown[] };
+
+class MockDatabase implements QueryableDatabase {
+  calls: QueryCall[] = [];
+
+  constructor(private resultRows: Record<string, unknown[]> = {}) {}
+
+  placeholder(index: number) {
+    return `$${index}`;
+  }
+
+  async query<Row>(sql: string, values?: unknown[]): Promise<QueryResult<Row>> {
+    this.calls.push({ sql, values });
+    const [key] = Object.keys(this.resultRows).filter((candidate) => sql.includes(candidate));
+    return { rows: (key ? this.resultRows[key] : []) as Row[] };
+  }
+}
+
+const sheet = sampleLogSheets[0];
+const crew = sheet.crew[0];
+
+describe("CrewRepository", () => {
+  it("finds all crew rows", async () => {
+    const row: CrewMemberRow = { sheet_id: sheet.id, sort_order: 0, ...crew };
+    const db = new MockDatabase({ crew_members: [row] });
+
+    await expect(new CrewRepository(db).findAll()).resolves.toEqual([row]);
+    expect(db.calls[0].sql).toBe("select * from crew_members order by sheet_id, sort_order");
+  });
+
+  it("deletes all crew rows", async () => {
+    const db = new MockDatabase();
+
+    await new CrewRepository(db).deleteAll();
+    expect(db.calls).toEqual([{ sql: "delete from crew_members", values: undefined }]);
+  });
+
+  it("inserts a crew member", async () => {
+    const db = new MockDatabase();
+
+    await new CrewRepository(db).insert(sheet.id, 0, crew);
+
+    expect(db.calls[0].sql).toContain("insert into crew_members");
+    expect(db.calls[0].values).toEqual([sheet.id, 0, crew.name, crew.nationality, crew.role, crew.embarkation, crew.disembarkation]);
+  });
+});
