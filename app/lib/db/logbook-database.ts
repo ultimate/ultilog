@@ -1,7 +1,7 @@
 import type { PersistedLogbook } from "../../models/logbook";
 import { sampleBoats, sampleLogSheets } from "../../sample-data/logbook";
 import { BoatsRepository } from "../repositories/boats-repository";
-import { CrewMembersRepository } from "../repositories/crew-members-repository";
+import { CrewRepository } from "../repositories/crew-repository";
 import { LogLinesRepository } from "../repositories/log-lines-repository";
 import { LogSheetsRepository } from "../repositories/log-sheets-repository";
 
@@ -17,7 +17,7 @@ const defaultLogbook: PersistedLogbook = { boats: sampleBoats, sheets: sampleLog
 export abstract class LogbookDatabase implements QueryableDatabase {
   protected readonly boats = new BoatsRepository(this);
   protected readonly sheets = new LogSheetsRepository(this);
-  protected readonly crew = new CrewMembersRepository(this);
+  protected readonly crew = new CrewRepository(this);
   protected readonly lines = new LogLinesRepository(this);
 
   abstract placeholder(index: number): string;

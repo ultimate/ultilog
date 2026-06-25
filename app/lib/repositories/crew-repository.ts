@@ -1,7 +1,7 @@
 import type { CrewMember, CrewMemberRow } from "../../models/logbook";
 import type { QueryableDatabase } from "../db/logbook-database";
 
-export class CrewMembersRepository {
+export class CrewRepository {
   constructor(private db: QueryableDatabase) {}
 
   async findAll() {
