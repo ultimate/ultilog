@@ -1,38 +1,15 @@
 "use client";
 
-import { FormEvent, ReactNode, useEffect, useMemo, useState } from "react";
-import { boats as seedBoats, logSheets as seedSheets, type Boat, type BoatType, type LogLine, type LogSheet } from "../data/logbook";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { boats as seedBoats, logSheets as seedSheets, type Boat, type BoatType, type LogLine, type LogSheet, type PersistedLogbook } from "../data/logbook";
+import { ManagerShell, type SplitDirection } from "./managers/ManagerShell";
+import { courseConversionColumns } from "../domain/nautical/course-conversion";
+import { type ModuleTab } from "../templates/app-shell";
+import { ModuleTabs } from "../templates/ModuleTabs";
+import { DashboardPanel } from "../templates/DashboardPanel";
+import { legalRequirements } from "../templates/compliance";
 
 const STORAGE_KEY = "ultilog:v1";
-const legalRequirements = [
-  "Boat registration, flag state, home port, owner, and vessel particulars",
-  "Skipper identity, address, nationality, and certificate details",
-  "Crew identities, nationalities, roles, embarkation and disembarkation ports/dates",
-  "Port departures and arrivals with place and date",
-  "Passage reports: weather, courses, log readings, sail plan, engine operation, and positions",
-  "Watch plan plus important events, observations, accidents, and damage",
-];
-const yachtDataOrder = ["Class / type", "MMSI", "Manufacturer", "Hull length", "Beam", "Draft", "Displacement", "Rig / sail area", "Engine", "Propeller", "Electronics", "Safety"];
-const courseConversionColumns = ["Abl / Dev", "mwK / MC", "Mw / Var", "rwK / TC", "BW / WD", "KdW / CTW", "BS / CD"];
-const moduleTabs = [
-  { id: "dashboard", label: "Dashboard / statistics" },
-  { id: "logbooks", label: "Logbook list" },
-  { id: "details", label: "Logbook details" },
-  { id: "boats", label: "Boat manager" },
-  { id: "crew", label: "Crew manager" },
-  { id: "compliance", label: "Compliance" },
-] as const;
-
-
-type SplitDirection = "vertical" | "horizontal";
-type ManagerShellProps = { title: string; split: SplitDirection; newLabel: string; onNew: () => void; onToggleSplit: () => void; list: ReactNode; form: ReactNode };
-
-function ManagerShell({ title, split, newLabel, onNew, onToggleSplit, list, form }: ManagerShellProps) {
-  return <div className={`manager-split ${split}`}><article className="info-card"><div className="card-title-row"><h3>{title}</h3><div className="table-actions"><button type="button" className="edit-chip" onClick={onNew}>{newLabel}</button><button type="button" className="edit-chip" onClick={onToggleSplit}>{split === "vertical" ? "Horizontal split" : "Vertical split"}</button></div></div>{list}</article><article className="info-card">{form}</article></div>;
-}
-
-type PersistedLogbook = { boats: Boat[]; sheets: LogSheet[] };
-type ModuleTab = typeof moduleTabs[number]["id"];
 type SheetForm = { title: string; dateRange: string; boatId: string; dayGoal: string; from: string; to: string; morningPosition: string; eveningPosition: string };
 type BoatForm = { name: string; type: BoatType; registration: string; flagState: string; homePort: string; owner: string; dimensions: string; manufacturer: string; mmsi: string; engine: string; safety: string };
 type LineForm = { time: string; position: string; latitude: string; longitude: string; logNm: string; course: string; magneticCourse: string; seaState: string; barometer: string; wind: string; weather: string; sails: string; engine: string; remarks: string };
@@ -283,21 +260,9 @@ export function LogbookApp() {
 
   return (
     <main className="app-shell">
-      <nav className="module-tabs" aria-label="Business logic modules">{moduleTabs.map((tab) => <button type="button" key={tab.id} className={activeModule === tab.id ? "active" : ""} onClick={() => setActiveModule(tab.id)}>{tab.label}</button>)}</nav>
+      <ModuleTabs activeModule={activeModule} onSelectModule={setActiveModule} />
 
-      {activeModule === "dashboard" && <section className="hero-panel">
-        <div>
-          <p className="eyebrow">Personal skipper logbook</p>
-          <h1>Track ICC / Hochseeausweis miles across boats, crews, and passages.</h1>
-          <p className="hero-text">Local-first draft: boats, sheets, and log lines now save in this browser&apos;s local storage until we add a database.</p>
-        </div>
-        <div className="stat-grid" aria-label="Personal log statistics">
-          <article><span>Total miles</span><strong>{stats.totalNm} nm</strong></article>
-          <article><span>Sail</span><strong>{stats.sailNm} nm</strong></article>
-          <article><span>Motor</span><strong>{stats.motorNm} nm</strong></article>
-          <article><span>Boats / sheets</span><strong>{stats.boats} / {stats.sheets}</strong></article>
-        </div>
-      </section>}
+      {activeModule === "dashboard" && <DashboardPanel stats={stats} />}
 
       <section className="workspace module-workspace">
         {activeModule === "logbooks" && <aside className="sidebar module-panel" aria-label="Log sheets">
