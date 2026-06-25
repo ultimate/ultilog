@@ -3,30 +3,9 @@ import initSqlJs, { type Database as SqlJsDatabase } from "sql.js";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { sampleBoats, sampleLogSheets } from "../sample-data/logbook";
-import type { Boat, LogLine, LogSheet, PersistedLogbook } from "../models/logbook";
-import type { CrewMember } from "../models/crew-member";
+import type { Boat, BoatRow, CrewMemberRow, LogLineRow, LogSheet, LogSheetRow, PersistedLogbook, StoredLogSheet } from "../models/logbook";
 
 const defaultLogbook: PersistedLogbook = { boats: sampleBoats, sheets: sampleLogSheets };
-
-type StoredLogSheet = Omit<LogSheet, "crew" | "lines">;
-
-type BoatRow = Omit<Boat, "flagState" | "homePort" | "yachtData"> & { flag_state: string; home_port: string; yacht_data: unknown };
-type LogSheetRow = {
-  id: string;
-  title: string;
-  date_range: string;
-  status: LogSheet["status"];
-  boat_id: string;
-  skipper: unknown;
-  route: unknown;
-  weather_briefing: unknown;
-  day_summary: unknown;
-  remarks: unknown;
-  watch_plan: unknown;
-  technical_checks: unknown;
-};
-type CrewMemberRow = CrewMember & { sheet_id: string; sort_order: number };
-type LogLineRow = Omit<LogLine, "logNm" | "magneticCourse" | "seaState"> & { sheet_id: string; sort_order: number; log_nm: number; magnetic_course: string; sea_state: string };
 
 abstract class LogbookDatabase {
   async readLogbook(): Promise<PersistedLogbook> {
