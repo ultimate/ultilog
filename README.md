@@ -53,7 +53,7 @@ Keep the app organized by responsibility so feature work does not collect in a s
 - `app/models/` contains one TypeScript data model per file plus reusable form and database row shapes. Re-export shared domain types from `app/models/logbook.ts` when a caller needs the aggregate logbook shape.
 - `app/sample-data/` contains seed data only. Treat this folder as database-initialization input; the API storage layer seeds empty databases from it.
 - `app/api/` contains backend API routes used by the frontend instead of calling the database directly from client components.
-- `app/lib/` contains server-only infrastructure such as the logbook persistence adapter and database-specific storage classes.
+- `app/lib/db/` contains server-only database wrappers and the shared `schema.sql`; `app/lib/repositories/` contains table repositories used by the persistence adapter.
 - `app/domain/nautical/` is reserved for nautical business rules, for example course conversion, deviation/variation handling, or mileage-calculation helpers. Keep these files framework-independent and covered by unit tests when rules become non-trivial.
 - `app/templates/` contains presentation templates and static UI copy that would otherwise make stateful TypeScript components hard to scan. Prefer moving large JSX sections or table/header definitions here.
 - `app/components/` contains stateful application components and reusable UI components. Shared manager layout components live under `app/components/managers/` so boat, crew, and future managers can reuse the same shell.
