@@ -35,7 +35,7 @@ export class LogSheetsRepository {
     }));
     const sheets: LogSheet[] = sheetRows.map((sheet) => ({
       ...mapStoredSheet(sheet),
-      crew: (crewBySheet.get(sheet.id) ?? []).map(({ sheet_id, sort_order, ...crew }) => crew),
+      crew: (crewBySheet.get(sheet.id) ?? []).map(({ sheet_id, crew_member_id, sort_order, ...crew }) => crew),
       lines: (linesBySheet.get(sheet.id) ?? []).map(({ sheet_id, sort_order, log_nm, magnetic_course, sea_state, ...line }) => ({
         ...line,
         logNm: log_nm,

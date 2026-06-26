@@ -26,14 +26,19 @@ create table if not exists log_sheets (
 );
 
 create table if not exists crew_members (
-  sheet_id text not null references log_sheets(id) on delete cascade,
-  sort_order integer not null,
+  id text primary key,
   name text not null,
   nationality text not null,
-  role text not null,
+  role text not null
+);
+
+create table if not exists sheet_crew_members (
+  sheet_id text not null references log_sheets(id) on delete cascade,
+  crew_member_id text not null references crew_members(id) on delete cascade,
+  sort_order integer not null,
   embarkation text not null,
   disembarkation text not null,
-  primary key (sheet_id, sort_order)
+  primary key (sheet_id, crew_member_id, sort_order)
 );
 
 create table if not exists log_lines (

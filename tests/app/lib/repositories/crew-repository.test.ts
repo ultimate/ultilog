@@ -27,18 +27,22 @@ const crew = sheet.crew[0];
 
 describe("CrewRepository", () => {
   it("finds all crew rows", async () => {
-    const row: CrewMemberRow = { sheet_id: sheet.id, sort_order: 0, ...crew };
+    const row: CrewMemberRow = { sheet_id: sheet.id, crew_member_id: "luca-frei-swiss", sort_order: 0, ...crew };
     const db = new MockDatabase({ crew_members: [row] });
 
     await expect(new CrewRepository(db).findAll()).resolves.toEqual([row]);
-    expect(db.calls[0].sql).toBe("select * from crew_members order by sheet_id, sort_order");
+    expect(db.calls[0].sql).toContain("from sheet_crew_members");
+    expect(db.calls[0].sql).toContain("join crew_members");
   });
 
   it("deletes all crew rows", async () => {
     const db = new MockDatabase();
 
     await new CrewRepository(db).deleteAll();
-    expect(db.calls).toEqual([{ sql: "delete from crew_members", values: undefined }]);
+    expect(db.calls).toEqual([
+      { sql: "delete from sheet_crew_members", values: undefined },
+      { sql: "delete from crew_members", values: undefined },
+    ]);
   });
 
   it("inserts a crew member", async () => {
@@ -47,6 +51,8 @@ describe("CrewRepository", () => {
     await new CrewRepository(db).insert(sheet.id, 0, crew);
 
     expect(db.calls[0].sql).toContain("insert into crew_members");
-    expect(db.calls[0].values).toEqual([sheet.id, 0, crew.name, crew.nationality, crew.role, crew.embarkation, crew.disembarkation]);
+    expect(db.calls[0].values).toEqual(["luca-frei-swiss", crew.name, crew.nationality, crew.role]);
+    expect(db.calls[1].sql).toContain("insert into sheet_crew_members");
+    expect(db.calls[1].values).toEqual([sheet.id, "luca-frei-swiss", 0, crew.embarkation, crew.disembarkation]);
   });
 });
