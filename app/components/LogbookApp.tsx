@@ -211,7 +211,7 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
     const nextLogbook = { ...currentLogbook, sheets: editingSheetId ? currentLogbook.sheets.map((candidate) => candidate.id === editingSheetId ? sheet : candidate) : [sheet, ...currentLogbook.sheets] };
     if (!await saveLogbookNow(nextLogbook)) return;
     setActiveSheetId(id);
-    setEditingSheetId(id);
+    setEditingSheetId(null);
     setSheetForm(sheetToForm(sheet));
     setShowNewSheet(false);
   }
@@ -344,7 +344,7 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
         </aside>}
 
         {activeModule === "details" && <section className="sheet-detail" aria-labelledby="sheet-title">
-          {(activeModule === "details") ? (
+          {(showNewSheet || editingSheetId) ? (
             <form className="sheet-title-row inline-edit-card" onSubmit={saveSheet}>
               <div className="inline-edit-grid">
                 <p className="eyebrow">{editingSheetId ? "Edit sheet" : "New sheet"}</p>
