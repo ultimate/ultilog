@@ -8,8 +8,8 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "test:e2e": "vitest run tests/e2e --passWithNoTests"
+    "test": "vitest run tests/app",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
@@ -21,6 +21,7 @@
     "sql.js": "^1.14.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "26.0.0",
     "@types/pg": "^8.20.0",
