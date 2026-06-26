@@ -4,7 +4,7 @@ import type { QueryableDatabase } from "../db/logbook-database";
 export class CrewRepository {
   constructor(private db: QueryableDatabase) {}
 
-  async findAll() {
+  async findAll(ownerId = "legacy-user") {
     return (await this.db.query<CrewMemberRow>(`
       select
         sheet_crew_members.sheet_id,
@@ -16,21 +16,24 @@ export class CrewRepository {
         sheet_crew_members.embarkation,
         sheet_crew_members.disembarkation
       from sheet_crew_members
+      join log_sheets on log_sheets.id = sheet_crew_members.sheet_id
       join crew_members on crew_members.id = sheet_crew_members.crew_member_id
+      where log_sheets.owner_id = ${this.db.placeholder(1)}
       order by sheet_crew_members.sheet_id, sheet_crew_members.sort_order
-    `)).rows;
+    `, [ownerId])).rows;
   }
 
-  async deleteAll() {
-    await this.db.query("delete from sheet_crew_members");
-    await this.db.query("delete from crew_members");
+  async deleteAll(ownerId = "legacy-user") {
+    await this.db.query(`delete from sheet_crew_members where sheet_id in (select id from log_sheets where owner_id = ${this.db.placeholder(1)})`, [ownerId]);
+    await this.db.query(`delete from crew_members where owner_id = ${this.db.placeholder(1)}`, [ownerId]);
   }
 
   async insert(sheetId: string, sortOrder: number, crew: CrewMember) {
-    const crewMemberId = crewMemberReference(crew);
+    const ownerId = (this.db as { ownerId?: string }).ownerId ?? "legacy-user";
+    const crewMemberId = crewMemberReference(crew, ownerId);
     await this.db.query(
-      `insert into crew_members (id, name, nationality, role) values (${this.values(4)}) on conflict(id) do update set name = excluded.name, nationality = excluded.nationality, role = excluded.role`,
-      [crewMemberId, crew.name, crew.nationality, crew.role],
+      `insert into crew_members (id, name, nationality, role, owner_id) values (${this.values(5)}) on conflict(id) do update set name = excluded.name, nationality = excluded.nationality, role = excluded.role`,
+      [crewMemberId, crew.name, crew.nationality, crew.role, ownerId],
     );
     await this.db.query(
       `insert into sheet_crew_members (sheet_id, crew_member_id, sort_order, embarkation, disembarkation) values (${this.values(5)})`,
@@ -43,8 +46,8 @@ export class CrewRepository {
   }
 }
 
-function crewMemberReference(crew: Pick<CrewMember, "name" | "nationality">) {
-  return `${slug(crew.name)}-${slug(crew.nationality)}`;
+function crewMemberReference(crew: Pick<CrewMember, "name" | "nationality">, ownerId: string) {
+  return `${slug(ownerId)}-${slug(crew.name)}-${slug(crew.nationality)}`;
 }
 
 function slug(value: string) {
