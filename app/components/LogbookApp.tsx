@@ -1,6 +1,8 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { boats as seedBoats, logSheets as seedSheets, type Boat, type BoatForm, type BoatType, type CrewForm, type LineForm, type LogLine, type LogSheet, type PersistedLogbook, type SheetForm } from "../data/logbook";
 import { ManagerShell, type SplitDirection } from "./managers/ManagerShell";
 import { courseConversionColumns } from "../domain/nautical/course-conversion";
@@ -32,7 +34,8 @@ function persistLogbook(logbook: PersistedLogbook, options?: { signal?: AbortSig
   });
 }
 
-export function LogbookApp() {
+export function LogbookApp({ userEmail }: { userEmail?: string }) {
+  const router = useRouter();
   const [logbook, setLogbook] = useState<PersistedLogbook>(defaultLogbook);
   const [activeSheetId, setActiveSheetId] = useState(defaultLogbook.sheets[0].id);
   const [isBackendReady, setIsBackendReady] = useState(false);
@@ -53,11 +56,27 @@ export function LogbookApp() {
   const [selectedBoatId, setSelectedBoatId] = useState(defaultLogbook.boats[0].id);
   const [selectedCrewIndex, setSelectedCrewIndex] = useState(0);
   const [lastCrewIndex, setLastCrewIndex] = useState(0);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const logbookRef = useRef(logbook);
 
   useEffect(() => {
     logbookRef.current = logbook;
   }, [logbook]);
+
+  async function logout() {
+    setSaveError(null);
+    setIsLoggingOut(true);
+    const response = await persistLogbook(logbookRef.current).catch(() => undefined);
+    if (!response?.ok) {
+      setSaveError("Unable to save the latest changes. Please try again before logging out.");
+      setIsLoggingOut(false);
+      return;
+    }
+    await signOut({ redirect: false });
+    router.push("/login");
+    router.refresh();
+  }
 
   useEffect(() => {
     let isMounted = true;
@@ -286,6 +305,11 @@ export function LogbookApp() {
 
   return (
     <main className="app-shell">
+      <div className="fixed right-4 top-4 z-50 text-right">
+        {userEmail && <span className="mr-3 rounded-full bg-slate-950/70 px-3 py-2 text-sm text-white shadow">{userEmail}</span>}
+        <button className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-950 shadow disabled:opacity-60" disabled={isLoggingOut} onClick={logout} type="button">{isLoggingOut ? "Saving…" : "Logout"}</button>
+        {saveError && <p className="mt-2 max-w-xs rounded-xl bg-red-600 px-3 py-2 text-left text-xs font-semibold text-white shadow">{saveError}</p>}
+      </div>
       <ModuleTabs activeModule={activeModule} onSelectModule={setActiveModule} />
 
       {activeModule === "dashboard" && <DashboardPanel stats={stats} />}
