@@ -1,19 +1,13 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { boats as seedBoats, logSheets as seedSheets, type Boat, type BoatType, type LogLine, type LogSheet, type PersistedLogbook } from "../data/logbook";
+import { boats as seedBoats, logSheets as seedSheets, type Boat, type BoatForm, type BoatType, type CrewForm, type LineForm, type LogLine, type LogSheet, type PersistedLogbook, type SheetForm } from "../data/logbook";
 import { ManagerShell, type SplitDirection } from "./managers/ManagerShell";
 import { courseConversionColumns } from "../domain/nautical/course-conversion";
 import { type ModuleTab } from "../templates/app-shell";
 import { ModuleTabs } from "../templates/ModuleTabs";
 import { DashboardPanel } from "../templates/DashboardPanel";
 import { legalRequirements } from "../templates/compliance";
-
-const STORAGE_KEY = "ultilog:v1";
-type SheetForm = { title: string; dateRange: string; boatId: string; dayGoal: string; from: string; to: string; morningPosition: string; eveningPosition: string };
-type BoatForm = { name: string; type: BoatType; registration: string; flagState: string; homePort: string; owner: string; dimensions: string; manufacturer: string; mmsi: string; engine: string; safety: string };
-type LineForm = { time: string; position: string; latitude: string; longitude: string; logNm: string; course: string; magneticCourse: string; seaState: string; barometer: string; wind: string; weather: string; sails: string; engine: string; remarks: string };
-type CrewForm = { name: string; nationality: string; role: string; embarkation: string; disembarkation: string };
 
 const defaultSheetForm = (boatId: string): SheetForm => ({ title: "", dateRange: new Date().toISOString().slice(0, 10), boatId, dayGoal: "", from: "", to: "", morningPosition: "", eveningPosition: "" });
 const defaultBoatForm: BoatForm = { name: "", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", manufacturer: "", mmsi: "", engine: "", safety: "" };
@@ -25,26 +19,13 @@ const sheetToForm = (sheet: LogSheet): SheetForm => ({ title: sheet.title, dateR
 const lineToForm = (line: LogLine): LineForm => ({ time: line.time, position: line.position, latitude: line.latitude.toString(), longitude: line.longitude.toString(), logNm: line.logNm.toString(), course: line.course, magneticCourse: line.magneticCourse, seaState: line.seaState, barometer: line.barometer, wind: line.wind, weather: line.weather, sails: line.sails, engine: line.engine, remarks: line.remarks });
 const crewToForm = (crew: CrewForm): CrewForm => ({ name: crew.name, nationality: crew.nationality, role: crew.role, embarkation: crew.embarkation, disembarkation: crew.disembarkation });
 
-function readStoredLogbook(): PersistedLogbook {
-  if (typeof window === "undefined") return defaultLogbook;
-  const stored = window.localStorage.getItem(STORAGE_KEY);
-  if (!stored) return defaultLogbook;
-  try {
-    const parsed = JSON.parse(stored) as PersistedLogbook;
-    return parsed.boats?.length && parsed.sheets?.length ? parsed : defaultLogbook;
-  } catch {
-    window.localStorage.removeItem(STORAGE_KEY);
-    return defaultLogbook;
-  }
-}
-
 const slug = (value: string) => value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || crypto.randomUUID();
 const numberOrZero = (value: string) => Number.parseFloat(value) || 0;
 
 export function LogbookApp() {
   const [logbook, setLogbook] = useState<PersistedLogbook>(defaultLogbook);
   const [activeSheetId, setActiveSheetId] = useState(defaultLogbook.sheets[0].id);
-  const [isStorageReady, setIsStorageReady] = useState(false);
+  const [isBackendReady, setIsBackendReady] = useState(false);
   const [activeModule, setActiveModule] = useState<ModuleTab>("dashboard");
   const [boatSplit, setBoatSplit] = useState<SplitDirection>("vertical");
   const [crewSplit, setCrewSplit] = useState<SplitDirection>("vertical");
@@ -64,19 +45,38 @@ export function LogbookApp() {
   const [lastCrewIndex, setLastCrewIndex] = useState(0);
 
   useEffect(() => {
-    queueMicrotask(() => {
-      const storedLogbook = readStoredLogbook();
+    let isMounted = true;
+    async function loadLogbook() {
+      const response = await fetch("/api/logbook");
+      if (!response.ok) throw new Error("Unable to load logbook");
+      const storedLogbook = await response.json() as PersistedLogbook;
+      if (!isMounted) return;
       setLogbook(storedLogbook);
-      setActiveSheetId(storedLogbook.sheets[0].id);
+      setActiveSheetId(storedLogbook.sheets[0]?.id ?? defaultLogbook.sheets[0].id);
       setSheetForm((current) => ({ ...current, boatId: storedLogbook.boats[0]?.id ?? seedBoats[0].id }));
-      setIsStorageReady(true);
-    });
+      setSelectedBoatId(storedLogbook.boats[0]?.id ?? seedBoats[0].id);
+      setIsBackendReady(true);
+    }
+    loadLogbook().catch(() => setIsBackendReady(true));
+    return () => { isMounted = false; };
   }, []);
 
   useEffect(() => {
-    if (!isStorageReady) return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(logbook));
-  }, [isStorageReady, logbook]);
+    if (!isBackendReady) return;
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => {
+      fetch("/api/logbook", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(logbook),
+        signal: controller.signal,
+      }).catch(() => undefined);
+    }, 300);
+    return () => {
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [isBackendReady, logbook]);
 
 
   const activeSheet = logbook.sheets.find((sheet) => sheet.id === activeSheetId) ?? logbook.sheets[0];
