@@ -67,12 +67,7 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
   async function logout() {
     setSaveError(null);
     setIsLoggingOut(true);
-    const response = await persistLogbook(logbookRef.current).catch(() => undefined);
-    if (!response?.ok) {
-      setSaveError("Unable to save the latest changes. Please try again before logging out.");
-      setIsLoggingOut(false);
-      return;
-    }
+    persistLogbook(logbookRef.current, { keepalive: true }).catch(() => undefined);
     await signOut({ redirect: false });
     router.push("/login");
     router.refresh();
