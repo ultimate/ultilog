@@ -49,6 +49,6 @@ describe("LogLinesRepository", () => {
     await new LogLinesRepository(db).insert(sheet.id, 0, line);
 
     expect(db.calls[0].sql).toContain("insert into log_lines");
-    expect(db.calls[0].values).toEqual([sheet.id, 0, line.time, line.position, line.latitude, line.longitude, line.logNm, line.course, line.magneticCourse, line.seaState, line.barometer, line.wind, line.weather, line.sails, line.engine, line.remarks]);
+    expect(db.calls[0].values).toEqual([`legacy-user:${sheet.id}`, 0, line.time, line.position, line.latitude, line.longitude, line.logNm, line.course, line.magneticCourse, line.seaState, line.barometer, line.wind, line.weather, line.sails, line.engine, line.remarks]);
   });
 });

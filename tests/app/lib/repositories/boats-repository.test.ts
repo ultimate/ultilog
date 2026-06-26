@@ -48,6 +48,6 @@ describe("BoatsRepository", () => {
 
     expect(db.calls[0].sql).toContain("insert into boats");
     expect(db.calls[0].sql).toContain("$1, $2, $3, $4, $5, $6, $7, $8, $9");
-    expect(db.calls[0].values).toEqual([boat.id, boat.name, boat.type, boat.registration, boat.flagState, boat.homePort, boat.owner, boat.dimensions, JSON.stringify(boat.yachtData), "legacy-user"]);
+    expect(db.calls[0].values).toEqual([`legacy-user:${boat.id}`, boat.name, boat.type, boat.registration, boat.flagState, boat.homePort, boat.owner, boat.dimensions, JSON.stringify(boat.yachtData), "legacy-user"]);
   });
 });

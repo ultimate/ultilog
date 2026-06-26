@@ -55,6 +55,6 @@ describe("CrewRepository", () => {
     expect(db.calls[0].sql).toContain("insert into crew_members");
     expect(db.calls[0].values).toEqual(["legacy-user-luca-frei-swiss", crew.name, crew.nationality, crew.role, "legacy-user"]);
     expect(db.calls[1].sql).toContain("insert into sheet_crew_members");
-    expect(db.calls[1].values).toEqual([sheet.id, "legacy-user-luca-frei-swiss", 0, crew.embarkation, crew.disembarkation]);
+    expect(db.calls[1].values).toEqual([`legacy-user:${sheet.id}`, "legacy-user-luca-frei-swiss", 0, crew.embarkation, crew.disembarkation]);
   });
 });

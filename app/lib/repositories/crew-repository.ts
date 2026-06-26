@@ -1,5 +1,6 @@
 import type { CrewMember, CrewMemberRow } from "../../models/logbook";
 import type { QueryableDatabase } from "../db/logbook-database";
+import { scopedId } from "./boats-repository";
 
 export class CrewRepository {
   constructor(private db: QueryableDatabase) {}
@@ -37,7 +38,7 @@ export class CrewRepository {
     );
     await this.db.query(
       `insert into sheet_crew_members (sheet_id, crew_member_id, sort_order, embarkation, disembarkation) values (${this.values(5)})`,
-      [sheetId, crewMemberId, sortOrder, crew.embarkation, crew.disembarkation],
+      [scopedId(ownerId, sheetId), crewMemberId, sortOrder, crew.embarkation, crew.disembarkation],
     );
   }
 
