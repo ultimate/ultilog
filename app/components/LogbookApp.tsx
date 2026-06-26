@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { boats as seedBoats, logSheets as seedSheets, type Boat, type BoatForm, type BoatType, type CrewForm, type LineForm, type LogLine, type LogSheet, type PersistedLogbook, type SheetForm } from "../data/logbook";
 import { ManagerShell, type SplitDirection } from "./managers/ManagerShell";
 import { courseConversionColumns } from "../domain/nautical/course-conversion";
@@ -21,6 +21,16 @@ const crewToForm = (crew: CrewForm): CrewForm => ({ name: crew.name, nationality
 
 const slug = (value: string) => value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || crypto.randomUUID();
 const numberOrZero = (value: string) => Number.parseFloat(value) || 0;
+
+function persistLogbook(logbook: PersistedLogbook, options?: { signal?: AbortSignal; keepalive?: boolean }) {
+  return fetch("/api/logbook", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(logbook),
+    signal: options?.signal,
+    keepalive: options?.keepalive,
+  });
+}
 
 export function LogbookApp() {
   const [logbook, setLogbook] = useState<PersistedLogbook>(defaultLogbook);
@@ -43,6 +53,11 @@ export function LogbookApp() {
   const [selectedBoatId, setSelectedBoatId] = useState(defaultLogbook.boats[0].id);
   const [selectedCrewIndex, setSelectedCrewIndex] = useState(0);
   const [lastCrewIndex, setLastCrewIndex] = useState(0);
+  const logbookRef = useRef(logbook);
+
+  useEffect(() => {
+    logbookRef.current = logbook;
+  }, [logbook]);
 
   useEffect(() => {
     let isMounted = true;
@@ -65,18 +80,29 @@ export function LogbookApp() {
     if (!isBackendReady) return;
     const controller = new AbortController();
     const timeout = window.setTimeout(() => {
-      fetch("/api/logbook", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(logbook),
-        signal: controller.signal,
-      }).catch(() => undefined);
+      persistLogbook(logbook, { signal: controller.signal }).catch(() => undefined);
     }, 300);
     return () => {
       window.clearTimeout(timeout);
       controller.abort();
     };
   }, [isBackendReady, logbook]);
+
+  useEffect(() => {
+    if (!isBackendReady) return;
+    const saveBeforeLeaving = () => {
+      persistLogbook(logbookRef.current, { keepalive: true }).catch(() => undefined);
+    };
+    const saveWhenHidden = () => {
+      if (document.visibilityState === "hidden") saveBeforeLeaving();
+    };
+    window.addEventListener("pagehide", saveBeforeLeaving);
+    document.addEventListener("visibilitychange", saveWhenHidden);
+    return () => {
+      window.removeEventListener("pagehide", saveBeforeLeaving);
+      document.removeEventListener("visibilitychange", saveWhenHidden);
+    };
+  }, [isBackendReady]);
 
 
   const activeSheet = logbook.sheets.find((sheet) => sheet.id === activeSheetId) ?? logbook.sheets[0];
