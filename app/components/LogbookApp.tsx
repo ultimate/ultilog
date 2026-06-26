@@ -57,6 +57,7 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
   const [selectedCrewIndex, setSelectedCrewIndex] = useState(0);
   const [lastCrewIndex, setLastCrewIndex] = useState(0);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
   const [saveError, setSaveError] = useState<string | null>(null);
   const logbookRef = useRef(logbook);
 
@@ -320,13 +321,14 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
   }
 
   return (
-    <main className="app-shell">
-      <div className="fixed right-4 top-4 z-50 text-right">
-        {userEmail && <span className="mr-3 rounded-full bg-slate-950/70 px-3 py-2 text-sm text-white shadow">{userEmail}</span>}
-        <button className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-950 shadow disabled:opacity-60" disabled={isLoggingOut} onClick={logout} type="button">{isLoggingOut ? "Saving…" : "Logout"}</button>
-        {saveError && <p className="mt-2 max-w-xs rounded-xl bg-red-600 px-3 py-2 text-left text-xs font-semibold text-white shadow">{saveError}</p>}
+    <main className="app-shell" data-theme={theme}>
+      <ModuleTabs activeModule={activeModule} onSelectModule={setActiveModule} theme={theme} onToggleTheme={() => setTheme((current) => current === "dark" ? "light" : "dark")} userEmail={userEmail} onLogout={logout} isLoggingOut={isLoggingOut} />
+      <section className="app-content">
+      <div className="top-actions">
+        {saveError && <p className="save-error">{saveError}</p>}
+        <button className="secondary-action" type="button">Export</button>
+        <button className="primary-action" type="button" onClick={() => { setEditingSheetId(null); setSheetForm(defaultSheetForm(activeBoat.id)); setShowNewSheet(true); setActiveModule("details"); }}>+ New log entry</button>
       </div>
-      <ModuleTabs activeModule={activeModule} onSelectModule={setActiveModule} />
 
       {activeModule === "dashboard" && <DashboardPanel stats={stats} />}
 
@@ -337,7 +339,7 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
             <button type="button" onClick={() => { setEditingSheetId(null); setSheetForm(defaultSheetForm(activeBoat.id)); setShowNewSheet(true); setActiveModule("details"); }}>+ New sheet</button>
           </div>
 
-          <div className="sheet-list" aria-label="Available log sheets">{logbook.sheets.map((sheet) => {
+          <div className="logbook-toolbar"><input aria-label="Search logbooks" placeholder="Search logbooks…" readOnly /><select aria-label="Vessel filter" defaultValue="All vessels"><option>All vessels</option></select><select aria-label="Time filter" defaultValue="All time"><option>All time</option></select></div><div className="sheet-list" aria-label="Available log sheets">{logbook.sheets.map((sheet) => {
             const boat = logbook.boats.find((candidate) => candidate.id === sheet.boatId);
             return <div className={`sheet-button-row ${sheet.id === activeSheet.id ? "active" : ""}`} key={sheet.id}><button className="sheet-button sheet-card" onClick={() => { setActiveSheetId(sheet.id); setSheetForm(sheetToForm(sheet)); setActiveModule("details"); }} type="button"><span className="picture-thumb" aria-hidden="true" /><span>{sheet.title}</span><small>{sheet.dateRange} · {boat?.name}</small></button></div>;
           })}</div>
@@ -382,7 +384,8 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
 
         {activeModule === "crew" && <section className="sheet-detail module-panel"><ManagerShell title="Crew" split={crewSplit} newLabel="New crew" onNew={() => { setLastCrewIndex(selectedCrewIndex >= 0 ? selectedCrewIndex : lastCrewIndex); setSelectedCrewIndex(-1); setCrewForm(defaultCrewForm); }} onToggleSplit={() => setCrewSplit((split) => split === "vertical" ? "horizontal" : "vertical")} list={<ul className="manager-list">{activeSheet.crew.map((person, index) => <li key={person.name}><button type="button" className={index === selectedCrewIndex ? "active" : ""} onClick={() => selectCrew(index)}><span className="picture-thumb" aria-hidden="true" /><span><strong>{person.name}</strong><small>{person.role}</small></span></button></li>)}</ul>} form={<form className="inline-edit-grid" onSubmit={async (event) => { event.preventDefault(); await saveCrew(); }}><p className="eyebrow">{selectedCrewIndex < 0 ? "New crew" : "Crew form"}</p><label>Name<input value={crewForm.name} onChange={(e) => setCrewForm({ ...crewForm, name: e.target.value })} /></label><label>Nationality<input value={crewForm.nationality} onChange={(e) => setCrewForm({ ...crewForm, nationality: e.target.value })} /></label><label>Role<input value={crewForm.role} onChange={(e) => setCrewForm({ ...crewForm, role: e.target.value })} /></label><label>Embarkation<input value={crewForm.embarkation} onChange={(e) => setCrewForm({ ...crewForm, embarkation: e.target.value })} /></label><label>Disembarkation<input value={crewForm.disembarkation} onChange={(e) => setCrewForm({ ...crewForm, disembarkation: e.target.value })} /></label><div className="inline-edit-actions"><button type="submit">Save crew</button><button type="button" className="ghost-button" onClick={cancelCrewEdit}>Cancel</button></div></form>} /></section>}
 
-        {activeModule === "compliance" && <section className="sheet-detail module-panel"><article className="compliance-card"><div><p className="eyebrow">Swiss compliance checklist</p><h3>Built from Hochseeausweis logbook requirements</h3></div><ul>{legalRequirements.map((requirement) => <li key={requirement}>{requirement}</li>)}</ul></article></section>}
+        {activeModule === "compliance" && <section className="sheet-detail module-panel"><div className="page-heading"><div><h1>Compliance</h1><p>ICC / Hochseeausweis requirements</p></div><button className="secondary-action" type="button">Download report</button></div><article className="compliance-board"><section className="compliance-summary"><h3>Overall progress</h3><div className="progress-layout"><div className="progress-ring"><strong>72%</strong><span>Complete</span></div><dl><div><dt>You have</dt><dd>2,173 nm</dd></div><div><dt>Required</dt><dd>3,000 nm</dd></div><div><dt>Remaining</dt><dd>827 nm</dd></div></dl></div></section><section className="requirement-panel"><h3>Requirement checklist</h3>{legalRequirements.map((requirement, index) => <div className="requirement-row" key={requirement}><span>✓</span><strong>{requirement}</strong><progress value={[2173,1650,1020,1250,1120,860][index] ?? 860} max={[3000,1500,1000,1000,1400,500][index] ?? 500} /></div>)}</section></article><div className="mileage-breakdown"><article><span>△</span><strong>Sail miles</strong><b>1,650 nm</b><small>70%</small></article><article><span>✚</span><strong>Motor miles</strong><b>523 nm</b><small>24%</small></article><article><span>⛵</span><strong>Ocean passages</strong><b>1,120 nm</b><small>30%</small></article><article><span>♙</span><strong>As skipper</strong><b>860 nm</b><small>40%</small></article></div></section>}
+      </section>
       </section>
     </main>
   );
