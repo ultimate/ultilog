@@ -17,11 +17,12 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
 
   await page.getByRole("button", { name: "Crew manager" }).click();
   await page.getByRole("button", { name: "New crew" }).click();
-  await page.locator("form").filter({ hasText: "New crew" }).getByLabel("Name").fill(crewName);
-  await page.getByLabel("Nationality").fill("Swiss");
-  await page.getByLabel("Role").fill("Navigator");
-  await page.getByLabel("Embarkation").fill("Zurich");
-  await page.getByLabel("Disembarkation").fill("Geneva");
+  const crewForm = page.locator("form").filter({ hasText: "New crew" });
+  await crewForm.getByLabel("Name").fill(crewName);
+  await crewForm.getByLabel("Nationality").fill("Swiss");
+  await crewForm.getByLabel("Role").fill("Navigator");
+  await crewForm.getByLabel("Embarkation", { exact: true }).fill("Zurich");
+  await crewForm.getByLabel("Disembarkation").fill("Geneva");
   await page.getByRole("button", { name: "Save crew" }).click();
   await expect(page.getByText(crewName)).toBeVisible();
 
