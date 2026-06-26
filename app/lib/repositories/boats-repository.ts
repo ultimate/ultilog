@@ -12,8 +12,7 @@ export class BoatsRepository {
     await this.db.query(`delete from boats where owner_id = ${this.db.placeholder(1)}`, [ownerId]);
   }
 
-  async insert(boat: Boat) {
-    const ownerId = (this.db as { ownerId?: string }).ownerId ?? "legacy-user";
+  async insert(boat: Boat, ownerId = "legacy-user") {
     await this.db.query(
       `insert into boats (id, name, type, registration, flag_state, home_port, owner, dimensions, yacht_data, owner_id) values (${this.values(10)})`,
       [scopedId(ownerId, boat.id), boat.name, boat.type, boat.registration, boat.flagState, boat.homePort, boat.owner, boat.dimensions, JSON.stringify(boat.yachtData), ownerId],

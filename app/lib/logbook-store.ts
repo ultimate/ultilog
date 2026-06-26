@@ -15,7 +15,9 @@ export function getDatabase() {
 }
 
 export async function readLogbook(userId = "legacy-user"): Promise<PersistedLogbook> {
-  return getDatabase().forUser(userId).readLogbook();
+  const operation = writeQueue.then(() => getDatabase().forUser(userId).readLogbook());
+  writeQueue = operation.then(() => undefined, () => undefined);
+  return operation;
 }
 
 export async function writeLogbook(logbook: PersistedLogbook, userId = "legacy-user") {
