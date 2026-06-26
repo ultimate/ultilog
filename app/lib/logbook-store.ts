@@ -5,18 +5,21 @@ import { PostgresLogbookDatabase } from "./db/postgres-logbook-database";
 import { SqliteLogbookDatabase } from "./db/sqlite-logbook-database";
 
 let database: LogbookDatabase | undefined;
+let writeQueue: Promise<unknown> = Promise.resolve();
 
-function getDatabase() {
+export function getDatabase() {
   if (database) return database;
   const postgresUrl = process.env.POSTGRES_URL ?? process.env.DATABASE_URL;
   database = postgresUrl ? new PostgresLogbookDatabase(postgresUrl) : new SqliteLogbookDatabase(process.env.LOCAL_DATABASE_PATH ?? join(process.cwd(), ".data", "ultilog.sqlite"));
   return database;
 }
 
-export async function readLogbook(): Promise<PersistedLogbook> {
-  return getDatabase().readLogbook();
+export async function readLogbook(userId = "legacy-user"): Promise<PersistedLogbook> {
+  return getDatabase().forUser(userId).readLogbook();
 }
 
-export async function writeLogbook(logbook: PersistedLogbook) {
-  return getDatabase().writeLogbook(logbook);
+export async function writeLogbook(logbook: PersistedLogbook, userId = "legacy-user") {
+  const operation = writeQueue.then(() => getDatabase().forUser(userId).writeLogbook(logbook));
+  writeQueue = operation.then(() => undefined, () => undefined);
+  return operation;
 }

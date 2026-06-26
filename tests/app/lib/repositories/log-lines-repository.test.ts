@@ -31,14 +31,16 @@ describe("LogLinesRepository", () => {
     const db = new MockDatabase({ log_lines: [row] });
 
     await expect(new LogLinesRepository(db).findAll()).resolves.toEqual([row]);
-    expect(db.calls[0].sql).toContain("from log_lines order by sheet_id, sort_order");
+    expect(db.calls[0].sql).toContain("from log_lines join log_sheets");
+    expect(db.calls[0].sql).toContain("where log_sheets.owner_id = $1");
+    expect(db.calls[0].values).toEqual(["legacy-user"]);
   });
 
   it("deletes all log line rows", async () => {
     const db = new MockDatabase();
 
     await new LogLinesRepository(db).deleteAll();
-    expect(db.calls).toEqual([{ sql: "delete from log_lines", values: undefined }]);
+    expect(db.calls).toEqual([{ sql: "delete from log_lines where sheet_id in (select id from log_sheets where owner_id = $1)", values: ["legacy-user"] }]);
   });
 
   it("inserts a log line", async () => {
@@ -47,6 +49,6 @@ describe("LogLinesRepository", () => {
     await new LogLinesRepository(db).insert(sheet.id, 0, line);
 
     expect(db.calls[0].sql).toContain("insert into log_lines");
-    expect(db.calls[0].values).toEqual([sheet.id, 0, line.time, line.position, line.latitude, line.longitude, line.logNm, line.course, line.magneticCourse, line.seaState, line.barometer, line.wind, line.weather, line.sails, line.engine, line.remarks]);
+    expect(db.calls[0].values).toEqual([`legacy-user:${sheet.id}`, 0, line.time, line.position, line.latitude, line.longitude, line.logNm, line.course, line.magneticCourse, line.seaState, line.barometer, line.wind, line.weather, line.sails, line.engine, line.remarks]);
   });
 });

@@ -1,21 +1,23 @@
 import type { Boat, BoatRow, CrewMemberRow, LogLineRow, LogSheet, LogSheetRow, PersistedLogbook, StoredLogSheet } from "../../models/logbook";
 import type { QueryableDatabase } from "../db/logbook-database";
+import { scopedId, unscopedId } from "./boats-repository";
 
 export class LogSheetsRepository {
   constructor(private db: QueryableDatabase) {}
 
-  async findAll() {
-    return (await this.db.query<LogSheetRow>("select * from log_sheets order by date_range desc, title")).rows;
+  async findAll(ownerId = "legacy-user") {
+    return (await this.db.query<LogSheetRow>(`select * from log_sheets where owner_id = ${this.db.placeholder(1)} order by date_range desc, title`, [ownerId])).rows;
   }
 
-  async deleteAll() {
-    await this.db.query("delete from log_sheets");
+  async deleteAll(ownerId = "legacy-user") {
+    await this.db.query(`delete from log_sheets where owner_id = ${this.db.placeholder(1)}`, [ownerId]);
   }
 
   async insert(sheet: LogSheet) {
+    const ownerId = (this.db as { ownerId?: string }).ownerId ?? "legacy-user";
     await this.db.query(
-      `insert into log_sheets (id, title, date_range, status, boat_id, skipper, route, weather_briefing, day_summary, remarks, watch_plan, technical_checks) values (${this.values(12)})`,
-      [sheet.id, sheet.title, sheet.dateRange, sheet.status, sheet.boatId, JSON.stringify(sheet.skipper), JSON.stringify(sheet.route), JSON.stringify(sheet.weatherBriefing), JSON.stringify(sheet.daySummary), JSON.stringify(sheet.remarks), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks)],
+      `insert into log_sheets (id, title, date_range, status, boat_id, skipper, route, weather_briefing, day_summary, remarks, watch_plan, technical_checks, owner_id) values (${this.values(13)})`,
+      [scopedId(ownerId, sheet.id), sheet.title, sheet.dateRange, sheet.status, scopedId(ownerId, sheet.boatId), JSON.stringify(sheet.skipper), JSON.stringify(sheet.route), JSON.stringify(sheet.weatherBriefing), JSON.stringify(sheet.daySummary), JSON.stringify(sheet.remarks), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), ownerId],
     );
   }
 
@@ -23,7 +25,7 @@ export class LogSheetsRepository {
     const crewBySheet = groupBy(crewRows, (crew) => crew.sheet_id);
     const linesBySheet = groupBy(lineRows, (line) => line.sheet_id);
     const boats: Boat[] = boatRows.map((boat) => ({
-      id: boat.id,
+      id: unscopedId(boat.id),
       name: boat.name,
       type: boat.type,
       registration: boat.registration,
@@ -65,11 +67,11 @@ function groupBy<T>(items: T[], keyFor: (item: T) => string) {
 
 function mapStoredSheet(sheet: LogSheetRow): StoredLogSheet {
   return {
-    id: sheet.id,
+    id: unscopedId(sheet.id),
     title: sheet.title,
     dateRange: sheet.date_range,
     status: sheet.status,
-    boatId: sheet.boat_id,
+    boatId: unscopedId(sheet.boat_id),
     skipper: parseJson<LogSheet["skipper"]>(sheet.skipper),
     route: parseJson<LogSheet["route"]>(sheet.route),
     weatherBriefing: parseJson<LogSheet["weatherBriefing"]>(sheet.weather_briefing),

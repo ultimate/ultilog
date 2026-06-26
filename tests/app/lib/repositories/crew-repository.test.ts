@@ -33,6 +33,8 @@ describe("CrewRepository", () => {
     await expect(new CrewRepository(db).findAll()).resolves.toEqual([row]);
     expect(db.calls[0].sql).toContain("from sheet_crew_members");
     expect(db.calls[0].sql).toContain("join crew_members");
+    expect(db.calls[0].sql).toContain("where log_sheets.owner_id = $1");
+    expect(db.calls[0].values).toEqual(["legacy-user"]);
   });
 
   it("deletes all crew rows", async () => {
@@ -40,8 +42,8 @@ describe("CrewRepository", () => {
 
     await new CrewRepository(db).deleteAll();
     expect(db.calls).toEqual([
-      { sql: "delete from sheet_crew_members", values: undefined },
-      { sql: "delete from crew_members", values: undefined },
+      { sql: "delete from sheet_crew_members where sheet_id in (select id from log_sheets where owner_id = $1)", values: ["legacy-user"] },
+      { sql: "delete from crew_members where owner_id = $1", values: ["legacy-user"] },
     ]);
   });
 
@@ -51,8 +53,8 @@ describe("CrewRepository", () => {
     await new CrewRepository(db).insert(sheet.id, 0, crew);
 
     expect(db.calls[0].sql).toContain("insert into crew_members");
-    expect(db.calls[0].values).toEqual(["luca-frei-swiss", crew.name, crew.nationality, crew.role]);
+    expect(db.calls[0].values).toEqual(["legacy-user-luca-frei-swiss", crew.name, crew.nationality, crew.role, "legacy-user"]);
     expect(db.calls[1].sql).toContain("insert into sheet_crew_members");
-    expect(db.calls[1].values).toEqual([sheet.id, "luca-frei-swiss", 0, crew.embarkation, crew.disembarkation]);
+    expect(db.calls[1].values).toEqual([`legacy-user:${sheet.id}`, "legacy-user-luca-frei-swiss", 0, crew.embarkation, crew.disembarkation]);
   });
 });
