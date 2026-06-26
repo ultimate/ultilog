@@ -13,8 +13,7 @@ export class LogSheetsRepository {
     await this.db.query(`delete from log_sheets where owner_id = ${this.db.placeholder(1)}`, [ownerId]);
   }
 
-  async insert(sheet: LogSheet) {
-    const ownerId = (this.db as { ownerId?: string }).ownerId ?? "legacy-user";
+  async insert(sheet: LogSheet, ownerId = "legacy-user") {
     await this.db.query(
       `insert into log_sheets (id, title, date_range, status, boat_id, skipper, route, weather_briefing, day_summary, remarks, watch_plan, technical_checks, owner_id) values (${this.values(13)})`,
       [scopedId(ownerId, sheet.id), sheet.title, sheet.dateRange, sheet.status, scopedId(ownerId, sheet.boatId), JSON.stringify(sheet.skipper), JSON.stringify(sheet.route), JSON.stringify(sheet.weatherBriefing), JSON.stringify(sheet.daySummary), JSON.stringify(sheet.remarks), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), ownerId],

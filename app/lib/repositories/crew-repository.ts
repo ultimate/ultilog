@@ -29,8 +29,7 @@ export class CrewRepository {
     await this.db.query(`delete from crew_members where owner_id = ${this.db.placeholder(1)}`, [ownerId]);
   }
 
-  async insert(sheetId: string, sortOrder: number, crew: CrewMember) {
-    const ownerId = (this.db as { ownerId?: string }).ownerId ?? "legacy-user";
+  async insert(sheetId: string, sortOrder: number, crew: CrewMember, ownerId = "legacy-user") {
     const crewMemberId = crewMemberReference(crew, ownerId);
     await this.db.query(
       `insert into crew_members (id, name, nationality, role, owner_id) values (${this.values(5)}) on conflict(id) do update set name = excluded.name, nationality = excluded.nationality, role = excluded.role`,
