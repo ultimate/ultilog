@@ -16,6 +16,7 @@ const defaultLogbook: PersistedLogbook = { boats: sampleBoats, sheets: sampleLog
 
 export abstract class LogbookDatabase implements QueryableDatabase {
   protected readonly boats = new BoatsRepository(this);
+  protected ownerId = "legacy-user";
   protected readonly sheets = new LogSheetsRepository(this);
   protected readonly crew = new CrewRepository(this);
   protected readonly lines = new LogLinesRepository(this);
@@ -23,6 +24,15 @@ export abstract class LogbookDatabase implements QueryableDatabase {
   abstract placeholder(index: number): string;
   abstract query<Row>(sql: string, values?: unknown[]): Promise<QueryResult<Row>>;
   protected abstract ensureSchema(): Promise<void>;
+
+  async migrate() {
+    await this.ensureSchema();
+  }
+
+  forUser(userId: string) {
+    this.ownerId = userId;
+    return this;
+  }
   protected abstract insertLogbook(logbook: PersistedLogbook): Promise<void>;
 
   async readLogbook(): Promise<PersistedLogbook> {
@@ -41,19 +51,19 @@ export abstract class LogbookDatabase implements QueryableDatabase {
 
   protected async readTables(): Promise<PersistedLogbook> {
     const [boats, sheets, crew, lines] = await Promise.all([
-      this.boats.findAll(),
-      this.sheets.findAll(),
-      this.crew.findAll(),
-      this.lines.findAll(),
+      this.boats.findAll(this.ownerId),
+      this.sheets.findAll(this.ownerId),
+      this.crew.findAll(this.ownerId),
+      this.lines.findAll(this.ownerId),
     ]);
     return LogSheetsRepository.toLogbook(boats, sheets, crew, lines);
   }
 
   protected async deleteTables() {
-    await this.lines.deleteAll();
-    await this.crew.deleteAll();
-    await this.sheets.deleteAll();
-    await this.boats.deleteAll();
+    await this.lines.deleteAll(this.ownerId);
+    await this.crew.deleteAll(this.ownerId);
+    await this.sheets.deleteAll(this.ownerId);
+    await this.boats.deleteAll(this.ownerId);
   }
 
   private async replaceTables(logbook: PersistedLogbook) {
