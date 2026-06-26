@@ -25,6 +25,7 @@ export type LogSheetRow = {
 
 export type CrewMemberRow = CrewMember & {
   sheet_id: string;
+  crew_member_id: string;
   sort_order: number;
 };
 

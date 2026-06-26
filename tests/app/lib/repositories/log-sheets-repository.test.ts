@@ -55,7 +55,7 @@ describe("LogSheetsRepository", () => {
   it("maps relational rows back to a persisted logbook", () => {
     const boatRow: BoatRow = { ...boat, flag_state: boat.flagState, home_port: boat.homePort, yacht_data: JSON.stringify(boat.yachtData) };
     const sheetRow = logSheetRow();
-    const crewRow: CrewMemberRow = { sheet_id: sheet.id, sort_order: 0, ...crew };
+    const crewRow: CrewMemberRow = { sheet_id: sheet.id, crew_member_id: "luca-frei-swiss", sort_order: 0, ...crew };
     const lineRow: LogLineRow = { ...line, sheet_id: sheet.id, sort_order: 0, log_nm: line.logNm, magnetic_course: line.magneticCourse, sea_state: line.seaState };
 
     expect(LogSheetsRepository.toLogbook([boatRow], [sheetRow], [crewRow], [lineRow])).toEqual({
