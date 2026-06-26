@@ -13,13 +13,22 @@ export class BoatsRepository {
   }
 
   async insert(boat: Boat) {
+    const ownerId = (this.db as { ownerId?: string }).ownerId ?? "legacy-user";
     await this.db.query(
       `insert into boats (id, name, type, registration, flag_state, home_port, owner, dimensions, yacht_data, owner_id) values (${this.values(10)})`,
-      [boat.id, boat.name, boat.type, boat.registration, boat.flagState, boat.homePort, boat.owner, boat.dimensions, JSON.stringify(boat.yachtData), (this.db as { ownerId?: string }).ownerId ?? "legacy-user"],
+      [scopedId(ownerId, boat.id), boat.name, boat.type, boat.registration, boat.flagState, boat.homePort, boat.owner, boat.dimensions, JSON.stringify(boat.yachtData), ownerId],
     );
   }
 
   private values(count: number) {
     return Array.from({ length: count }, (_, index) => this.db.placeholder(index + 1)).join(", ");
   }
+}
+
+export function scopedId(ownerId: string, id: string) {
+  return `${ownerId}:${id}`;
+}
+
+export function unscopedId(id: string) {
+  return id.includes(":") ? id.slice(id.indexOf(":") + 1) : id;
 }
