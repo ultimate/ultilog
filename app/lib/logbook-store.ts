@@ -5,6 +5,7 @@ import { PostgresLogbookDatabase } from "./db/postgres-logbook-database";
 import { SqliteLogbookDatabase } from "./db/sqlite-logbook-database";
 
 let database: LogbookDatabase | undefined;
+let writeQueue: Promise<unknown> = Promise.resolve();
 
 export function getDatabase() {
   if (database) return database;
@@ -18,5 +19,7 @@ export async function readLogbook(userId = "legacy-user"): Promise<PersistedLogb
 }
 
 export async function writeLogbook(logbook: PersistedLogbook, userId = "legacy-user") {
-  return getDatabase().forUser(userId).writeLogbook(logbook);
+  const operation = writeQueue.then(() => getDatabase().forUser(userId).writeLogbook(logbook));
+  writeQueue = operation.then(() => undefined, () => undefined);
+  return operation;
 }

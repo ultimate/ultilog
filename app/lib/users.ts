@@ -31,7 +31,7 @@ export async function registerUser(input: { name: string; email: string; passwor
   if (await findUserByEmail(email)) throw new Error("An account with this email already exists.");
 
   const user = { id: randomUUID(), name, email };
-  const passwordHash = await bcrypt.hash(input.password, 12);
+  const passwordHash = await bcrypt.hash(input.password, 10);
   const db = getDatabase();
   await db.query(
     `insert into users (id, name, email, password_hash) values (${db.placeholder(1)}, ${db.placeholder(2)}, ${db.placeholder(3)}, ${db.placeholder(4)})`,
