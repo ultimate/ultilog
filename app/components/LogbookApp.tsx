@@ -78,6 +78,17 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
     router.refresh();
   }
 
+  async function saveLogbookNow(nextLogbook: PersistedLogbook) {
+    logbookRef.current = nextLogbook;
+    setLogbook(nextLogbook);
+    setSaveError(null);
+    if (!isBackendReady) return true;
+    const response = await persistLogbook(nextLogbook).catch(() => undefined);
+    if (response?.ok) return true;
+    setSaveError("Unable to save the latest changes. Please try again.");
+    return false;
+  }
+
   useEffect(() => {
     let isMounted = true;
     async function loadLogbook() {
@@ -85,6 +96,7 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
       if (!response.ok) throw new Error("Unable to load logbook");
       const storedLogbook = await response.json() as PersistedLogbook;
       if (!isMounted) return;
+      logbookRef.current = storedLogbook;
       setLogbook(storedLogbook);
       setActiveSheetId(storedLogbook.sheets[0]?.id ?? defaultLogbook.sheets[0].id);
       setSheetForm((current) => ({ ...current, boatId: storedLogbook.boats[0]?.id ?? seedBoats[0].id }));
@@ -133,10 +145,11 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
     return { totalNm, sailNm, motorNm: totalNm - sailNm, sheets: logbook.sheets.length, boats: logbook.boats.length };
   }, [logbook]);
 
-  function saveBoat(event: FormEvent<HTMLFormElement>) {
+  async function saveBoat(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const id = editingBoatId ?? `${slug(boatForm.name)}-${Date.now().toString(36)}`;
-    const previousBoat = logbook.boats.find((boat) => boat.id === id);
+    const currentLogbook = logbookRef.current;
+    const previousBoat = currentLogbook.boats.find((boat) => boat.id === id);
     const boat: Boat = {
       id,
       name: boatForm.name,
@@ -161,7 +174,8 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
         Safety: boatForm.safety || "To be completed",
       },
     };
-    setLogbook((current) => ({ ...current, boats: editingBoatId ? current.boats.map((candidate) => candidate.id === editingBoatId ? boat : candidate) : [...current.boats, boat] }));
+    const nextLogbook = { ...currentLogbook, boats: editingBoatId ? currentLogbook.boats.map((candidate) => candidate.id === editingBoatId ? boat : candidate) : [...currentLogbook.boats, boat] };
+    if (!await saveLogbookNow(nextLogbook)) return;
     setBoatForm(defaultBoatForm);
     setEditingBoatId(null);
     setShowBoatManager(false);
@@ -169,9 +183,10 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
     setSheetForm((current) => ({ ...current, boatId: id }));
   }
 
-  function saveSheet(event: FormEvent<HTMLFormElement>) {
+  async function saveSheet(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const existingSheet = editingSheetId ? logbook.sheets.find((sheet) => sheet.id === editingSheetId) : undefined;
+    const currentLogbook = logbookRef.current;
+    const existingSheet = editingSheetId ? currentLogbook.sheets.find((sheet) => sheet.id === editingSheetId) : undefined;
     const base = existingSheet ?? seedSheets[0];
     const id = editingSheetId ?? `${slug(sheetForm.title || sheetForm.dayGoal)}-${Date.now().toString(36)}`;
     const sheet: LogSheet = {
@@ -198,7 +213,8 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
       technicalChecks: [],
       lines: [],
     };
-    setLogbook((current) => ({ ...current, sheets: editingSheetId ? current.sheets.map((candidate) => candidate.id === editingSheetId ? sheet : candidate) : [sheet, ...current.sheets] }));
+    const nextLogbook = { ...currentLogbook, sheets: editingSheetId ? currentLogbook.sheets.map((candidate) => candidate.id === editingSheetId ? sheet : candidate) : [sheet, ...currentLogbook.sheets] };
+    if (!await saveLogbookNow(nextLogbook)) return;
     setActiveSheetId(id);
     setEditingSheetId(id);
     setSheetForm(sheetToForm(sheet));
@@ -230,7 +246,7 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
     setShowNewSheet(false);
   }
 
-  function saveLineFromFields() {
+  async function saveLineFromFields() {
     const line: LogLine = {
       time: lineForm.time,
       position: lineForm.position,
@@ -247,20 +263,22 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
       engine: lineForm.engine,
       remarks: lineForm.remarks,
     };
-    setLogbook((current) => ({ ...current, sheets: current.sheets.map((sheet) => {
+    const currentLogbook = logbookRef.current;
+    const nextLogbook = { ...currentLogbook, sheets: currentLogbook.sheets.map((sheet) => {
       if (sheet.id !== activeSheet.id) return sheet;
       const lines = editingLineIndex === null ? [...sheet.lines, line] : sheet.lines.map((candidate, index) => index === editingLineIndex ? line : candidate);
       const remarks = editingLineIndex === null && line.remarks ? [...sheet.remarks, line.remarks] : sheet.remarks;
       return { ...sheet, lines, remarks };
-    }) }));
+    }) };
+    if (!await saveLogbookNow(nextLogbook)) return;
     setLineForm(defaultLineForm);
     setEditingLineIndex(null);
     setShowAddLine(false);
   }
 
-  function addLine(event: FormEvent<HTMLFormElement>) {
+  async function addLine(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    saveLineFromFields();
+    await saveLineFromFields();
   }
 
   function startEditingLine(line: LogLine, index: number) {
@@ -281,14 +299,17 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
     setShowAddLine(false);
   }
 
-  function saveCrew() {
+  async function saveCrew() {
     const crew = { ...crewForm };
-    setLogbook((current) => ({ ...current, sheets: current.sheets.map((sheet) => {
+    const currentLogbook = logbookRef.current;
+    const currentSheet = currentLogbook.sheets.find((sheet) => sheet.id === activeSheet.id) ?? activeSheet;
+    const nextLogbook = { ...currentLogbook, sheets: currentLogbook.sheets.map((sheet) => {
       if (sheet.id !== activeSheet.id) return sheet;
       const nextCrew = selectedCrewIndex < 0 ? [...sheet.crew, crew] : sheet.crew.map((candidate, index) => index === selectedCrewIndex ? crew : candidate);
       return { ...sheet, crew: nextCrew };
-    }) }));
-    if (selectedCrewIndex < 0) setSelectedCrewIndex(activeSheet.crew.length);
+    }) };
+    if (!await saveLogbookNow(nextLogbook)) return;
+    if (selectedCrewIndex < 0) setSelectedCrewIndex(currentSheet.crew.length);
   }
 
   function selectCrew(index: number) {
@@ -364,7 +385,7 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
 
         {activeModule === "boats" && <section className="sheet-detail module-panel"><ManagerShell title="Boats" split={boatSplit} newLabel="New boat" onNew={() => { setEditingBoatId(null); setBoatForm(defaultBoatForm); setShowBoatManager(true); }} onToggleSplit={() => setBoatSplit((split) => split === "vertical" ? "horizontal" : "vertical")} list={<ul className="manager-list">{logbook.boats.map((boat) => <li key={boat.id}><button type="button" className={boat.id === selectedBoat.id ? "active" : ""} onClick={() => { setSelectedBoatId(boat.id); setEditingBoatId(boat.id); setBoatForm(boatToForm(boat)); setShowBoatManager(false); }}><span className="picture-thumb" aria-hidden="true" /><span><strong>{boat.name}</strong><small>{boat.type} · {boat.registration || "No registration"}</small></span></button></li>)}</ul>} form={<form className="inline-edit-grid" onSubmit={saveBoat}><p className="eyebrow">{showBoatManager ? "New boat" : "Boat form"}</p><label>Name<input required value={boatForm.name} onChange={(e) => setBoatForm({ ...boatForm, name: e.target.value })} /></label><label>Type<select value={boatForm.type} onChange={(e) => setBoatForm({ ...boatForm, type: e.target.value as BoatType })}><option>Sail</option><option>Motor</option></select></label><label>Registration<input value={boatForm.registration} onChange={(e) => setBoatForm({ ...boatForm, registration: e.target.value })} /></label><label>Flag state<input value={boatForm.flagState} onChange={(e) => setBoatForm({ ...boatForm, flagState: e.target.value })} /></label><label>Home port<input value={boatForm.homePort} onChange={(e) => setBoatForm({ ...boatForm, homePort: e.target.value })} /></label><label>Owner<input value={boatForm.owner} onChange={(e) => setBoatForm({ ...boatForm, owner: e.target.value })} /></label><label>Dimensions<input value={boatForm.dimensions} onChange={(e) => setBoatForm({ ...boatForm, dimensions: e.target.value })} /></label><label>Manufacturer<input value={boatForm.manufacturer} onChange={(e) => setBoatForm({ ...boatForm, manufacturer: e.target.value })} /></label><label>MMSI<input value={boatForm.mmsi} onChange={(e) => setBoatForm({ ...boatForm, mmsi: e.target.value })} /></label><label>Engine<input value={boatForm.engine} onChange={(e) => setBoatForm({ ...boatForm, engine: e.target.value })} /></label><label className="wide-field">Safety<textarea value={boatForm.safety} onChange={(e) => setBoatForm({ ...boatForm, safety: e.target.value })} /></label><div className="inline-edit-actions"><button type="submit">{showBoatManager ? "Create boat" : "Save boat"}</button><button type="button" className="ghost-button" onClick={cancelBoatEdit}>Cancel</button></div></form>} /></section>}
 
-        {activeModule === "crew" && <section className="sheet-detail module-panel"><ManagerShell title="Crew" split={crewSplit} newLabel="New crew" onNew={() => { setLastCrewIndex(selectedCrewIndex >= 0 ? selectedCrewIndex : lastCrewIndex); setSelectedCrewIndex(-1); setCrewForm(defaultCrewForm); }} onToggleSplit={() => setCrewSplit((split) => split === "vertical" ? "horizontal" : "vertical")} list={<ul className="manager-list">{activeSheet.crew.map((person, index) => <li key={person.name}><button type="button" className={index === selectedCrewIndex ? "active" : ""} onClick={() => selectCrew(index)}><span className="picture-thumb" aria-hidden="true" /><span><strong>{person.name}</strong><small>{person.role}</small></span></button></li>)}</ul>} form={<form className="inline-edit-grid" onSubmit={(event) => { event.preventDefault(); saveCrew(); }}><p className="eyebrow">{selectedCrewIndex < 0 ? "New crew" : "Crew form"}</p><label>Name<input value={crewForm.name} onChange={(e) => setCrewForm({ ...crewForm, name: e.target.value })} /></label><label>Nationality<input value={crewForm.nationality} onChange={(e) => setCrewForm({ ...crewForm, nationality: e.target.value })} /></label><label>Role<input value={crewForm.role} onChange={(e) => setCrewForm({ ...crewForm, role: e.target.value })} /></label><label>Embarkation<input value={crewForm.embarkation} onChange={(e) => setCrewForm({ ...crewForm, embarkation: e.target.value })} /></label><label>Disembarkation<input value={crewForm.disembarkation} onChange={(e) => setCrewForm({ ...crewForm, disembarkation: e.target.value })} /></label><div className="inline-edit-actions"><button type="submit">Save crew</button><button type="button" className="ghost-button" onClick={cancelCrewEdit}>Cancel</button></div></form>} /></section>}
+        {activeModule === "crew" && <section className="sheet-detail module-panel"><ManagerShell title="Crew" split={crewSplit} newLabel="New crew" onNew={() => { setLastCrewIndex(selectedCrewIndex >= 0 ? selectedCrewIndex : lastCrewIndex); setSelectedCrewIndex(-1); setCrewForm(defaultCrewForm); }} onToggleSplit={() => setCrewSplit((split) => split === "vertical" ? "horizontal" : "vertical")} list={<ul className="manager-list">{activeSheet.crew.map((person, index) => <li key={person.name}><button type="button" className={index === selectedCrewIndex ? "active" : ""} onClick={() => selectCrew(index)}><span className="picture-thumb" aria-hidden="true" /><span><strong>{person.name}</strong><small>{person.role}</small></span></button></li>)}</ul>} form={<form className="inline-edit-grid" onSubmit={async (event) => { event.preventDefault(); await saveCrew(); }}><p className="eyebrow">{selectedCrewIndex < 0 ? "New crew" : "Crew form"}</p><label>Name<input value={crewForm.name} onChange={(e) => setCrewForm({ ...crewForm, name: e.target.value })} /></label><label>Nationality<input value={crewForm.nationality} onChange={(e) => setCrewForm({ ...crewForm, nationality: e.target.value })} /></label><label>Role<input value={crewForm.role} onChange={(e) => setCrewForm({ ...crewForm, role: e.target.value })} /></label><label>Embarkation<input value={crewForm.embarkation} onChange={(e) => setCrewForm({ ...crewForm, embarkation: e.target.value })} /></label><label>Disembarkation<input value={crewForm.disembarkation} onChange={(e) => setCrewForm({ ...crewForm, disembarkation: e.target.value })} /></label><div className="inline-edit-actions"><button type="submit">Save crew</button><button type="button" className="ghost-button" onClick={cancelCrewEdit}>Cancel</button></div></form>} /></section>}
 
         {activeModule === "compliance" && <section className="sheet-detail module-panel"><article className="compliance-card"><div><p className="eyebrow">Swiss compliance checklist</p><h3>Built from Hochseeausweis logbook requirements</h3></div><ul>{legalRequirements.map((requirement) => <li key={requirement}>{requirement}</li>)}</ul></article></section>}
       </section>
