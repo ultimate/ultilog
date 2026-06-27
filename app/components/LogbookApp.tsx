@@ -3,79 +3,14 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { signOut } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
-import { boats as seedBoats, defaultDeviationTable, logSheets as seedSheets, normalizeDeviationTable, type Boat, type BoatForm, type BoatType, type CrewForm, type LineForm, type LogLine, type LogSheet, type PersistedLogbook, type SheetForm } from "../data/logbook";
+import { normalizeDeviationTable, type Boat, type BoatType, type BoatForm, type CrewForm, type LineForm, type LogLine, type LogSheet, type PersistedLogbook, type SheetForm } from "../models/logbook";
+import { boatToForm, crewToForm, defaultBoatForm, defaultCrewForm, defaultLineForm, defaultLogbook, defaultSheetForm, lineToForm, seedBoats, seedSheets, sheetToForm } from "./logbook/forms";
+import { createId, modulePath, normalizeLogbookIds, numberOrZero, persistLogbook, routeFromPathname } from "./logbook/persistence";
 import { ManagerShell, type SplitDirection } from "./managers/ManagerShell";
 import { courseConversionColumns } from "../domain/nautical/course-conversion";
-import { moduleTabs, type ModuleTab } from "../templates/app-shell";
 import { ModuleTabs, type ActiveView } from "../templates/ModuleTabs";
 import { DashboardPanel } from "../templates/DashboardPanel";
 import { legalRequirements } from "../templates/compliance";
-
-const defaultSheetForm = (boatId: string): SheetForm => ({ title: "", dateRange: new Date().toISOString().slice(0, 10), boatId, dayGoal: "", from: "", to: "", morningPosition: "", eveningPosition: "" });
-const defaultBoatForm: BoatForm = { name: "", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", manufacturer: "", mmsi: "", engine: "", safety: "", deviationTable: defaultDeviationTable() };
-const defaultLineForm: LineForm = { time: "", position: "", latitude: "", longitude: "", logNm: "", course: "", magneticCourse: "", seaState: "", barometer: "", wind: "", weather: "", sails: "", engine: "", remarks: "" };
-const defaultCrewForm: CrewForm = { name: "", nationality: "", role: "", embarkation: "", disembarkation: "" };
-const defaultLogbook: PersistedLogbook = { boats: seedBoats, sheets: seedSheets };
-const boatToForm = (boat: Boat): BoatForm => ({ name: boat.name, type: boat.type, registration: boat.registration, flagState: boat.flagState, homePort: boat.homePort, owner: boat.owner, dimensions: boat.dimensions, manufacturer: boat.yachtData.Manufacturer === "—" ? "" : boat.yachtData.Manufacturer, mmsi: boat.yachtData.MMSI === "—" ? "" : boat.yachtData.MMSI, engine: boat.yachtData.Engine === "—" ? "" : boat.yachtData.Engine, safety: boat.yachtData.Safety === "To be completed" ? "" : boat.yachtData.Safety, deviationTable: normalizeDeviationTable(boat.deviationTable) });
-const sheetToForm = (sheet: LogSheet): SheetForm => ({ title: sheet.title, dateRange: sheet.dateRange, boatId: sheet.boatId, dayGoal: sheet.route.dayGoal, from: sheet.route.from, to: sheet.route.to, morningPosition: sheet.route.morningPosition, eveningPosition: sheet.route.eveningPosition });
-const lineToForm = (line: LogLine): LineForm => ({ time: line.time, position: line.position, latitude: line.latitude.toString(), longitude: line.longitude.toString(), logNm: line.logNm.toString(), course: line.course, magneticCourse: line.magneticCourse, seaState: line.seaState, barometer: line.barometer, wind: line.wind, weather: line.weather, sails: line.sails, engine: line.engine, remarks: line.remarks });
-const crewToForm = (crew: CrewForm): CrewForm => ({ name: crew.name, nationality: crew.nationality, role: crew.role, embarkation: crew.embarkation, disembarkation: crew.disembarkation });
-
-const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const createId = () => crypto.randomUUID();
-const isOpaqueId = (id: string) => uuidPattern.test(id);
-const numberOrZero = (value: string) => Number.parseFloat(value) || 0;
-const routedModules = new Set<ActiveView>([...moduleTabs.map((tab) => tab.id), "profile"]);
-const modulePath = (module: ActiveView, itemId?: string | number) => `/${module}${itemId !== undefined && itemId !== null ? `/${encodeURIComponent(String(itemId))}` : ""}`;
-
-type RouteState = { view: ActiveView; itemId?: string };
-
-function routeFromPathname(pathname: string): RouteState {
-  const [, moduleSegment, itemSegment] = pathname.split("/");
-  const view = routedModules.has(moduleSegment as ActiveView) ? moduleSegment as ActiveView : "dashboard";
-  return { view, itemId: itemSegment ? decodeURIComponent(itemSegment) : undefined };
-}
-
-function normalizeLogbookIds(logbook: PersistedLogbook): { logbook: PersistedLogbook; changed: boolean; boatIds: Map<string, string>; sheetIds: Map<string, string> } {
-  const boatIds = new Map<string, string>();
-  const sheetIds = new Map<string, string>();
-  let changed = false;
-
-  for (const boat of logbook.boats) {
-    if (!isOpaqueId(boat.id)) {
-      boatIds.set(boat.id, createId());
-      changed = true;
-    }
-  }
-  for (const sheet of logbook.sheets) {
-    if (!isOpaqueId(sheet.id)) {
-      sheetIds.set(sheet.id, createId());
-      changed = true;
-    }
-    if (boatIds.has(sheet.boatId)) changed = true;
-  }
-
-  if (!changed) return { logbook, changed, boatIds, sheetIds };
-  return {
-    changed,
-    boatIds,
-    sheetIds,
-    logbook: {
-      boats: logbook.boats.map((boat) => ({ ...boat, id: boatIds.get(boat.id) ?? boat.id })),
-      sheets: logbook.sheets.map((sheet) => ({ ...sheet, id: sheetIds.get(sheet.id) ?? sheet.id, boatId: boatIds.get(sheet.boatId) ?? sheet.boatId })),
-    },
-  };
-}
-
-function persistLogbook(logbook: PersistedLogbook, options?: { signal?: AbortSignal; keepalive?: boolean }) {
-  return fetch("/api/logbook", {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(logbook),
-    signal: options?.signal,
-    keepalive: options?.keepalive,
-  });
-}
 
 export function LogbookApp({ userEmail }: { userEmail?: string }) {
   const router = useRouter();
