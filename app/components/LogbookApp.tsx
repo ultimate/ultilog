@@ -333,17 +333,23 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
       {activeModule === "dashboard" && <DashboardPanel stats={stats} />}
 
       <section className="workspace module-workspace">
-        {activeModule === "logbooks" && <aside className="sidebar module-panel" aria-label="Log sheets">
-          <div className="sidebar-header">
-            <p className="eyebrow">Sheets</p>
-            <button type="button" onClick={() => { setEditingSheetId(null); setSheetForm(defaultSheetForm(activeBoat.id)); setShowNewSheet(true); setActiveModule("details"); }}>+ New sheet</button>
+        {activeModule === "logbooks" && <section className="logbook-page module-panel" aria-label="Log sheets">
+          <div className="page-heading">
+            <div><h1>Logbooks</h1><p>Manage all your logbook entries</p></div>
+            <button type="button" className="primary-action" onClick={() => { setEditingSheetId(null); setSheetForm(defaultSheetForm(activeBoat.id)); setShowNewSheet(true); setActiveModule("details"); }}>+ New sheet</button>
           </div>
-
-          <div className="logbook-toolbar"><input aria-label="Search logbooks" placeholder="Search logbooks…" readOnly /><select aria-label="Vessel filter" defaultValue="All vessels"><option>All vessels</option></select><select aria-label="Time filter" defaultValue="All time"><option>All time</option></select></div><div className="sheet-list" aria-label="Available log sheets">{logbook.sheets.map((sheet) => {
-            const boat = logbook.boats.find((candidate) => candidate.id === sheet.boatId);
-            return <div className={`sheet-button-row ${sheet.id === activeSheet.id ? "active" : ""}`} key={sheet.id}><button className="sheet-button sheet-card" onClick={() => { setActiveSheetId(sheet.id); setSheetForm(sheetToForm(sheet)); setActiveModule("details"); }} type="button"><span className="picture-thumb" aria-hidden="true" /><span>{sheet.title}</span><small>{sheet.dateRange} · {boat?.name}</small></button></div>;
-          })}</div>
-        </aside>}
+          <div className="logbook-toolbar"><input aria-label="Search logbooks" placeholder="Search logbooks…" readOnly /><select aria-label="Vessel filter" defaultValue="All vessels"><option>All vessels</option></select><select aria-label="Time filter" defaultValue="All time"><option>All time</option></select></div>
+          <article className="table-card logbook-list-card">
+            <div className="table-scroll"><table className="logbook-table"><thead><tr><th>Date</th><th>Entry</th><th>Vessel</th><th>From → To</th><th>Sail miles</th><th>Motor miles</th><th>Total miles</th><th></th></tr></thead><tbody>{logbook.sheets.map((sheet) => {
+              const boat = logbook.boats.find((candidate) => candidate.id === sheet.boatId);
+              const totalMiles = Math.max(0, ...sheet.lines.map((line) => line.logNm));
+              const motorMiles = sheet.daySummary.motorMiles || Math.round(totalMiles * 0.12);
+              const sailMiles = Math.max(0, totalMiles - motorMiles);
+              return <tr key={sheet.id}><td>{sheet.dateRange}</td><td><button className="table-title-button" onClick={() => { setActiveSheetId(sheet.id); setSheetForm(sheetToForm(sheet)); setActiveModule("details"); }} type="button">{sheet.title}</button></td><td><span className="table-vessel"><span className="picture-thumb" aria-hidden="true" />{boat?.name}</span></td><td>{sheet.route.from} → {sheet.route.to}</td><td>{sailMiles} nm</td><td>{motorMiles} nm</td><td>{totalMiles} nm</td><td><button className="edit-chip" onClick={() => { setActiveSheetId(sheet.id); setSheetForm(sheetToForm(sheet)); setActiveModule("details"); }} type="button">Open</button></td></tr>;
+            })}</tbody></table></div>
+            <div className="pagination-mock" aria-hidden="true"><span className="active">1</span><span>2</span><span>3</span><span>…</span><span>8</span><span>›</span></div>
+          </article>
+        </section>}
 
         {activeModule === "details" && <section className="sheet-detail" aria-labelledby="sheet-title">
           {(showNewSheet || editingSheetId) ? (
@@ -364,7 +370,7 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
           ) : (
             <>
               <div className="sheet-title-row"><div><p className="eyebrow">Active sheet</p><h2 id="sheet-title">{activeSheet.title}</h2><p>{activeSheet.route.from} → {activeSheet.route.to} · {activeSheet.dateRange}</p></div><div className="inline-edit-actions"><span className="status-pill">{activeSheet.status}</span><button type="button" className="edit-chip" onClick={() => startEditingSheet(activeSheet)}>Edit sheet</button></div></div>
-              <section className="paper-header" aria-label="Daily paper log header"><div><span>Day goal</span><strong>{activeSheet.route.dayGoal || "—"}</strong></div><div><span>Date</span><strong>{activeSheet.dateRange}</strong></div><div><span>Daily logbook lead</span><strong>{activeSheet.skipper.name}</strong></div><div><span>Stage / sheet</span><strong>{activeSheet.id}</strong></div><div><span>Position morning</span><strong>{activeSheet.route.morningPosition || "—"}</strong></div><div><span>Position evening</span><strong>{activeSheet.route.eveningPosition || "—"}</strong></div></section>
+              <section className="entry-metrics" aria-label="Logbook entry metrics"><article><span>Total miles</span><strong>{Math.max(0, ...activeSheet.lines.map((line) => line.logNm))} nm</strong></article><article><span>Sail miles</span><strong>{Math.max(0, Math.max(0, ...activeSheet.lines.map((line) => line.logNm)) - (activeSheet.daySummary.motorMiles || 12))} nm</strong></article><article><span>Motor miles</span><strong>{activeSheet.daySummary.motorMiles || 12} nm</strong></article><article><span>Duration</span><strong>18h 30m</strong></article></section><nav className="entry-tabs" aria-label="Entry sections"><span>Passage</span><span className="active">Mileage log</span><span>Crew ({activeSheet.crew.length})</span><span>Notes & documents</span><span>Sign-offs</span></nav><section className="paper-header" aria-label="Daily paper log header"><div><span>Day goal</span><strong>{activeSheet.route.dayGoal || "—"}</strong></div><div><span>Date</span><strong>{activeSheet.dateRange}</strong></div><div><span>Daily logbook lead</span><strong>{activeSheet.skipper.name}</strong></div><div><span>Stage / sheet</span><strong>{activeSheet.id}</strong></div><div><span>Position morning</span><strong>{activeSheet.route.morningPosition || "—"}</strong></div><div><span>Position evening</span><strong>{activeSheet.route.eveningPosition || "—"}</strong></div></section>
             </>
           )}
 
