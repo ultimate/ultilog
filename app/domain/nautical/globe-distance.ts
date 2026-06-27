@@ -1,7 +1,6 @@
-export type GpsCoordinates = {
-  latitude: number;
-  longitude: number;
-};
+import type { Position } from "./position";
+
+export type GpsCoordinates = Position;
 
 export type GlobeDistanceUnit = "nauticalMiles" | "kilometers";
 

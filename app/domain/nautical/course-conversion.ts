@@ -1,17 +1,19 @@
+import type { Position } from "./position";
+
 export const courseConversionColumns = ["Abl / Dev", "mwK / MC", "Mw / Var", "rwK / TC", "BW / WD", "KdW / CTW", "BS / CD"] as const;
 
 export type CourseConversionColumn = typeof courseConversionColumns[number];
 
 export type CourseConversionInput = Partial<CourseConversion>;
 
-export type CourseConversionPosition = {
-  latitude: number;
-  longitude: number;
+export type CourseConversionVariationLookupRequest = Position & {
+  date?: Date;
 };
 
 export type CourseConversionLookupOptions = {
-  position?: CourseConversionPosition;
-  variationLookup?: (position: CourseConversionPosition) => Promise<number>;
+  position?: Position;
+  date?: Date;
+  variationLookup?: (request: CourseConversionVariationLookupRequest) => Promise<number>;
 };
 
 export type CourseConversion = {
@@ -247,7 +249,7 @@ export function calculateCourseConversion(
 
     return calculateCourseConversionValues({
       ...input,
-      variation: await variationLookup(position),
+      variation: await variationLookup({ ...position, date: options.date }),
     }, deviationTable);
   })();
 }
