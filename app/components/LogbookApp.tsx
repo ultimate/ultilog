@@ -150,21 +150,40 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
       const storedLogbook = await response.json() as PersistedLogbook;
       const { logbook: normalizedLogbook, changed, boatIds, sheetIds } = normalizeLogbookIds(storedLogbook);
       if (!isMounted) return;
+      const route = routeFromPathname(window.location.pathname);
+      const normalizedItemId = route.view === "boats" && route.itemId ? boatIds.get(route.itemId) : route.itemId && (route.view === "details" || route.view === "logbooks") ? sheetIds.get(route.itemId) : undefined;
+      const nextRoute = normalizedItemId ? { ...route, itemId: normalizedItemId } : route;
+      const nextRoutePath = normalizedItemId ? modulePath(route.view, normalizedItemId) : window.location.pathname;
+      const routedSheet = nextRoute.itemId && (nextRoute.view === "details" || nextRoute.view === "logbooks") ? normalizedLogbook.sheets.find((sheet) => sheet.id === nextRoute.itemId) : undefined;
+      const routedBoat = nextRoute.itemId && nextRoute.view === "boats" ? normalizedLogbook.boats.find((boat) => boat.id === nextRoute.itemId) : undefined;
+      const fallbackSheet = normalizedLogbook.sheets[0] ?? defaultLogbook.sheets[0];
+      const fallbackBoat = normalizedLogbook.boats[0] ?? seedBoats[0];
+      const nextSheet = routedSheet ?? fallbackSheet;
+      const nextBoat = routedBoat ?? fallbackBoat;
+
       logbookRef.current = normalizedLogbook;
       setLogbook(normalizedLogbook);
-      setActiveSheetId(normalizedLogbook.sheets[0]?.id ?? defaultLogbook.sheets[0].id);
-      setSheetForm((current) => ({ ...current, boatId: normalizedLogbook.boats[0]?.id ?? seedBoats[0].id }));
-      setSelectedBoatId(normalizedLogbook.boats[0]?.id ?? seedBoats[0].id);
-      if (changed) {
-        const { view, itemId } = routeFromPathname(window.location.pathname);
-        const normalizedItemId = view === "boats" && itemId ? boatIds.get(itemId) : itemId && (view === "details" || view === "logbooks") ? sheetIds.get(itemId) : undefined;
-        if (normalizedItemId) {
-          const normalizedPath = modulePath(view, normalizedItemId);
-          window.history.replaceState(null, "", normalizedPath);
-          setRoutePath(normalizedPath);
-        }
-        persistLogbook(normalizedLogbook).catch(() => undefined);
+      setActiveSheetId(nextSheet.id);
+      setSheetForm(routedSheet ? sheetToForm(routedSheet) : (current) => ({ ...current, boatId: fallbackBoat.id }));
+      setSelectedBoatId(nextBoat.id);
+      if (routedBoat) {
+        setEditingBoatId(routedBoat.id);
+        setBoatForm(boatToForm(routedBoat));
+        setShowBoatManager(false);
       }
+      if (nextRoute.view === "crew" && nextRoute.itemId) {
+        const crewIndex = Number.parseInt(nextRoute.itemId, 10);
+        if (Number.isInteger(crewIndex) && crewIndex >= 0 && crewIndex < nextSheet.crew.length) {
+          setSelectedCrewIndex(crewIndex);
+          setLastCrewIndex(crewIndex);
+          setCrewForm(crewToForm(nextSheet.crew[crewIndex] ?? defaultCrewForm));
+        }
+      }
+      if (normalizedItemId) {
+        window.history.replaceState(null, "", nextRoutePath);
+        setRoutePath(nextRoutePath);
+      }
+      if (changed) persistLogbook(normalizedLogbook).catch(() => undefined);
       setIsBackendReady(true);
     }
     loadLogbook().catch(() => setIsBackendReady(true));
