@@ -7,7 +7,8 @@ create table if not exists boats (
   home_port text not null,
   owner text not null,
   dimensions text not null,
-  yacht_data text not null
+  yacht_data text not null,
+  deviation_table text not null default '[]'
 );
 
 create table if not exists log_sheets (

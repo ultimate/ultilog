@@ -6,7 +6,8 @@ export type PersistedLogbook = {
   sheets: LogSheet[];
 };
 
-export type { Boat, BoatType } from "./boat";
+export { defaultDeviationTable, deviationTableHeadings, normalizeDeviationTable } from "./boat";
+export type { Boat, BoatType, DeviationTableRow } from "./boat";
 export type { CrewMember } from "./crew-member";
 export type { LogLine } from "./log-line";
 export type { LogSheet } from "./log-sheet";
