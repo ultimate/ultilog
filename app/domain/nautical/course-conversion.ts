@@ -188,7 +188,7 @@ function setDeviationFromTable(input: CourseConversionInput, deviationTable?: De
   return false;
 }
 
-export function calculateCourseConversion(input: CourseConversionInput, deviationTable?: DeviationTable): CourseConversionInput {
+function calculateCourseConversionValues(input: CourseConversionInput, deviationTable?: DeviationTable): CourseConversionInput {
   const result: CourseConversionInput = { ...input };
 
   let changed = true;
@@ -219,22 +219,37 @@ export function calculateCourseConversion(input: CourseConversionInput, deviatio
   return result;
 }
 
-export async function calculateCourseConversionWithPosition(
+export function calculateCourseConversion(input: CourseConversionInput, deviationTable?: DeviationTable): CourseConversionInput;
+export function calculateCourseConversion(
+  input: CourseConversionInput,
+  deviationTable: DeviationTable | undefined,
+  options: null,
+): CourseConversionInput;
+export function calculateCourseConversion(
+  input: CourseConversionInput,
+  deviationTable: DeviationTable | undefined,
+  options: CourseConversionLookupOptions,
+): CourseConversionInput | Promise<CourseConversionInput>;
+export function calculateCourseConversion(
   input: CourseConversionInput,
   deviationTable?: DeviationTable,
-  options: CourseConversionLookupOptions = {},
-): Promise<CourseConversionInput> {
-  if (input.variation !== undefined || !options.position) {
-    return calculateCourseConversion(input, deviationTable);
+  options?: CourseConversionLookupOptions | null,
+): CourseConversionInput | Promise<CourseConversionInput> {
+  const position = options?.position;
+
+  if (input.variation !== undefined || !position) {
+    return calculateCourseConversionValues(input, deviationTable);
   }
 
-  const { lookupNoaaMagneticVariation } = await import("./noaa-magnetic-variation");
-  const variationLookup = options.variationLookup ?? lookupNoaaMagneticVariation;
+  return (async () => {
+    const { lookupNoaaMagneticVariation } = await import("./noaa-magnetic-variation");
+    const variationLookup = options.variationLookup ?? lookupNoaaMagneticVariation;
 
-  return calculateCourseConversion({
-    ...input,
-    variation: await variationLookup(options.position),
-  }, deviationTable);
+    return calculateCourseConversionValues({
+      ...input,
+      variation: await variationLookup(position),
+    }, deviationTable);
+  })();
 }
 
 export function convertCompassToTrueCourse(input: CourseConversionInput) {
