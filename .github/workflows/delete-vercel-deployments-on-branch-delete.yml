@@ -1,0 +1,104 @@
+name: Delete Vercel Deployments for Deleted Branch
+
+on:
+  delete:
+
+permissions:
+  contents: read
+
+jobs:
+  delete-vercel-deployments:
+    name: Delete Vercel deployments
+    if: github.event.ref_type == 'branch'
+    runs-on: ubuntu-latest
+
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+      DELETED_BRANCH: ${{ github.event.ref }}
+
+    steps:
+      - name: Validate required secrets
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "Missing required secret: VERCEL_TOKEN" >&2
+            exit 1
+          fi
+
+          if [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "Missing required secret: VERCEL_PROJECT_ID" >&2
+            exit 1
+          fi
+
+      - name: Delete deployments for deleted branch
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          api_base="https://api.vercel.com"
+          branch="$DELETED_BRANCH"
+          limit=100
+          deleted_count=0
+          page=1
+          until=""
+
+          urlencode() {
+            python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "$1"
+          }
+
+          team_query=""
+          if [ -n "${VERCEL_TEAM_ID:-}" ]; then
+            team_query="&teamId=$(urlencode "$VERCEL_TEAM_ID")"
+          fi
+
+          encoded_project_id="$(urlencode "$VERCEL_PROJECT_ID")"
+          encoded_branch="$(urlencode "$branch")"
+
+          echo "Looking for Vercel deployments for deleted branch: $branch"
+
+          while :; do
+            url="$api_base/v7/deployments?projectId=$encoded_project_id&branch=$encoded_branch&limit=$limit$team_query"
+            if [ -n "$until" ]; then
+              url="$url&until=$(urlencode "$until")"
+            fi
+
+            response="$(curl --fail --silent --show-error \
+              --header "Authorization: Bearer $VERCEL_TOKEN" \
+              --header "Content-Type: application/json" \
+              "$url")"
+
+            deployment_count="$(jq '.deployments | length' <<< "$response")"
+            if [ "$deployment_count" -eq 0 ]; then
+              echo "No deployments found on page $page."
+              break
+            fi
+
+            mapfile -t deployment_ids < <(jq -r '.deployments[] | select(.uid != null) | .uid' <<< "$response")
+
+            for deployment_id in "${deployment_ids[@]}"; do
+              echo "Deleting Vercel deployment: $deployment_id"
+              delete_url="$api_base/v13/deployments/$deployment_id"
+              if [ -n "${VERCEL_TEAM_ID:-}" ]; then
+                delete_url="$delete_url?teamId=$(urlencode "$VERCEL_TEAM_ID")"
+              fi
+
+              curl --fail --silent --show-error \
+                --request DELETE \
+                --header "Authorization: Bearer $VERCEL_TOKEN" \
+                --header "Content-Type: application/json" \
+                "$delete_url" \
+                >/dev/null
+              deleted_count=$((deleted_count + 1))
+            done
+
+            next="$(jq -r '.pagination.next // empty' <<< "$response")"
+            if [ -z "$next" ]; then
+              break
+            fi
+
+            until="$next"
+            page=$((page + 1))
+          done
+
+          echo "Deleted $deleted_count Vercel deployment(s) for branch '$branch'."
