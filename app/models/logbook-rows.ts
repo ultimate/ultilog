@@ -2,10 +2,11 @@ import type { Boat, CrewMember, LogLine, LogSheet } from "./logbook";
 
 export type StoredLogSheet = Omit<LogSheet, "crew" | "lines">;
 
-export type BoatRow = Omit<Boat, "flagState" | "homePort" | "yachtData"> & {
+export type BoatRow = Omit<Boat, "flagState" | "homePort" | "yachtData" | "deviationTable"> & {
   flag_state: string;
   home_port: string;
   yacht_data: unknown;
+  deviation_table: unknown;
 };
 
 export type LogSheetRow = {

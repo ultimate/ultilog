@@ -26,7 +26,7 @@ const boat = sampleBoats[0];
 
 describe("BoatsRepository", () => {
   it("finds all boat rows", async () => {
-    const row: BoatRow = { ...boat, flag_state: boat.flagState, home_port: boat.homePort, yacht_data: boat.yachtData };
+    const row: BoatRow = { ...boat, flag_state: boat.flagState, home_port: boat.homePort, yacht_data: boat.yachtData, deviation_table: boat.deviationTable };
     const db = new MockDatabase({ boats: [row] });
 
     await expect(new BoatsRepository(db).findAll()).resolves.toEqual([row]);
@@ -47,7 +47,7 @@ describe("BoatsRepository", () => {
     await new BoatsRepository(db).insert(boat);
 
     expect(db.calls[0].sql).toContain("insert into boats");
-    expect(db.calls[0].sql).toContain("$1, $2, $3, $4, $5, $6, $7, $8, $9");
-    expect(db.calls[0].values).toEqual([`legacy-user:${boat.id}`, boat.name, boat.type, boat.registration, boat.flagState, boat.homePort, boat.owner, boat.dimensions, JSON.stringify(boat.yachtData), "legacy-user"]);
+    expect(db.calls[0].sql).toContain("$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11");
+    expect(db.calls[0].values).toEqual([`legacy-user:${boat.id}`, boat.name, boat.type, boat.registration, boat.flagState, boat.homePort, boat.owner, boat.dimensions, JSON.stringify(boat.yachtData), JSON.stringify(boat.deviationTable), "legacy-user"]);
   });
 });
