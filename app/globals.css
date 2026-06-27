@@ -629,3 +629,18 @@ h1 { margin:0 0 .45rem; font-size:1.8rem; line-height:1.1; letter-spacing:-.04em
   .logout-chip { display:block; }
   .app-sidebar .profile-card { display:grid; }
 }
+/* Navigation label fixes: desktop rows show full labels; mobile bottom bar is icon-only. */
+.module-tabs .desktop-label { width:auto; min-width:0; text-align:left; }
+@media (min-width: 1001px) {
+  .module-tabs { grid-template-columns:1fr; }
+  .module-tabs button { display:flex; flex-direction:row; align-items:center; justify-content:flex-start; width:100%; white-space:nowrap; }
+}
+@media (max-width: 1000px) {
+  .module-tabs button { gap:0; }
+  .mobile-label,.mobile-nav-actions small { display:none; }
+  .module-tabs .tab-icon,.mobile-nav-actions span { width:2rem; height:2rem; }
+}
+@media (orientation: landscape) and (max-width: 1000px) {
+  .module-tabs button { gap:.65rem; }
+  .desktop-label { display:block; width:auto; }
+}
