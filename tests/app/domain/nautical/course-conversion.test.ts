@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateCourseConversion, calculateCourseConversionWithPosition, normalizeCourse } from "../../../../app/domain/nautical/course-conversion";
+import { calculateCourseConversion, normalizeCourse } from "../../../../app/domain/nautical/course-conversion";
 import { lookupNoaaMagneticVariation } from "../../../../app/domain/nautical/noaa-magnetic-variation";
 
 describe("course conversion", () => {
@@ -220,7 +220,7 @@ describe("NOAA magnetic variation lookup", () => {
 
 describe("course conversion with position", () => {
   it("looks up missing variation from position", async () => {
-    await expect(calculateCourseConversionWithPosition({
+    await expect(calculateCourseConversion({
       magneticCourse: 98,
     }, undefined, {
       position: { latitude: 52, longitude: 4 },
@@ -232,8 +232,8 @@ describe("course conversion with position", () => {
     });
   });
 
-  it("does not look up variation when it is already provided", async () => {
-    await expect(calculateCourseConversionWithPosition({
+  it("does not look up variation when it is already provided", () => {
+    expect(calculateCourseConversion({
       magneticCourse: 98,
       variation: 4,
     }, undefined, {
@@ -241,7 +241,18 @@ describe("course conversion with position", () => {
       variationLookup: async () => {
         throw new Error("should not be called");
       },
-    })).resolves.toEqual({
+    })).toEqual({
+      magneticCourse: 98,
+      variation: 4,
+      trueCourse: 102,
+    });
+  });
+
+  it("keeps the synchronous conversion path when position options are null", () => {
+    expect(calculateCourseConversion({
+      magneticCourse: 98,
+      variation: 4,
+    }, undefined, null)).toEqual({
       magneticCourse: 98,
       variation: 4,
       trueCourse: 102,
