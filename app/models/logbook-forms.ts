@@ -8,6 +8,7 @@ export type BoatForm = Pick<Boat, "name" | "registration" | "flagState" | "homeP
   mmsi: string;
   engine: string;
   safety: string;
+  deviationTable: Boat["deviationTable"];
 };
 
 export type LineForm = Omit<Record<keyof LogLine, string>, "logNm" | "latitude" | "longitude"> & {

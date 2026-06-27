@@ -1,4 +1,4 @@
-import type { Boat, BoatRow, CrewMemberRow, LogLineRow, LogSheet, LogSheetRow, PersistedLogbook, StoredLogSheet } from "../../models/logbook";
+import { normalizeDeviationTable, type Boat, type BoatRow, type CrewMemberRow, type LogLineRow, type LogSheet, type LogSheetRow, type PersistedLogbook, type StoredLogSheet } from "../../models/logbook";
 import type { QueryableDatabase } from "../db/logbook-database";
 import { scopedId, unscopedId } from "./boats-repository";
 
@@ -33,6 +33,7 @@ export class LogSheetsRepository {
       owner: boat.owner,
       dimensions: boat.dimensions,
       yachtData: parseJson<Record<string, string>>(boat.yacht_data),
+      deviationTable: normalizeDeviationTable(parseJson<Boat["deviationTable"]>(boat.deviation_table ?? [])),
     }));
     const sheets: LogSheet[] = sheetRows.map((sheet) => ({
       ...mapStoredSheet(sheet),
