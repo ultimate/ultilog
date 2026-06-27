@@ -16,6 +16,34 @@ describe("globe distance", () => {
     )).toBeCloseTo(84.91, 2);
   });
 
+  it("calculates the shortest distance across the date boundary", () => {
+    expect(calculateGlobeDistanceNm(
+      { latitude: 10, longitude: 179 },
+      { latitude: 10, longitude: -179 },
+    )).toBeCloseTo(118.26, 2);
+  });
+
+  it("calculates distance across both the equator and date boundary", () => {
+    expect(calculateGlobeDistanceNm(
+      { latitude: 1, longitude: 179 },
+      { latitude: -1, longitude: -179 },
+    )).toBeCloseTo(169.82, 2);
+  });
+
+  it("keeps date-boundary distances symmetrical when crossing the equator in reverse", () => {
+    const northEastToSouthWest = calculateGlobeDistanceNm(
+      { latitude: 2, longitude: 176 },
+      { latitude: -2, longitude: -176 },
+    );
+    const southWestToNorthEast = calculateGlobeDistanceNm(
+      { latitude: -2, longitude: -176 },
+      { latitude: 2, longitude: 176 },
+    );
+
+    expect(northEastToSouthWest).toBeCloseTo(536.93, 2);
+    expect(southWestToNorthEast).toBeCloseTo(northEastToSouthWest, 10);
+  });
+
   it("keeps square diagonals equal while the edge closer to the equator is longer", () => {
     const southWest = { latitude: 0, longitude: 0 };
     const southEast = { latitude: 0, longitude: 10 };
