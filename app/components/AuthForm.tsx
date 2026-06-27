@@ -44,19 +44,20 @@ export function AuthForm({ mode, footer }: Props) {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-950 px-4 text-slate-100">
-      <form onSubmit={submit} className="w-full max-w-md space-y-5 rounded-3xl border border-white/10 bg-white/10 p-8 shadow-2xl backdrop-blur">
+    <main className="auth-shell">
+      <form onSubmit={submit} className="auth-card">
+        <div className="brand-mark"><span className="sail-logo">◢</span><strong>ultilog</strong></div>
         <div>
-          <p className="text-sm uppercase tracking-[0.35em] text-cyan-200">UltiLog</p>
-          <h1 className="mt-3 text-3xl font-bold">{mode === "login" ? "Log in" : "Create account"}</h1>
-          <p className="mt-2 text-sm text-slate-300">Keep your boats, crew, and logbooks private to your account.</p>
+          <p className="eyebrow">Personal skipper logbook</p>
+          <h1>{mode === "login" ? "Welcome back" : "Create account"}</h1>
+          <p>Keep your boats, crew, and logbooks private to your account.</p>
         </div>
-        {mode === "register" && <label className="block text-sm font-medium">Name<input className="mt-2 w-full rounded-xl border border-white/10 bg-slate-900 px-4 py-3" name="name" required /></label>}
-        <label className="block text-sm font-medium">Email<input className="mt-2 w-full rounded-xl border border-white/10 bg-slate-900 px-4 py-3" name="email" required type="email" /></label>
-        <label className="block text-sm font-medium">Password<input className="mt-2 w-full rounded-xl border border-white/10 bg-slate-900 px-4 py-3" name="password" required type="password" minLength={8} /></label>
-        {error && <p className="rounded-xl bg-red-500/20 px-4 py-3 text-sm text-red-100">{error}</p>}
-        <button disabled={isSubmitting} className="w-full rounded-xl bg-cyan-300 px-4 py-3 font-bold text-slate-950 disabled:opacity-60" type="submit">{isSubmitting ? "Please wait…" : mode === "login" ? "Log in" : "Register"}</button>
-        <div className="text-center text-sm text-slate-300">{footer}</div>
+        {mode === "register" && <label>Name<input name="name" required /></label>}
+        <label>Email<input name="email" required type="email" /></label>
+        <label>Password<input name="password" required type="password" minLength={8} /></label>
+        {error && <p className="auth-error">{error}</p>}
+        <button disabled={isSubmitting} type="submit">{isSubmitting ? "Please wait…" : mode === "login" ? "Log in" : "Register"}</button>
+        <div className="auth-footer">{footer}</div>
       </form>
     </main>
   );
