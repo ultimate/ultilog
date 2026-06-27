@@ -82,7 +82,6 @@ h1 { margin:0 0 .45rem; font-size:1.8rem; line-height:1.1; letter-spacing:-.04em
 .table-vessel { display:flex; align-items:center; gap:.65rem; color:var(--text); font-weight:850; }
 .table-vessel .picture-thumb { width:2.35rem; height:2.35rem; border-radius:.45rem; }
 /* Explicit desktop sidebar + mobile bottom icon bar behavior from the supplied design */
-.mobile-label { display:none; }
 .module-tabs .tab-icon { display:inline-grid; place-items:center; width:1.25rem; }
 @media (min-width: 1001px) {
   .app-shell { grid-template-columns: var(--nav-w) minmax(0,1fr); }
@@ -97,8 +96,7 @@ h1 { margin:0 0 .45rem; font-size:1.8rem; line-height:1.1; letter-spacing:-.04em
   .module-tabs button { min-height:0; padding:.3rem .15rem; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.22rem; border-radius:14px; font-size:.67rem; line-height:1; }
   .module-tabs .tab-icon { width:1.85rem; height:1.85rem; border-radius:999px; font-size:1rem; }
   .module-tabs button.active .tab-icon { color:white; background:var(--blue); box-shadow:0 8px 22px rgba(37,99,235,.28); }
-  .desktop-label { display:none; }
-  .mobile-label { display:block; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .module-tabs .nav-label { display:none; }
   .app-content { padding:1rem 1rem 6.5rem; }
   .top-actions { margin:0 0 1rem; }
 }
@@ -112,8 +110,7 @@ h1 { margin:0 0 .45rem; font-size:1.8rem; line-height:1.1; letter-spacing:-.04em
   .module-tabs button { min-height:2.45rem; padding:0 .75rem; flex-direction:row; justify-content:flex-start; gap:.65rem; border-radius:10px; font-size:.88rem; line-height:1.2; }
   .module-tabs .tab-icon { width:1.25rem; height:1.25rem; border-radius:0; font-size:1rem; background:transparent; box-shadow:none; }
   .module-tabs button.active .tab-icon { color:var(--blue); background:transparent; box-shadow:none; }
-  .desktop-label { display:block; }
-  .mobile-label { display:none; }
+  .module-tabs .nav-label { display:block; }
   .app-content { padding:1.25rem 1.5rem 2rem; }
 }
 @media (orientation: landscape) and (max-width: 1000px) {
@@ -150,19 +147,19 @@ h1 { margin:0 0 .45rem; font-size:1.8rem; line-height:1.1; letter-spacing:-.04em
   .app-sidebar .profile-card { display:grid; }
 }
 /* Navigation label fixes: desktop rows show full labels; mobile bottom bar is icon-only. */
-.module-tabs .desktop-label { width:auto; min-width:0; text-align:left; }
+.module-tabs .nav-label { width:auto; min-width:0; text-align:left; }
 @media (min-width: 1001px) {
   .module-tabs { grid-template-columns:1fr; }
   .module-tabs button { display:flex; flex-direction:row; align-items:center; justify-content:flex-start; width:100%; white-space:nowrap; }
 }
 @media (max-width: 1000px) {
   .module-tabs button { gap:0; }
-  .mobile-label,.mobile-nav-actions small { display:none; }
+  .module-tabs .nav-label,.mobile-nav-actions small { display:none; }
   .module-tabs .tab-icon,.mobile-nav-actions span { width:2rem; height:2rem; }
 }
 @media (orientation: landscape) and (max-width: 1000px) {
   .module-tabs button { gap:.65rem; }
-  .desktop-label { display:block; width:auto; }
+  .module-tabs .nav-label { display:block; width:auto; }
 }
 /* Sidebar slim mode and stacking corrections. */
 .brand-row { display:flex; align-items:center; justify-content:space-between; gap:.5rem; }
@@ -170,7 +167,7 @@ h1 { margin:0 0 .45rem; font-size:1.8rem; line-height:1.1; letter-spacing:-.04em
 .app-shell[data-nav="slim"] { --nav-w:5.75rem; }
 .app-shell[data-nav="slim"] .app-sidebar { align-items:center; padding-inline:.65rem; }
 .app-shell[data-nav="slim"] .brand-mark strong,
-.app-shell[data-nav="slim"] .desktop-label,
+.app-shell[data-nav="slim"] .module-tabs .nav-label,
 .app-shell[data-nav="slim"] .sync-card,
 .app-shell[data-nav="slim"] .profile-card strong,
 .app-shell[data-nav="slim"] .profile-card small,
