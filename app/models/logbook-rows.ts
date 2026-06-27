@@ -1,4 +1,4 @@
-import type { Boat, CrewMember, LogLine, LogSheet } from "./logbook";
+import type { Boat, CrewMember, LogLine, LogSheet, SheetCrewMember } from "./logbook";
 
 export type StoredLogSheet = Omit<LogSheet, "crew" | "lines">;
 
@@ -24,10 +24,11 @@ export type LogSheetRow = {
   technical_checks: unknown;
 };
 
-export type CrewMemberRow = CrewMember & {
+export type CrewMemberRow = SheetCrewMember & {
   sheet_id: string;
   crew_member_id: string;
   sort_order: number;
+  is_primary?: number;
 };
 
 export type LogLineRow = Omit<LogLine, "logNm" | "magneticCourse" | "seaState"> & {

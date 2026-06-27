@@ -69,6 +69,7 @@ export class SqliteLogbookDatabase extends LogbookDatabase {
   private async insertSqliteLogbook(logbook: PersistedLogbook) {
     const ownerId = this.ownerId;
     for (const boat of logbook.boats) await this.boats.insert(boat, ownerId);
+    for (const crew of logbook.crewMembers ?? []) await this.crew.insertProfile(crew, ownerId);
     for (const sheet of logbook.sheets) {
       await this.sheets.insert(sheet, ownerId);
       for (const [index, crew] of sheet.crew.entries()) await this.crew.insert(sheet.id, index, crew, ownerId);

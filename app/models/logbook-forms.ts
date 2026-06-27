@@ -17,4 +17,4 @@ export type LineForm = Omit<Record<keyof LogLine, string>, "logNm" | "latitude" 
   logNm: string;
 };
 
-export type CrewForm = CrewMember;
+export type CrewForm = CrewMember & { embarkation: string; disembarkation: string };
