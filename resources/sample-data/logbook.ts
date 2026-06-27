@@ -2,7 +2,7 @@ import { defaultDeviationTable, type Boat, type LogSheet } from "../../app/model
 
 export const sampleBoats: Boat[] = [
   {
-    id: "boreas",
+    id: "4bff7b1f-ff73-40ed-9a97-800a4e3bf3c0",
     name: "SY Boreas",
     type: "Sail",
     registration: "CHE-7421",
@@ -27,7 +27,7 @@ export const sampleBoats: Boat[] = [
     deviationTable: defaultDeviationTable(),
   },
   {
-    id: "aurora",
+    id: "d63fa02f-54d2-47d6-a826-96d0bbd28991",
     name: "MY Aurora",
     type: "Motor",
     registration: "HR-19-884",
@@ -55,11 +55,11 @@ export const sampleBoats: Boat[] = [
 
 export const sampleLogSheets: LogSheet[] = [
   {
-    id: "ionian-day-3",
+    id: "7d3a7602-5f3a-4b3d-81f3-4e973a8bb3a8",
     title: "Ionian training passage · Day 3",
     dateRange: "14 May 2026",
     status: "Ready for review",
-    boatId: "boreas",
+    boatId: "4bff7b1f-ff73-40ed-9a97-800a4e3bf3c0",
     skipper: {
       name: "Nina Baumann",
       address: "Seestrasse 10, 8002 Zürich",
@@ -113,11 +113,11 @@ export const sampleLogSheets: LogSheet[] = [
     ],
   },
   {
-    id: "adriatic-transfer",
+    id: "2a2ac899-7f26-433c-a557-d89cd7b1181f",
     title: "Adriatic transfer watch",
     dateRange: "03 Jun 2026",
     status: "Draft",
-    boatId: "aurora",
+    boatId: "d63fa02f-54d2-47d6-a826-96d0bbd28991",
     skipper: {
       name: "Nina Baumann",
       address: "Seestrasse 10, 8002 Zürich",
