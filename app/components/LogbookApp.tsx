@@ -7,7 +7,7 @@ import { boats as seedBoats, defaultDeviationTable, logSheets as seedSheets, nor
 import { ManagerShell, type SplitDirection } from "./managers/ManagerShell";
 import { courseConversionColumns } from "../domain/nautical/course-conversion";
 import { type ModuleTab } from "../templates/app-shell";
-import { ModuleTabs } from "../templates/ModuleTabs";
+import { ModuleTabs, type ActiveView } from "../templates/ModuleTabs";
 import { DashboardPanel } from "../templates/DashboardPanel";
 import { legalRequirements } from "../templates/compliance";
 
@@ -39,7 +39,7 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
   const [logbook, setLogbook] = useState<PersistedLogbook>(defaultLogbook);
   const [activeSheetId, setActiveSheetId] = useState(defaultLogbook.sheets[0].id);
   const [isBackendReady, setIsBackendReady] = useState(false);
-  const [activeModule, setActiveModule] = useState<ModuleTab>("dashboard");
+  const [activeModule, setActiveModule] = useState<ActiveView>("dashboard");
   const [boatSplit, setBoatSplit] = useState<SplitDirection>("vertical");
   const [crewSplit, setCrewSplit] = useState<SplitDirection>("vertical");
   const [showCourseColumns, setShowCourseColumns] = useState(false);
@@ -57,6 +57,8 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
   const [selectedCrewIndex, setSelectedCrewIndex] = useState(0);
   const [lastCrewIndex, setLastCrewIndex] = useState(0);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [isNavSlim, setIsNavSlim] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const logbookRef = useRef(logbook);
 
@@ -321,28 +323,35 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
   }
 
   return (
-    <main className="app-shell">
-      <div className="fixed right-4 top-4 z-50 text-right">
-        {userEmail && <span className="mr-3 rounded-full bg-slate-950/70 px-3 py-2 text-sm text-white shadow">{userEmail}</span>}
-        <button className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-950 shadow disabled:opacity-60" disabled={isLoggingOut} onClick={logout} type="button">{isLoggingOut ? "Saving…" : "Logout"}</button>
-        {saveError && <p className="mt-2 max-w-xs rounded-xl bg-red-600 px-3 py-2 text-left text-xs font-semibold text-white shadow">{saveError}</p>}
+    <main className="app-shell" data-theme={theme} data-nav={isNavSlim ? "slim" : "full"}>
+      <ModuleTabs activeModule={activeModule} onSelectModule={setActiveModule} onOpenProfile={() => setActiveModule("profile")} theme={theme} onToggleTheme={() => setTheme((current) => current === "dark" ? "light" : "dark")} userEmail={userEmail} isNavSlim={isNavSlim} onToggleNavSlim={() => setIsNavSlim((current) => !current)} onLogout={logout} isLoggingOut={isLoggingOut} />
+      <section className="app-content">
+      <div className="top-actions">
+        {saveError && <p className="save-error">{saveError}</p>}
+        <button className="secondary-action" type="button">Export</button>
+        <button className="primary-action" type="button" onClick={() => { setEditingSheetId(null); setSheetForm(defaultSheetForm(activeBoat.id)); setShowNewSheet(true); setActiveModule("details"); }}>+ New log entry</button>
       </div>
-      <ModuleTabs activeModule={activeModule} onSelectModule={setActiveModule} />
 
       {activeModule === "dashboard" && <DashboardPanel stats={stats} />}
 
       <section className="workspace module-workspace">
-        {activeModule === "logbooks" && <aside className="sidebar module-panel" aria-label="Log sheets">
-          <div className="sidebar-header">
-            <p className="eyebrow">Sheets</p>
-            <button type="button" onClick={() => { setEditingSheetId(null); setSheetForm(defaultSheetForm(activeBoat.id)); setShowNewSheet(true); setActiveModule("details"); }}>+ New sheet</button>
+        {activeModule === "logbooks" && <section className="logbook-page module-panel" aria-label="Log sheets">
+          <div className="page-heading">
+            <div><h1>Logbooks</h1><p>Manage all your logbook entries</p></div>
+            <button type="button" className="primary-action" onClick={() => { setEditingSheetId(null); setSheetForm(defaultSheetForm(activeBoat.id)); setShowNewSheet(true); setActiveModule("details"); }}>+ New sheet</button>
           </div>
-
-          <div className="sheet-list" aria-label="Available log sheets">{logbook.sheets.map((sheet) => {
-            const boat = logbook.boats.find((candidate) => candidate.id === sheet.boatId);
-            return <div className={`sheet-button-row ${sheet.id === activeSheet.id ? "active" : ""}`} key={sheet.id}><button className="sheet-button sheet-card" onClick={() => { setActiveSheetId(sheet.id); setSheetForm(sheetToForm(sheet)); setActiveModule("details"); }} type="button"><span className="picture-thumb" aria-hidden="true" /><span>{sheet.title}</span><small>{sheet.dateRange} · {boat?.name}</small></button></div>;
-          })}</div>
-        </aside>}
+          <div className="logbook-toolbar"><input aria-label="Search logbooks" placeholder="Search logbooks…" readOnly /><select aria-label="Vessel filter" defaultValue="All vessels"><option>All vessels</option></select><select aria-label="Time filter" defaultValue="All time"><option>All time</option></select></div>
+          <article className="table-card logbook-list-card">
+            <div className="table-scroll"><table className="logbook-table"><thead><tr><th>Date</th><th>Entry</th><th>Vessel</th><th>From → To</th><th>Sail miles</th><th>Motor miles</th><th>Total miles</th><th></th></tr></thead><tbody>{logbook.sheets.map((sheet) => {
+              const boat = logbook.boats.find((candidate) => candidate.id === sheet.boatId);
+              const totalMiles = Math.max(0, ...sheet.lines.map((line) => line.logNm));
+              const motorMiles = sheet.daySummary.motorMiles || Math.round(totalMiles * 0.12);
+              const sailMiles = Math.max(0, totalMiles - motorMiles);
+              return <tr key={sheet.id}><td>{sheet.dateRange}</td><td><button className="table-title-button" onClick={() => { setActiveSheetId(sheet.id); setSheetForm(sheetToForm(sheet)); setActiveModule("details"); }} type="button">{sheet.title}</button></td><td><span className="table-vessel"><span className="picture-thumb" aria-hidden="true" />{boat?.name}</span></td><td>{sheet.route.from} → {sheet.route.to}</td><td>{sailMiles} nm</td><td>{motorMiles} nm</td><td>{totalMiles} nm</td><td><button className="edit-chip" onClick={() => { setActiveSheetId(sheet.id); setSheetForm(sheetToForm(sheet)); setActiveModule("details"); }} type="button">Open</button></td></tr>;
+            })}</tbody></table></div>
+            <div className="pagination-mock" aria-hidden="true"><span className="active">1</span><span>2</span><span>3</span><span>…</span><span>8</span><span>›</span></div>
+          </article>
+        </section>}
 
         {activeModule === "details" && <section className="sheet-detail" aria-labelledby="sheet-title">
           {(showNewSheet || editingSheetId) ? (
@@ -363,7 +372,7 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
           ) : (
             <>
               <div className="sheet-title-row"><div><p className="eyebrow">Active sheet</p><h2 id="sheet-title">{activeSheet.title}</h2><p>{activeSheet.route.from} → {activeSheet.route.to} · {activeSheet.dateRange}</p></div><div className="inline-edit-actions"><span className="status-pill">{activeSheet.status}</span><button type="button" className="edit-chip" onClick={() => startEditingSheet(activeSheet)}>Edit sheet</button></div></div>
-              <section className="paper-header" aria-label="Daily paper log header"><div><span>Day goal</span><strong>{activeSheet.route.dayGoal || "—"}</strong></div><div><span>Date</span><strong>{activeSheet.dateRange}</strong></div><div><span>Daily logbook lead</span><strong>{activeSheet.skipper.name}</strong></div><div><span>Stage / sheet</span><strong>{activeSheet.id}</strong></div><div><span>Position morning</span><strong>{activeSheet.route.morningPosition || "—"}</strong></div><div><span>Position evening</span><strong>{activeSheet.route.eveningPosition || "—"}</strong></div></section>
+              <section className="entry-metrics" aria-label="Logbook entry metrics"><article><span>Total miles</span><strong>{Math.max(0, ...activeSheet.lines.map((line) => line.logNm))} nm</strong></article><article><span>Sail miles</span><strong>{Math.max(0, Math.max(0, ...activeSheet.lines.map((line) => line.logNm)) - (activeSheet.daySummary.motorMiles || 12))} nm</strong></article><article><span>Motor miles</span><strong>{activeSheet.daySummary.motorMiles || 12} nm</strong></article><article><span>Duration</span><strong>18h 30m</strong></article></section><nav className="entry-tabs" aria-label="Entry sections"><span>Passage</span><span className="active">Mileage log</span><span>Crew ({activeSheet.crew.length})</span><span>Notes & documents</span><span>Sign-offs</span></nav><section className="paper-header" aria-label="Daily paper log header"><div><span>Day goal</span><strong>{activeSheet.route.dayGoal || "—"}</strong></div><div><span>Date</span><strong>{activeSheet.dateRange}</strong></div><div><span>Daily logbook lead</span><strong>{activeSheet.skipper.name}</strong></div><div><span>Stage / sheet</span><strong>{activeSheet.id}</strong></div><div><span>Position morning</span><strong>{activeSheet.route.morningPosition || "—"}</strong></div><div><span>Position evening</span><strong>{activeSheet.route.eveningPosition || "—"}</strong></div></section>
             </>
           )}
 
@@ -383,7 +392,19 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
 
         {activeModule === "crew" && <section className="sheet-detail module-panel"><ManagerShell title="Crew" split={crewSplit} newLabel="New crew" onNew={() => { setLastCrewIndex(selectedCrewIndex >= 0 ? selectedCrewIndex : lastCrewIndex); setSelectedCrewIndex(-1); setCrewForm(defaultCrewForm); }} onToggleSplit={() => setCrewSplit((split) => split === "vertical" ? "horizontal" : "vertical")} list={<ul className="manager-list">{activeSheet.crew.map((person, index) => <li key={person.name}><button type="button" className={index === selectedCrewIndex ? "active" : ""} onClick={() => selectCrew(index)}><span className="picture-thumb" aria-hidden="true" /><span><strong>{person.name}</strong><small>{person.role}</small></span></button></li>)}</ul>} form={<form className="inline-edit-grid" onSubmit={async (event) => { event.preventDefault(); await saveCrew(); }}><p className="eyebrow">{selectedCrewIndex < 0 ? "New crew" : "Crew form"}</p><label>Name<input value={crewForm.name} onChange={(e) => setCrewForm({ ...crewForm, name: e.target.value })} /></label><label>Nationality<input value={crewForm.nationality} onChange={(e) => setCrewForm({ ...crewForm, nationality: e.target.value })} /></label><label>Role<input value={crewForm.role} onChange={(e) => setCrewForm({ ...crewForm, role: e.target.value })} /></label><label>Embarkation<input value={crewForm.embarkation} onChange={(e) => setCrewForm({ ...crewForm, embarkation: e.target.value })} /></label><label>Disembarkation<input value={crewForm.disembarkation} onChange={(e) => setCrewForm({ ...crewForm, disembarkation: e.target.value })} /></label><div className="inline-edit-actions"><button type="submit">Save crew</button><button type="button" className="ghost-button" onClick={cancelCrewEdit}>Cancel</button></div></form>} /></section>}
 
-        {activeModule === "compliance" && <section className="sheet-detail module-panel"><article className="compliance-card"><div><p className="eyebrow">Swiss compliance checklist</p><h3>Built from Hochseeausweis logbook requirements</h3></div><ul>{legalRequirements.map((requirement) => <li key={requirement}>{requirement}</li>)}</ul></article></section>}
+
+
+        {activeModule === "profile" && <section className="profile-page module-panel" aria-label="Profile page">
+          <div className="page-heading"><div><h1>Profile</h1><p>Personal settings and account details — mocked for now.</p></div><button className="secondary-action" type="button" onClick={logout}>{isLoggingOut ? "Saving…" : "Logout"}</button></div>
+          <section className="profile-grid">
+            <article className="profile-hero-card"><span className="profile-avatar">JD</span><div><p className="eyebrow">Skipper profile</p><h2>Jane Doe</h2><p>{userEmail ?? "jane@example.com"}</p></div></article>
+            <article className="info-card"><h3>Preferences</h3><dl><div><dt>Theme</dt><dd>{theme === "dark" ? "Dark mode" : "Light mode"}</dd></div><div><dt>Distance units</dt><dd>Nautical miles</dd></div><div><dt>Default vessel</dt><dd>{activeBoat.name}</dd></div></dl></article>
+            <article className="info-card"><h3>Profile completion</h3><ul className="check-list"><li>Account created</li><li>Cloud sync connected</li><li>Skipper certificate pending</li><li>Emergency contact pending</li></ul></article>
+          </section>
+        </section>}
+
+        {activeModule === "compliance" && <section className="sheet-detail module-panel"><div className="page-heading"><div><h1>Compliance</h1><p>ICC / Hochseeausweis requirements</p></div><button className="secondary-action" type="button">Download report</button></div><article className="compliance-board"><section className="compliance-summary"><h3>Overall progress</h3><div className="progress-layout"><div className="progress-ring"><strong>72%</strong><span>Complete</span></div><dl><div><dt>You have</dt><dd>2,173 nm</dd></div><div><dt>Required</dt><dd>3,000 nm</dd></div><div><dt>Remaining</dt><dd>827 nm</dd></div></dl></div></section><section className="requirement-panel"><h3>Requirement checklist</h3>{legalRequirements.map((requirement, index) => <div className="requirement-row" key={requirement}><span>✓</span><strong>{requirement}</strong><progress value={[2173,1650,1020,1250,1120,860][index] ?? 860} max={[3000,1500,1000,1000,1400,500][index] ?? 500} /></div>)}</section></article><div className="mileage-breakdown"><article><span>△</span><strong>Sail miles</strong><b>1,650 nm</b><small>70%</small></article><article><span>✚</span><strong>Motor miles</strong><b>523 nm</b><small>24%</small></article><article><span>⛵</span><strong>Ocean passages</strong><b>1,120 nm</b><small>30%</small></article><article><span>♙</span><strong>As skipper</strong><b>860 nm</b><small>40%</small></article></div></section>}
+      </section>
       </section>
     </main>
   );
