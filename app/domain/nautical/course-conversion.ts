@@ -4,6 +4,16 @@ export type CourseConversionColumn = typeof courseConversionColumns[number];
 
 export type CourseConversionInput = Partial<CourseConversion>;
 
+export type CourseConversionPosition = {
+  latitude: number;
+  longitude: number;
+};
+
+export type CourseConversionLookupOptions = {
+  position?: CourseConversionPosition;
+  variationLookup?: (position: CourseConversionPosition) => Promise<number>;
+};
+
 export type CourseConversion = {
   compassCourse: number;
   deviation: number;
@@ -207,6 +217,24 @@ export function calculateCourseConversion(input: CourseConversionInput, deviatio
   }
 
   return result;
+}
+
+export async function calculateCourseConversionWithPosition(
+  input: CourseConversionInput,
+  deviationTable?: DeviationTable,
+  options: CourseConversionLookupOptions = {},
+): Promise<CourseConversionInput> {
+  if (input.variation !== undefined || !options.position) {
+    return calculateCourseConversion(input, deviationTable);
+  }
+
+  const { lookupNoaaMagneticVariation } = await import("./noaa-magnetic-variation");
+  const variationLookup = options.variationLookup ?? lookupNoaaMagneticVariation;
+
+  return calculateCourseConversion({
+    ...input,
+    variation: await variationLookup(options.position),
+  }, deviationTable);
 }
 
 export function convertCompassToTrueCourse(input: CourseConversionInput) {

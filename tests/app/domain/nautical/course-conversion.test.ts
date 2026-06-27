@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { calculateCourseConversion, normalizeCourse } from "../../../../app/domain/nautical/course-conversion";
+import { calculateCourseConversion, calculateCourseConversionWithPosition, normalizeCourse } from "../../../../app/domain/nautical/course-conversion";
+import { lookupNoaaMagneticVariation } from "../../../../app/domain/nautical/noaa-magnetic-variation";
 
 describe("course conversion", () => {
   it("normalizes courses into the 0..359 range", () => {
@@ -188,6 +189,62 @@ describe("course conversion", () => {
       10: 2,
     })).toEqual({
       magneticCourse: 12,
+    });
+  });
+});
+
+
+describe("NOAA magnetic variation lookup", () => {
+  it("calls NOAA declination API with coordinates and returns declination", async () => {
+    const fetcher = async (url: URL) => {
+      expect(url.origin + url.pathname).toBe("https://www.ngdc.noaa.gov/geomag-web/calculators/calculateDeclination");
+      expect(url.searchParams.get("lat1")).toBe("52");
+      expect(url.searchParams.get("lon1")).toBe("4");
+      expect(url.searchParams.get("resultFormat")).toBe("json");
+      expect(url.searchParams.get("model")).toBe("WMM");
+      expect(url.searchParams.get("startYear")).toBe("2026");
+      expect(url.searchParams.get("startMonth")).toBe("6");
+      expect(url.searchParams.get("startDay")).toBe("27");
+
+      return new Response(JSON.stringify({ result: [{ declination: "3.25" }] }));
+    };
+
+    await expect(lookupNoaaMagneticVariation({
+      latitude: 52,
+      longitude: 4,
+      date: new Date(Date.UTC(2026, 5, 27)),
+      fetcher: fetcher as typeof fetch,
+    })).resolves.toBe(3.25);
+  });
+});
+
+describe("course conversion with position", () => {
+  it("looks up missing variation from position", async () => {
+    await expect(calculateCourseConversionWithPosition({
+      magneticCourse: 98,
+    }, undefined, {
+      position: { latitude: 52, longitude: 4 },
+      variationLookup: async () => 4,
+    })).resolves.toEqual({
+      magneticCourse: 98,
+      variation: 4,
+      trueCourse: 102,
+    });
+  });
+
+  it("does not look up variation when it is already provided", async () => {
+    await expect(calculateCourseConversionWithPosition({
+      magneticCourse: 98,
+      variation: 4,
+    }, undefined, {
+      position: { latitude: 52, longitude: 4 },
+      variationLookup: async () => {
+        throw new Error("should not be called");
+      },
+    })).resolves.toEqual({
+      magneticCourse: 98,
+      variation: 4,
+      trueCourse: 102,
     });
   });
 });
