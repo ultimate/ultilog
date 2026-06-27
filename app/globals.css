@@ -644,3 +644,26 @@ h1 { margin:0 0 .45rem; font-size:1.8rem; line-height:1.1; letter-spacing:-.04em
   .module-tabs button { gap:.65rem; }
   .desktop-label { display:block; width:auto; }
 }
+/* Sidebar slim mode and stacking corrections. */
+.brand-row { display:flex; align-items:center; justify-content:space-between; gap:.5rem; }
+.nav-slim-toggle { display:grid; place-items:center; width:2rem; height:2rem; border:1px solid var(--line); border-radius:10px; background:var(--surface-strong); color:var(--text); font-weight:900; }
+.app-shell[data-nav="slim"] { --nav-w:5.75rem; }
+.app-shell[data-nav="slim"] .app-sidebar { align-items:center; padding-inline:.65rem; }
+.app-shell[data-nav="slim"] .brand-mark strong,
+.app-shell[data-nav="slim"] .desktop-label,
+.app-shell[data-nav="slim"] .sync-card,
+.app-shell[data-nav="slim"] .profile-card strong,
+.app-shell[data-nav="slim"] .profile-card small,
+.app-shell[data-nav="slim"] .theme-toggle,
+.app-shell[data-nav="slim"] .logout-chip { display:none; }
+.app-shell[data-nav="slim"] .module-tabs { width:100%; }
+.app-shell[data-nav="slim"] .module-tabs button { justify-content:center; padding-inline:0; }
+.app-shell[data-nav="slim"] .module-tabs .tab-icon { width:2.15rem; height:2.15rem; border-radius:12px; }
+.app-shell[data-nav="slim"] .profile-card { display:grid; grid-template-columns:1fr; padding:.55rem; }
+@media (orientation: landscape) and (max-width: 1000px) {
+  .module-tabs { grid-template-columns:1fr; }
+  .app-shell[data-nav="slim"] { --nav-w:5.75rem; }
+}
+@media (max-width: 1000px) {
+  .brand-row,.nav-slim-toggle { display:none; }
+}

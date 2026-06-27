@@ -58,6 +58,7 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
   const [lastCrewIndex, setLastCrewIndex] = useState(0);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [isNavSlim, setIsNavSlim] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const logbookRef = useRef(logbook);
 
@@ -321,8 +322,8 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
   }
 
   return (
-    <main className="app-shell" data-theme={theme}>
-      <ModuleTabs activeModule={activeModule} onSelectModule={setActiveModule} onOpenProfile={() => setActiveModule("profile")} theme={theme} onToggleTheme={() => setTheme((current) => current === "dark" ? "light" : "dark")} userEmail={userEmail} onLogout={logout} isLoggingOut={isLoggingOut} />
+    <main className="app-shell" data-theme={theme} data-nav={isNavSlim ? "slim" : "full"}>
+      <ModuleTabs activeModule={activeModule} onSelectModule={setActiveModule} onOpenProfile={() => setActiveModule("profile")} theme={theme} onToggleTheme={() => setTheme((current) => current === "dark" ? "light" : "dark")} userEmail={userEmail} isNavSlim={isNavSlim} onToggleNavSlim={() => setIsNavSlim((current) => !current)} onLogout={logout} isLoggingOut={isLoggingOut} />
       <section className="app-content">
       <div className="top-actions">
         {saveError && <p className="save-error">{saveError}</p>}
