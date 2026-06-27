@@ -24,15 +24,6 @@ const icons: Record<ModuleTab, string> = {
   compliance: "☷",
 };
 
-const mobileLabels: Record<ModuleTab, string> = {
-  dashboard: "Dashboard",
-  logbooks: "Logbooks",
-  details: "Entry",
-  boats: "Boats",
-  crew: "Crew",
-  compliance: "More",
-};
-
 export function ModuleTabs({ activeModule, onSelectModule, onOpenProfile, theme, onToggleTheme, userEmail, isNavSlim, onToggleNavSlim, onLogout, isLoggingOut }: ModuleTabsProps) {
   return (
     <aside className="app-sidebar" aria-label="Primary navigation">
@@ -41,8 +32,7 @@ export function ModuleTabs({ activeModule, onSelectModule, onOpenProfile, theme,
         {moduleTabs.map((tab) => (
           <button type="button" key={tab.id} className={activeModule === tab.id ? "active" : ""} onClick={() => onSelectModule(tab.id)} aria-label={tab.label}>
             <span className="tab-icon" aria-hidden="true">{icons[tab.id]}</span>
-            <span className="desktop-label">{tab.label}</span>
-            <span className="mobile-label">{mobileLabels[tab.id]}</span>
+            <span className="nav-label">{tab.label}</span>
           </button>
         ))}
       </nav>
