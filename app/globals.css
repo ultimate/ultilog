@@ -667,3 +667,12 @@ h1 { margin:0 0 .45rem; font-size:1.8rem; line-height:1.1; letter-spacing:-.04em
 @media (max-width: 1000px) {
   .brand-row,.nav-slim-toggle { display:none; }
 }
+/* Keep long sidebars usable and make the slim toggle discoverable. */
+.app-sidebar { overflow-y:auto; overflow-x:hidden; scrollbar-width:thin; }
+.nav-slim-toggle { width:auto; min-width:3.75rem; padding:0 .55rem; gap:.3rem; grid-auto-flow:column; }
+.nav-slim-toggle-label { font-size:.72rem; line-height:1; }
+.app-shell[data-nav="slim"] .nav-slim-toggle { min-width:2.5rem; padding:0 .35rem; }
+.app-shell[data-nav="slim"] .nav-slim-toggle-label { display:none; }
+@media (max-width: 1000px) {
+  .app-sidebar { overflow:visible; }
+}
