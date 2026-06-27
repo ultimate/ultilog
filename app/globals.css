@@ -582,3 +582,20 @@ h1 { margin:0 0 .45rem; font-size:1.8rem; line-height:1.1; letter-spacing:-.04em
   .app-content { padding:1rem 1rem 6.5rem; }
   .top-actions { margin:0 0 1rem; }
 }
+/* Landscape phones/tablets should use the desktop-style side navigation even below 1001px. */
+@media (orientation: landscape) and (max-width: 1000px) {
+  .app-shell { display:grid; grid-template-columns: var(--nav-w) minmax(0,1fr); padding-bottom:0; }
+  .app-sidebar { position:sticky; inset:auto; left:0; top:0; z-index:auto; width:var(--nav-w); height:100vh; padding:1rem .85rem; border-top:0; border-right:1px solid var(--line); background:color-mix(in srgb, var(--surface-strong) 82%, transparent); box-shadow:12px 0 35px rgba(15,35,70,.04); }
+  .app-sidebar .brand-mark,.app-sidebar .profile-card,.app-sidebar .theme-toggle,.sidebar-spacer { display:flex; }
+  .app-sidebar .sync-card { display:grid; }
+  .module-tabs { height:auto; margin:1rem 0 0; display:grid; grid-template-columns:1fr; gap:.35rem; }
+  .module-tabs button { min-height:2.45rem; padding:0 .75rem; flex-direction:row; justify-content:flex-start; gap:.65rem; border-radius:10px; font-size:.88rem; line-height:1.2; }
+  .module-tabs .tab-icon { width:1.25rem; height:1.25rem; border-radius:0; font-size:1rem; background:transparent; box-shadow:none; }
+  .module-tabs button.active .tab-icon { color:var(--blue); background:transparent; box-shadow:none; }
+  .desktop-label { display:block; }
+  .mobile-label { display:none; }
+  .app-content { padding:1.25rem 1.5rem 2rem; }
+}
+@media (orientation: landscape) and (max-width: 1000px) {
+  .app-sidebar .profile-card { display:grid; }
+}
