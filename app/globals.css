@@ -599,3 +599,33 @@ h1 { margin:0 0 .45rem; font-size:1.8rem; line-height:1.1; letter-spacing:-.04em
 @media (orientation: landscape) and (max-width: 1000px) {
   .app-sidebar .profile-card { display:grid; }
 }
+.logout-chip { border:1px solid var(--line); border-radius:10px; min-height:2.35rem; background:var(--surface-strong); color:var(--text); font-weight:850; }
+.profile-card.active { border-color:var(--blue); box-shadow:inset 0 0 0 1px var(--blue), var(--design-shadow); }
+.mobile-nav-actions { display:none; }
+.profile-grid { display:grid; grid-template-columns:minmax(280px,.9fr) minmax(0,1.1fr); gap:1rem; }
+.profile-hero-card { display:flex; align-items:center; gap:1rem; border:1px solid var(--line); border-radius:18px; background:var(--surface); box-shadow:var(--design-shadow); padding:1.25rem; }
+.profile-avatar { display:grid; place-items:center; width:4rem; height:4rem; border-radius:50%; background:#0b2758; color:white; font-weight:900; }
+@media (max-width: 1000px) {
+  .mobile-nav-actions { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:.25rem; }
+  .mobile-nav-actions button { min-height:0; padding:.3rem .15rem; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.22rem; border:0; border-radius:14px; background:transparent; color:var(--text); font-size:.67rem; font-weight:750; }
+  .mobile-nav-actions span { display:grid; place-items:center; width:1.85rem; height:1.85rem; border-radius:999px; }
+  .mobile-profile-action.active span { color:white; background:var(--blue); box-shadow:0 8px 22px rgba(37,99,235,.28); }
+  .module-tabs { grid-template-columns:repeat(6, minmax(0,1fr)) repeat(2, minmax(0,.8fr)); }
+}
+@media (orientation: landscape) and (max-width: 1000px) {
+  .mobile-nav-actions { display:none; }
+  .logout-chip { display:block; }
+}
+@media (max-width: 760px) { .profile-grid { grid-template-columns:1fr; } }
+@media (max-width: 1000px) {
+  .app-sidebar { display:grid; grid-template-columns:minmax(0,1fr) minmax(4.5rem,.28fr); align-items:stretch; gap:.25rem; }
+  .logout-chip { display:none; }
+  .module-tabs { grid-template-columns:repeat(6, minmax(0,1fr)); }
+}
+@media (orientation: landscape) and (max-width: 1000px) {
+  .app-sidebar { display:flex; }
+}
+@media (orientation: landscape) and (max-width: 1000px) {
+  .logout-chip { display:block; }
+  .app-sidebar .profile-card { display:grid; }
+}
