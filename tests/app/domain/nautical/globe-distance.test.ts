@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { calculateGlobeDistance, calculateGlobeDistanceNm } from "../../../../app/domain/nautical/globe-distance";
+import { calculateGlobeDistance, calculateGlobeDistanceNm, type GpsCoordinates } from "../../../../app/domain/nautical/globe-distance";
+import type { Position } from "../../../../app/domain/nautical/position";
 
 describe("globe distance", () => {
+  it("uses the shared geographic position type", () => {
+    const position: Position = { latitude: 0, longitude: 0 };
+    const coordinates: GpsCoordinates = position;
+
+    expect(coordinates).toEqual(position);
+  });
+
   it("calculates distance between two points on the equator", () => {
     expect(calculateGlobeDistanceNm(
       { latitude: 0, longitude: 0 },

@@ -219,12 +219,18 @@ describe("NOAA magnetic variation lookup", () => {
 });
 
 describe("course conversion with position", () => {
-  it("looks up missing variation from position", async () => {
+  it("looks up missing variation from position and date", async () => {
+    const logDate = new Date(Date.UTC(2025, 3, 5));
+
     await expect(calculateCourseConversion({
       magneticCourse: 98,
     }, undefined, {
       position: { latitude: 52, longitude: 4 },
-      variationLookup: async () => 4,
+      date: logDate,
+      variationLookup: async (request) => {
+        expect(request).toEqual({ latitude: 52, longitude: 4, date: logDate });
+        return 4;
+      },
     })).resolves.toEqual({
       magneticCourse: 98,
       variation: 4,

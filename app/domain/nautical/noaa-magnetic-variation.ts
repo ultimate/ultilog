@@ -1,9 +1,8 @@
-export type GeographicPosition = {
-  latitude: number;
-  longitude: number;
-};
+import type { Position } from "./position";
 
-export type NoaaMagneticVariationRequest = GeographicPosition & {
+export type { Position } from "./position";
+
+export type NoaaMagneticVariationRequest = Position & {
   date?: Date;
   model?: "WMM" | "IGRF" | "EMM" | "WMMHR";
   apiKey?: string;
