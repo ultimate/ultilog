@@ -21,7 +21,9 @@ const sheetToForm = (sheet: LogSheet): SheetForm => ({ title: sheet.title, dateR
 const lineToForm = (line: LogLine): LineForm => ({ time: line.time, position: line.position, latitude: line.latitude.toString(), longitude: line.longitude.toString(), logNm: line.logNm.toString(), course: line.course, magneticCourse: line.magneticCourse, seaState: line.seaState, barometer: line.barometer, wind: line.wind, weather: line.weather, sails: line.sails, engine: line.engine, remarks: line.remarks });
 const crewToForm = (crew: CrewForm): CrewForm => ({ name: crew.name, nationality: crew.nationality, role: crew.role, embarkation: crew.embarkation, disembarkation: crew.disembarkation });
 
-const slug = (value: string) => value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || crypto.randomUUID();
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const createId = () => crypto.randomUUID();
+const isOpaqueId = (id: string) => uuidPattern.test(id);
 const numberOrZero = (value: string) => Number.parseFloat(value) || 0;
 const routedModules = new Set<ActiveView>([...moduleTabs.map((tab) => tab.id), "profile"]);
 const modulePath = (module: ActiveView, itemId?: string | number) => `/${module}${itemId !== undefined && itemId !== null ? `/${encodeURIComponent(String(itemId))}` : ""}`;
@@ -34,6 +36,36 @@ function routeFromPathname(pathname: string): RouteState {
   return { view, itemId: itemSegment ? decodeURIComponent(itemSegment) : undefined };
 }
 
+function normalizeLogbookIds(logbook: PersistedLogbook): { logbook: PersistedLogbook; changed: boolean; boatIds: Map<string, string>; sheetIds: Map<string, string> } {
+  const boatIds = new Map<string, string>();
+  const sheetIds = new Map<string, string>();
+  let changed = false;
+
+  for (const boat of logbook.boats) {
+    if (!isOpaqueId(boat.id)) {
+      boatIds.set(boat.id, createId());
+      changed = true;
+    }
+  }
+  for (const sheet of logbook.sheets) {
+    if (!isOpaqueId(sheet.id)) {
+      sheetIds.set(sheet.id, createId());
+      changed = true;
+    }
+    if (boatIds.has(sheet.boatId)) changed = true;
+  }
+
+  if (!changed) return { logbook, changed, boatIds, sheetIds };
+  return {
+    changed,
+    boatIds,
+    sheetIds,
+    logbook: {
+      boats: logbook.boats.map((boat) => ({ ...boat, id: boatIds.get(boat.id) ?? boat.id })),
+      sheets: logbook.sheets.map((sheet) => ({ ...sheet, id: sheetIds.get(sheet.id) ?? sheet.id, boatId: boatIds.get(sheet.boatId) ?? sheet.boatId })),
+    },
+  };
+}
 
 function persistLogbook(logbook: PersistedLogbook, options?: { signal?: AbortSignal; keepalive?: boolean }) {
   return fetch("/api/logbook", {
@@ -116,12 +148,23 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
       const response = await fetch("/api/logbook");
       if (!response.ok) throw new Error("Unable to load logbook");
       const storedLogbook = await response.json() as PersistedLogbook;
+      const { logbook: normalizedLogbook, changed, boatIds, sheetIds } = normalizeLogbookIds(storedLogbook);
       if (!isMounted) return;
-      logbookRef.current = storedLogbook;
-      setLogbook(storedLogbook);
-      setActiveSheetId(storedLogbook.sheets[0]?.id ?? defaultLogbook.sheets[0].id);
-      setSheetForm((current) => ({ ...current, boatId: storedLogbook.boats[0]?.id ?? seedBoats[0].id }));
-      setSelectedBoatId(storedLogbook.boats[0]?.id ?? seedBoats[0].id);
+      logbookRef.current = normalizedLogbook;
+      setLogbook(normalizedLogbook);
+      setActiveSheetId(normalizedLogbook.sheets[0]?.id ?? defaultLogbook.sheets[0].id);
+      setSheetForm((current) => ({ ...current, boatId: normalizedLogbook.boats[0]?.id ?? seedBoats[0].id }));
+      setSelectedBoatId(normalizedLogbook.boats[0]?.id ?? seedBoats[0].id);
+      if (changed) {
+        const { view, itemId } = routeFromPathname(window.location.pathname);
+        const normalizedItemId = view === "boats" && itemId ? boatIds.get(itemId) : itemId && (view === "details" || view === "logbooks") ? sheetIds.get(itemId) : undefined;
+        if (normalizedItemId) {
+          const normalizedPath = modulePath(view, normalizedItemId);
+          window.history.replaceState(null, "", normalizedPath);
+          setRoutePath(normalizedPath);
+        }
+        persistLogbook(normalizedLogbook).catch(() => undefined);
+      }
       setIsBackendReady(true);
     }
     loadLogbook().catch(() => setIsBackendReady(true));
@@ -214,7 +257,7 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
 
   async function saveBoat(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const id = editingBoatId ?? `${slug(boatForm.name)}-${Date.now().toString(36)}`;
+    const id = editingBoatId ?? createId();
     const currentLogbook = logbookRef.current;
     const previousBoat = currentLogbook.boats.find((boat) => boat.id === id);
     const boat: Boat = {
@@ -257,7 +300,7 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
     const currentLogbook = logbookRef.current;
     const existingSheet = editingSheetId ? currentLogbook.sheets.find((sheet) => sheet.id === editingSheetId) : undefined;
     const base = existingSheet ?? seedSheets[0];
-    const id = editingSheetId ?? `${slug(sheetForm.title || sheetForm.dayGoal)}-${Date.now().toString(36)}`;
+    const id = editingSheetId ?? createId();
     const sheet: LogSheet = {
       ...base,
       id,
