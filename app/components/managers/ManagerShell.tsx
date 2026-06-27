@@ -4,23 +4,22 @@ export type SplitDirection = "vertical" | "horizontal";
 
 type ManagerShellProps = {
   title: string;
-  split: SplitDirection;
+  split?: SplitDirection;
   newLabel: string;
   onNew: () => void;
-  onToggleSplit: () => void;
   list: ReactNode;
   form: ReactNode;
+  showPictures?: boolean;
 };
 
-export function ManagerShell({ title, split, newLabel, onNew, onToggleSplit, list, form }: ManagerShellProps) {
+export function ManagerShell({ title, split = "vertical", newLabel, onNew, list, form, showPictures = false }: ManagerShellProps) {
   return (
-    <div className={`manager-split ${split}`}>
+    <div className={`manager-split ${split}`} data-pictures={showPictures ? "show" : "hide"}>
       <article className="info-card">
         <div className="card-title-row">
           <h3>{title}</h3>
           <div className="table-actions">
             <button type="button" className="edit-chip" onClick={onNew}>{newLabel}</button>
-            <button type="button" className="edit-chip" onClick={onToggleSplit}>{split === "vertical" ? "Horizontal split" : "Vertical split"}</button>
           </div>
         </div>
         {list}
