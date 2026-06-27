@@ -13,10 +13,19 @@ type ModuleTabsProps = {
 const icons: Record<ModuleTab, string> = {
   dashboard: "⌂",
   logbooks: "▣",
-  details: "↢",
+  details: "+",
   boats: "⚓",
   crew: "♙",
-  compliance: "◎",
+  compliance: "☷",
+};
+
+const mobileLabels: Record<ModuleTab, string> = {
+  dashboard: "Dashboard",
+  logbooks: "Logbooks",
+  details: "Entry",
+  boats: "Boats",
+  crew: "Crew",
+  compliance: "More",
 };
 
 export function ModuleTabs({ activeModule, onSelectModule, theme, onToggleTheme, userEmail, onLogout, isLoggingOut }: ModuleTabsProps) {
@@ -26,7 +35,9 @@ export function ModuleTabs({ activeModule, onSelectModule, theme, onToggleTheme,
       <nav className="module-tabs" aria-label="Business logic modules">
         {moduleTabs.map((tab) => (
           <button type="button" key={tab.id} className={activeModule === tab.id ? "active" : ""} onClick={() => onSelectModule(tab.id)}>
-            <span aria-hidden="true">{icons[tab.id]}</span>{tab.label}
+            <span className="tab-icon" aria-hidden="true">{icons[tab.id]}</span>
+            <span className="desktop-label">{tab.label}</span>
+            <span className="mobile-label">{mobileLabels[tab.id]}</span>
           </button>
         ))}
       </nav>
