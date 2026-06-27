@@ -98,9 +98,9 @@ export const sampleLogSheets: LogSheet[] = [
       "Photographed paper boat log for later reconciliation.",
     ],
     crew: [
-      { name: "Luca Frei", nationality: "Swiss", role: "Co-skipper / navigation", embarkation: "Preveza · 12 May", disembarkation: "Fiskardo · 16 May" },
-      { name: "Sofia Marin", nationality: "Italian", role: "Watch lead", embarkation: "Preveza · 12 May", disembarkation: "Fiskardo · 16 May" },
-      { name: "Jonas Meier", nationality: "Swiss", role: "Trainee", embarkation: "Preveza · 12 May", disembarkation: "Fiskardo · 16 May" },
+      { id: "luca-frei-swiss", name: "Luca Frei", nationality: "Swiss", role: "Co-skipper / navigation", embarkation: "Preveza · 12 May", disembarkation: "Fiskardo · 16 May" },
+      { id: "sofia-marin-italian", name: "Sofia Marin", nationality: "Italian", role: "Watch lead", embarkation: "Preveza · 12 May", disembarkation: "Fiskardo · 16 May" },
+      { id: "jonas-meier-swiss", name: "Jonas Meier", nationality: "Swiss", role: "Trainee", embarkation: "Preveza · 12 May", disembarkation: "Fiskardo · 16 May" },
     ],
     watchPlan: ["08-12: Luca / Jonas", "12-16: Nina / Sofia", "16-20: Sofia / Jonas"],
     technicalChecks: ["Engine oil checked", "Bilge dry", "Fresh water 62%", "Diesel 74%", "Navigation lights tested"],
@@ -155,8 +155,8 @@ export const sampleLogSheets: LogSheet[] = [
       "Fuel and cooling-water checks normal.",
     ],
     crew: [
-      { name: "Mara Novak", nationality: "Croatian", role: "Local skipper", embarkation: "Split · 03 Jun", disembarkation: "Vis · 03 Jun" },
-      { name: "Nina Baumann", nationality: "Swiss", role: "Personal log owner", embarkation: "Split · 03 Jun", disembarkation: "Vis · 03 Jun" },
+      { id: "mara-novak-croatian", name: "Mara Novak", nationality: "Croatian", role: "Local skipper", embarkation: "Split · 03 Jun", disembarkation: "Vis · 03 Jun" },
+      { id: "nina-baumann-swiss", name: "Nina Baumann", address: "Seestrasse 10, 8002 Zürich", certificate: "ICC Ocean · No. CH-88421 · Bern · 12 Mar 2022 · SSA", nationality: "Swiss", role: "Personal log owner", embarkation: "Split · 03 Jun", disembarkation: "Vis · 03 Jun" },
     ],
     watchPlan: ["09-12: Mara / Nina", "12-15: Nina / Mara"],
     technicalChecks: ["Fuel valves open", "VHF radio check", "Cooling water visible", "Harbor documents photographed"],

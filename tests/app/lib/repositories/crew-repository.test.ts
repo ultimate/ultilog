@@ -53,8 +53,8 @@ describe("CrewRepository", () => {
     await new CrewRepository(db).insert(sheet.id, 0, crew);
 
     expect(db.calls[0].sql).toContain("insert into crew_members");
-    expect(db.calls[0].values).toEqual(["legacy-user-luca-frei-swiss", crew.name, crew.nationality, crew.role, "legacy-user"]);
+    expect(db.calls[0].values).toEqual(["legacy-user:luca-frei-swiss", crew.name, crew.nationality, crew.role, crew.address ?? "", crew.certificate ?? "", crew.isPrimary ? 1 : 0, "legacy-user"]);
     expect(db.calls[1].sql).toContain("insert into sheet_crew_members");
-    expect(db.calls[1].values).toEqual([`legacy-user:${sheet.id}`, "legacy-user-luca-frei-swiss", 0, crew.embarkation, crew.disembarkation]);
+    expect(db.calls[1].values).toEqual([`legacy-user:${sheet.id}`, "legacy-user:luca-frei-swiss", 0, crew.embarkation, crew.disembarkation]);
   });
 });

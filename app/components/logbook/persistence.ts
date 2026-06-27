@@ -38,13 +38,16 @@ export function normalizeLogbookIds(logbook: PersistedLogbook): { logbook: Persi
     if (boatIds.has(sheet.boatId)) changed = true;
   }
 
-  if (!changed) return { logbook, changed, boatIds, sheetIds };
+  const sourceCrew = logbook.crewMembers ?? [];
+  if (!("crewMembers" in logbook)) changed = true;
+  if (!changed) return { logbook: { ...logbook, crewMembers: sourceCrew }, changed, boatIds, sheetIds };
   return {
     changed,
     boatIds,
     sheetIds,
     logbook: {
       boats: logbook.boats.map((boat) => ({ ...boat, id: boatIds.get(boat.id) ?? boat.id })),
+      crewMembers: sourceCrew,
       sheets: logbook.sheets.map((sheet) => ({ ...sheet, id: sheetIds.get(sheet.id) ?? sheet.id, boatId: boatIds.get(sheet.boatId) ?? sheet.boatId })),
     },
   };

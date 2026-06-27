@@ -20,7 +20,7 @@ export class LogSheetsRepository {
     );
   }
 
-  static toLogbook(boatRows: BoatRow[], sheetRows: LogSheetRow[], crewRows: CrewMemberRow[], lineRows: LogLineRow[]): PersistedLogbook {
+  static toLogbook(boatRows: BoatRow[], sheetRows: LogSheetRow[], crewRows: CrewMemberRow[], lineRows: LogLineRow[], crewProfileRows: CrewMemberRow[] = []): PersistedLogbook {
     const crewBySheet = groupBy(crewRows, (crew) => crew.sheet_id);
     const linesBySheet = groupBy(lineRows, (line) => line.sheet_id);
     const boats: Boat[] = boatRows.map((boat) => ({
@@ -35,9 +35,10 @@ export class LogSheetsRepository {
       yachtData: parseJson<Record<string, string>>(boat.yacht_data),
       deviationTable: normalizeDeviationTable(parseJson<Boat["deviationTable"]>(boat.deviation_table ?? [])),
     }));
+    const crewMembers = crewProfileRows.map((crew) => ({ id: unscopedId(crew.crew_member_id ?? crew.id), name: crew.name, nationality: crew.nationality, role: crew.role, address: crew.address ?? "", certificate: crew.certificate ?? "", isPrimary: Boolean(crew.is_primary) }));
     const sheets: LogSheet[] = sheetRows.map((sheet) => ({
       ...mapStoredSheet(sheet),
-      crew: (crewBySheet.get(sheet.id) ?? []).map(({ sheet_id, crew_member_id, sort_order, ...crew }) => crew),
+      crew: (crewBySheet.get(sheet.id) ?? []).map(({ sheet_id, crew_member_id, sort_order, is_primary, ...crew }) => ({ ...crew, id: unscopedId(crew_member_id), isPrimary: Boolean(is_primary) })),
       lines: (linesBySheet.get(sheet.id) ?? []).map(({ sheet_id, sort_order, log_nm, magnetic_course, sea_state, ...line }) => ({
         ...line,
         logNm: log_nm,
@@ -45,7 +46,7 @@ export class LogSheetsRepository {
         seaState: sea_state,
       })),
     }));
-    return { boats, sheets };
+    return { boats, crewMembers, sheets };
   }
 
   private values(count: number) {

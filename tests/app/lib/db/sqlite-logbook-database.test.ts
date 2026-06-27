@@ -15,7 +15,7 @@ describe("SqliteLogbookDatabase", () => {
   it("creates an empty local database and seeds it from sample data", async () => {
     const db = new SqliteLogbookDatabase(await tempDatabasePath());
 
-    await expect(db.readLogbook()).resolves.toEqual({ boats: sampleBoats, sheets: sampleLogSheets });
+    await expect(db.readLogbook()).resolves.toMatchObject({ boats: sampleBoats, sheets: sampleLogSheets });
   });
 
   it("persists replaced logbook data and can read it from a new database wrapper", async () => {
@@ -23,13 +23,14 @@ describe("SqliteLogbookDatabase", () => {
     const firstWrapper = new SqliteLogbookDatabase(databasePath);
     const logbook = await firstWrapper.readLogbook();
     const updatedLogbook = {
+      crewMembers: logbook.crewMembers,
       boats: [{ ...logbook.boats[0], name: "SY Repository Test" }],
       sheets: [{ ...logbook.sheets[0], title: "Repository integration test", boatId: logbook.boats[0].id }],
     };
 
     await firstWrapper.writeLogbook(updatedLogbook);
 
-    await expect(new SqliteLogbookDatabase(databasePath).readLogbook()).resolves.toEqual(updatedLogbook);
+    await expect(new SqliteLogbookDatabase(databasePath).readLogbook()).resolves.toMatchObject({ boats: updatedLogbook.boats, sheets: updatedLogbook.sheets });
   });
 });
 

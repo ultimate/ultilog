@@ -61,7 +61,8 @@ describe("LogSheetsRepository", () => {
 
     expect(LogSheetsRepository.toLogbook([boatRow], [sheetRow], [crewRow], [lineRow])).toEqual({
       boats: [boat],
-      sheets: [{ ...sheet, crew: [crew], lines: [line] }],
+      crewMembers: [],
+      sheets: [{ ...sheet, crew: [{ ...crew, isPrimary: false }], lines: [line] }],
     });
   });
 });

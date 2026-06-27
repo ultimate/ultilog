@@ -3,12 +3,13 @@ import type { LogSheet } from "./log-sheet";
 
 export type PersistedLogbook = {
   boats: Boat[];
+  crewMembers: import("./crew-member").CrewMember[];
   sheets: LogSheet[];
 };
 
 export { defaultDeviationTable, deviationTableHeadings, normalizeDeviationTable } from "./boat";
 export type { Boat, BoatType, DeviationTableRow } from "./boat";
-export type { CrewMember } from "./crew-member";
+export type { CrewMember, SheetCrewMember } from "./crew-member";
 export type { LogLine } from "./log-line";
 export type { LogSheet } from "./log-sheet";
 

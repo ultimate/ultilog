@@ -1,4 +1,4 @@
-import type { CrewMember } from "./crew-member";
+import type { SheetCrewMember } from "./crew-member";
 import type { LogLine } from "./log-line";
 
 export type LogSheet = {
@@ -40,7 +40,7 @@ export type LogSheet = {
     engineHoursEnd: number;
   };
   remarks: string[];
-  crew: CrewMember[];
+  crew: SheetCrewMember[];
   watchPlan: string[];
   technicalChecks: string[];
   lines: LogLine[];
