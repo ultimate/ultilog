@@ -33,7 +33,7 @@ export function ModuleTabs({ activeModule, onSelectModule, theme, onToggleTheme,
       <div className="sidebar-spacer" />
       <section className="sync-card" aria-label="Cloud sync status"><span>☁</span><strong>Cloud sync</strong><small>All data is securely stored in the cloud.</small><em>● All up to date</em></section>
       <button className="theme-toggle" type="button" onClick={onToggleTheme}>{theme === "dark" ? "☀ Light mode" : "☾ Dark mode"}</button>
-      <button className="profile-card" type="button" onClick={onLogout} disabled={isLoggingOut}><span>JD</span><strong>{isLoggingOut ? "Saving…" : "Jane Doe"}</strong><small>{userEmail ?? "jane@example.com"}</small></button>
+      <button className="profile-card" type="button" onClick={onLogout} disabled={isLoggingOut} aria-label="Logout"><span>JD</span><strong>{isLoggingOut ? "Saving…" : "Jane Doe"}</strong><small>{userEmail ?? "jane@example.com"}</small></button>
     </aside>
   );
 }
