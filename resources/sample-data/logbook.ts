@@ -1,4 +1,4 @@
-import type { Boat, LogSheet } from "../../app/models/logbook";
+import { defaultDeviationTable, type Boat, type LogSheet } from "../../app/models/logbook";
 
 export const sampleBoats: Boat[] = [
   {
@@ -24,6 +24,7 @@ export const sampleBoats: Boat[] = [
       Electronics: "AIS, GPS plotter, VHF, radar",
       Safety: "Liferaft, EPIRB, jacklines",
     },
+    deviationTable: defaultDeviationTable(),
   },
   {
     id: "aurora",
@@ -48,6 +49,7 @@ export const sampleBoats: Boat[] = [
       Electronics: "AIS, GPS plotter, VHF",
       Safety: "Liferaft, flares, lifejackets",
     },
+    deviationTable: defaultDeviationTable(),
   },
 ];
 
