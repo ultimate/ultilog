@@ -479,8 +479,8 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
                 <label>Day goal<input value={sheetForm.dayGoal} onChange={(e) => setSheetForm({ ...sheetForm, dayGoal: e.target.value })} /></label>
                 <label>From<input value={sheetForm.from} onChange={(e) => setSheetForm({ ...sheetForm, from: e.target.value })} /></label>
                 <label>To<input value={sheetForm.to} onChange={(e) => setSheetForm({ ...sheetForm, to: e.target.value })} /></label>
-                <label>From time<input type="time" value={sheetForm.fromTime} onChange={(e) => setSheetForm({ ...sheetForm, fromTime: e.target.value })} /></label>
-                <label>To time<input type="time" value={sheetForm.toTime} onChange={(e) => setSheetForm({ ...sheetForm, toTime: e.target.value })} /></label>
+                <label>Departure time<input type="time" value={sheetForm.fromTime} onChange={(e) => setSheetForm({ ...sheetForm, fromTime: e.target.value })} /></label>
+                <label>Arrival time<input type="time" value={sheetForm.toTime} onChange={(e) => setSheetForm({ ...sheetForm, toTime: e.target.value })} /></label>
               </div>
               <div className="inline-edit-actions"><button type="submit">Save</button>{showNewSheet ? <button type="button" className="ghost-button" onClick={() => { cancelSheetEdit(); navigate("logbooks"); }}>Cancel</button> : <button type="button" className="ghost-button" onClick={() => setSheetForm(sheetToForm(activeSheet))}>Discard changes</button>}</div>
             </form>
