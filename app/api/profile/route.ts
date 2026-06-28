@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 import { auth } from "../../../auth";
-import { updateUserEmail, updateUserPassword } from "../../lib/users";
+import { deleteUserAccount, updateUserEmail, updateUserName, updateUserPassword } from "../../lib/users";
 
 export async function PATCH(request: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
-    const body = await request.json() as { action?: string; email?: string; currentPassword?: string; newPassword?: string };
+    const body = await request.json() as { action?: string; name?: string; email?: string; currentPassword?: string; newPassword?: string };
+    if (body.action === "name") {
+      const user = await updateUserName(session.user.id, { name: body.name ?? "", currentPassword: body.currentPassword ?? "" });
+      return NextResponse.json({ name: user.name });
+    }
     if (body.action === "email") {
       const user = await updateUserEmail(session.user.id, { email: body.email ?? "", currentPassword: body.currentPassword ?? "" });
       return NextResponse.json({ email: user.email });
@@ -18,5 +22,17 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Unsupported profile update." }, { status: 400 });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to update profile." }, { status: 400 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  const session = await auth();
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const body = await request.json() as { currentPassword?: string };
+    await deleteUserAccount(session.user.id, { currentPassword: body.currentPassword ?? "" });
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to delete account." }, { status: 400 });
   }
 }

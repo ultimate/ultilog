@@ -12,7 +12,7 @@ import { ModuleTabs, type ActiveView } from "../templates/ModuleTabs";
 import { DashboardPanel } from "../templates/DashboardPanel";
 import { legalRequirements } from "../templates/compliance";
 
-export function LogbookApp({ userEmail }: { userEmail?: string }) {
+export function LogbookApp({ userEmail, userName }: { userEmail?: string; userName?: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const [logbook, setLogbook] = useState<PersistedLogbook>(defaultLogbook);
@@ -38,11 +38,14 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [isNavSlim, setIsNavSlim] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [accountName, setAccountName] = useState(userName ?? "");
   const [accountEmail, setAccountEmail] = useState(userEmail ?? "");
+  const [nameForm, setNameForm] = useState({ name: userName ?? "", currentPassword: "" });
   const [emailForm, setEmailForm] = useState({ email: userEmail ?? "", currentPassword: "" });
   const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
   const [profileMessage, setProfileMessage] = useState<string | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
+  const [deleteForm, setDeleteForm] = useState({ currentPassword: "", confirmation: "" });
   const logbookRef = useRef(logbook);
 
   function pushAppPath(path: string) {
@@ -442,6 +445,21 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
     setCrewForm(crewToForm(logbook.crewMembers[nextIndex] ?? defaultCrewForm));
   }
 
+  async function updateName(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setProfileError(null);
+    setProfileMessage(null);
+    const response = await fetch("/api/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "name", ...nameForm }) });
+    const payload = await response.json().catch(() => ({})) as { name?: string; error?: string };
+    if (!response.ok) {
+      setProfileError(payload.error ?? "Unable to update name.");
+      return;
+    }
+    setAccountName(payload.name ?? nameForm.name);
+    setNameForm({ name: payload.name ?? nameForm.name, currentPassword: "" });
+    setProfileMessage("Name updated.");
+  }
+
   async function updateEmail(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setProfileError(null);
@@ -473,6 +491,25 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
     }
     setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
     setProfileMessage("Password updated.");
+  }
+
+  async function deleteAccount(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setProfileError(null);
+    setProfileMessage(null);
+    if (deleteForm.confirmation !== "DELETE") {
+      setProfileError('Type "DELETE" to confirm account deletion.');
+      return;
+    }
+    const response = await fetch("/api/profile", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ currentPassword: deleteForm.currentPassword }) });
+    const payload = await response.json().catch(() => ({})) as { error?: string };
+    if (!response.ok) {
+      setProfileError(payload.error ?? "Unable to delete account.");
+      return;
+    }
+    await signOut({ redirect: false });
+    router.push("/register");
+    router.refresh();
   }
 
   return (
@@ -550,11 +587,13 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
         {activeModule === "profile" && <section className="profile-page module-panel" aria-label="Profile page">
           <div className="page-heading"><div><h1>Profile</h1><p>Personal settings and account details.</p></div><button className="secondary-action" type="button" onClick={logout}>{isLoggingOut ? "Saving…" : "Logout"}</button></div>
           <section className="profile-grid">
-            <article className="profile-hero-card"><span className="profile-avatar">ME</span><div><p className="eyebrow">User profile</p><h2>{logbook.crewMembers.find((crew) => crew.isPrimary)?.name ?? "My profile"}</h2><p>{accountEmail || "No email set"}</p><button type="button" className="edit-chip" onClick={() => { const meIndex = logbook.crewMembers.findIndex((crew) => crew.isPrimary); if (meIndex >= 0) { selectCrew(meIndex); navigate("crew", meIndex); } }}>Show my crew member details</button></div></article>
-            <article className="info-card"><h3>Account settings</h3><dl><div><dt>Email</dt><dd>{accountEmail || "—"}</dd></div></dl>{profileMessage && <p className="save-success">{profileMessage}</p>}{profileError && <p className="save-error">{profileError}</p>}</article>
+            <article className="profile-hero-card"><span className="profile-avatar">ME</span><div><p className="eyebrow">User profile</p><h2>{accountName || logbook.crewMembers.find((crew) => crew.isPrimary)?.name || "My profile"}</h2><p>{accountEmail || "No email set"}</p><button type="button" className="edit-chip" onClick={() => { const meIndex = logbook.crewMembers.findIndex((crew) => crew.isPrimary); if (meIndex >= 0) { selectCrew(meIndex); navigate("crew", meIndex); } }}>Show my crew member details</button></div></article>
+            <article className="info-card"><h3>Account settings</h3><dl><div><dt>Name</dt><dd>{accountName || "—"}</dd></div><div><dt>Email</dt><dd>{accountEmail || "—"}</dd></div></dl>{profileMessage && <p className="save-success">{profileMessage}</p>}{profileError && <p className="save-error">{profileError}</p>}</article>
+            <form className="info-card inline-edit-grid" onSubmit={updateName}><h3>Change name</h3><label className="wide-field">New name<input required value={nameForm.name} onChange={(e) => setNameForm({ ...nameForm, name: e.target.value })} /></label><label className="wide-field">Current password<input type="password" required value={nameForm.currentPassword} onChange={(e) => setNameForm({ ...nameForm, currentPassword: e.target.value })} /></label><div className="inline-edit-actions"><button type="submit">Update name</button></div><p className="wide-field">Names must be unique and may not contain reserved or abusive terms.</p></form>
             <form className="info-card inline-edit-grid" onSubmit={updateEmail}><h3>Change email</h3><label className="wide-field">New email<input type="email" required value={emailForm.email} onChange={(e) => setEmailForm({ ...emailForm, email: e.target.value })} /></label><label className="wide-field">Current password<input type="password" required value={emailForm.currentPassword} onChange={(e) => setEmailForm({ ...emailForm, currentPassword: e.target.value })} /></label><div className="inline-edit-actions"><button type="submit">Update email</button></div></form>
             <form className="info-card inline-edit-grid" onSubmit={updatePassword}><h3>Change password</h3><label className="wide-field">Current password<input type="password" required value={passwordForm.currentPassword} onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })} /></label><label className="wide-field">New password<input type="password" required minLength={8} value={passwordForm.newPassword} onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })} /></label><label className="wide-field">Confirm new password<input type="password" required minLength={8} value={passwordForm.confirmPassword} onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })} /></label><div className="inline-edit-actions"><button type="submit">Update password</button></div></form>
             <article className="info-card"><h3>Preferences</h3><dl><div><dt>Theme</dt><dd>{theme === "dark" ? "Dark mode" : "Light mode"}</dd></div><div><dt>Distance units</dt><dd>Nautical miles</dd></div><div><dt>Default vessel</dt><dd>{activeBoat.name}</dd></div></dl></article>
+            <form className="info-card inline-edit-grid" onSubmit={deleteAccount}><h3>Delete account</h3><p className="wide-field">This permanently deletes your account and all logbooks, boats, crew members, and log lines.</p><label className="wide-field">Current password<input type="password" required value={deleteForm.currentPassword} onChange={(e) => setDeleteForm({ ...deleteForm, currentPassword: e.target.value })} /></label><label className="wide-field">Type DELETE to confirm<input required value={deleteForm.confirmation} onChange={(e) => setDeleteForm({ ...deleteForm, confirmation: e.target.value })} /></label><div className="inline-edit-actions"><button type="submit" className="ghost-button">Delete account</button></div></form>
           </section>
         </section>}
 
