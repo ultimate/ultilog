@@ -38,6 +38,11 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [isNavSlim, setIsNavSlim] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [accountEmail, setAccountEmail] = useState(userEmail ?? "");
+  const [emailForm, setEmailForm] = useState({ email: userEmail ?? "", currentPassword: "" });
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
+  const [profileMessage, setProfileMessage] = useState<string | null>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
   const logbookRef = useRef(logbook);
 
   function pushAppPath(path: string) {
@@ -437,9 +442,42 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
     setCrewForm(crewToForm(logbook.crewMembers[nextIndex] ?? defaultCrewForm));
   }
 
+  async function updateEmail(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setProfileError(null);
+    setProfileMessage(null);
+    const response = await fetch("/api/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "email", ...emailForm }) });
+    const payload = await response.json().catch(() => ({})) as { email?: string; error?: string };
+    if (!response.ok) {
+      setProfileError(payload.error ?? "Unable to update email.");
+      return;
+    }
+    setAccountEmail(payload.email ?? emailForm.email);
+    setEmailForm({ email: payload.email ?? emailForm.email, currentPassword: "" });
+    setProfileMessage("Email updated. Use the new email next time you log in.");
+  }
+
+  async function updatePassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setProfileError(null);
+    setProfileMessage(null);
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setProfileError("New passwords do not match.");
+      return;
+    }
+    const response = await fetch("/api/profile", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "password", currentPassword: passwordForm.currentPassword, newPassword: passwordForm.newPassword }) });
+    const payload = await response.json().catch(() => ({})) as { error?: string };
+    if (!response.ok) {
+      setProfileError(payload.error ?? "Unable to update password.");
+      return;
+    }
+    setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    setProfileMessage("Password updated.");
+  }
+
   return (
     <main className="app-shell" data-theme={theme} data-nav={isNavSlim ? "slim" : "full"}>
-      <ModuleTabs activeModule={activeModule} onSelectModule={(module) => navigate(module)} onOpenProfile={() => navigate("profile")} theme={theme} onToggleTheme={() => setTheme((current) => current === "dark" ? "light" : "dark")} userEmail={userEmail} isNavSlim={isNavSlim} onToggleNavSlim={() => setIsNavSlim((current) => !current)} onLogout={logout} isLoggingOut={isLoggingOut} />
+      <ModuleTabs activeModule={activeModule} onSelectModule={(module) => navigate(module)} onOpenProfile={() => navigate("profile")} theme={theme} onToggleTheme={() => setTheme((current) => current === "dark" ? "light" : "dark")} userEmail={accountEmail || userEmail} isNavSlim={isNavSlim} onToggleNavSlim={() => setIsNavSlim((current) => !current)} onLogout={logout} isLoggingOut={isLoggingOut} />
       <section className="app-content">
       <div className="top-actions">
         {saveError && <p className="save-error">{saveError}</p>}
@@ -510,11 +548,13 @@ export function LogbookApp({ userEmail }: { userEmail?: string }) {
 
 
         {activeModule === "profile" && <section className="profile-page module-panel" aria-label="Profile page">
-          <div className="page-heading"><div><h1>Profile</h1><p>Personal settings and account details — mocked for now.</p></div><button className="secondary-action" type="button" onClick={logout}>{isLoggingOut ? "Saving…" : "Logout"}</button></div>
+          <div className="page-heading"><div><h1>Profile</h1><p>Personal settings and account details.</p></div><button className="secondary-action" type="button" onClick={logout}>{isLoggingOut ? "Saving…" : "Logout"}</button></div>
           <section className="profile-grid">
-            <article className="profile-hero-card"><span className="profile-avatar">ME</span><div><p className="eyebrow">User profile</p><h2>{logbook.crewMembers.find((crew) => crew.isPrimary)?.name ?? "My profile"}</h2><p>{userEmail ?? "jane@example.com"}</p><button type="button" className="edit-chip" onClick={() => { const meIndex = logbook.crewMembers.findIndex((crew) => crew.isPrimary); if (meIndex >= 0) { selectCrew(meIndex); navigate("crew", meIndex); } }}>Show my crew member details</button></div></article>
+            <article className="profile-hero-card"><span className="profile-avatar">ME</span><div><p className="eyebrow">User profile</p><h2>{logbook.crewMembers.find((crew) => crew.isPrimary)?.name ?? "My profile"}</h2><p>{accountEmail || "No email set"}</p><button type="button" className="edit-chip" onClick={() => { const meIndex = logbook.crewMembers.findIndex((crew) => crew.isPrimary); if (meIndex >= 0) { selectCrew(meIndex); navigate("crew", meIndex); } }}>Show my crew member details</button></div></article>
+            <article className="info-card"><h3>Account settings</h3><dl><div><dt>Email</dt><dd>{accountEmail || "—"}</dd></div></dl>{profileMessage && <p className="save-success">{profileMessage}</p>}{profileError && <p className="save-error">{profileError}</p>}</article>
+            <form className="info-card inline-edit-grid" onSubmit={updateEmail}><h3>Change email</h3><label className="wide-field">New email<input type="email" required value={emailForm.email} onChange={(e) => setEmailForm({ ...emailForm, email: e.target.value })} /></label><label className="wide-field">Current password<input type="password" required value={emailForm.currentPassword} onChange={(e) => setEmailForm({ ...emailForm, currentPassword: e.target.value })} /></label><div className="inline-edit-actions"><button type="submit">Update email</button></div></form>
+            <form className="info-card inline-edit-grid" onSubmit={updatePassword}><h3>Change password</h3><label className="wide-field">Current password<input type="password" required value={passwordForm.currentPassword} onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })} /></label><label className="wide-field">New password<input type="password" required minLength={8} value={passwordForm.newPassword} onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })} /></label><label className="wide-field">Confirm new password<input type="password" required minLength={8} value={passwordForm.confirmPassword} onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })} /></label><div className="inline-edit-actions"><button type="submit">Update password</button></div></form>
             <article className="info-card"><h3>Preferences</h3><dl><div><dt>Theme</dt><dd>{theme === "dark" ? "Dark mode" : "Light mode"}</dd></div><div><dt>Distance units</dt><dd>Nautical miles</dd></div><div><dt>Default vessel</dt><dd>{activeBoat.name}</dd></div></dl></article>
-            <article className="info-card"><h3>Profile completion</h3><ul className="check-list"><li>Account created</li><li>Cloud sync connected</li><li>Skipper certificate pending</li><li>Emergency contact pending</li></ul></article>
           </section>
         </section>}
 
