@@ -16,7 +16,7 @@ function normalizeName(name: string) {
 function assertAllowedName(name: string) {
   if (name.length < 2) throw new Error("Name must be at least 2 characters.");
   if (name.length > 80) throw new Error("Name must be 80 characters or less.");
-  if (!/^[\p{L}\p{M}0-9 .\'-]+$/u.test(name)) throw new Error("Name can only contain letters, numbers, spaces, dots, apostrophes, and hyphens.");
+  if (!/^[\p{L}\p{M}0-9 .'-]+$/u.test(name)) throw new Error("Name can only contain letters, numbers, spaces, dots, apostrophes, and hyphens.");
   const folded = name.toLowerCase().replace(/[^a-z0-9]+/g, "");
   if (blockedNameTerms.some((term) => folded.includes(term))) throw new Error("Choose a different display name.");
 }
