@@ -9,6 +9,7 @@ type ModuleTabsProps = {
   theme: "light" | "dark";
   onToggleTheme: () => void;
   userEmail?: string;
+  userName?: string;
   isNavSlim: boolean;
   onToggleNavSlim: () => void;
   onLogout: () => void;
@@ -24,7 +25,7 @@ const icons: Record<ModuleTab, string> = {
   compliance: "☷",
 };
 
-export function ModuleTabs({ activeModule, onSelectModule, onOpenProfile, theme, onToggleTheme, userEmail, isNavSlim, onToggleNavSlim, onLogout, isLoggingOut }: ModuleTabsProps) {
+export function ModuleTabs({ activeModule, onSelectModule, onOpenProfile, theme, onToggleTheme, userEmail, userName, isNavSlim, onToggleNavSlim, onLogout, isLoggingOut }: ModuleTabsProps) {
   return (
     <aside className="app-sidebar" aria-label="Primary navigation">
       <div className="brand-row"><div className="brand-mark" aria-label="ultilog"><span className="sail-logo">◢</span><strong>ultilog</strong></div></div>
@@ -39,12 +40,16 @@ export function ModuleTabs({ activeModule, onSelectModule, onOpenProfile, theme,
       <div className="sidebar-spacer" />
       <section className="sync-card" aria-label="Cloud sync status"><span>☁</span><strong>Cloud sync</strong><small>All data is securely stored in the cloud.</small><em>● All up to date</em></section>
       <div className="sidebar-control-row"><button className="theme-toggle" type="button" onClick={onToggleTheme}>{theme === "dark" ? "☀ Light" : "☾ Dark"}</button><button className="nav-slim-toggle" type="button" onClick={onToggleNavSlim} aria-label={isNavSlim ? "Expand menu labels" : "Collapse menu labels"}><span aria-hidden="true">{isNavSlim ? "»" : "«"}</span><span className="nav-slim-toggle-label">{isNavSlim ? "Full" : "Slim"}</span></button></div>
-      <button className={`profile-card ${activeModule === "profile" ? "active" : ""}`} type="button" onClick={onOpenProfile}><span>JD</span><strong>Jane Doe</strong><small>{userEmail ?? "jane@example.com"}</small></button>
+      <button className={`profile-card ${activeModule === "profile" ? "active" : ""}`} type="button" onClick={onOpenProfile}><span>{initials(userName)}</span><strong>{userName ?? "Profile"}</strong><small>{userEmail ?? "No email"}</small></button>
       <button className="logout-chip" type="button" onClick={onLogout} disabled={isLoggingOut} aria-label="Logout">{isLoggingOut ? "Saving…" : "Logout"}</button>
       <div className="mobile-nav-actions">
         <button className="mobile-theme-action" type="button" onClick={onToggleTheme} aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}><span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span><small>{theme === "dark" ? "Light" : "Dark"}</small></button>
-        <button className={`mobile-profile-action ${activeModule === "profile" ? "active" : ""}`} type="button" onClick={onOpenProfile} aria-label="Profile"><span aria-hidden="true">JD</span><small>Profile</small></button>
+        <button className={`mobile-profile-action ${activeModule === "profile" ? "active" : ""}`} type="button" onClick={onOpenProfile} aria-label="Profile"><span aria-hidden="true">{initials(userName)}</span><small>Profile</small></button>
       </div>
     </aside>
   );
+}
+
+function initials(name?: string) {
+  return (name ?? "ME").split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("") || "ME";
 }

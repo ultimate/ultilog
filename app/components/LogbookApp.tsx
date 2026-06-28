@@ -114,10 +114,10 @@ export function LogbookApp({ userEmail, userName }: { userEmail?: string; userNa
       }
       if (nextRoute.view === "crew" && nextRoute.itemId) {
         const crewIndex = Number.parseInt(nextRoute.itemId, 10);
-        if (Number.isInteger(crewIndex) && crewIndex >= 0 && crewIndex < nextSheet.crew.length) {
+        if (Number.isInteger(crewIndex) && crewIndex >= 0 && crewIndex < normalizedLogbook.crewMembers.length) {
           setSelectedCrewIndex(crewIndex);
           setLastCrewIndex(crewIndex);
-          setCrewForm(crewToForm(nextSheet.crew[crewIndex] ?? defaultCrewForm));
+          setCrewForm(crewToForm(normalizedLogbook.crewMembers[crewIndex] ?? defaultCrewForm));
         }
       }
       if (normalizedItemId) {
@@ -167,12 +167,11 @@ export function LogbookApp({ userEmail, userName }: { userEmail?: string; userNa
       setShowBoatManager(false);
     }
     if (view === "crew" && itemId) {
-      const currentSheet = logbook.sheets.find((sheet) => sheet.id === activeSheetId) ?? logbook.sheets[0];
       const index = Number.parseInt(itemId, 10);
-      if (Number.isInteger(index) && index >= 0 && index < (currentSheet?.crew.length ?? 0)) {
+      if (Number.isInteger(index) && index >= 0 && index < logbook.crewMembers.length) {
         setSelectedCrewIndex(index);
         setLastCrewIndex(index);
-        setCrewForm(crewToForm(currentSheet.crew[index] ?? defaultCrewForm));
+        setCrewForm(crewToForm(logbook.crewMembers[index] ?? defaultCrewForm));
       }
     }
   }, [routePath, logbook, activeSheetId]);
@@ -514,7 +513,7 @@ export function LogbookApp({ userEmail, userName }: { userEmail?: string; userNa
 
   return (
     <main className="app-shell" data-theme={theme} data-nav={isNavSlim ? "slim" : "full"}>
-      <ModuleTabs activeModule={activeModule} onSelectModule={(module) => navigate(module)} onOpenProfile={() => navigate("profile")} theme={theme} onToggleTheme={() => setTheme((current) => current === "dark" ? "light" : "dark")} userEmail={accountEmail || userEmail} isNavSlim={isNavSlim} onToggleNavSlim={() => setIsNavSlim((current) => !current)} onLogout={logout} isLoggingOut={isLoggingOut} />
+      <ModuleTabs activeModule={activeModule} onSelectModule={(module) => navigate(module)} onOpenProfile={() => navigate("profile")} theme={theme} onToggleTheme={() => setTheme((current) => current === "dark" ? "light" : "dark")} userEmail={accountEmail || userEmail} userName={accountName || userName} isNavSlim={isNavSlim} onToggleNavSlim={() => setIsNavSlim((current) => !current)} onLogout={logout} isLoggingOut={isLoggingOut} />
       <section className="app-content">
       <div className="top-actions">
         {saveError && <p className="save-error">{saveError}</p>}
