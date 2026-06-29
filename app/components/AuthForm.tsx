@@ -11,6 +11,26 @@ export function AuthForm({ mode, footer }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  async function demoLogin() {
+    setError(null);
+    setIsSubmitting(true);
+    const response = await fetch("/api/demo-login", { method: "POST" });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({})) as { error?: string };
+      setError(payload.error ?? "Unable to start demo.");
+      setIsSubmitting(false);
+      return;
+    }
+    const result = await signIn("credentials", { demo: "true", redirect: false });
+    setIsSubmitting(false);
+    if (result?.error) {
+      setError("Unable to start demo.");
+      return;
+    }
+    router.push("/");
+    router.refresh();
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
@@ -57,6 +77,7 @@ export function AuthForm({ mode, footer }: Props) {
         <label>Password<input name="password" required type="password" minLength={8} /></label>
         {error && <p className="auth-error">{error}</p>}
         <button disabled={isSubmitting} type="submit">{isSubmitting ? "Please wait…" : mode === "login" ? "Log in" : "Register"}</button>
+        {mode === "login" && <button className="demo-login-button" disabled={isSubmitting} type="button" onClick={demoLogin}>Try the demo</button>}
         <div className="auth-footer">{footer}</div>
       </form>
     </main>

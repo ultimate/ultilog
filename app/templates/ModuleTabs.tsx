@@ -1,15 +1,16 @@
 import { moduleTabs, type ModuleTab } from "./app-shell";
 
-export type ActiveView = ModuleTab | "profile";
+export type ActiveView = ModuleTab | "profile" | "admin";
 
 type ModuleTabsProps = {
   activeModule: ActiveView;
-  onSelectModule: (module: ModuleTab) => void;
+  onSelectModule: (module: ActiveView) => void;
   onOpenProfile: () => void;
   theme: "light" | "dark";
   onToggleTheme: () => void;
   userEmail?: string;
   userName?: string;
+  userGroups?: string[];
   isNavSlim: boolean;
   onToggleNavSlim: () => void;
   onLogout: () => void;
@@ -25,7 +26,8 @@ const icons: Record<ModuleTab, string> = {
   compliance: "☷",
 };
 
-export function ModuleTabs({ activeModule, onSelectModule, onOpenProfile, theme, onToggleTheme, userEmail, userName, isNavSlim, onToggleNavSlim, onLogout, isLoggingOut }: ModuleTabsProps) {
+export function ModuleTabs({ activeModule, onSelectModule, onOpenProfile, theme, onToggleTheme, userEmail, userName, userGroups = [], isNavSlim, onToggleNavSlim, onLogout, isLoggingOut }: ModuleTabsProps) {
+  const isAdmin = userGroups.includes("admin");
   return (
     <aside className="app-sidebar" aria-label="Primary navigation">
       <div className="brand-row"><div className="brand-mark" aria-label="ultilog"><span className="sail-logo">◢</span><strong>ultilog</strong></div></div>
@@ -36,6 +38,7 @@ export function ModuleTabs({ activeModule, onSelectModule, onOpenProfile, theme,
             <span className="nav-label">{tab.label}</span>
           </button>
         ))}
+        {isAdmin && <button type="button" className={activeModule === "admin" ? "active" : ""} onClick={() => onSelectModule("admin")} aria-label="Admin"><span className="tab-icon" aria-hidden="true">⚙</span><span className="nav-label">Admin</span></button>}
       </nav>
       <div className="sidebar-spacer" />
       <section className="sync-card" aria-label="Cloud sync status"><span>☁</span><strong>Cloud sync</strong><small>All data is securely stored in the cloud.</small><em>● All up to date</em></section>
