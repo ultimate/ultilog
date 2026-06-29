@@ -3,7 +3,7 @@ import type { ActiveView } from "../../templates/ModuleTabs";
 import type { PersistedLogbook } from "../../models/logbook";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const routedModules = new Set<ActiveView>([...moduleTabs.map((tab) => tab.id), "profile"]);
+const routedModules = new Set<ActiveView>([...moduleTabs.map((tab) => tab.id), "profile", "admin"]);
 
 export const createId = () => crypto.randomUUID();
 export const numberOrZero = (value: string) => Number.parseFloat(value) || 0;

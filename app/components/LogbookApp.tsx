@@ -12,7 +12,9 @@ import { ModuleTabs, type ActiveView } from "../templates/ModuleTabs";
 import { DashboardPanel } from "../templates/DashboardPanel";
 import { legalRequirements } from "../templates/compliance";
 
-export function LogbookApp({ userEmail, userName }: { userEmail?: string; userName?: string }) {
+type AdminUser = { id: string; name: string; email: string; groups: string[] };
+
+export function LogbookApp({ userEmail, userName, userGroups = [] }: { userEmail?: string; userName?: string; userGroups?: string[] }) {
   const router = useRouter();
   const pathname = usePathname();
   const [logbook, setLogbook] = useState<PersistedLogbook>(defaultLogbook);
@@ -46,6 +48,10 @@ export function LogbookApp({ userEmail, userName }: { userEmail?: string; userNa
   const [profileMessage, setProfileMessage] = useState<string | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [deleteForm, setDeleteForm] = useState({ currentPassword: "", confirmation: "" });
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [knownGroups, setKnownGroups] = useState<string[]>(userGroups);
+  const [adminMessage, setAdminMessage] = useState<string | null>(null);
+  const [adminError, setAdminError] = useState<string | null>(null);
   const logbookRef = useRef(logbook);
 
   function pushAppPath(path: string) {
@@ -55,6 +61,7 @@ export function LogbookApp({ userEmail, userName }: { userEmail?: string; userNa
   }
 
   function navigate(module: ActiveView, itemId?: string | number) {
+    if (module === "admin" && !userGroups.includes("admin")) return;
     setActiveModule(module);
     pushAppPath(modulePath(module, itemId));
   }
@@ -177,6 +184,10 @@ export function LogbookApp({ userEmail, userName }: { userEmail?: string; userNa
   }, [routePath, logbook, activeSheetId]);
 
   useEffect(() => {
+    if (activeModule === "admin" && userGroups.includes("admin") && adminUsers.length === 0) loadAdminUsers().catch(() => undefined);
+  }, [activeModule, userGroups, adminUsers.length]);
+
+  useEffect(() => {
     if (!isBackendReady) return;
     const controller = new AbortController();
     const timeout = window.setTimeout(() => {
@@ -209,6 +220,7 @@ export function LogbookApp({ userEmail, userName }: { userEmail?: string; userNa
   const activeBoat = logbook.boats.find((boat) => boat.id === activeSheet.boatId) ?? logbook.boats[0];
   const selectedBoat = logbook.boats.find((boat) => boat.id === selectedBoatId) ?? logbook.boats[0];
   const selectedCrew = logbook.crewMembers[selectedCrewIndex] ?? logbook.crewMembers[0];
+  const isAdmin = userGroups.includes("admin");
   const crewAssignments = useMemo(() => logbook.crewMembers.map((member) => ({
     member,
     sheets: logbook.sheets.flatMap((sheet) => sheet.crew.findIndex((crew) => crew.id === member.id) >= 0 ? [{ sheet, isSkipper: sheet.crew.findIndex((crew) => crew.id === member.id) === 0 }] : []),
@@ -492,6 +504,34 @@ export function LogbookApp({ userEmail, userName }: { userEmail?: string; userNa
     setProfileMessage("Password updated.");
   }
 
+
+  async function loadAdminUsers() {
+    setAdminError(null);
+    const response = await fetch("/api/admin/users");
+    const payload = await response.json().catch(() => ({})) as { users?: AdminUser[]; groups?: string[]; error?: string };
+    if (!response.ok) {
+      setAdminError(payload.error ?? "Unable to load users.");
+      return;
+    }
+    setAdminUsers(payload.users ?? []);
+    setKnownGroups(payload.groups ?? []);
+  }
+
+  async function saveAdminUserGroups(userId: string, groupsText: string) {
+    setAdminError(null);
+    setAdminMessage(null);
+    const groups = groupsText.split(",").map((group) => group.trim()).filter(Boolean);
+    const response = await fetch("/api/admin/users", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId, groups }) });
+    const payload = await response.json().catch(() => ({})) as { user?: AdminUser; groups?: string[]; error?: string };
+    if (!response.ok) {
+      setAdminError(payload.error ?? "Unable to save groups.");
+      return;
+    }
+    if (payload.user) setAdminUsers((users) => users.map((user) => user.id === payload.user?.id ? payload.user : user));
+    setKnownGroups(payload.groups ?? groups);
+    setAdminMessage("Groups saved.");
+  }
+
   async function deleteAccount(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setProfileError(null);
@@ -513,7 +553,7 @@ export function LogbookApp({ userEmail, userName }: { userEmail?: string; userNa
 
   return (
     <main className="app-shell" data-theme={theme} data-nav={isNavSlim ? "slim" : "full"}>
-      <ModuleTabs activeModule={activeModule} onSelectModule={(module) => navigate(module)} onOpenProfile={() => navigate("profile")} theme={theme} onToggleTheme={() => setTheme((current) => current === "dark" ? "light" : "dark")} userEmail={accountEmail || userEmail} userName={accountName || userName} isNavSlim={isNavSlim} onToggleNavSlim={() => setIsNavSlim((current) => !current)} onLogout={logout} isLoggingOut={isLoggingOut} />
+      <ModuleTabs activeModule={activeModule} onSelectModule={(module) => navigate(module)} onOpenProfile={() => navigate("profile")} theme={theme} onToggleTheme={() => setTheme((current) => current === "dark" ? "light" : "dark")} userEmail={accountEmail || userEmail} userName={accountName || userName} userGroups={userGroups} isNavSlim={isNavSlim} onToggleNavSlim={() => setIsNavSlim((current) => !current)} onLogout={logout} isLoggingOut={isLoggingOut} />
       <section className="app-content">
       <div className="top-actions">
         {saveError && <p className="save-error">{saveError}</p>}
@@ -586,7 +626,7 @@ export function LogbookApp({ userEmail, userName }: { userEmail?: string; userNa
         {activeModule === "profile" && <section className="profile-page module-panel" aria-label="Profile page">
           <div className="page-heading"><div><h1>Profile</h1><p>Personal settings and account details.</p></div><button className="secondary-action" type="button" onClick={logout}>{isLoggingOut ? "Saving…" : "Logout"}</button></div>
           <section className="profile-grid">
-            <article className="profile-hero-card"><span className="profile-avatar">ME</span><div><p className="eyebrow">User profile</p><h2>{accountName || logbook.crewMembers.find((crew) => crew.isPrimary)?.name || "My profile"}</h2><p>{accountEmail || "No email set"}</p><button type="button" className="edit-chip" onClick={() => { const meIndex = logbook.crewMembers.findIndex((crew) => crew.isPrimary); if (meIndex >= 0) { selectCrew(meIndex); navigate("crew", meIndex); } }}>Show my crew member details</button></div></article>
+            <article className="profile-hero-card"><span className="profile-avatar">ME</span><div><p className="eyebrow">User profile</p><h2>{accountName || logbook.crewMembers.find((crew) => crew.isPrimary)?.name || "My profile"}</h2><p>{accountEmail || "No email set"}</p><p className="group-tags">{userGroups.length ? userGroups.map((group) => <span key={group}>{group}</span>) : <span>No groups</span>}</p><button type="button" className="edit-chip" onClick={() => { const meIndex = logbook.crewMembers.findIndex((crew) => crew.isPrimary); if (meIndex >= 0) { selectCrew(meIndex); navigate("crew", meIndex); } }}>Show my crew member details</button></div></article>
             {(profileMessage || profileError) && <article className="info-card"><h3>Account status</h3>{profileMessage && <p className="save-success">{profileMessage}</p>}{profileError && <p className="save-error">{profileError}</p>}</article>}
             <form className="info-card inline-edit-grid" onSubmit={updateName}><h3>Change name</h3><label className="wide-field">New name<input required value={nameForm.name} onChange={(e) => setNameForm({ ...nameForm, name: e.target.value })} /></label><label className="wide-field">Current password<input type="password" required value={nameForm.currentPassword} onChange={(e) => setNameForm({ ...nameForm, currentPassword: e.target.value })} /></label><div className="inline-edit-actions"><button type="submit">Update name</button></div><p className="wide-field">Names must be unique and may not contain reserved or abusive terms.</p></form>
             <form className="info-card inline-edit-grid" onSubmit={updateEmail}><h3>Change email</h3><label className="wide-field">New email<input type="email" required value={emailForm.email} onChange={(e) => setEmailForm({ ...emailForm, email: e.target.value })} /></label><label className="wide-field">Current password<input type="password" required value={emailForm.currentPassword} onChange={(e) => setEmailForm({ ...emailForm, currentPassword: e.target.value })} /></label><div className="inline-edit-actions"><button type="submit">Update email</button></div></form>
@@ -594,6 +634,18 @@ export function LogbookApp({ userEmail, userName }: { userEmail?: string; userNa
             <article className="info-card"><h3>Preferences</h3><dl><div><dt>Theme</dt><dd>{theme === "dark" ? "Dark mode" : "Light mode"}</dd></div><div><dt>Distance units</dt><dd>Nautical miles</dd></div><div><dt>Default vessel</dt><dd>{activeBoat.name}</dd></div></dl></article>
             <form className="info-card inline-edit-grid" onSubmit={deleteAccount}><h3>Delete account</h3><p className="wide-field">This permanently deletes your account and all logbooks, boats, crew members, and log lines.</p><label className="wide-field">Current password<input type="password" required value={deleteForm.currentPassword} onChange={(e) => setDeleteForm({ ...deleteForm, currentPassword: e.target.value })} /></label><label className="wide-field">Type DELETE to confirm<input required value={deleteForm.confirmation} onChange={(e) => setDeleteForm({ ...deleteForm, confirmation: e.target.value })} /></label><div className="inline-edit-actions"><button type="submit" className="ghost-button">Delete account</button></div></form>
           </section>
+        </section>}
+
+
+
+        {activeModule === "admin" && isAdmin && <section className="module-panel" aria-label="Admin page">
+          <div className="page-heading"><div><h1>Admin</h1><p>Manage user groups for issues #45 and #46.</p></div><button className="secondary-action" type="button" onClick={loadAdminUsers}>Refresh users</button></div>
+          {(adminMessage || adminError) && <article className="info-card">{adminMessage && <p className="save-success">{adminMessage}</p>}{adminError && <p className="save-error">{adminError}</p>}</article>}
+          <article className="table-card">
+            <div className="table-header"><div><p className="eyebrow">Tag-style groups</p><h3>Users</h3><p>Existing groups: {knownGroups.length ? knownGroups.join(", ") : "none yet"}</p></div></div>
+            <div className="table-scroll"><table className="logbook-table"><thead><tr><th>Username</th><th>Email</th><th>Groups</th><th></th></tr></thead><tbody>{adminUsers.map((user) => <tr key={user.id}><td>{user.name}</td><td>{user.email}</td><td><input aria-label={`Groups for ${user.email}`} list="known-groups" value={user.groups.join(", ")} onChange={(event) => setAdminUsers((users) => users.map((candidate) => candidate.id === user.id ? { ...candidate, groups: event.target.value.split(",").map((group) => group.trim()).filter(Boolean) } : candidate))} /></td><td><button type="button" className="edit-chip" onClick={() => saveAdminUserGroups(user.id, user.groups.join(", "))}>Save</button></td></tr>)}</tbody></table></div>
+            <datalist id="known-groups">{knownGroups.map((group) => <option key={group} value={group} />)}</datalist>
+          </article>
         </section>}
 
         {activeModule === "compliance" && <section className="sheet-detail module-panel"><div className="page-heading"><div><h1>Compliance</h1><p>ICC / Hochseeausweis requirements</p></div><button className="secondary-action" type="button">Download report</button></div><article className="compliance-board"><section className="compliance-summary"><h3>Overall progress</h3><div className="progress-layout"><div className="progress-ring"><strong>72%</strong><span>Complete</span></div><dl><div><dt>You have</dt><dd>2,173 nm</dd></div><div><dt>Required</dt><dd>3,000 nm</dd></div><div><dt>Remaining</dt><dd>827 nm</dd></div></dl></div></section><section className="requirement-panel"><h3>Requirement checklist</h3>{legalRequirements.map((requirement, index) => <div className="requirement-row" key={requirement}><span>✓</span><strong>{requirement}</strong><progress value={[2173,1650,1020,1250,1120,860][index] ?? 860} max={[3000,1500,1000,1000,1400,500][index] ?? 500} /></div>)}</section></article><div className="mileage-breakdown"><article><span>△</span><strong>Sail miles</strong><b>1,650 nm</b><small>70%</small></article><article><span>✚</span><strong>Motor miles</strong><b>523 nm</b><small>24%</small></article><article><span>⛵</span><strong>Ocean passages</strong><b>1,120 nm</b><small>30%</small></article><article><span>♙</span><strong>As skipper</strong><b>860 nm</b><small>40%</small></article></div></section>}
