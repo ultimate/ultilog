@@ -221,3 +221,14 @@ h1 { margin:0 0 .45rem; font-size:1.8rem; line-height:1.1; letter-spacing:-.04em
 .group-tags span { display:inline-flex; align-items:center; border:1px solid var(--line); border-radius:999px; padding:.2rem .55rem; background:var(--surface-strong); color:var(--text); font-size:.8rem; font-weight:850; }
 .demo-login-button { background:transparent !important; color:var(--blue) !important; border:1px solid var(--blue) !important; }
 .logbook-table input { width:100%; min-width:14rem; border:1px solid var(--line); border-radius:10px; padding:.55rem .7rem; background:var(--surface); color:var(--text); }
+/* Keep mobile bottom navigation in one row when the admin/user-management tab is present. */
+@media (max-width: 1000px) {
+  .app-sidebar { grid-template-columns:minmax(0,1fr) auto; align-items:stretch; }
+  .module-tabs { grid-template-columns:repeat(6, minmax(0,1fr)); min-width:0; }
+  .module-tabs.has-admin-tab { grid-template-columns:repeat(7, minmax(0,1fr)); }
+  .mobile-nav-actions { grid-template-columns:repeat(2, 2.35rem); align-items:stretch; }
+  .module-tabs button,.mobile-nav-actions button { min-width:0; height:100%; }
+}
+@media (orientation: landscape) and (max-width: 1000px) {
+  .module-tabs,.module-tabs.has-admin-tab { grid-template-columns:1fr; }
+}
