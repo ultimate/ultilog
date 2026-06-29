@@ -382,3 +382,55 @@ h1 { margin:0 0 .45rem; font-size:1.8rem; line-height:1.1; letter-spacing:-.04em
   .app-shell[data-nav="slim"] .theme-toggle { display:flex; justify-content:center; }
   .app-shell[data-nav="slim"] .theme-toggle span:last-child { display:none; }
 }
+
+/* Account/password form affordances. */
+.password-input-wrap {
+  display:grid;
+  grid-template-columns:minmax(0, 1fr) auto;
+  align-items:center;
+  border:1px solid var(--line);
+  border-radius:12px;
+  background:var(--surface-strong);
+  overflow:hidden;
+}
+.password-input-wrap input {
+  min-width:0;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+}
+.password-visibility-toggle {
+  display:grid;
+  place-items:center;
+  width:2.75rem;
+  height:100%;
+  min-height:2.5rem;
+  border:0;
+  border-left:1px solid var(--line);
+  background:transparent;
+  color:var(--text);
+  cursor:pointer;
+}
+.password-visibility-toggle:hover,
+.password-visibility-toggle:focus-visible {
+  background:var(--blue-soft);
+  outline:none;
+}
+.toast-notification {
+  position:fixed;
+  top:1rem;
+  right:1rem;
+  z-index:80;
+  max-width:min(24rem, calc(100vw - 2rem));
+  border:1px solid color-mix(in srgb, var(--green) 45%, var(--line));
+  border-radius:14px;
+  padding:.85rem 1rem;
+  background:color-mix(in srgb, var(--surface-strong) 92%, transparent);
+  color:var(--green);
+  box-shadow:var(--design-shadow);
+  font-weight:900;
+  backdrop-filter:blur(14px);
+}
+@media (max-width: 720px) {
+  .toast-notification { inset:auto 1rem calc(6rem + env(safe-area-inset-bottom)) 1rem; max-width:none; }
+}
