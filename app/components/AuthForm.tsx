@@ -3,6 +3,7 @@
 import { FormEvent, ReactNode, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { PasswordField } from "./PasswordField";
 
 type Props = { mode: "login" | "register"; footer: ReactNode };
 
@@ -40,6 +41,12 @@ export function AuthForm({ mode, footer }: Props) {
     const password = String(form.get("password") ?? "");
 
     if (mode === "register") {
+      const confirmPassword = String(form.get("confirmPassword") ?? "");
+      if (password !== confirmPassword) {
+        setError("Passwords do not match.");
+        setIsSubmitting(false);
+        return;
+      }
       const response = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -72,9 +79,10 @@ export function AuthForm({ mode, footer }: Props) {
           <h1>{mode === "login" ? "Welcome back" : "Create account"}</h1>
           <p>Keep your boats, crew, and logbooks private to your account.</p>
         </div>
-        {mode === "register" && <label>Name<input name="name" required /></label>}
+        {mode === "register" && <label>Username<input name="name" required /></label>}
         <label>Email<input name="email" required type="email" /></label>
-        <label>Password<input name="password" required type="password" minLength={8} /></label>
+        <PasswordField label="Password" name="password" required minLength={8} />
+        {mode === "register" && <PasswordField label="Confirm password" name="confirmPassword" required minLength={8} />}
         {error && <p className="auth-error">{error}</p>}
         <button disabled={isSubmitting} type="submit">{isSubmitting ? "Please wait…" : mode === "login" ? "Log in" : "Register"}</button>
         {mode === "login" && <button className="demo-login-button" disabled={isSubmitting} type="button" onClick={demoLogin}>Try the demo</button>}
