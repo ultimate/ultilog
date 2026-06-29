@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { moduleTabs, type ModuleTab } from "./app-shell";
 
 export type ActiveView = ModuleTab | "profile" | "admin";
@@ -18,41 +19,41 @@ type ModuleTabsProps = {
 };
 
 const icons: Record<ModuleTab, string> = {
-  dashboard: "⌂",
-  logbooks: "▣",
-  details: "+",
-  boats: "⚓",
-  crew: "♙",
-  compliance: "☷",
+  dashboard: "/icons/icon_dashboard.svg",
+  logbooks: "/icons/icon_logbook-list.svg",
+  details: "/icons/icon_compass.svg",
+  boats: "/icons/icon_boat.svg",
+  crew: "/icons/icon_crew.svg",
+  compliance: "/icons/icon_compliance.svg",
 };
 
 export function ModuleTabs({ activeModule, onSelectModule, onOpenProfile, theme, onToggleTheme, userEmail, userName, userGroups = [], isNavSlim, onToggleNavSlim, onLogout, isLoggingOut }: ModuleTabsProps) {
   const isAdmin = userGroups.includes("admin");
   return (
     <aside className="app-sidebar" aria-label="Primary navigation">
+      <button className="nav-edge-toggle" type="button" onClick={onToggleNavSlim} aria-label={isNavSlim ? "Expand sidebar" : "Collapse sidebar"}>
+        <span className="nav-edge-toggle-icon" aria-hidden="true" />
+      </button>
       <div className="brand-row"><div className="brand-mark" aria-label="ultilog"><span className="sail-logo">◢</span><strong>ultilog</strong></div></div>
       <nav className={`module-tabs ${isAdmin ? "has-admin-tab" : ""}`} aria-label="Business logic modules">
         {moduleTabs.map((tab) => (
           <button type="button" key={tab.id} className={activeModule === tab.id ? "active" : ""} onClick={() => onSelectModule(tab.id)} aria-label={tab.label}>
-            <span className="tab-icon" aria-hidden="true">{icons[tab.id]}</span>
+            <span className="tab-icon" aria-hidden="true"><Image className="nav-svg-icon" src={icons[tab.id]} alt="" width={24} height={24} /></span>
             <span className="nav-label">{tab.label}</span>
           </button>
         ))}
-        {isAdmin && <button type="button" className={activeModule === "admin" ? "active" : ""} onClick={() => onSelectModule("admin")} aria-label="User management"><span className="tab-icon" aria-hidden="true">👥</span><span className="nav-label">Admin</span></button>}
+        {isAdmin && <button type="button" className={activeModule === "admin" ? "active" : ""} onClick={() => onSelectModule("admin")} aria-label="User management"><span className="tab-icon" aria-hidden="true"><Image className="nav-svg-icon" src="/icons/icon_admin.svg" alt="" width={24} height={24} /></span><span className="nav-label">Admin</span></button>}
       </nav>
       <div className="sidebar-spacer" />
-      <section className="sync-card" aria-label="Cloud sync status"><span>☁</span><strong>Cloud sync</strong><small>All data is securely stored in the cloud.</small><em>● All up to date</em></section>
-      <div className="sidebar-control-row"><button className="theme-toggle" type="button" onClick={onToggleTheme}>{theme === "dark" ? "☀ Light" : "☾ Dark"}</button><button className="nav-slim-toggle" type="button" onClick={onToggleNavSlim} aria-label={isNavSlim ? "Expand menu labels" : "Collapse menu labels"}><span aria-hidden="true">{isNavSlim ? "»" : "«"}</span><span className="nav-slim-toggle-label">{isNavSlim ? "Full" : "Slim"}</span></button></div>
-      <button className={`profile-card ${activeModule === "profile" ? "active" : ""}`} type="button" onClick={onOpenProfile}><span>{initials(userName)}</span><strong>{userName ?? "Profile"}</strong><small>{userEmail ?? "No email"}</small></button>
+      <section className="sync-icon-card" aria-label="Cloud sync status"><span className="sync-icon" aria-hidden="true" /><span className="sync-status-text">All up to date</span></section>
+      <div className="sidebar-control-row"><button className="theme-toggle" type="button" onClick={onToggleTheme}><span className="theme-icon" aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span><span>{theme === "dark" ? "Light" : "Dark"}</span></button></div>
+      <button className={`profile-card ${activeModule === "profile" ? "active" : ""}`} type="button" onClick={onOpenProfile}><span><Image className="nav-svg-icon" src="/icons/icon_profile.svg" alt="" width={24} height={24} /></span><strong>{userName ?? "Profile"}</strong><small>{userEmail ?? "No email"}</small></button>
       <button className="logout-chip" type="button" onClick={onLogout} disabled={isLoggingOut} aria-label="Logout">{isLoggingOut ? "Saving…" : "Logout"}</button>
       <div className="mobile-nav-actions">
+        <button className="mobile-sync-action" type="button" disabled aria-label="All data is synced"><span className="sync-icon" aria-hidden="true" /></button>
         <button className="mobile-theme-action" type="button" onClick={onToggleTheme} aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}><span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span><small>{theme === "dark" ? "Light" : "Dark"}</small></button>
-        <button className={`mobile-profile-action ${activeModule === "profile" ? "active" : ""}`} type="button" onClick={onOpenProfile} aria-label="Profile"><span aria-hidden="true">{initials(userName)}</span><small>Profile</small></button>
+        <button className={`mobile-profile-action ${activeModule === "profile" ? "active" : ""}`} type="button" onClick={onOpenProfile} aria-label="Profile"><span aria-hidden="true"><Image className="nav-svg-icon" src="/icons/icon_profile.svg" alt="" width={24} height={24} /></span><small>Profile</small></button>
       </div>
     </aside>
   );
-}
-
-function initials(name?: string) {
-  return (name ?? "ME").split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("") || "ME";
 }
