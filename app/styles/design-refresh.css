@@ -232,3 +232,9 @@ h1 { margin:0 0 .45rem; font-size:1.8rem; line-height:1.1; letter-spacing:-.04em
 @media (orientation: landscape) and (max-width: 1000px) {
   .module-tabs,.module-tabs.has-admin-tab { grid-template-columns:1fr; }
 }
+.tag-editor { display:grid; gap:.5rem; min-width:min(24rem, 60vw); }
+.tag-editor-tags { display:flex; flex-wrap:wrap; gap:.35rem; }
+.tag-editor-tags span { display:inline-flex; align-items:center; gap:.3rem; border:1px solid var(--line); border-radius:999px; padding:.18rem .25rem .18rem .6rem; background:var(--blue-soft); color:var(--text); font-size:.8rem; font-weight:850; }
+.tag-editor-tags button { all:unset; display:grid; place-items:center; width:1.25rem; height:1.25rem; border-radius:999px; cursor:pointer; color:var(--subtle); font-weight:900; }
+.tag-editor-tags button:hover { background:var(--surface-strong); color:var(--text); }
+.tag-editor-add { display:grid; grid-template-columns:minmax(12rem, 1fr) auto; gap:.4rem; align-items:center; }
