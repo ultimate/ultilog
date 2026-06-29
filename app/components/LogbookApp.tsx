@@ -14,7 +14,7 @@ import { legalRequirements } from "../templates/compliance";
 
 type AdminUser = { id: string; name: string; email: string; groups: string[] };
 
-export function LogbookApp({ userEmail, userName, userGroups = [] }: { userEmail?: string; userName?: string; userGroups?: string[] }) {
+export function LogbookApp({ userId, userEmail, userName, userGroups = [] }: { userId?: string; userEmail?: string; userName?: string; userGroups?: string[] }) {
   const router = useRouter();
   const pathname = usePathname();
   const [logbook, setLogbook] = useState<PersistedLogbook>(defaultLogbook);
@@ -527,8 +527,13 @@ export function LogbookApp({ userEmail, userName, userGroups = [] }: { userEmail
     setGroupDrafts((drafts) => ({ ...drafts, [userId]: "" }));
   }
 
-  function removeAdminUserGroup(userId: string, group: string) {
-    setAdminUsers((users) => users.map((user) => user.id === userId ? { ...user, groups: user.groups.filter((candidate) => candidate !== group) } : user));
+  function canRemoveAdminUserGroup(targetUserId: string, group: string) {
+    return !(targetUserId === userId && group === "admin");
+  }
+
+  function removeAdminUserGroup(targetUserId: string, group: string) {
+    if (!canRemoveAdminUserGroup(targetUserId, group)) return;
+    setAdminUsers((users) => users.map((user) => user.id === targetUserId ? { ...user, groups: user.groups.filter((candidate) => candidate !== group) } : user));
   }
 
   function handleGroupDraftKeyDown(event: React.KeyboardEvent<HTMLInputElement>, userId: string) {
@@ -663,7 +668,7 @@ export function LogbookApp({ userEmail, userName, userGroups = [] }: { userEmail
           {(adminMessage || adminError) && <article className="info-card">{adminMessage && <p className="save-success">{adminMessage}</p>}{adminError && <p className="save-error">{adminError}</p>}</article>}
           <article className="table-card">
             <div className="table-header"><div><p className="eyebrow">Tag-style groups</p><h3>Users</h3><p>Existing groups: {knownGroups.length ? knownGroups.join(", ") : "none yet"}</p></div></div>
-            <div className="table-scroll"><table className="logbook-table"><thead><tr><th>Username</th><th>Email</th><th>Groups</th><th></th></tr></thead><tbody>{adminUsers.map((user) => <tr key={user.id}><td>{user.name}</td><td>{user.email}</td><td><div className="tag-editor" aria-label={`Groups for ${user.email}`}>{user.groups.length > 0 && <div className="tag-editor-tags">{user.groups.map((group) => <span key={group}>{group}<button type="button" aria-label={`Remove ${group} from ${user.email}`} onClick={() => removeAdminUserGroup(user.id, group)}>×</button></span>)}</div>}<div className="tag-editor-add"><input aria-label={`Add group for ${user.email}`} list="known-groups" placeholder="Select or type group…" value={groupDrafts[user.id] ?? ""} onChange={(event) => setGroupDrafts((drafts) => ({ ...drafts, [user.id]: event.target.value }))} onKeyDown={(event) => handleGroupDraftKeyDown(event, user.id)} /><button type="button" className="edit-chip" onClick={() => addAdminUserGroup(user.id)}>Add</button></div></div></td><td><button type="button" className="edit-chip" onClick={() => saveAdminUserGroups(user.id, user.groups.join(", "))}>Save</button></td></tr>)}</tbody></table></div>
+            <div className="table-scroll"><table className="logbook-table"><thead><tr><th>Username</th><th>Email</th><th>Groups</th><th></th></tr></thead><tbody>{adminUsers.map((user) => <tr key={user.id}><td>{user.name}</td><td>{user.email}</td><td><div className="tag-editor" aria-label={`Groups for ${user.email}`}>{user.groups.length > 0 && <div className="tag-editor-tags">{user.groups.map((group) => <span key={group}>{group}<button type="button" aria-label={`Remove ${group} from ${user.email}`} disabled={!canRemoveAdminUserGroup(user.id, group)} title={!canRemoveAdminUserGroup(user.id, group) ? "You cannot remove admin from your own account." : undefined} onClick={() => removeAdminUserGroup(user.id, group)}>×</button></span>)}</div>}<div className="tag-editor-add"><input aria-label={`Add group for ${user.email}`} list="known-groups" placeholder="Select or type group…" value={groupDrafts[user.id] ?? ""} onChange={(event) => setGroupDrafts((drafts) => ({ ...drafts, [user.id]: event.target.value }))} onKeyDown={(event) => handleGroupDraftKeyDown(event, user.id)} /><button type="button" className="edit-chip" onClick={() => addAdminUserGroup(user.id)}>Add</button></div></div></td><td><button type="button" className="edit-chip" onClick={() => saveAdminUserGroups(user.id, user.groups.join(", "))}>Save</button></td></tr>)}</tbody></table></div>
             <datalist id="known-groups">{knownGroups.map((group) => <option key={group} value={group} />)}</datalist>
           </article>
         </section>}

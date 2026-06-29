@@ -62,6 +62,21 @@ describe("admin users endpoint", () => {
     await expect(response.json()).resolves.toEqual({ users: listedUsers, groups: ["admin", "demo"] });
   });
 
+
+  it("prevents admins from removing their own admin group", async () => {
+    mockedAuth.mockResolvedValueOnce(adminSession);
+    mockedUserHasGroup.mockResolvedValueOnce(true);
+
+    const response = await PATCH(new Request("https://ultilog.test/api/admin/users", {
+      method: "PATCH",
+      body: JSON.stringify({ userId: "admin-user", groups: ["demo"] }),
+    }));
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: "You cannot remove the admin group from your own account." });
+    expect(mockedUpdateUserGroups).not.toHaveBeenCalled();
+  });
+
   it("updates groups for admins", async () => {
     const updatedUser = { id: "demo", name: "Demo", email: "demo@ultilog.local", groups: ["demo", "reviewer"] };
     mockedAuth.mockResolvedValueOnce(adminSession);

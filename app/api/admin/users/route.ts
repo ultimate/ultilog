@@ -16,7 +16,11 @@ export async function PATCH(request: Request) {
   try {
     const body = await request.json() as { userId?: string; groups?: string[] };
     if (!body.userId) return NextResponse.json({ error: "User is required." }, { status: 400 });
-    const user = await updateUserGroups(body.userId, Array.isArray(body.groups) ? body.groups : []);
+    const groups = Array.isArray(body.groups) ? body.groups : [];
+    if (body.userId === session.user.id && !groups.map((group) => group.trim().toLowerCase()).includes("admin")) {
+      return NextResponse.json({ error: "You cannot remove the admin group from your own account." }, { status: 400 });
+    }
+    const user = await updateUserGroups(body.userId, groups);
     return NextResponse.json({ user, groups: await listKnownGroups() });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to update groups." }, { status: 400 });
