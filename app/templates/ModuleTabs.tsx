@@ -31,14 +31,14 @@ export function ModuleTabs({ activeModule, onSelectModule, onOpenProfile, theme,
   return (
     <aside className="app-sidebar" aria-label="Primary navigation">
       <div className="brand-row"><div className="brand-mark" aria-label="ultilog"><span className="sail-logo">◢</span><strong>ultilog</strong></div></div>
-      <nav className="module-tabs" aria-label="Business logic modules">
+      <nav className={`module-tabs ${isAdmin ? "has-admin-tab" : ""}`} aria-label="Business logic modules">
         {moduleTabs.map((tab) => (
           <button type="button" key={tab.id} className={activeModule === tab.id ? "active" : ""} onClick={() => onSelectModule(tab.id)} aria-label={tab.label}>
             <span className="tab-icon" aria-hidden="true">{icons[tab.id]}</span>
             <span className="nav-label">{tab.label}</span>
           </button>
         ))}
-        {isAdmin && <button type="button" className={activeModule === "admin" ? "active" : ""} onClick={() => onSelectModule("admin")} aria-label="Admin"><span className="tab-icon" aria-hidden="true">⚙</span><span className="nav-label">Admin</span></button>}
+        {isAdmin && <button type="button" className={activeModule === "admin" ? "active" : ""} onClick={() => onSelectModule("admin")} aria-label="User management"><span className="tab-icon" aria-hidden="true">👥</span><span className="nav-label">Admin</span></button>}
       </nav>
       <div className="sidebar-spacer" />
       <section className="sync-card" aria-label="Cloud sync status"><span>☁</span><strong>Cloud sync</strong><small>All data is securely stored in the cloud.</small><em>● All up to date</em></section>
