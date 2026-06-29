@@ -3,5 +3,5 @@ import { LogbookApp } from "./components/LogbookApp";
 
 export default async function Home() {
   const session = await auth();
-  return <LogbookApp userEmail={session?.user?.email ?? undefined} userName={session?.user?.name ?? undefined} userGroups={session?.user?.groups ?? []} />;
+  return <LogbookApp userId={session?.user?.id} userEmail={session?.user?.email ?? undefined} userName={session?.user?.name ?? undefined} userGroups={session?.user?.groups ?? []} />;
 }
