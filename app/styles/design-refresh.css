@@ -33,7 +33,7 @@ body { background: var(--app-bg); color: var(--text); font-family: Inter, ui-san
 .theme-toggle { min-height:2.65rem; font-weight:800; }
 .profile-card { display:grid; grid-template-columns:2.2rem 1fr; gap:.1rem .65rem; align-items:center; padding:.8rem; text-align:left; }
 .profile-card span { grid-row:1/3; display:grid; place-items:center; width:2rem; height:2rem; border-radius:50%; background:#0b2758; color:white; font-size:.75rem; font-weight:900; }.profile-card small { color:var(--subtle); overflow:hidden; text-overflow:ellipsis; }
-.top-actions { display:flex; justify-content:flex-end; align-items:center; gap:.7rem; margin-bottom:-2.2rem; min-height:2.4rem; }
+.top-actions { position:sticky; top:1rem; z-index:15; display:flex; justify-content:flex-end; align-items:center; gap:.7rem; width:fit-content; margin:0 0 1rem auto; min-height:2.4rem; padding:.25rem; border-radius:999px; background:color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter:blur(14px); }
 .primary-action, .secondary-action, .edit-chip, .ghost-button, .sidebar button, .table-header button, .sidebar-header button, .optional-card button { border:1px solid var(--line)!important; border-radius:10px!important; min-height:2.25rem!important; padding:.55rem .85rem!important; font-weight:850!important; box-shadow:var(--design-shadow); }
 .primary-action { background:var(--blue)!important; color:white!important; }.secondary-action, .ghost-button, .edit-chip { background:var(--surface-strong)!important; color:var(--text)!important; }
 .save-error { margin:0 auto 0 0; padding:.7rem 1rem; border-radius:12px; background:#fee2e2; color:#991b1b; font-weight:800; }
