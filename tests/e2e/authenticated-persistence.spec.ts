@@ -9,7 +9,7 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   const sheetTitle = `Sheet ${unique}`;
 
   await page.goto("/register");
-  await page.getByLabel("Name").fill("E2E Skipper");
+  await page.getByLabel("Name").fill(`E2E Skipper ${unique}`);
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByLabel("Confirm", { exact: true }).fill(password);

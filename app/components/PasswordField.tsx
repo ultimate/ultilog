@@ -13,8 +13,8 @@ export function PasswordField({ label, className, id, ...inputProps }: PasswordF
   const [isVisible, setIsVisible] = useState(false);
 
   return (
-    <label className={className} htmlFor={inputId}>
-      {label}
+    <div className={["password-field", className].filter(Boolean).join(" ")}>
+      <label htmlFor={inputId}>{label}</label>
       <span className="password-input-wrap">
         <input {...inputProps} id={inputId} type={isVisible ? "text" : "password"} />
         <button
@@ -28,6 +28,6 @@ export function PasswordField({ label, className, id, ...inputProps }: PasswordF
           <span aria-hidden="true">{isVisible ? "🙈" : "👁"}</span>
         </button>
       </span>
-    </label>
+    </div>
   );
 }
