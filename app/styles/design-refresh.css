@@ -439,10 +439,11 @@ h1 { margin:0 0 .45rem; font-size:1.8rem; line-height:1.1; letter-spacing:-.04em
 :root { --nav-w: 13.75rem; --design-shadow:0 10px 28px rgba(21, 41, 86, .07); }
 .app-content { padding:1rem 1.15rem 2rem; }
 .app-sidebar { gap:.55rem; padding:1rem .75rem; }
-.module-tabs { gap:.18rem; margin:.45rem 0 0; flex:1 1 auto; min-height:0; overflow-y:auto; }
+.module-tabs { gap:.18rem; margin:.45rem 0 0; flex:0 0 auto; min-height:0; overflow:visible; }
 .module-tabs button { gap:.55rem; min-height:2.35rem; padding:0 .55rem; }
-.sidebar-spacer { flex:0 1 .25rem; }
-.logout-chip { flex:0 0 auto; }
+.sidebar-spacer { flex:1 1 .25rem; min-height:.25rem; }
+.profile-card, .logout-chip { flex:0 0 auto; }
+.logout-chip { position:sticky; bottom:.25rem; z-index:1; }
 .page-heading { margin-bottom:.85rem; }
 .page-heading, .table-header, .sidebar-header { gap:.65rem; }
 h1 { font-size:1.45rem; margin-bottom:.25rem; }
