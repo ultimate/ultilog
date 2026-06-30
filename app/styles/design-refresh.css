@@ -434,3 +434,57 @@ h1 { margin:0 0 .45rem; font-size:1.8rem; line-height:1.1; letter-spacing:-.04em
 @media (max-width: 720px) {
   .toast-notification { inset:auto 1rem calc(6rem + env(safe-area-inset-bottom)) 1rem; max-width:none; }
 }
+
+/* Compact layout adjustments and framed selected-nav state. */
+:root { --nav-w: 13.75rem; --design-shadow:0 10px 28px rgba(21, 41, 86, .07); }
+.app-content { padding:1rem 1.15rem 2rem; }
+.app-sidebar { gap:.55rem; padding:1rem .75rem; }
+.module-tabs { gap:.18rem; margin:.45rem 0 0; }
+.module-tabs button { gap:.55rem; min-height:2.35rem; padding:0 .55rem; }
+.page-heading { margin-bottom:.85rem; }
+.page-heading, .table-header, .sidebar-header { gap:.65rem; }
+h1 { font-size:1.45rem; margin-bottom:.25rem; }
+h2 { font-size:1.12rem; }
+h3 { margin-block:.25rem .55rem; }
+.stat-grid,.dashboard-grid,.detail-grid,.bottom-grid,.paper-grid,.voyage-layout,.manager-split,.sheet-detail,.logbook-page,.entry-metrics,.compliance-board,.mileage-breakdown { gap:.7rem; }
+.workspace,.chart-card,.compliance-summary,.requirement-panel,.mileage-breakdown article,.entry-metrics article,.auth-card { padding:.85rem; }
+.info-card,.map-card,.table-card,.weather-card,.remarks-card,.summary-card,.signature-card,.compliance-card,.sheet-title-row { padding:.85rem!important; }
+.top-actions { display:none!important; }
+
+.sync-icon-card { justify-content:center; padding:0 .55rem; }
+.sync-status-text { display:none!important; }
+.module-tabs button.active,
+.profile-card.active,
+.mobile-profile-action.active span { background:transparent!important; box-shadow:none!important; }
+.module-tabs button.active .tab-icon,
+.mobile-profile-action.active span,
+.profile-card.active span {
+  outline:2px solid var(--blue);
+  outline-offset:2px;
+  border-radius:12px;
+}
+.module-tabs button.active .nav-label { color:var(--blue); }
+.module-tabs button.active .tab-icon img { filter:sepia(1) saturate(4) hue-rotate(185deg) brightness(.9); }
+.app-shell[data-theme="dark"] .module-tabs button.active .tab-icon img { filter:invert(48%) sepia(88%) saturate(1801%) hue-rotate(204deg) brightness(108%) contrast(96%); }
+
+@media (min-width: 1001px), (orientation: landscape) and (max-width: 1000px) {
+  .app-shell { min-height:100dvh; }
+  .app-sidebar { height:100dvh; min-height:100dvh; max-height:100dvh; }
+}
+@media (orientation: landscape) and (max-width: 1000px) {
+  .app-shell { display:grid; grid-template-columns:var(--nav-w) minmax(0,1fr); padding-bottom:0; }
+  .app-sidebar { position:fixed; inset:0 auto 0 0; width:var(--nav-w); padding:.75rem .65rem; }
+  .app-content { grid-column:2; padding:.8rem 1rem 1.5rem; }
+}
+@media (max-width: 1000px) {
+  .app-content { padding:.75rem .75rem 6rem; }
+  .app-sidebar { overflow-x:auto; overflow-y:hidden; overscroll-behavior-x:contain; scrollbar-width:none; }
+  .app-sidebar::-webkit-scrollbar { display:none; }
+  .module-tabs { display:flex; min-width:max-content; width:max-content; }
+  .module-tabs button { flex:0 0 2.85rem; width:2.85rem; padding:.2rem!important; }
+  .mobile-nav-actions { flex:0 0 auto; }
+}
+@media (max-width: 720px) {
+  .app-content { padding:.6rem .6rem 6rem; }
+  h1 { font-size:1.32rem; }
+}

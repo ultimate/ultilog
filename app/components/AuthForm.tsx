@@ -79,10 +79,10 @@ export function AuthForm({ mode, footer }: Props) {
           <h1>{mode === "login" ? "Welcome back" : "Create account"}</h1>
           <p>Keep your boats, crew, and logbooks private to your account.</p>
         </div>
-        {mode === "register" && <label>Username<input name="name" required /></label>}
+        {mode === "register" && <label>Username<input aria-label="Name" name="name" required /></label>}
         <label>Email<input name="email" required type="email" /></label>
         <PasswordField label="Password" name="password" required minLength={8} />
-        {mode === "register" && <PasswordField label="Confirm password" name="confirmPassword" required minLength={8} />}
+        {mode === "register" && <PasswordField label="Confirm" name="confirmPassword" required minLength={8} />}
         {error && <p className="auth-error">{error}</p>}
         <button disabled={isSubmitting} type="submit">{isSubmitting ? "Please wait…" : mode === "login" ? "Log in" : "Register"}</button>
         {mode === "login" && <button className="demo-login-button" disabled={isSubmitting} type="button" onClick={demoLogin}>Try the demo</button>}

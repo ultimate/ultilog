@@ -582,11 +582,7 @@ export function LogbookApp({ userId, userEmail, userName, userGroups = [] }: { u
       {profileMessage && <div className="toast-notification" role="status" aria-live="polite">{profileMessage}</div>}
       <ModuleTabs activeModule={activeModule} onSelectModule={(module) => navigate(module)} onOpenProfile={() => navigate("profile")} theme={theme} onToggleTheme={() => setTheme((current) => current === "dark" ? "light" : "dark")} userEmail={accountEmail || userEmail} userName={accountName || userName} userGroups={userGroups} isNavSlim={isNavSlim} onToggleNavSlim={() => setIsNavSlim((current) => !current)} onLogout={logout} isLoggingOut={isLoggingOut} />
       <section className="app-content">
-      <div className="top-actions">
-        {saveError && <p className="save-error">{saveError}</p>}
-        <button className="secondary-action" type="button">Export</button>
-        <button className="primary-action" type="button" onClick={() => { setEditingSheetId(null); setSheetForm(defaultSheetForm(activeBoat.id)); setShowNewSheet(true); navigate("details"); }}>+ New log entry</button>
-      </div>
+      {saveError && <p className="save-error">{saveError}</p>}
 
       {activeModule === "dashboard" && <DashboardPanel stats={stats} />}
 
