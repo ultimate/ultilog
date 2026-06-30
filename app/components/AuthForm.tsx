@@ -2,13 +2,11 @@
 
 import { FormEvent, ReactNode, useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { PasswordField } from "./PasswordField";
 
 type Props = { mode: "login" | "register"; footer: ReactNode };
 
 export function AuthForm({ mode, footer }: Props) {
-  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -28,8 +26,7 @@ export function AuthForm({ mode, footer }: Props) {
       setError("Unable to start demo.");
       return;
     }
-    router.push("/");
-    router.refresh();
+    window.location.assign("/");
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -66,8 +63,7 @@ export function AuthForm({ mode, footer }: Props) {
       setError("Invalid email or password.");
       return;
     }
-    router.push("/");
-    router.refresh();
+    window.location.assign("/");
   }
 
   return (
