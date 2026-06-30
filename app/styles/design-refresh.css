@@ -648,20 +648,3 @@ h3 { margin-block:.25rem .55rem; }
   .mobile-bottom-nav .tab-icon img,
   .mobile-bottom-nav .mobile-profile-action img { width:1.3rem; height:1.3rem; }
 }
-
-/* Line-only menu SVGs: no filled backgrounds; invert strokes to white in dark mode. */
-.module-tabs .tab-icon img,
-.profile-card img,
-.mobile-bottom-nav .tab-icon img,
-.mobile-bottom-nav .mobile-profile-action img {
-  filter:none!important;
-  mix-blend-mode:normal!important;
-}
-.app-shell[data-theme="dark"] .module-tabs .tab-icon img,
-.app-shell[data-theme="dark"] .profile-card img,
-.app-shell[data-theme="dark"] .mobile-bottom-nav .tab-icon img,
-.app-shell[data-theme="dark"] .mobile-bottom-nav .mobile-profile-action img,
-.app-shell[data-theme="dark"] .module-tabs button.active .tab-icon img {
-  filter:invert(1) brightness(1.8)!important;
-  mix-blend-mode:normal!important;
-}
