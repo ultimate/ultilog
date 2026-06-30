@@ -4,6 +4,7 @@ export const moduleTabs = [
   { id: "details", label: "Logbook details" },
   { id: "boats", label: "Boat manager" },
   { id: "crew", label: "Crew manager" },
+  { id: "users", label: "Users" },
   { id: "compliance", label: "Compliance" },
 ] as const;
 
