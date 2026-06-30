@@ -488,3 +488,81 @@ h3 { margin-block:.25rem .55rem; }
   .app-content { padding:.6rem .6rem 6rem; }
   h1 { font-size:1.32rem; }
 }
+
+/* Final compact nav polish: transparent icons, slimmer bars, and dark-theme consistency. */
+:root { --nav-w:12.5rem; }
+.app-shell { background:var(--app-bg); }
+.app-sidebar { border-right:0; box-shadow:none; }
+.module-tabs .tab-icon,
+.mobile-nav-actions span,
+.profile-card span,
+.module-tabs button.active .tab-icon,
+.mobile-profile-action.active span,
+.profile-card.active span {
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.module-tabs .tab-icon img,
+.profile-card img,
+.mobile-profile-action img { mix-blend-mode:multiply; }
+.app-shell[data-theme="dark"] .module-tabs .tab-icon img,
+.app-shell[data-theme="dark"] .profile-card img,
+.app-shell[data-theme="dark"] .mobile-profile-action img {
+  mix-blend-mode:screen;
+}
+.module-tabs button.active,
+.profile-card.active,
+.mobile-profile-action.active span { background:transparent!important; }
+
+@media (min-width: 1001px) {
+  .app-shell[data-nav="slim"] { --nav-w:4.3rem; }
+  .app-shell[data-nav="slim"] .app-sidebar { padding-inline:.45rem; }
+  .app-sidebar { width:var(--nav-w); padding:.75rem .55rem; }
+  .module-tabs { display:grid; grid-template-columns:1fr; width:100%; }
+  .module-tabs button { width:100%; min-height:2.35rem!important; padding-inline:.45rem!important; }
+  .app-shell[data-nav="slim"] .module-tabs button,
+  .app-shell[data-nav="slim"] .sync-icon-card,
+  .app-shell[data-nav="slim"] .theme-toggle,
+  .app-shell[data-nav="slim"] .profile-card { justify-content:center; padding-inline:.25rem!important; }
+}
+@media (max-width: 1000px) {
+  .app-shell { padding-bottom:4.35rem; }
+  .app-sidebar { height:4.25rem; padding:.3rem .45rem calc(.3rem + env(safe-area-inset-bottom)); }
+  .module-tabs { gap:1.05rem; }
+  .module-tabs button { flex:0 0 2.15rem; width:2.15rem; height:2.8rem; }
+  .module-tabs .tab-icon,.mobile-nav-actions span { width:2rem; height:2rem; flex-basis:2rem; }
+  .mobile-nav-actions { grid-template-columns:repeat(3, 2.15rem); gap:1.05rem; }
+  .app-content { padding:.45rem .45rem 5rem; }
+}
+@media (orientation: landscape) and (max-width: 1000px) {
+  .app-shell { --nav-w:12.5rem; grid-template-columns:var(--nav-w) minmax(0,1fr); padding-bottom:0; }
+  .app-sidebar { width:var(--nav-w); height:100dvh; max-height:100dvh; min-height:100dvh; overflow-y:auto; overflow-x:hidden; padding:.65rem .5rem; }
+  .module-tabs,.module-tabs.has-admin-tab { display:grid; grid-template-columns:1fr; width:100%; min-width:0; gap:.2rem; }
+  .module-tabs button { width:100%; min-height:2.35rem!important; height:auto; flex:initial; flex-direction:row; justify-content:flex-start; gap:.5rem; padding-inline:.45rem!important; }
+  .mobile-nav-actions { display:none; }
+}
+.app-shell[data-theme="dark"] .manager-list button,
+.app-shell[data-theme="dark"] .table-card,
+.app-shell[data-theme="dark"] .logbook-list-card,
+.app-shell[data-theme="dark"] .info-card,
+.app-shell[data-theme="dark"] .sheet-card,
+.app-shell[data-theme="dark"] .profile-hero-card,
+.app-shell[data-theme="dark"] .workspace,
+.app-shell[data-theme="dark"] table,
+.app-shell[data-theme="dark"] .table-scroll {
+  background:#0d1f35!important;
+  color:var(--text)!important;
+  border-color:#1b3859!important;
+}
+.app-shell[data-theme="dark"] .primary-action,
+.app-shell[data-theme="dark"] .secondary-action,
+.app-shell[data-theme="dark"] .edit-chip,
+.app-shell[data-theme="dark"] .ghost-button,
+.app-shell[data-theme="dark"] .logout-chip,
+.app-shell[data-theme="dark"] .table-header button,
+.app-shell[data-theme="dark"] .manager-list button {
+  background:#102a48!important;
+  color:var(--text)!important;
+  border-color:#24496f!important;
+  box-shadow:none!important;
+}
