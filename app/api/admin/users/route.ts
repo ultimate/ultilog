@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "../../../../auth";
-import { listKnownGroups, listUsersForAdmin, updateUserGroups, userHasGroup } from "../../../lib/users";
+import { deleteUserAccountAsAdmin, listKnownGroups, listUsersForAdmin, updateUserGroups, userHasGroup } from "../../../lib/users";
 
 export async function GET() {
   const session = await auth();
@@ -24,5 +24,21 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ user, groups: await listKnownGroups() });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to update groups." }, { status: 400 });
+  }
+}
+
+
+export async function DELETE(request: Request) {
+  const session = await auth();
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!await userHasGroup(session.user.id, "admin")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  try {
+    const body = await request.json() as { userId?: string; confirmationName?: string };
+    if (!body.userId) return NextResponse.json({ error: "User is required." }, { status: 400 });
+    if (body.userId === session.user.id) return NextResponse.json({ error: "You cannot delete your own account from the admin page." }, { status: 400 });
+    await deleteUserAccountAsAdmin(body.userId, body.confirmationName ?? "");
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to delete user." }, { status: 400 });
   }
 }

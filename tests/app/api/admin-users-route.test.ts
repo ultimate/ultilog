@@ -5,6 +5,7 @@ vi.mock("../../../auth", () => ({
 }));
 
 vi.mock("../../../app/lib/users", () => ({
+  deleteUserAccountAsAdmin: vi.fn(),
   listKnownGroups: vi.fn(),
   listUsersForAdmin: vi.fn(),
   updateUserGroups: vi.fn(),
@@ -13,9 +14,10 @@ vi.mock("../../../app/lib/users", () => ({
 
 const { auth } = await import("../../../auth");
 const users = await import("../../../app/lib/users");
-const { GET, PATCH } = await import("../../../app/api/admin/users/route");
+const { DELETE, GET, PATCH } = await import("../../../app/api/admin/users/route");
 
 const mockedAuth = auth as unknown as Mock;
+const mockedDeleteUserAccountAsAdmin = vi.mocked(users.deleteUserAccountAsAdmin);
 const mockedListKnownGroups = vi.mocked(users.listKnownGroups);
 const mockedListUsersForAdmin = vi.mocked(users.listUsersForAdmin);
 const mockedUpdateUserGroups = vi.mocked(users.updateUserGroups);
@@ -93,4 +95,34 @@ describe("admin users endpoint", () => {
     await expect(response.json()).resolves.toEqual({ user: updatedUser, groups: ["admin", "demo", "reviewer"] });
     expect(mockedUpdateUserGroups).toHaveBeenCalledWith("demo", ["demo", "reviewer"]);
   });
+
+  it("prevents admins from deleting their own account from the admin page", async () => {
+    mockedAuth.mockResolvedValueOnce(adminSession);
+    mockedUserHasGroup.mockResolvedValueOnce(true);
+
+    const response = await DELETE(new Request("https://ultilog.test/api/admin/users", {
+      method: "DELETE",
+      body: JSON.stringify({ userId: "admin-user", confirmationName: "Admin" }),
+    }));
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: "You cannot delete your own account from the admin page." });
+    expect(mockedDeleteUserAccountAsAdmin).not.toHaveBeenCalled();
+  });
+
+  it("deletes users for admins when the username confirmation is provided", async () => {
+    mockedAuth.mockResolvedValueOnce(adminSession);
+    mockedUserHasGroup.mockResolvedValueOnce(true);
+    mockedDeleteUserAccountAsAdmin.mockResolvedValueOnce();
+
+    const response = await DELETE(new Request("https://ultilog.test/api/admin/users", {
+      method: "DELETE",
+      body: JSON.stringify({ userId: "demo", confirmationName: "Demo" }),
+    }));
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ ok: true });
+    expect(mockedDeleteUserAccountAsAdmin).toHaveBeenCalledWith("demo", "Demo");
+  });
+
 });
