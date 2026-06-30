@@ -158,6 +158,15 @@ export async function deleteUserAccount(userId: string, input: { currentPassword
   await db.query(`delete from users where id = ${db.placeholder(1)}`, [userId]);
 }
 
+export async function deleteUserAccountAsAdmin(userId: string, confirmationName: string): Promise<void> {
+  const db = getDatabase();
+  await db.migrate();
+  const current = (await db.query<UserRow>(`select id, name, email, password_hash from users where id = ${db.placeholder(1)}`, [userId])).rows[0];
+  if (!current) throw new Error("User not found.");
+  if (confirmationName !== current.name) throw new Error("Type the username to confirm account deletion.");
+  await db.query(`delete from users where id = ${db.placeholder(1)}`, [userId]);
+}
+
 export async function listUsersForAdmin(): Promise<AdminUserListItem[]> {
   const db = getDatabase();
   await db.migrate();

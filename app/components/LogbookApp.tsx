@@ -558,6 +558,25 @@ export function LogbookApp({ userId, userEmail, userName, userGroups = [] }: { u
     setAdminMessage("Groups saved.");
   }
 
+  async function deleteAdminUser(targetUser: AdminUser) {
+    setAdminError(null);
+    setAdminMessage(null);
+    const confirmationName = window.prompt(`Type ${targetUser.name} to permanently delete this user account.`);
+    if (confirmationName === null) return;
+    if (confirmationName !== targetUser.name) {
+      setAdminError("Type the username to confirm account deletion.");
+      return;
+    }
+    const response = await fetch("/api/admin/users", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId: targetUser.id, confirmationName }) });
+    const payload = await response.json().catch(() => ({})) as { error?: string };
+    if (!response.ok) {
+      setAdminError(payload.error ?? "Unable to delete user.");
+      return;
+    }
+    setAdminUsers((users) => users.filter((user) => user.id !== targetUser.id));
+    setAdminMessage(`Deleted user ${targetUser.name}.`);
+  }
+
   async function deleteAccount(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setProfileError(null);
@@ -666,7 +685,7 @@ export function LogbookApp({ userId, userEmail, userName, userGroups = [] }: { u
           {(adminMessage || adminError) && <article className="info-card">{adminMessage && <p className="save-success">{adminMessage}</p>}{adminError && <p className="save-error">{adminError}</p>}</article>}
           <article className="table-card">
             <div className="table-header"><div><p className="eyebrow">Tag-style groups</p><h3>Users</h3><p>Existing groups: {knownGroups.length ? knownGroups.join(", ") : "none yet"}</p></div></div>
-            <div className="table-scroll"><table className="logbook-table"><thead><tr><th>Username</th><th>Email</th><th>Groups</th><th></th></tr></thead><tbody>{adminUsers.map((user) => <tr key={user.id}><td>{user.name}</td><td>{user.email}</td><td><div className="tag-editor" aria-label={`Groups for ${user.email}`}>{user.groups.length > 0 && <div className="tag-editor-tags">{user.groups.map((group) => <span key={group}>{group}<button type="button" aria-label={`Remove ${group} from ${user.email}`} disabled={!canRemoveAdminUserGroup(user.id, group)} title={!canRemoveAdminUserGroup(user.id, group) ? "You cannot remove admin from your own account." : undefined} onClick={() => removeAdminUserGroup(user.id, group)}>×</button></span>)}</div>}<div className="tag-editor-add"><input aria-label={`Add group for ${user.email}`} list="known-groups" placeholder="Select or type group…" value={groupDrafts[user.id] ?? ""} onChange={(event) => setGroupDrafts((drafts) => ({ ...drafts, [user.id]: event.target.value }))} onKeyDown={(event) => handleGroupDraftKeyDown(event, user.id)} /><button type="button" className="edit-chip" onClick={() => addAdminUserGroup(user.id)}>Add</button></div></div></td><td><button type="button" className="edit-chip" onClick={() => saveAdminUserGroups(user.id, user.groups.join(", "))}>Save</button></td></tr>)}</tbody></table></div>
+            <div className="table-scroll"><table className="logbook-table"><thead><tr><th>Username</th><th>Email</th><th>Groups</th><th></th><th></th></tr></thead><tbody>{adminUsers.map((user) => <tr key={user.id}><td>{user.name}</td><td>{user.email}</td><td><div className="tag-editor" aria-label={`Groups for ${user.email}`}>{user.groups.length > 0 && <div className="tag-editor-tags">{user.groups.map((group) => <span key={group}>{group}<button type="button" aria-label={`Remove ${group} from ${user.email}`} disabled={!canRemoveAdminUserGroup(user.id, group)} title={!canRemoveAdminUserGroup(user.id, group) ? "You cannot remove admin from your own account." : undefined} onClick={() => removeAdminUserGroup(user.id, group)}>×</button></span>)}</div>}<div className="tag-editor-add"><input aria-label={`Add group for ${user.email}`} list="known-groups" placeholder="Select or type group…" value={groupDrafts[user.id] ?? ""} onChange={(event) => setGroupDrafts((drafts) => ({ ...drafts, [user.id]: event.target.value }))} onKeyDown={(event) => handleGroupDraftKeyDown(event, user.id)} /><button type="button" className="edit-chip" onClick={() => addAdminUserGroup(user.id)}>Add</button></div></div></td><td><button type="button" className="edit-chip" onClick={() => saveAdminUserGroups(user.id, user.groups.join(", "))}>Save</button></td><td><button type="button" className="ghost-button" disabled={user.id === userId} title={user.id === userId ? "Use your profile page to delete your own account." : undefined} onClick={() => deleteAdminUser(user)}>Delete</button></td></tr>)}</tbody></table></div>
             <datalist id="known-groups">{knownGroups.map((group) => <option key={group} value={group} />)}</datalist>
           </article>
         </section>}
