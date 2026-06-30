@@ -84,7 +84,7 @@ export function LogbookApp({ userId, userEmail, userName, userGroups = [] }: { u
   async function logout() {
     setSaveError(null);
     setIsLoggingOut(true);
-    persistLogbook(logbookRef.current, { keepalive: true }).catch(() => undefined);
+    await persistLogbook(logbookRef.current).catch(() => undefined);
     await signOut({ redirect: false });
     router.push("/login");
     router.refresh();
