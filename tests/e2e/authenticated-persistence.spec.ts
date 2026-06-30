@@ -11,7 +11,8 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   await page.goto("/register");
   await page.getByLabel("Name").fill("E2E Skipper");
   await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
+  await page.getByLabel("Password", { exact: true }).fill(password);
+  await page.getByLabel("Confirm", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Register" }).click();
   await expect(page.getByRole("button", { name: "Logout" })).toBeVisible();
 
@@ -53,7 +54,7 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   await page.getByRole("button", { name: "Logout" }).click();
   await expect(page).toHaveURL(/\/login$/);
   await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(password);
+  await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Log in" }).click();
   await expect(page.getByRole("button", { name: "Logout" })).toBeVisible();
   await assertCreatedItemsVisible(page, { crewName, boatName, sheetTitle });

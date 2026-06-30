@@ -45,7 +45,7 @@ export function ModuleTabs({ activeModule, onSelectModule, onOpenProfile, theme,
         {isAdmin && <button type="button" className={activeModule === "admin" ? "active" : ""} onClick={() => onSelectModule("admin")} aria-label="User management"><span className="tab-icon" aria-hidden="true"><Image className="nav-svg-icon" src="/icons/icon_admin.svg" alt="" width={24} height={24} /></span><span className="nav-label">Admin</span></button>}
       </nav>
       <div className="sidebar-spacer" />
-      <section className="sync-icon-card" aria-label="Cloud sync status"><span className="sync-icon" aria-hidden="true" /><span className="sync-status-text">All up to date</span></section>
+      <section className="sync-icon-card" aria-label="Cloud sync status"><span className="sync-icon" aria-hidden="true" /></section>
       <div className="sidebar-control-row"><button className="theme-toggle" type="button" onClick={onToggleTheme}><span className="theme-icon" aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span><span>{theme === "dark" ? "Light" : "Dark"}</span></button></div>
       <button className={`profile-card ${activeModule === "profile" ? "active" : ""}`} type="button" onClick={onOpenProfile}><span><Image className="nav-svg-icon" src="/icons/icon_profile.svg" alt="" width={24} height={24} /></span><strong>{userName ?? "Profile"}</strong><small>{userEmail ?? "No email"}</small></button>
       <button className="logout-chip" type="button" onClick={onLogout} disabled={isLoggingOut} aria-label="Logout">{isLoggingOut ? "Saving…" : "Logout"}</button>
