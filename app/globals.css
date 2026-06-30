@@ -480,3 +480,26 @@ td { color: #28384b; line-height: 1.45; }
   .manager-split { grid-template-columns: 1fr; }
 }
 
+
+.logbook-section {
+  width: 100%;
+}
+
+.sheet-title-row.logbook-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.header-details {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+.header-details div {
+  grid-template-columns: minmax(8rem, 0.3fr) minmax(0, 1fr);
+}
+
+.sheet-title-row.logbook-section > .edit-chip:last-child {
+  justify-self: start;
+}
