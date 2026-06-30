@@ -566,3 +566,13 @@ h3 { margin-block:.25rem .55rem; }
   border-color:#24496f!important;
   box-shadow:none!important;
 }
+
+/* Keep password labels exact for accessibility/testing while preserving form layout. */
+.password-field {
+  display:grid;
+  gap:.45rem;
+  color:var(--text);
+  font-weight:850;
+}
+.auth-card .password-field,
+.inline-edit-grid .password-field { min-width:0; }
