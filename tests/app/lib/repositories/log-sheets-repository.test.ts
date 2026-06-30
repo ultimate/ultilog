@@ -50,7 +50,7 @@ describe("LogSheetsRepository", () => {
     await new LogSheetsRepository(db).insert(sheet);
 
     expect(db.calls[0].sql).toContain("insert into log_sheets");
-    expect(db.calls[0].values).toEqual([`legacy-user:${sheet.id}`, sheet.title, sheet.dateRange, sheet.status, `legacy-user:${sheet.boatId}`, JSON.stringify(sheet.skipper), JSON.stringify(sheet.route), JSON.stringify(sheet.weatherBriefing), JSON.stringify(sheet.daySummary), JSON.stringify(sheet.remarks), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), "legacy-user"]);
+    expect(db.calls[0].values).toEqual([`legacy-user:${sheet.id}`, sheet.title, sheet.dateRange, sheet.status, `legacy-user:${sheet.boatId}`, JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), "legacy-user"]);
   });
 
   it("maps relational rows back to a persisted logbook", () => {
@@ -74,11 +74,11 @@ function logSheetRow(): LogSheetRow {
     date_range: sheet.dateRange,
     status: sheet.status,
     boat_id: sheet.boatId,
-    skipper: JSON.stringify(sheet.skipper),
+    skipper: JSON.stringify({}),
     route: JSON.stringify(sheet.route),
-    weather_briefing: JSON.stringify(sheet.weatherBriefing),
-    day_summary: JSON.stringify(sheet.daySummary),
-    remarks: JSON.stringify(sheet.remarks),
+    weather_briefing: JSON.stringify({}),
+    day_summary: JSON.stringify({}),
+    remarks: JSON.stringify([]),
     watch_plan: JSON.stringify(sheet.watchPlan),
     technical_checks: JSON.stringify(sheet.technicalChecks),
   };
