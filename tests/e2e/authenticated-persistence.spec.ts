@@ -8,12 +8,15 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   const boatName = `Boat ${unique}`;
   const sheetTitle = `Sheet ${unique}`;
 
-  await page.goto("/register");
-  await page.getByLabel("Name").fill(`E2E Skipper ${unique}`);
+  const registerResponse = await page.request.post("/api/register", {
+    data: { name: `E2E Skipper ${unique}`, email, password },
+  });
+  expect(registerResponse.ok()).toBeTruthy();
+
+  await page.goto("/login");
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);
-  await page.getByLabel("Confirm", { exact: true }).fill(password);
-  await page.getByRole("button", { name: "Register" }).click();
+  await page.getByRole("button", { name: "Log in" }).click();
   await expect(page.getByRole("button", { name: "Logout" })).toBeVisible();
 
   await openModule(page, "Crew manager", "New crew");
@@ -41,11 +44,19 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   const sheetForm = page.locator("form").filter({ hasText: "New sheet" });
   await sheetForm.getByLabel("Title").fill(sheetTitle);
   await sheetForm.getByLabel("Boat").selectOption({ label: boatName });
-  await sheetForm.getByLabel("Day goal").fill("Persistence test passage");
-  await sheetForm.getByLabel("From").fill("Port A");
-  await sheetForm.getByLabel("To").fill("Port B");
+  await sheetForm.getByLabel("From position").fill("Port A");
+  await sheetForm.getByLabel("To position").fill("Port B");
   await page.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByText(sheetTitle)).toBeVisible();
+  await expect(page.getByRole("heading", { name: sheetTitle })).toBeVisible();
+  await expect(page.getByText(`1. ⭐ Skipper · E2E Skipper ${unique}`)).toBeVisible();
+
+  await page.getByLabel("Add crew member").selectOption({ label: crewName });
+  const addedCrewRow = page.locator("li").filter({ hasText: `2. ${crewName}` });
+  await expect(addedCrewRow).toBeVisible();
+  const deleteSave = page.waitForResponse((response) => response.url().endsWith("/api/logbook") && response.request().method() === "PUT" && response.ok());
+  await addedCrewRow.getByRole("button", { name: `Delete ${crewName}` }).click();
+  await expect(addedCrewRow).toBeHidden();
+  await deleteSave;
 
   await page.reload();
   await expect(page.getByRole("button", { name: "Logout" })).toBeVisible();

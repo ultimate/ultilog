@@ -241,7 +241,7 @@ td { color: #28384b; line-height: 1.45; }
   h1 { font-size: clamp(2rem, 14vw, 3.2rem); }
 }
 
-.paper-header, .yacht-card, .weather-card, .remarks-card, .summary-card, .signature-card {
+.paper-header {
   border: 1px solid rgba(207, 218, 229, 0.9);
   background: rgba(255, 255, 255, 0.92);
   box-shadow: var(--shadow);
@@ -256,7 +256,7 @@ td { color: #28384b; line-height: 1.45; }
   border-radius: 1.5rem;
 }
 
-.paper-header div, .briefing-grid div, .signature-card div {
+.paper-header div {
   min-width: 0;
   padding: 0.95rem;
   border-right: 1px solid var(--border);
@@ -264,7 +264,7 @@ td { color: #28384b; line-height: 1.45; }
 }
 
 .paper-header div:nth-last-child(-n + 2) { grid-column: span 2; }
-.paper-header span, .briefing-grid span, .signature-card span {
+.paper-header span {
   display: block;
   margin-bottom: 0.35rem;
   color: var(--primary-dark);
@@ -273,80 +273,14 @@ td { color: #28384b; line-height: 1.45; }
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-.paper-header strong, .briefing-grid strong, .signature-card strong { display: block; font-size: 1rem; }
+.paper-header strong { display: block; font-size: 1rem; }
 
-.yacht-card, .weather-card, .remarks-card, .summary-card, .signature-card {
-  border-radius: 1.5rem;
-  padding: clamp(1rem, 2vw, 1.5rem);
-}
-
-.yacht-data-grid {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: 1rem;
-  background: white;
-}
-.yacht-data-grid div {
-  display: grid;
-  grid-template-columns: 150px minmax(0, 1fr);
-  padding: 0.75rem;
-  border-right: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-}
-
-.weather-card { display: grid; gap: 1rem; }
-.voyage-layout .map-card { min-height: 100%; }
-.voyage-layout .weather-card { box-shadow: var(--shadow-soft); }
-.briefing-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: 1rem;
-  background: white;
-}
-.briefing-grid .wide { grid-column: 1 / -1; }
-
-.paper-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
-  gap: 1rem;
-}
-.remarks-card ol {
-  display: grid;
-  gap: 0.65rem;
-  min-height: 13rem;
-  margin: 0;
-  padding: 0 0 0 1.25rem;
-  background: repeating-linear-gradient(to bottom, transparent 0 2.1rem, rgba(15, 107, 143, 0.2) 2.1rem calc(2.1rem + 1px));
-}
-.remarks-card li { padding-top: 0.2rem; }
-.summary-card dl { grid-template-columns: 1fr; }
-.signature-card {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  overflow: hidden;
-  padding: 0;
-}
-.signature-card strong::after {
-  content: "";
-  display: block;
-  height: 1.4rem;
-  margin-top: 0.5rem;
-  border-bottom: 2px dotted var(--primary-dark);
-}
 
 @media (max-width: 1050px) {
-  .paper-header, .paper-grid, .signature-card, .voyage-layout { grid-template-columns: 1fr; }
+  .paper-header, .voyage-layout { grid-template-columns: 1fr; }
   .paper-header div:nth-last-child(-n + 2) { grid-column: auto; }
-  .yacht-data-grid, .briefing-grid { grid-template-columns: 1fr; }
 }
 
-@media (max-width: 680px) {
-  .yacht-data-grid div { grid-template-columns: 1fr; gap: 0.25rem; }
-}
 
 .manager-toggle {
   border: 1px solid var(--border) !important;
@@ -480,3 +414,180 @@ td { color: #28384b; line-height: 1.45; }
   .manager-split { grid-template-columns: 1fr; }
 }
 
+
+.logbook-section {
+  width: 100%;
+}
+
+.sheet-title-row.logbook-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.header-details {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+.header-details div {
+  grid-template-columns: minmax(8rem, 0.3fr) minmax(0, 1fr);
+}
+
+.sheet-title-row.logbook-section > .edit-chip:last-child {
+  justify-self: start;
+}
+
+
+.header-details div {
+  grid-column: span 1;
+}
+
+.header-details div:nth-child(-n + 2) {
+  grid-column: span 2;
+}
+
+.sheet-support-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.sheet-support-grid .map-card {
+  min-width: 0;
+}
+
+@media (max-width: 1050px) {
+  .header-details div,
+  .header-details div:nth-child(-n + 2),
+  .sheet-support-grid {
+    grid-column: auto;
+  }
+
+  .sheet-support-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.compact-header-details {
+  grid-template-columns: 1fr;
+}
+
+.compact-header-details div,
+.compact-header-details div:nth-child(-n + 2) {
+  grid-column: auto;
+}
+
+.compact-header-details dd {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.header-edit-row,
+.crew-assignment-fields {
+  display: grid;
+  grid-template-columns: 5rem minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.5rem;
+  align-items: end;
+}
+
+.header-edit-row {
+  grid-column: 1 / -1;
+}
+
+.header-edit-row > span,
+.crew-assignment-fields > span {
+  font-weight: 900;
+  color: var(--primary-dark);
+}
+
+.crew-assignment-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.crew-assignment-main,
+.crew-assignment-actions {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.crew-assignment-actions {
+  grid-auto-flow: column;
+  align-items: start;
+}
+
+@media (max-width: 680px) {
+  .header-edit-row,
+  .crew-assignment-fields,
+  .crew-assignment-list li {
+    grid-template-columns: 1fr;
+  }
+
+  .crew-assignment-actions {
+    grid-auto-flow: row;
+  }
+}
+
+
+.header-edit-row > span {
+  grid-column: 1 / -1;
+}
+
+.header-edit-row {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.header-table {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr;
+  overflow: hidden;
+  border-radius: 1.5rem;
+}
+
+.header-table-row {
+  display: grid;
+  grid-template-columns: minmax(5rem, 0.25fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.95rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.header-table-row:last-child {
+  border-bottom: 0;
+}
+
+.header-table-row > span {
+  color: var(--primary-dark);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+}
+
+.header-table-row > .edit-chip {
+  justify-self: start;
+}
+
+.header-edit-row {
+  grid-template-columns: minmax(5rem, 0.25fr) minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.header-edit-row > span {
+  grid-column: auto;
+  align-self: center;
+}
+
+@media (max-width: 680px) {
+  .header-table-row,
+  .header-edit-row {
+    grid-template-columns: 1fr;
+  }
+}

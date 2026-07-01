@@ -24,6 +24,63 @@ const mockSocialUsers: SocialUser[] = [
   { username: "bluewater-max", sailMiles: 3196, motorMiles: 431, logbookSheets: 34, boats: 2 },
 ];
 
+function parseLogTimeMinutes(time: string) {
+  const match = time.match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return undefined;
+  const hours = Number.parseInt(match[1], 10);
+  const minutes = Number.parseInt(match[2], 10);
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return undefined;
+  return hours * 60 + minutes;
+}
+
+function formatDuration(minutes: number) {
+  const safeMinutes = Math.max(0, Math.round(minutes));
+  const hours = Math.floor(safeMinutes / 60);
+  const remainingMinutes = safeMinutes % 60;
+  return `${hours}h ${remainingMinutes.toString().padStart(2, "0")}m`;
+}
+
+function dateTimeLocalFromParts(date: string, time: string) {
+  return date && time ? `${date}T${time}` : "";
+}
+
+function splitDateTimeLocal(value: string) {
+  const [date = "", time = ""] = value.split("T");
+  return { date, time };
+}
+
+function dateTimeLocalFromStamp(value: string) {
+  const match = value.match(/^(\d{4}-\d{2}-\d{2}), (\d{2}:\d{2})/);
+  return match ? `${match[1]}T${match[2]}` : "";
+}
+
+function splitCrewStamp(value: string) {
+  const [position, dateTime] = value.includes(" · ") ? value.split(" · ", 2) : ["", value];
+  return { position, dateTimeLocal: dateTimeLocalFromStamp(dateTime) };
+}
+
+function crewStamp(dateTimeLocal: string, position: string) {
+  const { date, time } = splitDateTimeLocal(dateTimeLocal);
+  const dateTime = date ? (time ? `${date}, ${time}` : `${date}, time open`) : "";
+  return position ? `${position} · ${dateTime}` : dateTime;
+}
+
+function logLineDistanceDeltas(lines: LogLine[]) {
+  return lines.map((line, index) => Math.max(0, line.logNm - (lines[index - 1]?.logNm ?? 0)));
+}
+
+function calculateSheetSummary(sheet: LogSheet) {
+  const deltas = logLineDistanceDeltas(sheet.lines);
+  const motorMiles = deltas.reduce((sum, delta, index) => sum + (sheet.lines[index]?.engine.trim() ? delta : 0), 0);
+  const totalMiles = deltas.reduce((sum, delta) => sum + delta, 0);
+  const sailMiles = Math.max(0, totalMiles - motorMiles);
+  const firstTime = parseLogTimeMinutes(sheet.lines[0]?.time ?? "");
+  const lastTime = parseLogTimeMinutes(sheet.lines.at(-1)?.time ?? "");
+  const durationMinutes = firstTime === undefined || lastTime === undefined ? undefined : lastTime >= firstTime ? lastTime - firstTime : lastTime + 24 * 60 - firstTime;
+
+  return { motorMiles, sailMiles, totalMiles, duration: durationMinutes === undefined ? "—" : formatDuration(durationMinutes) };
+}
+
 export function LogbookApp({ userId, userEmail, userName, userGroups = [] }: { userId?: string; userEmail?: string; userName?: string; userGroups?: string[] }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -232,6 +289,8 @@ export function LogbookApp({ userId, userEmail, userName, userGroups = [] }: { u
   const selectedBoat = logbook.boats.find((boat) => boat.id === selectedBoatId) ?? logbook.boats[0];
   const selectedCrew = logbook.crewMembers[selectedCrewIndex] ?? logbook.crewMembers[0];
   const isAdmin = userGroups.includes("admin");
+  const isActiveSheetLocked = activeSheet.status === "Locked";
+  const activeSheetSummary = useMemo(() => calculateSheetSummary(activeSheet), [activeSheet]);
   const crewAssignments = useMemo(() => logbook.crewMembers.map((member) => ({
     member,
     sheets: logbook.sheets.flatMap((sheet) => sheet.crew.findIndex((crew) => crew.id === member.id) >= 0 ? [{ sheet, isSkipper: sheet.crew.findIndex((crew) => crew.id === member.id) === 0 }] : []),
@@ -293,31 +352,29 @@ export function LogbookApp({ userId, userEmail, userName, userGroups = [] }: { u
     const existingSheet = editingSheetId ? currentLogbook.sheets.find((sheet) => sheet.id === editingSheetId) : undefined;
     const base = existingSheet ?? seedSheets[0];
     const id = editingSheetId ?? createId();
+    const route = {
+      from: sheetForm.from,
+      to: sheetForm.to,
+      departed: routeStamp(sheetForm.dateRange, sheetForm.fromTime),
+      arrived: routeStamp(sheetForm.dateRange, sheetForm.toTime),
+    };
+    const currentUserCrew = currentLogbook.crewMembers.find((crew) => crew.isPrimary) ?? currentLogbook.crewMembers.find((crew) => crew.id === "me") ?? { id: "me", name: accountName || userName || "Current user", nationality: "", role: "Owner", address: "", certificate: "", isPrimary: true };
+    const crewMembers = currentLogbook.crewMembers.some((crew) => crew.id === currentUserCrew.id) ? currentLogbook.crewMembers : [currentUserCrew, ...currentLogbook.crewMembers];
+    const initialCrew = [{ ...currentUserCrew, embarkation: crewStamp(dateTimeLocalFromStamp(route.departed), route.from), disembarkation: crewStamp(dateTimeLocalFromStamp(route.arrived), route.to) }];
     const sheet: LogSheet = {
       ...base,
       id,
-      title: sheetForm.title || sheetForm.dayGoal || "Untitled sheet",
+      title: sheetForm.title || "Untitled sheet",
       dateRange: sheetForm.dateRange,
-      status: "Draft",
+      status: sheetForm.status,
       boatId: sheetForm.boatId,
-      route: {
-        dayGoal: sheetForm.dayGoal,
-        morningPosition: sheetForm.from,
-        eveningPosition: sheetForm.to,
-        from: sheetForm.from,
-        to: sheetForm.to,
-        departed: routeStamp(sheetForm.dateRange, sheetForm.fromTime),
-        arrived: routeStamp(sheetForm.dateRange, sheetForm.toTime),
-      },
-      weatherBriefing: { station: "", time: "", area: "", forecast: "", warnings: "" },
-      daySummary: { area: "", nightHours: 0, daysOnBoard: 1, sailingMiles: 0, motorMiles: 0, outsideFb2Miles: 0, engineHoursStart: 0, engineHoursEnd: 0 },
-      remarks: [],
-      crew: [],
-      watchPlan: [],
-      technicalChecks: [],
-      lines: [],
+      route,
+      crew: existingSheet?.crew ?? initialCrew,
+      watchPlan: existingSheet?.watchPlan ?? [],
+      technicalChecks: existingSheet?.technicalChecks ?? [],
+      lines: existingSheet?.lines ?? [],
     };
-    const nextLogbook = { ...currentLogbook, sheets: editingSheetId ? currentLogbook.sheets.map((candidate) => candidate.id === editingSheetId ? sheet : candidate) : [sheet, ...currentLogbook.sheets] };
+    const nextLogbook = { ...currentLogbook, crewMembers, sheets: editingSheetId ? currentLogbook.sheets.map((candidate) => candidate.id === editingSheetId ? sheet : candidate) : [sheet, ...currentLogbook.sheets] };
     if (!await saveLogbookNow(nextLogbook)) return;
     setActiveSheetId(id);
     setEditingSheetId(null);
@@ -347,10 +404,16 @@ export function LogbookApp({ userId, userEmail, userName, userGroups = [] }: { u
   }
 
   function startEditingSheet(sheet: LogSheet) {
+    if (sheet.status === "Locked") return;
     setActiveSheetId(sheet.id);
     setShowNewSheet(false);
     setEditingSheetId(sheet.id);
     setSheetForm(sheetToForm(sheet));
+  }
+
+  async function updateActiveSheetStatus(status: LogSheet["status"]) {
+    const nextLogbook = { ...logbookRef.current, sheets: logbookRef.current.sheets.map((sheet) => sheet.id === activeSheet.id ? { ...sheet, status } : sheet) };
+    await saveLogbookNow(nextLogbook);
   }
 
   function cancelSheetEdit() {
@@ -360,6 +423,7 @@ export function LogbookApp({ userId, userEmail, userName, userGroups = [] }: { u
   }
 
   async function saveLineFromFields() {
+    if (activeSheet.status === "Locked") return;
     const line: LogLine = {
       time: lineForm.time,
       position: lineForm.position,
@@ -380,8 +444,7 @@ export function LogbookApp({ userId, userEmail, userName, userGroups = [] }: { u
     const nextLogbook = { ...currentLogbook, sheets: currentLogbook.sheets.map((sheet) => {
       if (sheet.id !== activeSheet.id) return sheet;
       const lines = editingLineIndex === null ? [...sheet.lines, line] : sheet.lines.map((candidate, index) => index === editingLineIndex ? line : candidate);
-      const remarks = editingLineIndex === null && line.remarks ? [...sheet.remarks, line.remarks] : sheet.remarks;
-      return { ...sheet, lines, remarks };
+      return { ...sheet, lines };
     }) };
     if (!await saveLogbookNow(nextLogbook)) return;
     setLineForm(defaultLineForm);
@@ -395,12 +458,14 @@ export function LogbookApp({ userId, userEmail, userName, userGroups = [] }: { u
   }
 
   function startEditingLine(line: LogLine, index: number) {
+    if (activeSheet.status === "Locked") return;
     setEditingLineIndex(index);
     setLineForm(lineToForm(line));
     setShowAddLine(false);
   }
 
   function startAddingLine() {
+    if (activeSheet.status === "Locked") return;
     setEditingLineIndex(null);
     setLineForm(defaultLineForm);
     setShowAddLine((show) => !show);
@@ -422,13 +487,15 @@ export function LogbookApp({ userId, userEmail, userName, userGroups = [] }: { u
   }
 
   async function addCrewToActiveSheet(crewId: string) {
+    if (activeSheet.status === "Locked") return;
     const member = logbookRef.current.crewMembers.find((crew) => crew.id === crewId);
     if (!member) return;
-    const nextLogbook = { ...logbookRef.current, sheets: logbookRef.current.sheets.map((sheet) => sheet.id === activeSheet.id && !sheet.crew.some((crew) => crew.id === crewId) ? { ...sheet, crew: [...sheet.crew, { ...member, embarkation: sheet.route.departed, disembarkation: sheet.route.arrived }] } : sheet) };
+    const nextLogbook = { ...logbookRef.current, sheets: logbookRef.current.sheets.map((sheet) => sheet.id === activeSheet.id && !sheet.crew.some((crew) => crew.id === crewId) ? { ...sheet, crew: [...sheet.crew, { ...member, embarkation: crewStamp(dateTimeLocalFromStamp(sheet.route.departed), sheet.route.from), disembarkation: crewStamp(dateTimeLocalFromStamp(sheet.route.arrived), sheet.route.to) }] } : sheet) };
     await saveLogbookNow(nextLogbook);
   }
 
   async function updateCrewAssignment(index: number, field: "embarkation" | "disembarkation", value: string) {
+    if (activeSheet.status === "Locked") return;
     const nextLogbook = { ...logbookRef.current, sheets: logbookRef.current.sheets.map((sheet) => {
       if (sheet.id !== activeSheet.id) return sheet;
       return { ...sheet, crew: sheet.crew.map((crew, crewIndex) => crewIndex === index ? { ...crew, [field]: value } : crew) };
@@ -436,7 +503,14 @@ export function LogbookApp({ userId, userEmail, userName, userGroups = [] }: { u
     await saveLogbookNow(nextLogbook);
   }
 
+  async function updateCrewAssignmentPart(index: number, field: "embarkation" | "disembarkation", part: "dateTimeLocal" | "position", value: string) {
+    const currentValue = activeSheet.crew[index]?.[field] || (field === "embarkation" ? activeSheet.route.departed : activeSheet.route.arrived);
+    const current = splitCrewStamp(currentValue);
+    await updateCrewAssignment(index, field, crewStamp(part === "dateTimeLocal" ? value : current.dateTimeLocal, part === "position" ? value : current.position));
+  }
+
   async function moveCrewOnActiveSheet(index: number, direction: -1 | 1) {
+    if (activeSheet.status === "Locked") return;
     const nextLogbook = { ...logbookRef.current, sheets: logbookRef.current.sheets.map((sheet) => {
       if (sheet.id !== activeSheet.id) return sheet;
       const crew = [...sheet.crew];
@@ -444,6 +518,15 @@ export function LogbookApp({ userId, userEmail, userName, userGroups = [] }: { u
       if (target < 0 || target >= crew.length) return sheet;
       [crew[index], crew[target]] = [crew[target], crew[index]];
       return { ...sheet, crew };
+    }) };
+    await saveLogbookNow(nextLogbook);
+  }
+
+  async function deleteCrewFromActiveSheet(index: number) {
+    if (activeSheet.status === "Locked") return;
+    const nextLogbook = { ...logbookRef.current, sheets: logbookRef.current.sheets.map((sheet) => {
+      if (sheet.id !== activeSheet.id) return sheet;
+      return { ...sheet, crew: sheet.crew.filter((_, crewIndex) => crewIndex !== index) };
     }) };
     await saveLogbookNow(nextLogbook);
   }
@@ -625,47 +708,43 @@ export function LogbookApp({ userId, userEmail, userName, userGroups = [] }: { u
             <div className="table-scroll"><table className="logbook-table"><thead><tr><th>Date</th><th>Entry</th><th>Vessel</th><th>From → To</th><th>Sail miles</th><th>Motor miles</th><th>Total miles</th><th></th></tr></thead><tbody>{logbook.sheets.map((sheet) => {
               const boat = logbook.boats.find((candidate) => candidate.id === sheet.boatId);
               const totalMiles = Math.max(0, ...sheet.lines.map((line) => line.logNm));
-              const motorMiles = sheet.daySummary.motorMiles || Math.round(totalMiles * 0.12);
-              const sailMiles = Math.max(0, totalMiles - motorMiles);
+              const sheetSummary = calculateSheetSummary(sheet);
+              const motorMiles = sheetSummary.motorMiles;
+              const sailMiles = sheetSummary.sailMiles;
               return <tr key={sheet.id}><td>{sheet.dateRange}</td><td><button className="table-title-button" onClick={() => { setActiveSheetId(sheet.id); setSheetForm(sheetToForm(sheet)); navigate("details", sheet.id); }} type="button">{sheet.title}</button></td><td><span className="table-vessel"><span className="picture-thumb" aria-hidden="true" />{boat?.name}</span></td><td>{sheet.route.from} → {sheet.route.to}</td><td>{sailMiles} nm</td><td>{motorMiles} nm</td><td>{totalMiles} nm</td><td><button className="edit-chip" onClick={() => { setActiveSheetId(sheet.id); setSheetForm(sheetToForm(sheet)); navigate("details", sheet.id); }} type="button">Open</button></td></tr>;
             })}</tbody></table></div>
             <div className="pagination-mock" aria-hidden="true"><span className="active">1</span><span>2</span><span>3</span><span>…</span><span>8</span><span>›</span></div>
           </article>
         </section>}
 
-        {activeModule === "details" && <section className="sheet-detail" aria-labelledby="sheet-title">
+        {activeModule === "details" && !isBackendReady && <section className="sheet-detail" aria-label="Loading logbook sheet"><form className="sheet-title-row inline-edit-card"><div className="inline-edit-grid"><p className="eyebrow">Loading sheet</p><label>Title<input disabled value="" readOnly /></label><div className="header-edit-row"><span>Boat</span><select aria-label="Boat" disabled value=""><option value=""> </option></select><button type="button" className="edit-chip" disabled>Jump to boat</button></div><div className="header-edit-row"><span>From</span><input aria-label="From datetime" type="datetime-local" disabled value="" readOnly /><input aria-label="From position" disabled value="" readOnly /></div><div className="header-edit-row"><span>To</span><input aria-label="To datetime" type="datetime-local" disabled value="" readOnly /><input aria-label="To position" disabled value="" readOnly /></div></div></form></section>}
+
+        {activeModule === "details" && isBackendReady && <section className="sheet-detail" aria-labelledby="sheet-title">
           {(showNewSheet || editingSheetId) ? (
             <form className="sheet-title-row inline-edit-card" onSubmit={saveSheet}>
               <div className="inline-edit-grid">
                 <p className="eyebrow">{editingSheetId ? "Edit sheet" : "New sheet"}</p>
                 <label>Title<input required value={sheetForm.title} onChange={(e) => setSheetForm({ ...sheetForm, title: e.target.value })} /></label>
-                <label>Boat<select value={sheetForm.boatId} onChange={(e) => setSheetForm({ ...sheetForm, boatId: e.target.value })}>{logbook.boats.map((boat) => <option key={boat.id} value={boat.id}>{boat.name}</option>)}</select></label>
-                <label>Date<input type="date" value={sheetForm.dateRange} onChange={(e) => setSheetForm({ ...sheetForm, dateRange: e.target.value })} /></label>
-                <label>Day goal<input value={sheetForm.dayGoal} onChange={(e) => setSheetForm({ ...sheetForm, dayGoal: e.target.value })} /></label>
-                <label>From<input value={sheetForm.from} onChange={(e) => setSheetForm({ ...sheetForm, from: e.target.value })} /></label>
-                <label>To<input value={sheetForm.to} onChange={(e) => setSheetForm({ ...sheetForm, to: e.target.value })} /></label>
-                <label>Departure time<input type="time" value={sheetForm.fromTime} onChange={(e) => setSheetForm({ ...sheetForm, fromTime: e.target.value })} /></label>
-                <label>Arrival time<input type="time" value={sheetForm.toTime} onChange={(e) => setSheetForm({ ...sheetForm, toTime: e.target.value })} /></label>
+                <div className="header-edit-row"><span>Boat</span><select aria-label="Boat" value={sheetForm.boatId} onChange={(e) => setSheetForm({ ...sheetForm, boatId: e.target.value })}>{logbook.boats.map((boat) => <option key={boat.id} value={boat.id}>{boat.name}</option>)}</select>{editingSheetId && <button type="button" className="edit-chip" onClick={() => { setSelectedBoatId(sheetForm.boatId); setEditingBoatId(sheetForm.boatId); const boat = logbook.boats.find((candidate) => candidate.id === sheetForm.boatId); if (boat) setBoatForm(boatToForm(boat)); setShowBoatManager(false); navigate("boats", sheetForm.boatId); }}>Jump to boat</button>}</div>
+                <div className="header-edit-row"><span>From</span><input aria-label="From datetime" type="datetime-local" value={dateTimeLocalFromParts(sheetForm.dateRange, sheetForm.fromTime)} onChange={(e) => { const { date, time } = splitDateTimeLocal(e.target.value); setSheetForm({ ...sheetForm, dateRange: date || sheetForm.dateRange, fromTime: time }); }} /><input aria-label="From position" value={sheetForm.from} onChange={(e) => setSheetForm({ ...sheetForm, from: e.target.value })} /></div>
+                <div className="header-edit-row"><span>To</span><input aria-label="To datetime" type="datetime-local" value={dateTimeLocalFromParts(sheetForm.dateRange, sheetForm.toTime)} onChange={(e) => { const { date, time } = splitDateTimeLocal(e.target.value); setSheetForm({ ...sheetForm, dateRange: date || sheetForm.dateRange, toTime: time }); }} /><input aria-label="To position" value={sheetForm.to} onChange={(e) => setSheetForm({ ...sheetForm, to: e.target.value })} /></div>
               </div>
               <div className="inline-edit-actions"><button type="submit">Save</button>{showNewSheet ? <button type="button" className="ghost-button" onClick={() => { cancelSheetEdit(); navigate("logbooks"); }}>Cancel</button> : <button type="button" className="ghost-button" onClick={() => setSheetForm(sheetToForm(activeSheet))}>Discard changes</button>}</div>
             </form>
           ) : (
             <>
-              <div className="sheet-title-row"><div><p className="eyebrow">Active sheet</p><h2 id="sheet-title">{activeSheet.title}</h2><p>{activeSheet.route.from} → {activeSheet.route.to} · {activeSheet.dateRange}</p></div><div className="inline-edit-actions"><span className="status-pill">{activeSheet.status}</span><button type="button" className="edit-chip" onClick={() => startEditingSheet(activeSheet)}>Edit sheet</button></div></div>
-              <section className="entry-metrics" aria-label="Logbook entry metrics"><article><span>Total miles</span><strong>{Math.max(0, ...activeSheet.lines.map((line) => line.logNm))} nm</strong></article><article><span>Sail miles</span><strong>{Math.max(0, Math.max(0, ...activeSheet.lines.map((line) => line.logNm)) - (activeSheet.daySummary.motorMiles || 12))} nm</strong></article><article><span>Motor miles</span><strong>{activeSheet.daySummary.motorMiles || 12} nm</strong></article><article><span>Duration</span><strong>18h 30m</strong></article></section><nav className="entry-tabs" aria-label="Entry sections"><span>Passage</span><span className="active">Mileage log</span><span>Crew ({activeSheet.crew.length})</span><span>Notes & documents</span><span>Sign-offs</span></nav><section className="paper-header" aria-label="Daily paper log header"><div><span>Day goal</span><strong>{activeSheet.route.dayGoal || "—"}</strong></div><div><span>Date</span><strong>{activeSheet.dateRange}</strong></div><div><span>Daily logbook lead</span><strong>{activeSheet.crew[0]?.name ?? activeSheet.skipper.name}</strong></div><div><span>Stage / sheet</span><strong>{activeSheet.id}</strong></div><div><span>From</span><strong>{activeSheet.route.from} · {activeSheet.route.departed}</strong></div><div><span>To</span><strong>{activeSheet.route.to} · {activeSheet.route.arrived}</strong></div></section>
+              <section className="sheet-title-row logbook-section" aria-label="Logbook sheet header"><div><h2 id="sheet-title">{activeSheet.title}</h2></div><div className="inline-edit-actions"><span className="status-pill">{activeSheet.status}</span>{isActiveSheetLocked ? <button type="button" className="edit-chip" onClick={() => updateActiveSheetStatus("Draft")}>Unlock sheet</button> : <><button type="button" className="edit-chip" onClick={() => startEditingSheet(activeSheet)}>Edit sheet</button><button type="button" className="edit-chip" onClick={() => updateActiveSheetStatus("Locked")}>Lock sheet</button></>}</div><div className="paper-header header-table"><div className="header-table-row"><span>Boat</span><strong>{activeBoat.name}</strong><button type="button" className="edit-chip" onClick={() => { setSelectedBoatId(activeBoat.id); setEditingBoatId(activeBoat.id); setBoatForm(boatToForm(activeBoat)); setShowBoatManager(false); navigate("boats", activeBoat.id); }}>Jump to boat</button></div><div className="header-table-row"><span>From</span><strong>{activeSheet.route.departed || activeSheet.dateRange}</strong><strong>{activeSheet.route.from || "—"}</strong></div><div className="header-table-row"><span>To</span><strong>{activeSheet.route.arrived || activeSheet.dateRange}</strong><strong>{activeSheet.route.to || "—"}</strong></div></div></section>
             </>
           )}
 
-          <div className="detail-grid"><article className="info-card"><div className="card-title-row"><h3>Master data</h3><button type="button" className="edit-chip" onClick={() => { setSelectedBoatId(activeBoat.id); setEditingBoatId(activeBoat.id); setBoatForm(boatToForm(activeBoat)); setShowBoatManager(false); navigate("boats", activeBoat.id); }}>Show boat details</button></div><dl><div><dt>Selected boat</dt><dd>{activeBoat.name}</dd></div><div><dt>Type</dt><dd>{activeBoat.type}</dd></div><div><dt>From</dt><dd>{activeSheet.route.from} · {activeSheet.route.departed}</dd></div><div><dt>To</dt><dd>{activeSheet.route.to} · {activeSheet.route.arrived}</dd></div></dl></article></div>
-          <div className="voyage-layout"><article className="map-card"><div><p className="eyebrow">Route map draft</p><h3>Positions connected from log lines</h3></div><div className="route-map" aria-label="Stylized route map preview">{activeSheet.lines.map((line, index) => <span className="map-marker" key={`${line.time}-${line.position}-${index}`} style={{ left: `${12 + index * (76 / Math.max(activeSheet.lines.length - 1, 1))}%`, top: `${62 - index * 8}%` }} title={`${line.time} · ${line.position}`}>{index + 1}</span>)}</div></article>
-          <article className="weather-card"><div><p className="eyebrow">Weather briefing</p><h3>Forecast, warnings, and planning context</h3></div><div className="briefing-grid"><div><span>Station</span><strong>{activeSheet.weatherBriefing.station || "—"}</strong></div><div><span>Time</span><strong>{activeSheet.weatherBriefing.time || "—"}</strong></div><div><span>Area</span><strong>{activeSheet.weatherBriefing.area || "—"}</strong></div><div className="wide"><span>Forecast</span><strong>{activeSheet.weatherBriefing.forecast || "—"}</strong></div><div className="wide"><span>Warnings</span><strong>{activeSheet.weatherBriefing.warnings || "—"}</strong></div></div></article></div>
+          {!showNewSheet && <>
+          <section className="entry-metrics logbook-section" aria-label="Summary calculated from log lines"><article><span>Motor miles</span><strong>{activeSheetSummary.motorMiles} nm</strong></article><article><span>Sail miles</span><strong>{activeSheetSummary.sailMiles} nm</strong></article><article><span>Total miles</span><strong>{activeSheetSummary.totalMiles} nm</strong></article><article><span>Duration</span><strong>{activeSheetSummary.duration}</strong></article></section>
 
-          <article className="table-card"><div className="table-header"><div><p className="eyebrow">Combined day sheet</p><h3>Meteorological and nautical log lines</h3></div><div className="table-actions"><button type="button" onClick={() => setShowCourseColumns((show) => !show)}>{showCourseColumns ? "Hide" : "Show"} course conversion columns</button><button type="button" onClick={startAddingLine}>+ Add line</button></div></div><div className="table-scroll"><table className={showCourseColumns ? "with-course-columns" : undefined}><thead><tr><th>Time</th><th>Weather</th><th>Baro</th><th>Sea</th><th>Wind</th><th>MgK / CC</th>{showCourseColumns && courseConversionColumns.map((column) => <th key={column}>{column}</th>)}<th>KüG / COG</th><th>Log</th><th>Sail</th><th>Motor</th><th>Position</th><th>Lat / Lon</th><th>Remarks</th><th>Actions</th></tr></thead><tbody>{showAddLine && <tr className="inline-line-row"><td><input value={lineForm.time} onChange={(e) => setLineForm({ ...lineForm, time: e.target.value })} /></td><td><input value={lineForm.weather} onChange={(e) => setLineForm({ ...lineForm, weather: e.target.value })} /></td><td><input value={lineForm.barometer} onChange={(e) => setLineForm({ ...lineForm, barometer: e.target.value })} /></td><td><input value={lineForm.seaState} onChange={(e) => setLineForm({ ...lineForm, seaState: e.target.value })} /></td><td><input value={lineForm.wind} onChange={(e) => setLineForm({ ...lineForm, wind: e.target.value })} /></td><td><input value={lineForm.magneticCourse} onChange={(e) => setLineForm({ ...lineForm, magneticCourse: e.target.value })} /></td>{showCourseColumns && courseConversionColumns.map((column) => <td className="optional-course-cell" key={`new-${column}`}>—</td>)}<td><input value={lineForm.course} onChange={(e) => setLineForm({ ...lineForm, course: e.target.value })} /></td><td><input value={lineForm.logNm} onChange={(e) => setLineForm({ ...lineForm, logNm: e.target.value })} /></td><td><input value={lineForm.sails} onChange={(e) => setLineForm({ ...lineForm, sails: e.target.value })} /></td><td><input value={lineForm.engine} onChange={(e) => setLineForm({ ...lineForm, engine: e.target.value })} /></td><td><input value={lineForm.position} onChange={(e) => setLineForm({ ...lineForm, position: e.target.value })} /></td><td><div className="coordinate-inputs"><input aria-label="Latitude" value={lineForm.latitude} onChange={(e) => setLineForm({ ...lineForm, latitude: e.target.value })} /><input aria-label="Longitude" value={lineForm.longitude} onChange={(e) => setLineForm({ ...lineForm, longitude: e.target.value })} /></div></td><td><input value={lineForm.remarks} onChange={(e) => setLineForm({ ...lineForm, remarks: e.target.value })} /></td><td><div className="table-actions"><button type="button" onClick={saveLineFromFields}>{editingLineIndex === null ? "Save line" : "Update line"}</button><button type="button" className="ghost-button" onClick={cancelLineEdit}>Cancel</button></div></td></tr>}{activeSheet.lines.map((line, index) => editingLineIndex === index ? <tr key={`edit-${index}`} className="inline-line-row"><td><input value={lineForm.time} onChange={(e) => setLineForm({ ...lineForm, time: e.target.value })} /></td><td><input value={lineForm.weather} onChange={(e) => setLineForm({ ...lineForm, weather: e.target.value })} /></td><td><input value={lineForm.barometer} onChange={(e) => setLineForm({ ...lineForm, barometer: e.target.value })} /></td><td><input value={lineForm.seaState} onChange={(e) => setLineForm({ ...lineForm, seaState: e.target.value })} /></td><td><input value={lineForm.wind} onChange={(e) => setLineForm({ ...lineForm, wind: e.target.value })} /></td><td><input value={lineForm.magneticCourse} onChange={(e) => setLineForm({ ...lineForm, magneticCourse: e.target.value })} /></td>{showCourseColumns && courseConversionColumns.map((column) => <td className="optional-course-cell" key={`new-${column}`}>—</td>)}<td><input value={lineForm.course} onChange={(e) => setLineForm({ ...lineForm, course: e.target.value })} /></td><td><input value={lineForm.logNm} onChange={(e) => setLineForm({ ...lineForm, logNm: e.target.value })} /></td><td><input value={lineForm.sails} onChange={(e) => setLineForm({ ...lineForm, sails: e.target.value })} /></td><td><input value={lineForm.engine} onChange={(e) => setLineForm({ ...lineForm, engine: e.target.value })} /></td><td><input value={lineForm.position} onChange={(e) => setLineForm({ ...lineForm, position: e.target.value })} /></td><td><div className="coordinate-inputs"><input aria-label="Latitude" value={lineForm.latitude} onChange={(e) => setLineForm({ ...lineForm, latitude: e.target.value })} /><input aria-label="Longitude" value={lineForm.longitude} onChange={(e) => setLineForm({ ...lineForm, longitude: e.target.value })} /></div></td><td><input value={lineForm.remarks} onChange={(e) => setLineForm({ ...lineForm, remarks: e.target.value })} /></td><td><div className="table-actions"><button type="button" onClick={saveLineFromFields}>{editingLineIndex === null ? "Save line" : "Update line"}</button><button type="button" className="ghost-button" onClick={cancelLineEdit}>Cancel</button></div></td></tr> : <tr key={`${line.time}-${line.position}-${index}`}><td>{line.time}</td><td>{line.weather}</td><td>{line.barometer}</td><td>{line.seaState}</td><td>{line.wind}</td><td>{line.magneticCourse}</td>{showCourseColumns && courseConversionColumns.map((column) => <td className="optional-course-cell" key={`${line.time}-${index}-${column}`}>—</td>)}<td>{line.course}</td><td>{line.logNm} nm</td><td>{line.sails}</td><td>{line.engine}</td><td>{line.position}</td><td>{line.latitude.toFixed(3)} / {line.longitude.toFixed(3)}</td><td>{line.remarks}</td><td><button type="button" className="edit-chip" onClick={() => startEditingLine(line, index)}>Edit</button></td></tr>)}</tbody></table></div></article>
 
-          <div className="paper-grid"><article className="remarks-card"><div><p className="eyebrow">Remarks</p><h3>Maneuvers, observations, events, and lightkeeping</h3></div><ol>{activeSheet.remarks.map((remark, index) => <li key={`${remark}-${index}`}>{remark}</li>)}</ol></article><article className="summary-card"><div><p className="eyebrow">Tour summary</p><h3>Törnzusammenfassung</h3></div><dl><div><dt>Area</dt><dd>{activeSheet.daySummary.area || "—"}</dd></div><div><dt>Night hours</dt><dd>{activeSheet.daySummary.nightHours}</dd></div><div><dt>Days on board</dt><dd>{activeSheet.daySummary.daysOnBoard}</dd></div><div><dt>Sailing miles</dt><dd>{activeSheet.daySummary.sailingMiles} nm</dd></div><div><dt>Motor miles</dt><dd>{activeSheet.daySummary.motorMiles} nm</dd></div><div><dt>Outside FB2</dt><dd>{activeSheet.daySummary.outsideFb2Miles} nm</dd></div><div><dt>Engine hours</dt><dd>{activeSheet.daySummary.engineHoursStart} → {activeSheet.daySummary.engineHoursEnd}</dd></div></dl></article></div>
-          <div className="bottom-grid"><article className="info-card"><h3>Crew for this sheet</h3><label>Add crew member<select defaultValue="" onChange={(e) => { if (e.target.value) addCrewToActiveSheet(e.target.value); e.currentTarget.value = ""; }}><option value="">Select crew…</option>{logbook.crewMembers.filter((member) => !activeSheet.crew.some((crew) => crew.id === member.id)).map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}</select></label><ul className="stack-list">{activeSheet.crew.map((person, index) => <li key={person.id}><strong>{index === 0 ? "⭐ Skipper · " : ""}{person.name}</strong><span>{person.nationality} · {person.role}</span><label>Embarkation<input value={person.embarkation || activeSheet.route.departed} onChange={(e) => updateCrewAssignment(index, "embarkation", e.target.value)} /></label><label>Disembarkation<input value={person.disembarkation || activeSheet.route.arrived} onChange={(e) => updateCrewAssignment(index, "disembarkation", e.target.value)} /></label><span><button type="button" className="edit-chip" disabled={index === 0} onClick={() => moveCrewOnActiveSheet(index, -1)}>↑</button><button type="button" className="edit-chip" disabled={index === activeSheet.crew.length - 1} onClick={() => moveCrewOnActiveSheet(index, 1)}>↓</button></span></li>)}</ul></article><article className="info-card"><h3>Watch & daily checks</h3><ul className="check-list">{[...activeSheet.watchPlan, ...activeSheet.technicalChecks].map((item) => <li key={item}>{item}</li>)}</ul></article></div>
-          <article className="compliance-card"><div><p className="eyebrow">Swiss compliance checklist</p><h3>Built from Hochseeausweis logbook requirements</h3></div><ul>{legalRequirements.map((requirement) => <li key={requirement}>{requirement}</li>)}</ul></article>
-          <article className="signature-card"><div><span>Logbook lead</span><strong>{activeSheet.crew[0]?.name ?? activeSheet.skipper.name}</strong></div><div><span>Skipper</span><strong>{activeSheet.crew[0]?.name ?? activeSheet.skipper.name}</strong></div><div><span>Digital personal-log status</span><strong>{activeSheet.status}</strong></div></article>
+          <article className="table-card"><div className="table-header"><div><h3>Meteorological and nautical log</h3></div><div className="table-actions"><button type="button" onClick={() => setShowCourseColumns((show) => !show)}>{showCourseColumns ? "Hide" : "Show"} course conversion columns</button><button type="button" disabled={isActiveSheetLocked} onClick={startAddingLine}>+ Add line</button></div></div><div className="table-scroll"><table className={showCourseColumns ? "with-course-columns" : undefined}><thead><tr><th>Time</th><th>Weather</th><th>Baro</th><th>Sea</th><th>Wind</th><th>MgK / CC</th>{showCourseColumns && courseConversionColumns.map((column) => <th key={column}>{column}</th>)}<th>KüG / COG</th><th>Log</th><th>Sail</th><th>Motor</th><th>Position</th><th>Lat / Lon</th><th>Remarks</th><th>Actions</th></tr></thead><tbody>{showAddLine && <tr className="inline-line-row"><td><input value={lineForm.time} onChange={(e) => setLineForm({ ...lineForm, time: e.target.value })} /></td><td><input value={lineForm.weather} onChange={(e) => setLineForm({ ...lineForm, weather: e.target.value })} /></td><td><input value={lineForm.barometer} onChange={(e) => setLineForm({ ...lineForm, barometer: e.target.value })} /></td><td><input value={lineForm.seaState} onChange={(e) => setLineForm({ ...lineForm, seaState: e.target.value })} /></td><td><input value={lineForm.wind} onChange={(e) => setLineForm({ ...lineForm, wind: e.target.value })} /></td><td><input value={lineForm.magneticCourse} onChange={(e) => setLineForm({ ...lineForm, magneticCourse: e.target.value })} /></td>{showCourseColumns && courseConversionColumns.map((column) => <td className="optional-course-cell" key={`new-${column}`}>—</td>)}<td><input value={lineForm.course} onChange={(e) => setLineForm({ ...lineForm, course: e.target.value })} /></td><td><input value={lineForm.logNm} onChange={(e) => setLineForm({ ...lineForm, logNm: e.target.value })} /></td><td><input value={lineForm.sails} onChange={(e) => setLineForm({ ...lineForm, sails: e.target.value })} /></td><td><input value={lineForm.engine} onChange={(e) => setLineForm({ ...lineForm, engine: e.target.value })} /></td><td><input value={lineForm.position} onChange={(e) => setLineForm({ ...lineForm, position: e.target.value })} /></td><td><div className="coordinate-inputs"><input aria-label="Latitude" value={lineForm.latitude} onChange={(e) => setLineForm({ ...lineForm, latitude: e.target.value })} /><input aria-label="Longitude" value={lineForm.longitude} onChange={(e) => setLineForm({ ...lineForm, longitude: e.target.value })} /></div></td><td><input value={lineForm.remarks} onChange={(e) => setLineForm({ ...lineForm, remarks: e.target.value })} /></td><td><div className="table-actions"><button type="button" onClick={saveLineFromFields}>{editingLineIndex === null ? "Save line" : "Update line"}</button><button type="button" className="ghost-button" onClick={cancelLineEdit}>Cancel</button></div></td></tr>}{activeSheet.lines.map((line, index) => editingLineIndex === index ? <tr key={`edit-${index}`} className="inline-line-row"><td><input value={lineForm.time} onChange={(e) => setLineForm({ ...lineForm, time: e.target.value })} /></td><td><input value={lineForm.weather} onChange={(e) => setLineForm({ ...lineForm, weather: e.target.value })} /></td><td><input value={lineForm.barometer} onChange={(e) => setLineForm({ ...lineForm, barometer: e.target.value })} /></td><td><input value={lineForm.seaState} onChange={(e) => setLineForm({ ...lineForm, seaState: e.target.value })} /></td><td><input value={lineForm.wind} onChange={(e) => setLineForm({ ...lineForm, wind: e.target.value })} /></td><td><input value={lineForm.magneticCourse} onChange={(e) => setLineForm({ ...lineForm, magneticCourse: e.target.value })} /></td>{showCourseColumns && courseConversionColumns.map((column) => <td className="optional-course-cell" key={`new-${column}`}>—</td>)}<td><input value={lineForm.course} onChange={(e) => setLineForm({ ...lineForm, course: e.target.value })} /></td><td><input value={lineForm.logNm} onChange={(e) => setLineForm({ ...lineForm, logNm: e.target.value })} /></td><td><input value={lineForm.sails} onChange={(e) => setLineForm({ ...lineForm, sails: e.target.value })} /></td><td><input value={lineForm.engine} onChange={(e) => setLineForm({ ...lineForm, engine: e.target.value })} /></td><td><input value={lineForm.position} onChange={(e) => setLineForm({ ...lineForm, position: e.target.value })} /></td><td><div className="coordinate-inputs"><input aria-label="Latitude" value={lineForm.latitude} onChange={(e) => setLineForm({ ...lineForm, latitude: e.target.value })} /><input aria-label="Longitude" value={lineForm.longitude} onChange={(e) => setLineForm({ ...lineForm, longitude: e.target.value })} /></div></td><td><input value={lineForm.remarks} onChange={(e) => setLineForm({ ...lineForm, remarks: e.target.value })} /></td><td><div className="table-actions"><button type="button" onClick={saveLineFromFields}>{editingLineIndex === null ? "Save line" : "Update line"}</button><button type="button" className="ghost-button" onClick={cancelLineEdit}>Cancel</button></div></td></tr> : <tr key={`${line.time}-${line.position}-${index}`}><td>{line.time}</td><td>{line.weather}</td><td>{line.barometer}</td><td>{line.seaState}</td><td>{line.wind}</td><td>{line.magneticCourse}</td>{showCourseColumns && courseConversionColumns.map((column) => <td className="optional-course-cell" key={`${line.time}-${index}-${column}`}>—</td>)}<td>{line.course}</td><td>{line.logNm} nm</td><td>{line.sails}</td><td>{line.engine}</td><td>{line.position}</td><td>{line.latitude.toFixed(3)} / {line.longitude.toFixed(3)}</td><td>{line.remarks}</td><td><button type="button" className="edit-chip" disabled={isActiveSheetLocked} onClick={() => startEditingLine(line, index)}>Edit</button></td></tr>)}</tbody></table></div></article>
+
+          <section className="sheet-support-grid logbook-section" aria-label="Sheet support sections"><article className="info-card logbook-section"><h3>Crew list</h3><ul className="stack-list crew-assignment-list">{activeSheet.crew.map((person, index) => { const embarkation = splitCrewStamp(person.embarkation || activeSheet.route.departed); const disembarkation = splitCrewStamp(person.disembarkation || activeSheet.route.arrived); return <li key={`${person.id}-${index}`}><div className="crew-assignment-main"><strong>{index + 1}. {index === 0 ? "⭐ Skipper · " : ""}{person.name}</strong><span>{person.nationality} · {person.role}</span><div className="crew-assignment-fields"><span>From</span><input aria-label={`Crew ${index + 1} from datetime`} type="datetime-local" disabled={isActiveSheetLocked} value={embarkation.dateTimeLocal} onChange={(e) => updateCrewAssignmentPart(index, "embarkation", "dateTimeLocal", e.target.value)} /><input aria-label={`Crew ${index + 1} from position`} disabled={isActiveSheetLocked} value={embarkation.position} onChange={(e) => updateCrewAssignmentPart(index, "embarkation", "position", e.target.value)} /><span>To</span><input aria-label={`Crew ${index + 1} to datetime`} type="datetime-local" disabled={isActiveSheetLocked} value={disembarkation.dateTimeLocal} onChange={(e) => updateCrewAssignmentPart(index, "disembarkation", "dateTimeLocal", e.target.value)} /><input aria-label={`Crew ${index + 1} to position`} disabled={isActiveSheetLocked} value={disembarkation.position} onChange={(e) => updateCrewAssignmentPart(index, "disembarkation", "position", e.target.value)} /></div></div><div className="crew-assignment-actions"><button type="button" className="edit-chip" disabled={isActiveSheetLocked || index === 0} onClick={() => moveCrewOnActiveSheet(index, -1)}>↑</button><button type="button" className="edit-chip" disabled={isActiveSheetLocked || index === activeSheet.crew.length - 1} onClick={() => moveCrewOnActiveSheet(index, 1)}>↓</button><button type="button" className="edit-chip" aria-label={`Delete ${person.name}`} disabled={isActiveSheetLocked} onClick={() => deleteCrewFromActiveSheet(index)}>🗑️</button></div></li>; })}</ul><label>Add crew member<select disabled={isActiveSheetLocked} defaultValue="" onChange={(e) => { if (e.target.value) addCrewToActiveSheet(e.target.value); e.currentTarget.value = ""; }}><option value="">Select crew…</option>{logbook.crewMembers.filter((member) => !activeSheet.crew.some((crew) => crew.id === member.id)).map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}</select></label></article><article className="info-card logbook-section"><h3>Technical log / daily checks</h3><ul className="check-list">{[...activeSheet.watchPlan, ...activeSheet.technicalChecks].map((item) => <li key={item}>{item}</li>)}</ul></article><article className="map-card logbook-section"><div><p className="eyebrow">Map</p><h3>Positions connected from log lines</h3></div><div className="route-map" aria-label="Stylized route map preview">{activeSheet.lines.map((line, index) => <span className="map-marker" key={`${line.time}-${line.position}-${index}`} style={{ left: `${12 + index * (76 / Math.max(activeSheet.lines.length - 1, 1))}%`, top: `${62 - index * 8}%` }} title={`${line.time} · ${line.position}`}>{index + 1}</span>)}</div></article></section>
+          </>}
         </section>}
 
         {activeModule === "boats" && <section className="sheet-detail module-panel"><ManagerShell title="Boats" newLabel="New boat" onNew={() => { setEditingBoatId(null); setBoatForm(defaultBoatForm); setShowBoatManager(true); }} list={<ul className="manager-list">{logbook.boats.map((boat) => <li key={boat.id}><button type="button" className={boat.id === selectedBoat.id ? "active" : ""} onClick={() => { setSelectedBoatId(boat.id); setEditingBoatId(boat.id); setBoatForm(boatToForm(boat)); setShowBoatManager(false); pushAppPath(modulePath("boats", boat.id)); }}><span><strong>{boat.name}</strong><small>{boat.type} · {boat.registration || "No registration"}</small></span></button></li>)}</ul>} form={<form className="inline-edit-grid" onSubmit={saveBoat}><p className="eyebrow">{showBoatManager ? "New boat" : "Boat form"}</p><label>Name<input required value={boatForm.name} onChange={(e) => setBoatForm({ ...boatForm, name: e.target.value })} /></label><label>Type<select value={boatForm.type} onChange={(e) => setBoatForm({ ...boatForm, type: e.target.value as BoatType })}><option>Sail</option><option>Motor</option></select></label><label>Registration<input value={boatForm.registration} onChange={(e) => setBoatForm({ ...boatForm, registration: e.target.value })} /></label><label>Flag state<input value={boatForm.flagState} onChange={(e) => setBoatForm({ ...boatForm, flagState: e.target.value })} /></label><label>Home port<input value={boatForm.homePort} onChange={(e) => setBoatForm({ ...boatForm, homePort: e.target.value })} /></label><label>Owner<input value={boatForm.owner} onChange={(e) => setBoatForm({ ...boatForm, owner: e.target.value })} /></label><label>Dimensions<input value={boatForm.dimensions} onChange={(e) => setBoatForm({ ...boatForm, dimensions: e.target.value })} /></label><label>Manufacturer<input value={boatForm.manufacturer} onChange={(e) => setBoatForm({ ...boatForm, manufacturer: e.target.value })} /></label><label>MMSI<input value={boatForm.mmsi} onChange={(e) => setBoatForm({ ...boatForm, mmsi: e.target.value })} /></label><label>Engine<input value={boatForm.engine} onChange={(e) => setBoatForm({ ...boatForm, engine: e.target.value })} /></label><label className="wide-field">Safety<textarea value={boatForm.safety} onChange={(e) => setBoatForm({ ...boatForm, safety: e.target.value })} /></label><div className="wide-field deviation-table-field"><div><p className="eyebrow">Deviation table</p><p>Compass headings from 0° to 350° in 10° steps. Enter deviation values such as +2° or -1°.</p></div><div className="table-scroll"><table className="deviation-table"><thead><tr><th>Heading</th><th>Deviation</th></tr></thead><tbody>{boatForm.deviationTable.map((row, index) => <tr key={row.heading}><td>{row.heading}°</td><td><input aria-label={`Deviation for ${row.heading} degrees`} value={row.deviation} onChange={(e) => setBoatForm({ ...boatForm, deviationTable: boatForm.deviationTable.map((candidate, candidateIndex) => candidateIndex === index ? { ...candidate, deviation: e.target.value } : candidate) })} /></td></tr>)}</tbody></table></div></div><article className="info-card wide-field"><h3>Log sheets</h3><ul className="stack-list">{logbook.sheets.filter((sheet) => sheet.boatId === (editingBoatId ?? selectedBoat.id)).map((sheet) => <li key={sheet.id}><strong>{sheet.title}</strong><small>{sheet.dateRange}</small></li>)}</ul></article><div className="inline-edit-actions"><button type="submit">{showBoatManager ? "Create boat" : "Save boat"}</button><button type="button" className="ghost-button" onClick={cancelBoatEdit}>Cancel</button><button type="button" className="ghost-button" disabled={logbook.sheets.some((sheet) => sheet.boatId === selectedBoat.id)} onClick={deleteSelectedBoat}>Delete boat</button></div></form>} /></section>}

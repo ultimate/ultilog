@@ -16,7 +16,7 @@ export class LogSheetsRepository {
   async insert(sheet: LogSheet, ownerId = "legacy-user") {
     await this.db.query(
       `insert into log_sheets (id, title, date_range, status, boat_id, skipper, route, weather_briefing, day_summary, remarks, watch_plan, technical_checks, owner_id) values (${this.values(13)})`,
-      [scopedId(ownerId, sheet.id), sheet.title, sheet.dateRange, sheet.status, scopedId(ownerId, sheet.boatId), JSON.stringify(sheet.skipper), JSON.stringify(sheet.route), JSON.stringify(sheet.weatherBriefing), JSON.stringify(sheet.daySummary), JSON.stringify(sheet.remarks), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), ownerId],
+      [scopedId(ownerId, sheet.id), sheet.title, sheet.dateRange, sheet.status, scopedId(ownerId, sheet.boatId), JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), ownerId],
     );
   }
 
@@ -73,11 +73,7 @@ function mapStoredSheet(sheet: LogSheetRow): StoredLogSheet {
     dateRange: sheet.date_range,
     status: sheet.status,
     boatId: unscopedId(sheet.boat_id),
-    skipper: parseJson<LogSheet["skipper"]>(sheet.skipper),
     route: parseJson<LogSheet["route"]>(sheet.route),
-    weatherBriefing: parseJson<LogSheet["weatherBriefing"]>(sheet.weather_briefing),
-    daySummary: parseJson<LogSheet["daySummary"]>(sheet.day_summary),
-    remarks: parseJson<string[]>(sheet.remarks),
     watchPlan: parseJson<string[]>(sheet.watch_plan),
     technicalChecks: parseJson<string[]>(sheet.technical_checks),
   };
