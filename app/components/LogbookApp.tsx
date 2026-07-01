@@ -317,6 +317,15 @@ export function LogbookApp({ userId, userEmail, userName, userGroups = [] }: { u
     const existingSheet = editingSheetId ? currentLogbook.sheets.find((sheet) => sheet.id === editingSheetId) : undefined;
     const base = existingSheet ?? seedSheets[0];
     const id = editingSheetId ?? createId();
+    const route = {
+      from: sheetForm.from,
+      to: sheetForm.to,
+      departed: routeStamp(sheetForm.dateRange, sheetForm.fromTime),
+      arrived: routeStamp(sheetForm.dateRange, sheetForm.toTime),
+    };
+    const currentUserCrew = currentLogbook.crewMembers.find((crew) => crew.isPrimary) ?? currentLogbook.crewMembers.find((crew) => crew.id === "me") ?? { id: "me", name: accountName || userName || "Current user", nationality: "", role: "Owner", address: "", certificate: "", isPrimary: true };
+    const crewMembers = currentLogbook.crewMembers.some((crew) => crew.id === currentUserCrew.id) ? currentLogbook.crewMembers : [currentUserCrew, ...currentLogbook.crewMembers];
+    const initialCrew = [{ ...currentUserCrew, embarkation: route.departed, disembarkation: route.arrived }];
     const sheet: LogSheet = {
       ...base,
       id,
@@ -324,18 +333,13 @@ export function LogbookApp({ userId, userEmail, userName, userGroups = [] }: { u
       dateRange: sheetForm.dateRange,
       status: sheetForm.status,
       boatId: sheetForm.boatId,
-      route: {
-        from: sheetForm.from,
-        to: sheetForm.to,
-        departed: routeStamp(sheetForm.dateRange, sheetForm.fromTime),
-        arrived: routeStamp(sheetForm.dateRange, sheetForm.toTime),
-      },
-      crew: [],
-      watchPlan: [],
-      technicalChecks: [],
-      lines: [],
+      route,
+      crew: existingSheet?.crew ?? initialCrew,
+      watchPlan: existingSheet?.watchPlan ?? [],
+      technicalChecks: existingSheet?.technicalChecks ?? [],
+      lines: existingSheet?.lines ?? [],
     };
-    const nextLogbook = { ...currentLogbook, sheets: editingSheetId ? currentLogbook.sheets.map((candidate) => candidate.id === editingSheetId ? sheet : candidate) : [sheet, ...currentLogbook.sheets] };
+    const nextLogbook = { ...currentLogbook, crewMembers, sheets: editingSheetId ? currentLogbook.sheets.map((candidate) => candidate.id === editingSheetId ? sheet : candidate) : [sheet, ...currentLogbook.sheets] };
     if (!await saveLogbookNow(nextLogbook)) return;
     setActiveSheetId(id);
     setEditingSheetId(null);
@@ -461,6 +465,14 @@ export function LogbookApp({ userId, userEmail, userName, userGroups = [] }: { u
       if (target < 0 || target >= crew.length) return sheet;
       [crew[index], crew[target]] = [crew[target], crew[index]];
       return { ...sheet, crew };
+    }) };
+    await saveLogbookNow(nextLogbook);
+  }
+
+  async function deleteCrewFromActiveSheet(index: number) {
+    const nextLogbook = { ...logbookRef.current, sheets: logbookRef.current.sheets.map((sheet) => {
+      if (sheet.id !== activeSheet.id) return sheet;
+      return { ...sheet, crew: sheet.crew.filter((_, crewIndex) => crewIndex !== index) };
     }) };
     await saveLogbookNow(nextLogbook);
   }
@@ -673,7 +685,7 @@ export function LogbookApp({ userId, userEmail, userName, userGroups = [] }: { u
             </>
           )}
 
-          <article className="info-card logbook-section"><h3>Crew list</h3><label>Add crew member<select defaultValue="" onChange={(e) => { if (e.target.value) addCrewToActiveSheet(e.target.value); e.currentTarget.value = ""; }}><option value="">Select crew…</option>{logbook.crewMembers.filter((member) => !activeSheet.crew.some((crew) => crew.id === member.id)).map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}</select></label><ul className="stack-list">{activeSheet.crew.map((person, index) => <li key={person.id}><strong>{index === 0 ? "⭐ Skipper · " : ""}{person.name}</strong><span>{person.nationality} · {person.role}</span><label>Embarkation<input value={person.embarkation || activeSheet.route.departed} onChange={(e) => updateCrewAssignment(index, "embarkation", e.target.value)} /></label><label>Disembarkation<input value={person.disembarkation || activeSheet.route.arrived} onChange={(e) => updateCrewAssignment(index, "disembarkation", e.target.value)} /></label><span><button type="button" className="edit-chip" disabled={index === 0} onClick={() => moveCrewOnActiveSheet(index, -1)}>↑</button><button type="button" className="edit-chip" disabled={index === activeSheet.crew.length - 1} onClick={() => moveCrewOnActiveSheet(index, 1)}>↓</button></span></li>)}</ul></article>
+          <article className="info-card logbook-section"><h3>Crew list</h3><label>Add crew member<select defaultValue="" onChange={(e) => { if (e.target.value) addCrewToActiveSheet(e.target.value); e.currentTarget.value = ""; }}><option value="">Select crew…</option>{logbook.crewMembers.filter((member) => !activeSheet.crew.some((crew) => crew.id === member.id)).map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}</select></label><ul className="stack-list">{activeSheet.crew.map((person, index) => <li key={`${person.id}-${index}`}><strong>{index + 1}. {index === 0 ? "⭐ Skipper · " : ""}{person.name}</strong><span>{person.nationality} · {person.role}</span><label>Embarkation<input value={person.embarkation || activeSheet.route.departed} onChange={(e) => updateCrewAssignment(index, "embarkation", e.target.value)} /></label><label>Disembarkation<input value={person.disembarkation || activeSheet.route.arrived} onChange={(e) => updateCrewAssignment(index, "disembarkation", e.target.value)} /></label><span><button type="button" className="edit-chip" disabled={index === 0} onClick={() => moveCrewOnActiveSheet(index, -1)}>↑</button><button type="button" className="edit-chip" disabled={index === activeSheet.crew.length - 1} onClick={() => moveCrewOnActiveSheet(index, 1)}>↓</button><button type="button" className="edit-chip" onClick={() => deleteCrewFromActiveSheet(index)}>Delete</button></span></li>)}</ul></article>
           <section className="entry-metrics logbook-section" aria-label="Summary calculated from log lines"><article><span>Motor miles</span><strong>{activeSheetSummary.motorMiles} nm</strong></article><article><span>Sail miles</span><strong>{activeSheetSummary.sailMiles} nm</strong></article><article><span>Total miles</span><strong>{activeSheetSummary.totalMiles} nm</strong></article><article><span>Duration</span><strong>{activeSheetSummary.duration}</strong></article></section>
 
 

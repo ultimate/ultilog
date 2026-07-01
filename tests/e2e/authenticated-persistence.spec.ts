@@ -19,7 +19,7 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   await page.getByRole("button", { name: "Log in" }).click();
   await expect(page.getByRole("button", { name: "Logout" })).toBeVisible();
 
-  await page.getByRole("button", { name: "Crew manager" }).click();
+  await page.goto("/crew");
   await page.getByRole("button", { name: "New crew" }).click();
   const crewForm = page.locator("form").filter({ hasText: "New crew" });
   await crewForm.getByLabel("Name").fill(crewName);
@@ -28,7 +28,7 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   await page.getByRole("button", { name: "Save crew" }).click();
   await expect(page.getByText(crewName)).toBeVisible();
 
-  await page.getByRole("button", { name: "Boat manager" }).click();
+  await page.goto("/boats");
   await page.getByRole("button", { name: "New boat" }).click();
   const boatForm = page.locator("form").filter({ hasText: "New boat" });
   await boatForm.getByLabel("Name").fill(boatName);
@@ -39,7 +39,7 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   await page.getByRole("button", { name: "Create boat" }).click();
   await expect(page.getByText(boatName)).toBeVisible();
 
-  await page.getByRole("button", { name: "Logbook list" }).click();
+  await page.goto("/logbooks");
   await page.getByRole("button", { name: "+ New sheet" }).click();
   const sheetForm = page.locator("form").filter({ hasText: "New sheet" });
   await sheetForm.getByLabel("Title").fill(sheetTitle);
@@ -48,6 +48,15 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   await sheetForm.getByLabel("To").fill("Port B");
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("heading", { name: sheetTitle })).toBeVisible();
+  await expect(page.getByText(`1. ⭐ Skipper · E2E Skipper ${unique}`)).toBeVisible();
+
+  await page.getByLabel("Add crew member").selectOption({ label: crewName });
+  const addedCrewRow = page.locator("li").filter({ hasText: `2. ${crewName}` });
+  await expect(addedCrewRow).toBeVisible();
+  const deleteSave = page.waitForResponse((response) => response.url().endsWith("/api/logbook") && response.request().method() === "PUT" && response.ok());
+  await addedCrewRow.getByRole("button", { name: "Delete" }).click();
+  await expect(addedCrewRow).toBeHidden();
+  await deleteSave;
 
   await page.reload();
   await expect(page.getByRole("button", { name: "Logout" })).toBeVisible();
@@ -63,14 +72,14 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
 });
 
 async function assertCreatedItemsVisible(page: Page, items: { crewName: string; boatName: string; sheetTitle: string }) {
-  await page.getByRole("button", { name: "Logbook list" }).click();
+  await page.goto("/logbooks");
   await expect(page.getByRole("button", { name: items.sheetTitle })).toBeVisible();
 
-  await page.getByRole("button", { name: "Boat manager" }).click();
+  await page.goto("/boats");
   await expect(page.getByText(items.boatName)).toBeVisible();
 
-  await page.getByRole("button", { name: "Logbook list" }).click();
+  await page.goto("/logbooks");
   await page.getByRole("button", { name: /Ionian training passage · Day 3/ }).click();
-  await page.getByRole("button", { name: "Crew manager" }).click();
+  await page.goto("/crew");
   await expect(page.getByText(items.crewName)).toBeVisible();
 }
