@@ -5,7 +5,7 @@ export type LogSheet = {
   id: string;
   title: string;
   dateRange: string;
-  status: "Draft" | "Ready for review" | "Signed digitally";
+  status: "Draft" | "Locked";
   boatId: string;
   route: {
     from: string;

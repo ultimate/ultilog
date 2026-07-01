@@ -42,10 +42,10 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   await page.goto("/logbooks");
   await page.getByRole("button", { name: "+ New sheet" }).click();
   const sheetForm = page.locator("form").filter({ hasText: "New sheet" });
-  await sheetForm.getByLabel("Title").fill(sheetTitle);
+  await sheetForm.getByLabel("Name").fill(sheetTitle);
   await sheetForm.getByLabel("Boat").selectOption({ label: boatName });
-  await sheetForm.getByLabel("From").fill("Port A");
-  await sheetForm.getByLabel("To").fill("Port B");
+  await sheetForm.getByLabel("From position").fill("Port A");
+  await sheetForm.getByLabel("To position").fill("Port B");
   await page.getByRole("button", { name: "Save" }).click();
   await expect(page.getByRole("heading", { name: sheetTitle })).toBeVisible();
   await expect(page.getByText(`1. ⭐ Skipper · E2E Skipper ${unique}`)).toBeVisible();

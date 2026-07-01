@@ -58,7 +58,7 @@ export const sampleLogSheets: LogSheet[] = [
     id: "7d3a7602-5f3a-4b3d-81f3-4e973a8bb3a8",
     title: "Ionian training passage · Day 3",
     dateRange: "14 May 2026",
-    status: "Ready for review",
+    status: "Draft",
     boatId: "4bff7b1f-ff73-40ed-9a97-800a4e3bf3c0",
     route: {
       from: "Preveza Marina",

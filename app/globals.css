@@ -437,3 +437,35 @@ td { color: #28384b; line-height: 1.45; }
 .sheet-title-row.logbook-section > .edit-chip:last-child {
   justify-self: start;
 }
+
+
+.header-details div {
+  grid-column: span 1;
+}
+
+.header-details div:nth-child(-n + 2) {
+  grid-column: span 2;
+}
+
+.sheet-support-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.sheet-support-grid .map-card {
+  min-width: 0;
+}
+
+@media (max-width: 1050px) {
+  .header-details div,
+  .header-details div:nth-child(-n + 2),
+  .sheet-support-grid {
+    grid-column: auto;
+  }
+
+  .sheet-support-grid {
+    grid-template-columns: 1fr;
+  }
+}
