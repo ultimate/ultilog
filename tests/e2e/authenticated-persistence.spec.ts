@@ -19,7 +19,7 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   await page.getByRole("button", { name: "Log in" }).click();
   await expect(page.getByRole("button", { name: "Logout" })).toBeVisible();
 
-  await page.goto("/crew");
+  await openModule(page, "Crew manager", "New crew");
   await page.getByRole("button", { name: "New crew" }).click();
   const crewForm = page.locator("form").filter({ hasText: "New crew" });
   await crewForm.getByLabel("Name").fill(crewName);
@@ -28,7 +28,7 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   await page.getByRole("button", { name: "Save crew" }).click();
   await expect(page.getByText(crewName)).toBeVisible();
 
-  await page.goto("/boats");
+  await openModule(page, "Boat manager", "New boat");
   await page.getByRole("button", { name: "New boat" }).click();
   const boatForm = page.locator("form").filter({ hasText: "New boat" });
   await boatForm.getByLabel("Name").fill(boatName);
@@ -39,7 +39,7 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   await page.getByRole("button", { name: "Create boat" }).click();
   await expect(page.getByText(boatName)).toBeVisible();
 
-  await page.goto("/logbooks");
+  await openModule(page, "Logbook list", "+ New sheet");
   await page.getByRole("button", { name: "+ New sheet" }).click();
   const sheetForm = page.locator("form").filter({ hasText: "New sheet" });
   await sheetForm.getByLabel("Title").fill(sheetTitle);
@@ -72,14 +72,21 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
 });
 
 async function assertCreatedItemsVisible(page: Page, items: { crewName: string; boatName: string; sheetTitle: string }) {
-  await page.goto("/logbooks");
-  await expect(page.getByRole("button", { name: items.sheetTitle })).toBeVisible();
+  await openModule(page, "Logbook list", "+ New sheet");
+  await expect(page.getByText(items.sheetTitle)).toBeVisible();
 
-  await page.goto("/boats");
+  await openModule(page, "Boat manager", "New boat");
   await expect(page.getByText(items.boatName)).toBeVisible();
 
-  await page.goto("/logbooks");
+  await openModule(page, "Logbook list", "+ New sheet");
   await page.getByRole("button", { name: /Ionian training passage · Day 3/ }).click();
-  await page.goto("/crew");
+  await openModule(page, "Crew manager", "New crew");
   await expect(page.getByText(items.crewName)).toBeVisible();
+}
+
+async function openModule(page: Page, moduleName: string, expectedActionName: string | RegExp) {
+  await expect(async () => {
+    await page.getByRole("button", { name: moduleName }).click();
+    await expect(page.getByRole("button", { name: expectedActionName })).toBeVisible({ timeout: 2_000 });
+  }).toPass({ timeout: 15_000 });
 }

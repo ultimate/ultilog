@@ -24,6 +24,7 @@ const icons: Record<ModuleTab, string> = {
   details: "/icons/icon_compass.svg",
   boats: "/icons/icon_boat.svg",
   crew: "/icons/icon_crew.svg",
+  users: "/icons/icon_user-list.svg",
   compliance: "/icons/icon_compliance.svg",
 };
 

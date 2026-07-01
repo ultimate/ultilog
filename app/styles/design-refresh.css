@@ -439,8 +439,11 @@ h1 { margin:0 0 .45rem; font-size:1.8rem; line-height:1.1; letter-spacing:-.04em
 :root { --nav-w: 13.75rem; --design-shadow:0 10px 28px rgba(21, 41, 86, .07); }
 .app-content { padding:1rem 1.15rem 2rem; }
 .app-sidebar { gap:.55rem; padding:1rem .75rem; }
-.module-tabs { gap:.18rem; margin:.45rem 0 0; }
+.module-tabs { gap:.18rem; margin:.45rem 0 0; flex:0 0 auto; min-height:0; overflow:visible; }
 .module-tabs button { gap:.55rem; min-height:2.35rem; padding:0 .55rem; }
+.sidebar-spacer { flex:1 1 .25rem; min-height:.25rem; }
+.profile-card, .logout-chip { flex:0 0 auto; }
+.logout-chip { position:sticky; bottom:.25rem; z-index:1; }
 .page-heading { margin-bottom:.85rem; }
 .page-heading, .table-header, .sidebar-header { gap:.65rem; }
 h1 { font-size:1.45rem; margin-bottom:.25rem; }
@@ -588,7 +591,7 @@ h3 { margin-block:.25rem .55rem; }
     inset:auto 0 0 0;
     z-index:50;
     display:grid;
-    grid-template-columns:repeat(9, minmax(0, 1fr));
+    grid-template-columns:repeat(10, minmax(0, 1fr));
     align-items:center;
     gap:.12rem;
     height:4.15rem;
@@ -598,7 +601,7 @@ h3 { margin-block:.25rem .55rem; }
     box-shadow:0 -10px 28px rgba(15,35,70,.1);
     overflow:hidden;
   }
-  .mobile-bottom-nav.has-admin-tab { grid-template-columns:repeat(10, minmax(0, 1fr)); }
+  .mobile-bottom-nav.has-admin-tab { grid-template-columns:repeat(11, minmax(0, 1fr)); }
   .mobile-bottom-nav button {
     all:unset;
     display:grid;

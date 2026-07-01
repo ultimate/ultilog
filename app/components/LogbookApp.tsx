@@ -14,6 +14,15 @@ import { PasswordField } from "./PasswordField";
 import { legalRequirements } from "../templates/compliance";
 
 type AdminUser = { id: string; name: string; email: string; groups: string[] };
+type SocialUser = { username: string; sailMiles: number; motorMiles: number; logbookSheets: number; boats: number };
+
+const mockSocialUsers: SocialUser[] = [
+  { username: "amelia.salt", sailMiles: 1842, motorMiles: 326, logbookSheets: 18, boats: 2 },
+  { username: "harbor-hugo", sailMiles: 967, motorMiles: 214, logbookSheets: 11, boats: 1 },
+  { username: "nora.nautic", sailMiles: 2410, motorMiles: 502, logbookSheets: 27, boats: 3 },
+  { username: "tidewalker", sailMiles: 705, motorMiles: 688, logbookSheets: 9, boats: 1 },
+  { username: "bluewater-max", sailMiles: 3196, motorMiles: 431, logbookSheets: 34, boats: 2 },
+];
 
 function parseLogTimeMinutes(time: string) {
   const match = time.match(/^(\d{1,2}):(\d{2})/);
@@ -132,7 +141,7 @@ export function LogbookApp({ userId, userEmail, userName, userGroups = [] }: { u
   async function logout() {
     setSaveError(null);
     setIsLoggingOut(true);
-    persistLogbook(logbookRef.current, { keepalive: true }).catch(() => undefined);
+    await persistLogbook(logbookRef.current).catch(() => undefined);
     await signOut({ redirect: false });
     router.push("/login");
     router.refresh();
@@ -743,6 +752,13 @@ export function LogbookApp({ userId, userEmail, userName, userGroups = [] }: { u
         {activeModule === "crew" && <section className="sheet-detail module-panel"><ManagerShell title="Crew" newLabel="New crew" onNew={() => { setLastCrewIndex(selectedCrewIndex >= 0 ? selectedCrewIndex : lastCrewIndex); setSelectedCrewIndex(-1); setCrewForm(defaultCrewForm); }} list={<ul className="manager-list">{logbook.crewMembers.map((person, index) => <li key={person.id}><button type="button" className={index === selectedCrewIndex ? "active" : ""} onClick={() => { selectCrew(index); pushAppPath(modulePath("crew", index)); }}><span><strong>{person.isPrimary ? "⭐ " : ""}{person.name}</strong><small>{person.role || "Crew member"}</small></span></button></li>)}</ul>} form={<form className="inline-edit-grid" onSubmit={async (event) => { event.preventDefault(); await saveCrew(); }}><p className="eyebrow">{selectedCrewIndex < 0 ? "New crew profile" : crewForm.isPrimary ? "This is me" : "Crew profile"}</p><label>Name<input value={crewForm.name} onChange={(e) => setCrewForm({ ...crewForm, name: e.target.value })} /></label><label>Nationality<input value={crewForm.nationality} onChange={(e) => setCrewForm({ ...crewForm, nationality: e.target.value })} /></label><label>Role<input value={crewForm.role} onChange={(e) => setCrewForm({ ...crewForm, role: e.target.value })} /></label><label>Address<input value={crewForm.address ?? ""} onChange={(e) => setCrewForm({ ...crewForm, address: e.target.value })} /></label><label className="wide-field">Skipper certificate<input value={crewForm.certificate ?? ""} onChange={(e) => setCrewForm({ ...crewForm, certificate: e.target.value })} /></label><article className="info-card wide-field"><h3>Log sheets</h3><ul className="stack-list">{(crewAssignments.find((entry) => entry.member.id === crewForm.id)?.sheets ?? []).map(({ sheet, isSkipper }) => <li key={sheet.id}><strong>{isSkipper ? "⭐ Skipper · " : "Crew · "}{sheet.title}</strong><small>{sheet.dateRange}</small></li>)}</ul></article><div className="inline-edit-actions"><button type="submit">Save crew</button><button type="button" className="ghost-button" onClick={cancelCrewEdit}>Cancel</button><button type="button" className="ghost-button" disabled={crewForm.isPrimary || crewForm.id === "me" || Boolean(crewAssignments.find((entry) => entry.member.id === crewForm.id)?.sheets.length)} onClick={deleteSelectedCrew}>Delete</button></div></form>} /></section>}
 
 
+        {activeModule === "users" && <section className="module-panel" aria-label="Users page">
+          <div className="page-heading"><div><h1>Users</h1><p>Discover other ultilog sailors and compare high-level logbook activity.</p></div></div>
+          <article className="table-card">
+            <div className="table-header"><div><p className="eyebrow">Community directory</p><h3>All users</h3><p>Mocked summary data until shared profile statistics are connected.</p></div></div>
+            <div className="table-scroll"><table className="logbook-table users-table"><thead><tr><th>Username</th><th>Total sail mileage</th><th>Total motor mileage</th><th>Logbook sheets</th><th>Boats</th></tr></thead><tbody>{mockSocialUsers.map((user) => <tr key={user.username}><td><strong>{user.username}</strong></td><td>{user.sailMiles.toLocaleString()} nm</td><td>{user.motorMiles.toLocaleString()} nm</td><td>{user.logbookSheets}</td><td>{user.boats}</td></tr>)}</tbody></table></div>
+          </article>
+        </section>}
 
         {activeModule === "profile" && <section className="profile-page module-panel" aria-label="Profile page">
           <div className="page-heading"><div><h1>Profile</h1><p>Personal settings and account details.</p></div><button className="secondary-action" type="button" onClick={logout}>{isLoggingOut ? "Saving…" : "Logout"}</button></div>
