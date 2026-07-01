@@ -535,6 +535,61 @@ td { color: #28384b; line-height: 1.45; }
 }
 
 
+.inline-value-button {
+  border: 0;
+  border-radius: 0.75rem;
+  padding: 0.3rem 0.45rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.inline-value-button:not(:disabled):hover,
+.inline-value-button:not(:disabled):focus-visible {
+  background: rgba(13, 95, 138, 0.1);
+  outline: 2px solid rgba(13, 95, 138, 0.25);
+}
+
+.inline-value-button:disabled {
+  cursor: default;
+}
+
+.inline-value-editor {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: 100%;
+}
+
+.inline-value-editor input,
+.inline-value-editor select {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0.55rem 0.65rem;
+  color: var(--foreground);
+  background: #f8fbfd;
+  font: inherit;
+}
+
+.inline-value-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.inline-value-actions button {
+  border: 0;
+  border-radius: 999px;
+  min-width: 2rem;
+  min-height: 2rem;
+  background: rgba(13, 95, 138, 0.1);
+  cursor: pointer;
+}
+
 .header-edit-row > span {
   grid-column: 1 / -1;
 }

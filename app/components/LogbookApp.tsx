@@ -15,6 +15,7 @@ import { legalRequirements } from "../templates/compliance";
 
 type AdminUser = { id: string; name: string; email: string; groups: string[] };
 type SocialUser = { username: string; sailMiles: number; motorMiles: number; logbookSheets: number; boats: number };
+type SheetInlineField = "title" | "boatId" | "departed" | "from" | "arrived" | "to";
 
 const mockSocialUsers: SocialUser[] = [
   { username: "amelia.salt", sailMiles: 1842, motorMiles: 326, logbookSheets: 18, boats: 2 },
@@ -65,6 +66,11 @@ function crewStamp(dateTimeLocal: string, position: string) {
   return position ? `${position} · ${dateTime}` : dateTime;
 }
 
+function routeStampFromDateTimeLocal(dateTimeLocal: string) {
+  const { date, time } = splitDateTimeLocal(dateTimeLocal);
+  return date ? (time ? `${date}, ${time}` : `${date}, time open`) : "";
+}
+
 function logLineDistanceDeltas(lines: LogLine[]) {
   return lines.map((line, index) => Math.max(0, line.logNm - (lines[index - 1]?.logNm ?? 0)));
 }
@@ -99,6 +105,8 @@ export function LogbookApp({ userId, userEmail, userName, userGroups = [] }: { u
   const [crewForm, setCrewForm] = useState<CrewForm>(defaultCrewForm);
   const [editingBoatId, setEditingBoatId] = useState<string | null>(null);
   const [editingSheetId, setEditingSheetId] = useState<string | null>(null);
+  const [editingSheetField, setEditingSheetField] = useState<SheetInlineField | null>(null);
+  const [sheetInlineDraft, setSheetInlineDraft] = useState("");
   const [editingLineIndex, setEditingLineIndex] = useState<number | null>(null);
   const [selectedBoatId, setSelectedBoatId] = useState(defaultLogbook.boats[0].id);
   const [selectedCrewIndex, setSelectedCrewIndex] = useState(0);
@@ -291,6 +299,11 @@ export function LogbookApp({ userId, userEmail, userName, userGroups = [] }: { u
   const isAdmin = userGroups.includes("admin");
   const isActiveSheetLocked = activeSheet.status === "Locked";
   const activeSheetSummary = useMemo(() => calculateSheetSummary(activeSheet), [activeSheet]);
+  const canEditActiveSheetMasterData = activeSheet.status === "Draft";
+  const sheetInlineActions = editingSheetField ? <span className="inline-value-actions"><button type="button" aria-label="Approve change" onClick={saveSheetInlineField}>✅</button><button type="button" aria-label="Cancel change" onClick={cancelSheetInlineEdit}>❎</button></span> : null;
+  const renderInlineTextField = (field: SheetInlineField, value: string, fallback = "—", inputType = "text") => editingSheetField === field ? <span className="inline-value-editor"><input type={inputType} aria-label={`Edit ${field}`} value={sheetInlineDraft} onChange={(event) => setSheetInlineDraft(event.target.value)} autoFocus />{sheetInlineActions}</span> : <button type="button" className="inline-value-button" disabled={!canEditActiveSheetMasterData} onClick={() => startEditingSheetField(field, value)}>{value || fallback}</button>;
+  const renderInlineBoatField = () => editingSheetField === "boatId" ? <span className="inline-value-editor"><select aria-label="Edit boat" value={sheetInlineDraft} onChange={(event) => setSheetInlineDraft(event.target.value)} autoFocus>{logbook.boats.map((boat) => <option key={boat.id} value={boat.id}>{boat.name}</option>)}</select>{sheetInlineActions}</span> : <button type="button" className="inline-value-button" disabled={!canEditActiveSheetMasterData} onClick={() => startEditingSheetField("boatId", activeSheet.boatId)}>{activeBoat.name}</button>;
+  const renderInlineDateField = (field: SheetInlineField, stamp: string) => editingSheetField === field ? <span className="inline-value-editor"><input type="datetime-local" aria-label={`Edit ${field}`} value={sheetInlineDraft} onChange={(event) => setSheetInlineDraft(event.target.value)} autoFocus />{sheetInlineActions}</span> : <button type="button" className="inline-value-button" disabled={!canEditActiveSheetMasterData} onClick={() => startEditingSheetField(field, dateTimeLocalFromStamp(stamp))}>{stamp || activeSheet.dateRange}</button>;
   const crewAssignments = useMemo(() => logbook.crewMembers.map((member) => ({
     member,
     sheets: logbook.sheets.flatMap((sheet) => sheet.crew.findIndex((crew) => crew.id === member.id) >= 0 ? [{ sheet, isSkipper: sheet.crew.findIndex((crew) => crew.id === member.id) === 0 }] : []),
@@ -412,9 +425,43 @@ export function LogbookApp({ userId, userEmail, userName, userGroups = [] }: { u
   }
 
   async function updateActiveSheetStatus(status: LogSheet["status"]) {
+    if (status === "Locked") cancelSheetInlineEdit();
     const nextLogbook = { ...logbookRef.current, sheets: logbookRef.current.sheets.map((sheet) => sheet.id === activeSheet.id ? { ...sheet, status } : sheet) };
     await saveLogbookNow(nextLogbook);
   }
+  function startEditingSheetField(field: SheetInlineField, value: string) {
+    if (activeSheet.status !== "Draft") return;
+    setEditingSheetField(field);
+    setSheetInlineDraft(value);
+  }
+
+  async function saveSheetInlineField() {
+    if (!editingSheetField || activeSheet.status !== "Draft") return;
+    const field = editingSheetField;
+    const value = sheetInlineDraft;
+    const nextLogbook = { ...logbookRef.current, sheets: logbookRef.current.sheets.map((sheet) => {
+      if (sheet.id !== activeSheet.id) return sheet;
+      if (field === "title") return { ...sheet, title: value.trim() || "Untitled sheet" };
+      if (field === "boatId") return { ...sheet, boatId: value };
+      if (field === "from") return { ...sheet, route: { ...sheet.route, from: value } };
+      if (field === "to") return { ...sheet, route: { ...sheet.route, to: value } };
+      if (field === "departed") {
+        const { date } = splitDateTimeLocal(value);
+        return { ...sheet, dateRange: date || sheet.dateRange, route: { ...sheet.route, departed: routeStampFromDateTimeLocal(value) || sheet.route.departed } };
+      }
+      const { date } = splitDateTimeLocal(value);
+      return { ...sheet, dateRange: sheet.dateRange || date, route: { ...sheet.route, arrived: routeStampFromDateTimeLocal(value) || sheet.route.arrived } };
+    }) };
+    if (!await saveLogbookNow(nextLogbook)) return;
+    setEditingSheetField(null);
+    setSheetInlineDraft("");
+  }
+
+  function cancelSheetInlineEdit() {
+    setEditingSheetField(null);
+    setSheetInlineDraft("");
+  }
+
 
   function cancelSheetEdit() {
     setEditingSheetId(null);
@@ -733,7 +780,7 @@ export function LogbookApp({ userId, userEmail, userName, userGroups = [] }: { u
             </form>
           ) : (
             <>
-              <section className="sheet-title-row logbook-section" aria-label="Logbook sheet header"><div><h2 id="sheet-title">{activeSheet.title}</h2></div><div className="inline-edit-actions"><span className="status-pill">{activeSheet.status}</span>{isActiveSheetLocked ? <button type="button" className="edit-chip" onClick={() => updateActiveSheetStatus("Draft")}>Unlock sheet</button> : <><button type="button" className="edit-chip" onClick={() => startEditingSheet(activeSheet)}>Edit sheet</button><button type="button" className="edit-chip" onClick={() => updateActiveSheetStatus("Locked")}>Lock sheet</button></>}</div><div className="paper-header header-table"><div className="header-table-row"><span>Boat</span><strong>{activeBoat.name}</strong><button type="button" className="edit-chip" onClick={() => { setSelectedBoatId(activeBoat.id); setEditingBoatId(activeBoat.id); setBoatForm(boatToForm(activeBoat)); setShowBoatManager(false); navigate("boats", activeBoat.id); }}>Jump to boat</button></div><div className="header-table-row"><span>From</span><strong>{activeSheet.route.departed || activeSheet.dateRange}</strong><strong>{activeSheet.route.from || "—"}</strong></div><div className="header-table-row"><span>To</span><strong>{activeSheet.route.arrived || activeSheet.dateRange}</strong><strong>{activeSheet.route.to || "—"}</strong></div></div></section>
+              <section className="sheet-title-row logbook-section" aria-label="Logbook sheet header"><div><h2 id="sheet-title">{renderInlineTextField("title", activeSheet.title, "Untitled sheet")}</h2></div><div className="inline-edit-actions"><span className="status-pill">{activeSheet.status}</span>{isActiveSheetLocked ? <button type="button" className="edit-chip" onClick={() => updateActiveSheetStatus("Draft")}>Unlock sheet</button> : <button type="button" className="edit-chip" onClick={() => updateActiveSheetStatus("Locked")}>Lock sheet</button>}</div><div className="paper-header header-table"><div className="header-table-row"><span>Boat</span><strong>{renderInlineBoatField()}</strong><button type="button" className="edit-chip" onClick={() => { setSelectedBoatId(activeBoat.id); setEditingBoatId(activeBoat.id); setBoatForm(boatToForm(activeBoat)); setShowBoatManager(false); navigate("boats", activeBoat.id); }}>Jump to boat</button></div><div className="header-table-row"><span>From</span><strong>{renderInlineDateField("departed", activeSheet.route.departed)}</strong><strong>{renderInlineTextField("from", activeSheet.route.from)}</strong></div><div className="header-table-row"><span>To</span><strong>{renderInlineDateField("arrived", activeSheet.route.arrived)}</strong><strong>{renderInlineTextField("to", activeSheet.route.to)}</strong></div></div></section>
             </>
           )}
 
