@@ -533,3 +533,12 @@ td { color: #28384b; line-height: 1.45; }
     grid-auto-flow: row;
   }
 }
+
+
+.header-edit-row > span {
+  grid-column: 1 / -1;
+}
+
+.header-edit-row {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}

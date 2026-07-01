@@ -351,7 +351,7 @@ export function LogbookApp({ userId, userEmail, userName, userGroups = [] }: { u
     };
     const currentUserCrew = currentLogbook.crewMembers.find((crew) => crew.isPrimary) ?? currentLogbook.crewMembers.find((crew) => crew.id === "me") ?? { id: "me", name: accountName || userName || "Current user", nationality: "", role: "Owner", address: "", certificate: "", isPrimary: true };
     const crewMembers = currentLogbook.crewMembers.some((crew) => crew.id === currentUserCrew.id) ? currentLogbook.crewMembers : [currentUserCrew, ...currentLogbook.crewMembers];
-    const initialCrew = [{ ...currentUserCrew, embarkation: route.departed, disembarkation: route.arrived }];
+    const initialCrew = [{ ...currentUserCrew, embarkation: crewStamp(dateTimeLocalFromStamp(route.departed), route.from), disembarkation: crewStamp(dateTimeLocalFromStamp(route.arrived), route.to) }];
     const sheet: LogSheet = {
       ...base,
       id,
@@ -481,7 +481,7 @@ export function LogbookApp({ userId, userEmail, userName, userGroups = [] }: { u
     if (activeSheet.status === "Locked") return;
     const member = logbookRef.current.crewMembers.find((crew) => crew.id === crewId);
     if (!member) return;
-    const nextLogbook = { ...logbookRef.current, sheets: logbookRef.current.sheets.map((sheet) => sheet.id === activeSheet.id && !sheet.crew.some((crew) => crew.id === crewId) ? { ...sheet, crew: [...sheet.crew, { ...member, embarkation: sheet.route.departed, disembarkation: sheet.route.arrived }] } : sheet) };
+    const nextLogbook = { ...logbookRef.current, sheets: logbookRef.current.sheets.map((sheet) => sheet.id === activeSheet.id && !sheet.crew.some((crew) => crew.id === crewId) ? { ...sheet, crew: [...sheet.crew, { ...member, embarkation: crewStamp(dateTimeLocalFromStamp(sheet.route.departed), sheet.route.from), disembarkation: crewStamp(dateTimeLocalFromStamp(sheet.route.arrived), sheet.route.to) }] } : sheet) };
     await saveLogbookNow(nextLogbook);
   }
 
@@ -708,7 +708,9 @@ export function LogbookApp({ userId, userEmail, userName, userGroups = [] }: { u
           </article>
         </section>}
 
-        {activeModule === "details" && <section className="sheet-detail" aria-labelledby="sheet-title">
+        {activeModule === "details" && !isBackendReady && <section className="sheet-detail" aria-label="Loading logbook sheet"><form className="sheet-title-row inline-edit-card"><div className="inline-edit-grid"><p className="eyebrow">Loading sheet</p><label>Title<input disabled value="" readOnly /></label><div className="header-edit-row"><span>Boat</span><select aria-label="Boat" disabled value=""><option value=""> </option></select><button type="button" className="edit-chip" disabled>Jump to boat</button></div><div className="header-edit-row"><span>From</span><input aria-label="From datetime" type="datetime-local" disabled value="" readOnly /><input aria-label="From position" disabled value="" readOnly /></div><div className="header-edit-row"><span>To</span><input aria-label="To datetime" type="datetime-local" disabled value="" readOnly /><input aria-label="To position" disabled value="" readOnly /></div></div></form></section>}
+
+        {activeModule === "details" && isBackendReady && <section className="sheet-detail" aria-labelledby="sheet-title">
           {(showNewSheet || editingSheetId) ? (
             <form className="sheet-title-row inline-edit-card" onSubmit={saveSheet}>
               <div className="inline-edit-grid">
