@@ -42,7 +42,7 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   await page.goto("/logbooks");
   await page.getByRole("button", { name: "+ New sheet" }).click();
   const sheetForm = page.locator("form").filter({ hasText: "New sheet" });
-  await sheetForm.getByLabel("Name").fill(sheetTitle);
+  await sheetForm.getByLabel("Title").fill(sheetTitle);
   await sheetForm.getByLabel("Boat").selectOption({ label: boatName });
   await sheetForm.getByLabel("From position").fill("Port A");
   await sheetForm.getByLabel("To position").fill("Port B");
@@ -54,7 +54,7 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   const addedCrewRow = page.locator("li").filter({ hasText: `2. ${crewName}` });
   await expect(addedCrewRow).toBeVisible();
   const deleteSave = page.waitForResponse((response) => response.url().endsWith("/api/logbook") && response.request().method() === "PUT" && response.ok());
-  await addedCrewRow.getByRole("button", { name: "Delete" }).click();
+  await addedCrewRow.getByRole("button", { name: `Delete ${crewName}` }).click();
   await expect(addedCrewRow).toBeHidden();
   await deleteSave;
 
