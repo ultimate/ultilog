@@ -1,4 +1,4 @@
-import { useState, type Dispatch, type SetStateAction } from "react";
+import { useRef, useState, type Dispatch, type SetStateAction } from "react";
 import type {
   Boat,
   LineForm,
@@ -55,6 +55,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     SetStateAction<boolean>
   >;
   const [coordinateFormat, setCoordinateFormat] = useState<CoordinateFormat>("decimal");
+  const courseConversionSequence = useRef(0);
 
   const renderNumberInput = (field: keyof LineForm, options?: { min?: number; max?: number; step?: string }) => (
     <input type="number" min={options?.min} max={options?.max} step={options?.step ?? "1"} value={lineForm[field]} onChange={(e) => setLineForm({ ...lineForm, [field]: e.target.value })} />
@@ -66,6 +67,9 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
 
   const applyCourseConversion = (nextForm: LineForm) => {
     setLineForm(nextForm);
+    if (!hasAnyCourseInput(nextForm)) return;
+    const sequence = courseConversionSequence.current + 1;
+    courseConversionSequence.current = sequence;
     const input = courseInputFromForm(nextForm);
     const deviationTable = deviationTableFromBoat(activeBoat);
     const position = nextForm.latitude.trim() || nextForm.longitude.trim()
@@ -74,7 +78,10 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     const date = nextForm.time ? new Date(nextForm.time) : undefined;
     const conversion = calculateCourseConversion(input, deviationTable, { position, date });
     Promise.resolve(conversion)
-      .then((result) => setLineForm((current) => ({ ...current, ...courseFormFromConversion(result) })))
+      .then((result) => {
+        if (courseConversionSequence.current !== sequence) return;
+        setLineForm((current) => ({ ...current, ...courseFormFromConversion(result) }));
+      })
       .catch(() => undefined);
   };
 
@@ -90,24 +97,24 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   );
 
   const renderCoordinateInput = (field: "latitude" | "longitude", label: string) => {
-    if (coordinateFormat === "decimal") return renderTextInput(field, label);
+    if (coordinateFormat === "decimal") return <input aria-label={label} value={lineForm[field]} onChange={(e) => applyCourseConversion({ ...lineForm, [field]: e.target.value })} />;
     const parts = lineForm[field].trim() ? decimalToDmsParts(parseCoordinate(lineForm[field])) : { degrees: "", minutes: "", seconds: "" };
     const updatePart = (part: keyof DmsParts, value: string) => {
       const nextParts = { ...parts, [part]: value };
-      setLineForm({ ...lineForm, [field]: String(dmsPartsToDecimal(nextParts)) });
+      applyCourseConversion({ ...lineForm, [field]: String(dmsPartsToDecimal(nextParts)) });
     };
     return (
       <div className="compound-inputs dms-inputs" aria-label={label}>
         <label><span>[°]</span><input aria-label={`${label} degrees`} type="number" value={parts.degrees} onChange={(e) => updatePart("degrees", e.target.value)} /></label>
         <label><span>[&prime;]</span><input aria-label={`${label} minutes`} type="number" value={parts.minutes} onChange={(e) => updatePart("minutes", e.target.value)} /></label>
-        <label><span>[&Prime;]</span><input aria-label={`${label} seconds`} type="number" step="0.01" value={parts.seconds} onChange={(e) => updatePart("seconds", e.target.value)} /></label>
+        <label><span>[&Prime;]</span><input aria-label={`${label} seconds`} type="number" step="0.1" value={parts.seconds} onChange={(e) => updatePart("seconds", e.target.value)} /></label>
       </div>
     );
   };
 
   const renderLineEditor = (key: string) => (
     <tr key={key} className="inline-line-row">
-      <td><input type="datetime-local" value={lineForm.time} onChange={(e) => setLineForm({ ...lineForm, time: e.target.value })} /></td><td>{renderCoordinateInput("latitude", "Latitude")}</td><td>{renderCoordinateInput("longitude", "Longitude")}</td>
+      <td><input type="datetime-local" value={lineForm.time} onChange={(e) => applyCourseConversion({ ...lineForm, time: e.target.value })} /></td><td>{renderCoordinateInput("latitude", "Latitude")}</td><td>{renderCoordinateInput("longitude", "Longitude")}</td>
       <td><select value={lineForm.weather} onChange={(e) => setLineForm({ ...lineForm, weather: e.target.value })}><option value="">—</option>{weatherEmojis.map((emoji) => <option key={emoji} value={emoji}>{emoji}</option>)}</select></td>
       <td>{renderNumberInput("barometer", { min: 800, max: 1200 })}</td>
       <td><div className="compound-inputs"><select aria-label="Wind direction" value={lineForm.windDirection} onChange={(e) => setLineForm({ ...lineForm, windDirection: e.target.value })}><option value="">—</option>{compassDirections.map((direction) => <option key={direction} value={direction}>{direction}</option>)}</select>{renderNumberInput("windStrength")}<select value={lineForm.windUnit} onChange={(e) => setLineForm({ ...lineForm, windUnit: e.target.value })}><option value="bft">bft</option><option value="kn">kn</option></select></div></td>
@@ -631,11 +638,16 @@ const weatherEmojis = ["☁️", "⛅", "⛈️", "🌤️", "🌥️", "🌦️
 const moonEmojis = ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌘"];
 const courseFieldNames = ["deviation", "magneticCourseCorrected", "variation", "trueCourse", "driftAngle", "courseThroughWater", "currentDrift"] as const;
 const courseSignedFields = new Set<keyof LineForm>(["deviation", "variation", "driftAngle", "currentDrift"]);
+const courseInputFieldNames = ["magneticCourse", "deviation", "magneticCourseCorrected", "variation", "trueCourse", "driftAngle", "courseThroughWater", "currentDrift", "courseOverGround"] as const;
 
 function optionalNumber(value: string) {
   if (!value.trim()) return undefined;
   const parsed = Number.parseFloat(value);
   return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function hasAnyCourseInput(form: LineForm) {
+  return courseInputFieldNames.some((field) => form[field].trim());
 }
 
 function courseInputFromForm(form: LineForm): CourseConversionInput {
