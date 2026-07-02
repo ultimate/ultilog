@@ -651,3 +651,129 @@ h3 { margin-block:.25rem .55rem; }
   .mobile-bottom-nav .tab-icon img,
   .mobile-bottom-nav .mobile-profile-action img { width:1.3rem; height:1.3rem; }
 }
+
+.open-seamap-view {
+  position: relative;
+  display: grid;
+  gap: 0.75rem;
+  min-height: 22rem;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 1rem;
+  overflow: hidden;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--design-shadow);
+}
+.open-seamap-view h3 { margin: 0; }
+.open-seamap-view > div:not(.open-seamap-empty) {
+  position: relative;
+  min-height: 20rem;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #b9def4;
+  isolation: isolate;
+}
+.open-seamap-view > div:not(.open-seamap-empty)::after {
+  content: var(--open-seamap-center-lat) " · " var(--open-seamap-center-lon) " · © OpenStreetMap contributors · Seamarks © OpenSeaMap contributors";
+  position: absolute;
+  right: 0.6rem;
+  bottom: 0.45rem;
+  z-index: 5;
+  max-width: calc(100% - 1.2rem);
+  border-radius: 999px;
+  padding: 0.3rem 0.55rem;
+  background: color-mix(in srgb, var(--surface-strong) 88%, transparent);
+  color: var(--subtle);
+  font-size: 0.68rem;
+  font-weight: 800;
+  box-shadow: var(--design-shadow);
+}
+.open-seamap-view img {
+  position: absolute;
+  z-index: 1;
+  display: block;
+  max-width: none;
+  user-select: none;
+}
+.open-seamap-view svg {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.open-seamap-view polyline {
+  fill: none;
+  stroke-width: 0.85;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 1px 2px rgba(7, 26, 61, 0.28));
+  pointer-events: stroke;
+  vector-effect: non-scaling-stroke;
+}
+.open-seamap-view button {
+  position: absolute;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid var(--surface-strong);
+  border-radius: 999px;
+  padding: 0;
+  translate: -50% -50%;
+  background: var(--blue);
+  color: white;
+  box-shadow: 0 12px 24px rgba(7, 26, 61, 0.22);
+}
+.open-seamap-view button strong { font-size: 0.75rem; line-height: 1; }
+.open-seamap-view button span,
+.open-seamap-view button small {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 0.35rem);
+  width: max-content;
+  max-width: 14rem;
+  translate: -50% 0;
+  border-radius: 10px;
+  padding: 0.3rem 0.45rem;
+  background: color-mix(in srgb, var(--surface-strong) 92%, transparent);
+  color: var(--text);
+  font-size: 0.68rem;
+  font-weight: 850;
+  opacity: 0;
+  pointer-events: none;
+  box-shadow: var(--design-shadow);
+}
+.open-seamap-view button small { top: calc(100% + 2rem); color: var(--subtle); font-weight: 750; }
+.open-seamap-view button:hover span,
+.open-seamap-view button:focus-visible span,
+.open-seamap-view button:hover small,
+.open-seamap-view button:focus-visible small { opacity: 1; }
+.open-seamap-empty {
+  display: grid;
+  min-height: 14rem;
+  place-items: center;
+  border: 1px dashed var(--line);
+  border-radius: 14px;
+  padding: 1rem;
+  background: color-mix(in srgb, var(--blue-soft) 54%, transparent);
+  color: var(--subtle);
+  font-weight: 850;
+  text-align: center;
+}
+.open-seamap-detail button { background: var(--blue); }
+.open-seamap-detail polyline { stroke-width: 1.2; }
+.open-seamap-overview { min-height: 18rem; }
+.open-seamap-overview > div:not(.open-seamap-empty) { min-height: 16rem; }
+.open-seamap-overview button {
+  width: 1.6rem;
+  height: 1.6rem;
+  background: var(--green);
+}
+.open-seamap-overview button span,
+.open-seamap-overview button small { display: none; }
+.open-seamap-overview polyline { stroke-width: 0.95; }
