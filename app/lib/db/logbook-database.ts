@@ -12,7 +12,7 @@ export interface QueryableDatabase {
   query<Row>(sql: string, values?: unknown[]): Promise<QueryResult<Row>>;
 }
 
-const defaultLogbook: PersistedLogbook = { boats: sampleBoats, crewMembers: sampleLogSheets.flatMap((sheet) => sheet.crew).filter((crew, index, crews) => crews.findIndex((candidate) => candidate.id === crew.id) === index).map(({ embarkation, disembarkation, ...crew }) => crew), sheets: sampleLogSheets };
+const defaultLogbook: PersistedLogbook = { boats: sampleBoats, crewMembers: sampleLogSheets.flatMap((sheet) => sheet.crew).filter((crew, index, crews) => crews.findIndex((candidate) => candidate.id === crew.id) === index).map(({ embarkationDateTime, embarkationPosition, disembarkationDateTime, disembarkationPosition, ...crew }) => crew), sheets: sampleLogSheets };
 
 export abstract class LogbookDatabase implements QueryableDatabase {
   protected readonly boats = new BoatsRepository(this);

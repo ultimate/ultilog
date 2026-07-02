@@ -24,7 +24,11 @@ export type LogSheetRow = {
   technical_checks: unknown;
 };
 
-export type CrewMemberRow = SheetCrewMember & {
+export type CrewMemberRow = Omit<SheetCrewMember, "embarkationDateTime" | "embarkationPosition" | "disembarkationDateTime" | "disembarkationPosition"> & {
+  embarkation_datetime: string;
+  embarkation_position: string;
+  disembarkation_datetime: string;
+  disembarkation_position: string;
   sheet_id: string;
   crew_member_id: string;
   sort_order: number;

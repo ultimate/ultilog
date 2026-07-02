@@ -27,8 +27,10 @@ export class CrewRepository {
         crew_members.address,
         crew_members.certificate,
         crew_members.is_primary,
-        sheet_crew_members.embarkation,
-        sheet_crew_members.disembarkation
+        sheet_crew_members.embarkation_datetime,
+        sheet_crew_members.embarkation_position,
+        sheet_crew_members.disembarkation_datetime,
+        sheet_crew_members.disembarkation_position
       from sheet_crew_members
       join log_sheets on log_sheets.id = sheet_crew_members.sheet_id
       join crew_members on crew_members.id = sheet_crew_members.crew_member_id
@@ -53,8 +55,8 @@ export class CrewRepository {
     const crewMemberId = scopedId(ownerId, crew.id);
     await this.insertProfile(crew, ownerId);
     await this.db.query(
-      `insert into sheet_crew_members (sheet_id, crew_member_id, sort_order, embarkation, disembarkation) values (${this.values(5)})`,
-      [scopedId(ownerId, sheetId), crewMemberId, sortOrder, crew.embarkation, crew.disembarkation],
+      `insert into sheet_crew_members (sheet_id, crew_member_id, sort_order, embarkation, disembarkation, embarkation_datetime, embarkation_position, disembarkation_datetime, disembarkation_position) values (${this.values(9)})`,
+      [scopedId(ownerId, sheetId), crewMemberId, sortOrder, crew.embarkationPosition, crew.disembarkationPosition, crew.embarkationDateTime, crew.embarkationPosition, crew.disembarkationDateTime, crew.disembarkationPosition],
     );
   }
 

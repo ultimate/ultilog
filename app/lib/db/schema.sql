@@ -39,6 +39,10 @@ create table if not exists sheet_crew_members (
   sort_order integer not null,
   embarkation text not null,
   disembarkation text not null,
+  embarkation_datetime text not null default '',
+  embarkation_position text not null default '',
+  disembarkation_datetime text not null default '',
+  disembarkation_position text not null default '',
   primary key (sheet_id, crew_member_id, sort_order)
 );
 
