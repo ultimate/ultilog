@@ -1,5 +1,10 @@
 import type { Dispatch, SetStateAction } from "react";
-import type { Boat, LineForm, LogSheet, PersistedLogbook } from "../../../models/logbook";
+import type {
+  Boat,
+  LineForm,
+  LogSheet,
+  PersistedLogbook,
+} from "../../../models/logbook";
 import { courseConversionColumns } from "../../../domain/nautical/course-conversion";
 import { boatToForm, sheetToForm } from "../forms";
 import { dateTimeLocalFromParts, splitDateTimeLocal } from "../date-utils";
@@ -7,43 +12,979 @@ import { dateTimeLocalFromParts, splitDateTimeLocal } from "../date-utils";
 type LogbookDetailsPageProps = Record<string, any>;
 
 export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
-  const { isBackendReady, showNewSheet, editingSheetId, saveSheet, sheetForm, setSheetForm, setSelectedBoatId, setEditingBoatId, setBoatForm, setShowBoatManager, navigate, cancelSheetEdit, renderInlineTextField, isActiveSheetLocked, updateActiveSheetStatus, renderInlineBoatField, renderInlineDateField, activeSheetSummary, showCourseColumns, startAddingLine, showAddLine, saveLineFromFields, editingLineIndex, cancelLineEdit, startEditingLine, updateCrewAssignment, moveCrewOnActiveSheet, deleteCrewFromActiveSheet, addCrewToActiveSheet } = props;
+  const {
+    isBackendReady,
+    showNewSheet,
+    editingSheetId,
+    saveSheet,
+    sheetForm,
+    setSheetForm,
+    setSelectedBoatId,
+    setEditingBoatId,
+    setBoatForm,
+    setShowBoatManager,
+    navigate,
+    cancelSheetEdit,
+    renderInlineTextField,
+    isActiveSheetLocked,
+    updateActiveSheetStatus,
+    renderInlineBoatField,
+    renderInlineDateField,
+    activeSheetSummary,
+    showCourseColumns,
+    startAddingLine,
+    showAddLine,
+    saveLineFromFields,
+    editingLineIndex,
+    cancelLineEdit,
+    startEditingLine,
+    updateCrewAssignment,
+    moveCrewOnActiveSheet,
+    deleteCrewFromActiveSheet,
+    addCrewToActiveSheet,
+  } = props;
   const activeBoat = props.activeBoat as Boat;
   const activeSheet = props.activeSheet as LogSheet;
   const lineForm = props.lineForm as LineForm;
   const logbook = props.logbook as PersistedLogbook;
   const setLineForm = props.setLineForm as Dispatch<SetStateAction<LineForm>>;
-  const setShowCourseColumns = props.setShowCourseColumns as Dispatch<SetStateAction<boolean>>;
+  const setShowCourseColumns = props.setShowCourseColumns as Dispatch<
+    SetStateAction<boolean>
+  >;
 
-  return <>
-      {!isBackendReady && <section className="sheet-detail" aria-label="Loading logbook sheet"><form className="sheet-title-row inline-edit-card"><div className="inline-edit-grid"><p className="eyebrow">Loading sheet</p><label>Title<input disabled value="" readOnly /></label><div className="header-edit-row"><span>Boat</span><select aria-label="Boat" disabled value=""><option value=""> </option></select><button type="button" className="edit-chip" disabled>Jump to boat</button></div><div className="header-edit-row"><span>From</span><input aria-label="From datetime" type="datetime-local" disabled value="" readOnly /><input aria-label="From position" disabled value="" readOnly /></div><div className="header-edit-row"><span>To</span><input aria-label="To datetime" type="datetime-local" disabled value="" readOnly /><input aria-label="To position" disabled value="" readOnly /></div></div></form></section>}
-
-      {isBackendReady && <section className="sheet-detail" aria-labelledby="sheet-title">
-          {(showNewSheet || editingSheetId) ? (
-            <form className="sheet-title-row inline-edit-card" onSubmit={saveSheet}>
-              <div className="inline-edit-grid">
-                <p className="eyebrow">{editingSheetId ? "Edit sheet" : "New sheet"}</p>
-                <label>Title<input required value={sheetForm.title} onChange={(e) => setSheetForm({ ...sheetForm, title: e.target.value })} /></label>
-                <div className="header-edit-row"><span>Boat</span><select aria-label="Boat" value={sheetForm.boatId} onChange={(e) => setSheetForm({ ...sheetForm, boatId: e.target.value })}>{logbook.boats.map((boat) => <option key={boat.id} value={boat.id}>{boat.name}</option>)}</select>{editingSheetId && <button type="button" className="edit-chip" onClick={() => { setSelectedBoatId(sheetForm.boatId); setEditingBoatId(sheetForm.boatId); const boat = logbook.boats.find((candidate) => candidate.id === sheetForm.boatId); if (boat) setBoatForm(boatToForm(boat)); setShowBoatManager(false); navigate("boats", sheetForm.boatId); }}>Jump to boat</button>}</div>
-                <div className="header-edit-row"><span>From</span><input aria-label="From datetime" type="datetime-local" value={dateTimeLocalFromParts(sheetForm.dateRange, sheetForm.fromTime)} onChange={(e) => { const { date, time } = splitDateTimeLocal(e.target.value); setSheetForm({ ...sheetForm, dateRange: date || sheetForm.dateRange, fromTime: time }); }} /><input aria-label="From position" value={sheetForm.from} onChange={(e) => setSheetForm({ ...sheetForm, from: e.target.value })} /></div>
-                <div className="header-edit-row"><span>To</span><input aria-label="To datetime" type="datetime-local" value={dateTimeLocalFromParts(sheetForm.dateRange, sheetForm.toTime)} onChange={(e) => { const { date, time } = splitDateTimeLocal(e.target.value); setSheetForm({ ...sheetForm, dateRange: date || sheetForm.dateRange, toTime: time }); }} /><input aria-label="To position" value={sheetForm.to} onChange={(e) => setSheetForm({ ...sheetForm, to: e.target.value })} /></div>
+  return (
+    <>
+      {!isBackendReady && (
+        <section className="sheet-detail" aria-label="Loading logbook sheet">
+          <form className="sheet-title-row inline-edit-card">
+            <div className="inline-edit-grid">
+              <p className="eyebrow">Loading sheet</p>
+              <label>
+                Title
+                <input disabled value="" readOnly />
+              </label>
+              <div className="header-edit-row">
+                <span>Boat</span>
+                <select aria-label="Boat" disabled value="">
+                  <option value=""> </option>
+                </select>
+                <button type="button" className="edit-chip" disabled>
+                  Jump to boat
+                </button>
               </div>
-              <div className="inline-edit-actions"><button type="submit">Save</button>{showNewSheet ? <button type="button" className="ghost-button" onClick={() => { cancelSheetEdit(); navigate("logbooks"); }}>Cancel</button> : <button type="button" className="ghost-button" onClick={() => setSheetForm(sheetToForm(activeSheet))}>Discard changes</button>}</div>
+              <div className="header-edit-row">
+                <span>From</span>
+                <input
+                  aria-label="From datetime"
+                  type="datetime-local"
+                  disabled
+                  value=""
+                  readOnly
+                />
+                <input aria-label="From position" disabled value="" readOnly />
+              </div>
+              <div className="header-edit-row">
+                <span>To</span>
+                <input
+                  aria-label="To datetime"
+                  type="datetime-local"
+                  disabled
+                  value=""
+                  readOnly
+                />
+                <input aria-label="To position" disabled value="" readOnly />
+              </div>
+            </div>
+          </form>
+        </section>
+      )}
+
+      {isBackendReady && (
+        <section className="sheet-detail" aria-labelledby="sheet-title">
+          {showNewSheet || editingSheetId ? (
+            <form
+              className="sheet-title-row inline-edit-card"
+              onSubmit={saveSheet}
+            >
+              <div className="inline-edit-grid">
+                <p className="eyebrow">
+                  {editingSheetId ? "Edit sheet" : "New sheet"}
+                </p>
+                <label>
+                  Title
+                  <input
+                    required
+                    value={sheetForm.title}
+                    onChange={(e) =>
+                      setSheetForm({ ...sheetForm, title: e.target.value })
+                    }
+                  />
+                </label>
+                <div className="header-edit-row">
+                  <span>Boat</span>
+                  <select
+                    aria-label="Boat"
+                    value={sheetForm.boatId}
+                    onChange={(e) =>
+                      setSheetForm({ ...sheetForm, boatId: e.target.value })
+                    }
+                  >
+                    {logbook.boats.map((boat) => (
+                      <option key={boat.id} value={boat.id}>
+                        {boat.name}
+                      </option>
+                    ))}
+                  </select>
+                  {editingSheetId && (
+                    <button
+                      type="button"
+                      className="edit-chip"
+                      onClick={() => {
+                        setSelectedBoatId(sheetForm.boatId);
+                        setEditingBoatId(sheetForm.boatId);
+                        const boat = logbook.boats.find(
+                          (candidate) => candidate.id === sheetForm.boatId,
+                        );
+                        if (boat) setBoatForm(boatToForm(boat));
+                        setShowBoatManager(false);
+                        navigate("boats", sheetForm.boatId);
+                      }}
+                    >
+                      Jump to boat
+                    </button>
+                  )}
+                </div>
+                <div className="header-edit-row">
+                  <span>From</span>
+                  <input
+                    aria-label="From datetime"
+                    type="datetime-local"
+                    value={dateTimeLocalFromParts(
+                      sheetForm.dateRange,
+                      sheetForm.fromTime,
+                    )}
+                    onChange={(e) => {
+                      const { date, time } = splitDateTimeLocal(e.target.value);
+                      setSheetForm({
+                        ...sheetForm,
+                        dateRange: date || sheetForm.dateRange,
+                        fromTime: time,
+                      });
+                    }}
+                  />
+                  <input
+                    aria-label="From position"
+                    value={sheetForm.from}
+                    onChange={(e) =>
+                      setSheetForm({ ...sheetForm, from: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="header-edit-row">
+                  <span>To</span>
+                  <input
+                    aria-label="To datetime"
+                    type="datetime-local"
+                    value={dateTimeLocalFromParts(
+                      sheetForm.dateRange,
+                      sheetForm.toTime,
+                    )}
+                    onChange={(e) => {
+                      const { date, time } = splitDateTimeLocal(e.target.value);
+                      setSheetForm({
+                        ...sheetForm,
+                        dateRange: date || sheetForm.dateRange,
+                        toTime: time,
+                      });
+                    }}
+                  />
+                  <input
+                    aria-label="To position"
+                    value={sheetForm.to}
+                    onChange={(e) =>
+                      setSheetForm({ ...sheetForm, to: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+              <div className="inline-edit-actions">
+                <button type="submit">Save</button>
+                {showNewSheet ? (
+                  <button
+                    type="button"
+                    className="ghost-button"
+                    onClick={() => {
+                      cancelSheetEdit();
+                      navigate("logbooks");
+                    }}
+                  >
+                    Cancel
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="ghost-button"
+                    onClick={() => setSheetForm(sheetToForm(activeSheet))}
+                  >
+                    Discard changes
+                  </button>
+                )}
+              </div>
             </form>
           ) : (
             <>
-              <section className="sheet-title-row logbook-section sheet-master-header" aria-label="Logbook sheet header"><div className="sheet-master-title"><h2 id="sheet-title">{renderInlineTextField("title", activeSheet.title, "Untitled sheet")}</h2></div><div className="inline-edit-actions sheet-master-actions"><span className="status-pill">{activeSheet.status}</span>{isActiveSheetLocked ? <button type="button" className="edit-chip compact-chip" onClick={() => updateActiveSheetStatus("Draft")}>Unlock</button> : <button type="button" className="edit-chip compact-chip" onClick={() => updateActiveSheetStatus("Locked")}>Lock</button>}</div><div className="paper-header header-table"><div className="header-table-row"><span>Boat</span><strong>{renderInlineBoatField()}</strong><button type="button" className="edit-chip icon-chip" aria-label="Jump to boat" title="Jump to boat" onClick={() => { setSelectedBoatId(activeBoat.id); setEditingBoatId(activeBoat.id); setBoatForm(boatToForm(activeBoat)); setShowBoatManager(false); navigate("boats", activeBoat.id); }}>↗</button></div><div className="header-table-row"><span>From</span><strong>{renderInlineDateField("departed", activeSheet.route.departed)}</strong><strong>{renderInlineTextField("from", activeSheet.route.from)}</strong></div><div className="header-table-row"><span>To</span><strong>{renderInlineDateField("arrived", activeSheet.route.arrived)}</strong><strong>{renderInlineTextField("to", activeSheet.route.to)}</strong></div></div></section>
+              <section
+                className="sheet-title-row logbook-section sheet-master-header"
+                aria-label="Logbook sheet header"
+              >
+                <div className="sheet-master-title">
+                  <h2 id="sheet-title">
+                    {renderInlineTextField(
+                      "title",
+                      activeSheet.title,
+                      "Untitled sheet",
+                    )}
+                  </h2>
+                </div>
+                <div className="inline-edit-actions sheet-master-actions">
+                  <span className="status-pill">{activeSheet.status}</span>
+                  {isActiveSheetLocked ? (
+                    <button
+                      type="button"
+                      className="edit-chip compact-chip"
+                      onClick={() => updateActiveSheetStatus("Draft")}
+                    >
+                      Unlock
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="edit-chip compact-chip"
+                      onClick={() => updateActiveSheetStatus("Locked")}
+                    >
+                      Lock
+                    </button>
+                  )}
+                </div>
+                <div className="paper-header header-table">
+                  <div className="header-table-row">
+                    <span>Boat</span>
+                    <strong>{renderInlineBoatField()}</strong>
+                    <button
+                      type="button"
+                      className="edit-chip icon-chip"
+                      aria-label="Jump to boat"
+                      title="Jump to boat"
+                      onClick={() => {
+                        setSelectedBoatId(activeBoat.id);
+                        setEditingBoatId(activeBoat.id);
+                        setBoatForm(boatToForm(activeBoat));
+                        setShowBoatManager(false);
+                        navigate("boats", activeBoat.id);
+                      }}
+                    >
+                      ↗
+                    </button>
+                  </div>
+                  <div className="header-table-row">
+                    <span>From</span>
+                    <strong>
+                      {renderInlineDateField(
+                        "departed",
+                        activeSheet.route.departed,
+                      )}
+                    </strong>
+                    <strong>
+                      {renderInlineTextField("from", activeSheet.route.from)}
+                    </strong>
+                  </div>
+                  <div className="header-table-row">
+                    <span>To</span>
+                    <strong>
+                      {renderInlineDateField(
+                        "arrived",
+                        activeSheet.route.arrived,
+                      )}
+                    </strong>
+                    <strong>
+                      {renderInlineTextField("to", activeSheet.route.to)}
+                    </strong>
+                  </div>
+                </div>
+              </section>
             </>
           )}
 
-          {!showNewSheet && <>
-          <section className="entry-metrics logbook-section" aria-label="Summary calculated from log lines"><article><span>Motor miles</span><strong>{activeSheetSummary.motorMiles} nm</strong></article><article><span>Sail miles</span><strong>{activeSheetSummary.sailMiles} nm</strong></article><article><span>Total miles</span><strong>{activeSheetSummary.totalMiles} nm</strong></article><article><span>Duration</span><strong>{activeSheetSummary.duration}</strong></article></section>
+          {!showNewSheet && (
+            <>
+              <section
+                className="entry-metrics logbook-section"
+                aria-label="Summary calculated from log lines"
+              >
+                <article>
+                  <span>Motor miles</span>
+                  <strong>{activeSheetSummary.motorMiles} nm</strong>
+                </article>
+                <article>
+                  <span>Sail miles</span>
+                  <strong>{activeSheetSummary.sailMiles} nm</strong>
+                </article>
+                <article>
+                  <span>Total miles</span>
+                  <strong>{activeSheetSummary.totalMiles} nm</strong>
+                </article>
+                <article>
+                  <span>Duration</span>
+                  <strong>{activeSheetSummary.duration}</strong>
+                </article>
+              </section>
 
+              <article className="table-card">
+                <div className="table-header">
+                  <div>
+                    <h3>Meteorological and nautical log</h3>
+                  </div>
+                  <div className="table-actions">
+                    <button
+                      type="button"
+                      onClick={() => setShowCourseColumns((show) => !show)}
+                    >
+                      {showCourseColumns ? "Hide" : "Show"} course conversion
+                      columns
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isActiveSheetLocked}
+                      onClick={startAddingLine}
+                    >
+                      + Add line
+                    </button>
+                  </div>
+                </div>
+                <div className="table-scroll">
+                  <table
+                    className={
+                      showCourseColumns ? "with-course-columns" : undefined
+                    }
+                  >
+                    <thead>
+                      <tr>
+                        <th>Time</th>
+                        <th>Weather</th>
+                        <th>Baro</th>
+                        <th>Sea</th>
+                        <th>Wind</th>
+                        <th>MgK / CC</th>
+                        {showCourseColumns &&
+                          courseConversionColumns.map((column) => (
+                            <th key={column}>{column}</th>
+                          ))}
+                        <th>KüG / COG</th>
+                        <th>Log</th>
+                        <th>Sail</th>
+                        <th>Motor</th>
+                        <th>Position</th>
+                        <th>Lat / Lon</th>
+                        <th>Remarks</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {showAddLine && (
+                        <tr className="inline-line-row">
+                          <td>
+                            <input
+                              value={lineForm.time}
+                              onChange={(e) =>
+                                setLineForm({
+                                  ...lineForm,
+                                  time: e.target.value,
+                                })
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              value={lineForm.weather}
+                              onChange={(e) =>
+                                setLineForm({
+                                  ...lineForm,
+                                  weather: e.target.value,
+                                })
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              value={lineForm.barometer}
+                              onChange={(e) =>
+                                setLineForm({
+                                  ...lineForm,
+                                  barometer: e.target.value,
+                                })
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              value={lineForm.seaState}
+                              onChange={(e) =>
+                                setLineForm({
+                                  ...lineForm,
+                                  seaState: e.target.value,
+                                })
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              value={lineForm.wind}
+                              onChange={(e) =>
+                                setLineForm({
+                                  ...lineForm,
+                                  wind: e.target.value,
+                                })
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              value={lineForm.magneticCourse}
+                              onChange={(e) =>
+                                setLineForm({
+                                  ...lineForm,
+                                  magneticCourse: e.target.value,
+                                })
+                              }
+                            />
+                          </td>
+                          {showCourseColumns &&
+                            courseConversionColumns.map((column) => (
+                              <td
+                                className="optional-course-cell"
+                                key={`new-${column}`}
+                              >
+                                —
+                              </td>
+                            ))}
+                          <td>
+                            <input
+                              value={lineForm.course}
+                              onChange={(e) =>
+                                setLineForm({
+                                  ...lineForm,
+                                  course: e.target.value,
+                                })
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              value={lineForm.logNm}
+                              onChange={(e) =>
+                                setLineForm({
+                                  ...lineForm,
+                                  logNm: e.target.value,
+                                })
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              value={lineForm.sails}
+                              onChange={(e) =>
+                                setLineForm({
+                                  ...lineForm,
+                                  sails: e.target.value,
+                                })
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              value={lineForm.engine}
+                              onChange={(e) =>
+                                setLineForm({
+                                  ...lineForm,
+                                  engine: e.target.value,
+                                })
+                              }
+                            />
+                          </td>
+                          <td>
+                            <input
+                              value={lineForm.position}
+                              onChange={(e) =>
+                                setLineForm({
+                                  ...lineForm,
+                                  position: e.target.value,
+                                })
+                              }
+                            />
+                          </td>
+                          <td>
+                            <div className="coordinate-inputs">
+                              <input
+                                aria-label="Latitude"
+                                value={lineForm.latitude}
+                                onChange={(e) =>
+                                  setLineForm({
+                                    ...lineForm,
+                                    latitude: e.target.value,
+                                  })
+                                }
+                              />
+                              <input
+                                aria-label="Longitude"
+                                value={lineForm.longitude}
+                                onChange={(e) =>
+                                  setLineForm({
+                                    ...lineForm,
+                                    longitude: e.target.value,
+                                  })
+                                }
+                              />
+                            </div>
+                          </td>
+                          <td>
+                            <input
+                              value={lineForm.remarks}
+                              onChange={(e) =>
+                                setLineForm({
+                                  ...lineForm,
+                                  remarks: e.target.value,
+                                })
+                              }
+                            />
+                          </td>
+                          <td>
+                            <div className="table-actions">
+                              <button
+                                type="button"
+                                onClick={saveLineFromFields}
+                              >
+                                {editingLineIndex === null
+                                  ? "Save line"
+                                  : "Update line"}
+                              </button>
+                              <button
+                                type="button"
+                                className="ghost-button"
+                                onClick={cancelLineEdit}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                      {activeSheet.lines.map((line, index) =>
+                        editingLineIndex === index ? (
+                          <tr key={`edit-${index}`} className="inline-line-row">
+                            <td>
+                              <input
+                                value={lineForm.time}
+                                onChange={(e) =>
+                                  setLineForm({
+                                    ...lineForm,
+                                    time: e.target.value,
+                                  })
+                                }
+                              />
+                            </td>
+                            <td>
+                              <input
+                                value={lineForm.weather}
+                                onChange={(e) =>
+                                  setLineForm({
+                                    ...lineForm,
+                                    weather: e.target.value,
+                                  })
+                                }
+                              />
+                            </td>
+                            <td>
+                              <input
+                                value={lineForm.barometer}
+                                onChange={(e) =>
+                                  setLineForm({
+                                    ...lineForm,
+                                    barometer: e.target.value,
+                                  })
+                                }
+                              />
+                            </td>
+                            <td>
+                              <input
+                                value={lineForm.seaState}
+                                onChange={(e) =>
+                                  setLineForm({
+                                    ...lineForm,
+                                    seaState: e.target.value,
+                                  })
+                                }
+                              />
+                            </td>
+                            <td>
+                              <input
+                                value={lineForm.wind}
+                                onChange={(e) =>
+                                  setLineForm({
+                                    ...lineForm,
+                                    wind: e.target.value,
+                                  })
+                                }
+                              />
+                            </td>
+                            <td>
+                              <input
+                                value={lineForm.magneticCourse}
+                                onChange={(e) =>
+                                  setLineForm({
+                                    ...lineForm,
+                                    magneticCourse: e.target.value,
+                                  })
+                                }
+                              />
+                            </td>
+                            {showCourseColumns &&
+                              courseConversionColumns.map((column) => (
+                                <td
+                                  className="optional-course-cell"
+                                  key={`new-${column}`}
+                                >
+                                  —
+                                </td>
+                              ))}
+                            <td>
+                              <input
+                                value={lineForm.course}
+                                onChange={(e) =>
+                                  setLineForm({
+                                    ...lineForm,
+                                    course: e.target.value,
+                                  })
+                                }
+                              />
+                            </td>
+                            <td>
+                              <input
+                                value={lineForm.logNm}
+                                onChange={(e) =>
+                                  setLineForm({
+                                    ...lineForm,
+                                    logNm: e.target.value,
+                                  })
+                                }
+                              />
+                            </td>
+                            <td>
+                              <input
+                                value={lineForm.sails}
+                                onChange={(e) =>
+                                  setLineForm({
+                                    ...lineForm,
+                                    sails: e.target.value,
+                                  })
+                                }
+                              />
+                            </td>
+                            <td>
+                              <input
+                                value={lineForm.engine}
+                                onChange={(e) =>
+                                  setLineForm({
+                                    ...lineForm,
+                                    engine: e.target.value,
+                                  })
+                                }
+                              />
+                            </td>
+                            <td>
+                              <input
+                                value={lineForm.position}
+                                onChange={(e) =>
+                                  setLineForm({
+                                    ...lineForm,
+                                    position: e.target.value,
+                                  })
+                                }
+                              />
+                            </td>
+                            <td>
+                              <div className="coordinate-inputs">
+                                <input
+                                  aria-label="Latitude"
+                                  value={lineForm.latitude}
+                                  onChange={(e) =>
+                                    setLineForm({
+                                      ...lineForm,
+                                      latitude: e.target.value,
+                                    })
+                                  }
+                                />
+                                <input
+                                  aria-label="Longitude"
+                                  value={lineForm.longitude}
+                                  onChange={(e) =>
+                                    setLineForm({
+                                      ...lineForm,
+                                      longitude: e.target.value,
+                                    })
+                                  }
+                                />
+                              </div>
+                            </td>
+                            <td>
+                              <input
+                                value={lineForm.remarks}
+                                onChange={(e) =>
+                                  setLineForm({
+                                    ...lineForm,
+                                    remarks: e.target.value,
+                                  })
+                                }
+                              />
+                            </td>
+                            <td>
+                              <div className="table-actions">
+                                <button
+                                  type="button"
+                                  onClick={saveLineFromFields}
+                                >
+                                  {editingLineIndex === null
+                                    ? "Save line"
+                                    : "Update line"}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="ghost-button"
+                                  onClick={cancelLineEdit}
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : (
+                          <tr key={`${line.time}-${line.position}-${index}`}>
+                            <td>{line.time}</td>
+                            <td>{line.weather}</td>
+                            <td>{line.barometer}</td>
+                            <td>{line.seaState}</td>
+                            <td>{line.wind}</td>
+                            <td>{line.magneticCourse}</td>
+                            {showCourseColumns &&
+                              courseConversionColumns.map((column) => (
+                                <td
+                                  className="optional-course-cell"
+                                  key={`${line.time}-${index}-${column}`}
+                                >
+                                  —
+                                </td>
+                              ))}
+                            <td>{line.course}</td>
+                            <td>{line.logNm} nm</td>
+                            <td>{line.sails}</td>
+                            <td>{line.engine}</td>
+                            <td>{line.position}</td>
+                            <td>
+                              {line.latitude.toFixed(3)} /{" "}
+                              {line.longitude.toFixed(3)}
+                            </td>
+                            <td>{line.remarks}</td>
+                            <td>
+                              <button
+                                type="button"
+                                className="edit-chip"
+                                disabled={isActiveSheetLocked}
+                                onClick={() => startEditingLine(line, index)}
+                              >
+                                Edit
+                              </button>
+                            </td>
+                          </tr>
+                        ),
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </article>
 
-          <article className="table-card"><div className="table-header"><div><h3>Meteorological and nautical log</h3></div><div className="table-actions"><button type="button" onClick={() => setShowCourseColumns((show) => !show)}>{showCourseColumns ? "Hide" : "Show"} course conversion columns</button><button type="button" disabled={isActiveSheetLocked} onClick={startAddingLine}>+ Add line</button></div></div><div className="table-scroll"><table className={showCourseColumns ? "with-course-columns" : undefined}><thead><tr><th>Time</th><th>Weather</th><th>Baro</th><th>Sea</th><th>Wind</th><th>MgK / CC</th>{showCourseColumns && courseConversionColumns.map((column) => <th key={column}>{column}</th>)}<th>KüG / COG</th><th>Log</th><th>Sail</th><th>Motor</th><th>Position</th><th>Lat / Lon</th><th>Remarks</th><th>Actions</th></tr></thead><tbody>{showAddLine && <tr className="inline-line-row"><td><input value={lineForm.time} onChange={(e) => setLineForm({ ...lineForm, time: e.target.value })} /></td><td><input value={lineForm.weather} onChange={(e) => setLineForm({ ...lineForm, weather: e.target.value })} /></td><td><input value={lineForm.barometer} onChange={(e) => setLineForm({ ...lineForm, barometer: e.target.value })} /></td><td><input value={lineForm.seaState} onChange={(e) => setLineForm({ ...lineForm, seaState: e.target.value })} /></td><td><input value={lineForm.wind} onChange={(e) => setLineForm({ ...lineForm, wind: e.target.value })} /></td><td><input value={lineForm.magneticCourse} onChange={(e) => setLineForm({ ...lineForm, magneticCourse: e.target.value })} /></td>{showCourseColumns && courseConversionColumns.map((column) => <td className="optional-course-cell" key={`new-${column}`}>—</td>)}<td><input value={lineForm.course} onChange={(e) => setLineForm({ ...lineForm, course: e.target.value })} /></td><td><input value={lineForm.logNm} onChange={(e) => setLineForm({ ...lineForm, logNm: e.target.value })} /></td><td><input value={lineForm.sails} onChange={(e) => setLineForm({ ...lineForm, sails: e.target.value })} /></td><td><input value={lineForm.engine} onChange={(e) => setLineForm({ ...lineForm, engine: e.target.value })} /></td><td><input value={lineForm.position} onChange={(e) => setLineForm({ ...lineForm, position: e.target.value })} /></td><td><div className="coordinate-inputs"><input aria-label="Latitude" value={lineForm.latitude} onChange={(e) => setLineForm({ ...lineForm, latitude: e.target.value })} /><input aria-label="Longitude" value={lineForm.longitude} onChange={(e) => setLineForm({ ...lineForm, longitude: e.target.value })} /></div></td><td><input value={lineForm.remarks} onChange={(e) => setLineForm({ ...lineForm, remarks: e.target.value })} /></td><td><div className="table-actions"><button type="button" onClick={saveLineFromFields}>{editingLineIndex === null ? "Save line" : "Update line"}</button><button type="button" className="ghost-button" onClick={cancelLineEdit}>Cancel</button></div></td></tr>}{activeSheet.lines.map((line, index) => editingLineIndex === index ? <tr key={`edit-${index}`} className="inline-line-row"><td><input value={lineForm.time} onChange={(e) => setLineForm({ ...lineForm, time: e.target.value })} /></td><td><input value={lineForm.weather} onChange={(e) => setLineForm({ ...lineForm, weather: e.target.value })} /></td><td><input value={lineForm.barometer} onChange={(e) => setLineForm({ ...lineForm, barometer: e.target.value })} /></td><td><input value={lineForm.seaState} onChange={(e) => setLineForm({ ...lineForm, seaState: e.target.value })} /></td><td><input value={lineForm.wind} onChange={(e) => setLineForm({ ...lineForm, wind: e.target.value })} /></td><td><input value={lineForm.magneticCourse} onChange={(e) => setLineForm({ ...lineForm, magneticCourse: e.target.value })} /></td>{showCourseColumns && courseConversionColumns.map((column) => <td className="optional-course-cell" key={`new-${column}`}>—</td>)}<td><input value={lineForm.course} onChange={(e) => setLineForm({ ...lineForm, course: e.target.value })} /></td><td><input value={lineForm.logNm} onChange={(e) => setLineForm({ ...lineForm, logNm: e.target.value })} /></td><td><input value={lineForm.sails} onChange={(e) => setLineForm({ ...lineForm, sails: e.target.value })} /></td><td><input value={lineForm.engine} onChange={(e) => setLineForm({ ...lineForm, engine: e.target.value })} /></td><td><input value={lineForm.position} onChange={(e) => setLineForm({ ...lineForm, position: e.target.value })} /></td><td><div className="coordinate-inputs"><input aria-label="Latitude" value={lineForm.latitude} onChange={(e) => setLineForm({ ...lineForm, latitude: e.target.value })} /><input aria-label="Longitude" value={lineForm.longitude} onChange={(e) => setLineForm({ ...lineForm, longitude: e.target.value })} /></div></td><td><input value={lineForm.remarks} onChange={(e) => setLineForm({ ...lineForm, remarks: e.target.value })} /></td><td><div className="table-actions"><button type="button" onClick={saveLineFromFields}>{editingLineIndex === null ? "Save line" : "Update line"}</button><button type="button" className="ghost-button" onClick={cancelLineEdit}>Cancel</button></div></td></tr> : <tr key={`${line.time}-${line.position}-${index}`}><td>{line.time}</td><td>{line.weather}</td><td>{line.barometer}</td><td>{line.seaState}</td><td>{line.wind}</td><td>{line.magneticCourse}</td>{showCourseColumns && courseConversionColumns.map((column) => <td className="optional-course-cell" key={`${line.time}-${index}-${column}`}>—</td>)}<td>{line.course}</td><td>{line.logNm} nm</td><td>{line.sails}</td><td>{line.engine}</td><td>{line.position}</td><td>{line.latitude.toFixed(3)} / {line.longitude.toFixed(3)}</td><td>{line.remarks}</td><td><button type="button" className="edit-chip" disabled={isActiveSheetLocked} onClick={() => startEditingLine(line, index)}>Edit</button></td></tr>)}</tbody></table></div></article>
-
-          <section className="sheet-support-grid logbook-section" aria-label="Sheet support sections"><article className="info-card logbook-section"><h3>Crew list</h3><ul className="stack-list crew-assignment-list">{activeSheet.crew.map((person, index) => { return <li key={`${person.id}-${index}`}><div className="crew-assignment-main"><strong>{index + 1}. {index === 0 ? "⭐ Skipper · " : ""}{person.name}</strong><span>{person.nationality} · {person.role}</span><div className="crew-assignment-fields"><span>From</span><input aria-label={`Crew ${index + 1} from datetime`} type="datetime-local" disabled={isActiveSheetLocked} value={person.embarkationDateTime} onChange={(e) => updateCrewAssignment(index, "embarkationDateTime", e.target.value)} /><input aria-label={`Crew ${index + 1} from position`} disabled={isActiveSheetLocked} value={person.embarkationPosition} onChange={(e) => updateCrewAssignment(index, "embarkationPosition", e.target.value)} /><span>To</span><input aria-label={`Crew ${index + 1} to datetime`} type="datetime-local" disabled={isActiveSheetLocked} value={person.disembarkationDateTime} onChange={(e) => updateCrewAssignment(index, "disembarkationDateTime", e.target.value)} /><input aria-label={`Crew ${index + 1} to position`} disabled={isActiveSheetLocked} value={person.disembarkationPosition} onChange={(e) => updateCrewAssignment(index, "disembarkationPosition", e.target.value)} /></div></div><div className="crew-assignment-actions"><button type="button" className="edit-chip" disabled={isActiveSheetLocked || index === 0} onClick={() => moveCrewOnActiveSheet(index, -1)}>↑</button><button type="button" className="edit-chip" disabled={isActiveSheetLocked || index === activeSheet.crew.length - 1} onClick={() => moveCrewOnActiveSheet(index, 1)}>↓</button><button type="button" className="edit-chip" aria-label={`Delete ${person.name}`} disabled={isActiveSheetLocked} onClick={() => deleteCrewFromActiveSheet(index)}>🗑️</button></div></li>; })}</ul><label>Add crew member<select disabled={isActiveSheetLocked} defaultValue="" onChange={(e) => { if (e.target.value) addCrewToActiveSheet(e.target.value); e.currentTarget.value = ""; }}><option value="">Select crew…</option>{logbook.crewMembers.filter((member) => !activeSheet.crew.some((crew) => crew.id === member.id)).map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}</select></label></article><article className="info-card logbook-section"><h3>Technical log / daily checks</h3><ul className="check-list">{[...activeSheet.watchPlan, ...activeSheet.technicalChecks].map((item) => <li key={item}>{item}</li>)}</ul></article><article className="map-card logbook-section"><div><p className="eyebrow">Map</p><h3>Positions connected from log lines</h3></div><div className="route-map" aria-label="Stylized route map preview">{activeSheet.lines.map((line, index) => <span className="map-marker" key={`${line.time}-${line.position}-${index}`} style={{ left: `${12 + index * (76 / Math.max(activeSheet.lines.length - 1, 1))}%`, top: `${62 - index * 8}%` }} title={`${line.time} · ${line.position}`}>{index + 1}</span>)}</div></article></section>
-          </>}
-        </section>}
-  </>;
+              <section
+                className="sheet-support-grid logbook-section"
+                aria-label="Sheet support sections"
+              >
+                <article className="info-card logbook-section">
+                  <h3>Crew list</h3>
+                  <ul className="stack-list crew-assignment-list">
+                    {activeSheet.crew.map((person, index) => {
+                      return (
+                        <li key={`${person.id}-${index}`}>
+                          <div className="crew-assignment-main">
+                            <strong>
+                              {index + 1}. {index === 0 ? "⭐ Skipper · " : ""}
+                              {person.name}
+                            </strong>
+                            <span>
+                              {person.nationality} · {person.role}
+                            </span>
+                            <div className="crew-assignment-fields">
+                              <span>From</span>
+                              <input
+                                aria-label={`Crew ${index + 1} from datetime`}
+                                type="datetime-local"
+                                disabled={isActiveSheetLocked}
+                                value={person.embarkationDateTime}
+                                onChange={(e) =>
+                                  updateCrewAssignment(
+                                    index,
+                                    "embarkationDateTime",
+                                    e.target.value,
+                                  )
+                                }
+                              />
+                              <input
+                                aria-label={`Crew ${index + 1} from position`}
+                                disabled={isActiveSheetLocked}
+                                value={person.embarkationPosition}
+                                onChange={(e) =>
+                                  updateCrewAssignment(
+                                    index,
+                                    "embarkationPosition",
+                                    e.target.value,
+                                  )
+                                }
+                              />
+                              <span>To</span>
+                              <input
+                                aria-label={`Crew ${index + 1} to datetime`}
+                                type="datetime-local"
+                                disabled={isActiveSheetLocked}
+                                value={person.disembarkationDateTime}
+                                onChange={(e) =>
+                                  updateCrewAssignment(
+                                    index,
+                                    "disembarkationDateTime",
+                                    e.target.value,
+                                  )
+                                }
+                              />
+                              <input
+                                aria-label={`Crew ${index + 1} to position`}
+                                disabled={isActiveSheetLocked}
+                                value={person.disembarkationPosition}
+                                onChange={(e) =>
+                                  updateCrewAssignment(
+                                    index,
+                                    "disembarkationPosition",
+                                    e.target.value,
+                                  )
+                                }
+                              />
+                            </div>
+                          </div>
+                          <div className="crew-assignment-actions">
+                            <button
+                              type="button"
+                              className="edit-chip"
+                              disabled={isActiveSheetLocked || index === 0}
+                              onClick={() => moveCrewOnActiveSheet(index, -1)}
+                            >
+                              ↑
+                            </button>
+                            <button
+                              type="button"
+                              className="edit-chip"
+                              disabled={
+                                isActiveSheetLocked ||
+                                index === activeSheet.crew.length - 1
+                              }
+                              onClick={() => moveCrewOnActiveSheet(index, 1)}
+                            >
+                              ↓
+                            </button>
+                            <button
+                              type="button"
+                              className="edit-chip"
+                              aria-label={`Delete ${person.name}`}
+                              disabled={isActiveSheetLocked}
+                              onClick={() => deleteCrewFromActiveSheet(index)}
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  <label>
+                    Add crew member
+                    <select
+                      disabled={isActiveSheetLocked}
+                      defaultValue=""
+                      onChange={(e) => {
+                        if (e.target.value)
+                          addCrewToActiveSheet(e.target.value);
+                        e.currentTarget.value = "";
+                      }}
+                    >
+                      <option value="">Select crew…</option>
+                      {logbook.crewMembers
+                        .filter(
+                          (member) =>
+                            !activeSheet.crew.some(
+                              (crew) => crew.id === member.id,
+                            ),
+                        )
+                        .map((member) => (
+                          <option key={member.id} value={member.id}>
+                            {member.name}
+                          </option>
+                        ))}
+                    </select>
+                  </label>
+                </article>
+                <article className="info-card logbook-section">
+                  <h3>Technical log / daily checks</h3>
+                  <ul className="check-list">
+                    {[
+                      ...activeSheet.watchPlan,
+                      ...activeSheet.technicalChecks,
+                    ].map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </article>
+                <article className="map-card logbook-section">
+                  <div>
+                    <p className="eyebrow">Map</p>
+                    <h3>Positions connected from log lines</h3>
+                  </div>
+                  <div
+                    className="route-map"
+                    aria-label="Stylized route map preview"
+                  >
+                    {activeSheet.lines.map((line, index) => (
+                      <span
+                        className="map-marker"
+                        key={`${line.time}-${line.position}-${index}`}
+                        style={{
+                          left: `${12 + index * (76 / Math.max(activeSheet.lines.length - 1, 1))}%`,
+                          top: `${62 - index * 8}%`,
+                        }}
+                        title={`${line.time} · ${line.position}`}
+                      >
+                        {index + 1}
+                      </span>
+                    ))}
+                  </div>
+                </article>
+              </section>
+            </>
+          )}
+        </section>
+      )}
+    </>
+  );
 }
