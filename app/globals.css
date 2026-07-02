@@ -1,4 +1,5 @@
 @import "./styles/design-refresh.css";
+@import "leaflet/dist/leaflet.css";
 
 :root {
   color-scheme: light;
@@ -188,6 +189,111 @@ dd { margin: 0; }
   color: #102033;
   font-weight: 900;
   box-shadow: 0 8px 20px rgba(16, 32, 51, 0.22);
+}
+
+.open-seamap-view {
+  width: 100%;
+  height: 22rem;
+  min-height: 22rem;
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  overflow: hidden;
+  background: #d7edf4;
+}
+
+.open-seamap-detail {
+  flex: 1;
+}
+
+.open-seamap-overview {
+  height: 30rem;
+  min-height: 30rem;
+}
+
+.open-seamap-container,
+.open-seamap-view .leaflet-container {
+  width: 100%;
+  min-height: inherit;
+  height: 100%;
+  font: inherit;
+}
+
+.open-seamap-empty {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 18rem;
+  border: 1px dashed var(--border);
+  border-radius: 1.25rem;
+  padding: 1.5rem;
+  background: #f4f8fb;
+  color: var(--muted);
+  text-align: center;
+  font-weight: 800;
+}
+
+.open-seamap-marker {
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+}
+
+.open-seamap-marker span {
+  display: grid;
+  place-items: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border: 3px solid white;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #102033;
+  font-size: 0.78rem;
+  font-weight: 900;
+  box-shadow: 0 8px 20px rgba(16, 32, 51, 0.22);
+}
+
+.open-seamap-marker-start span {
+  background: var(--success);
+  color: white;
+}
+
+.open-seamap-marker-end span {
+  background: var(--primary);
+  color: white;
+}
+
+.open-seamap-clickable-route {
+  cursor: pointer;
+}
+
+.leaflet-popup-content {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.85rem 1rem;
+}
+
+.leaflet-popup-content strong,
+.leaflet-popup-content span,
+.leaflet-popup-content small {
+  display: block;
+}
+
+.logbook-overview-map-card {
+  display: grid;
+  gap: 1rem;
+}
+
+.logbook-overview-map-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.logbook-overview-map-heading p:last-child {
+  max-width: 26rem;
+  margin: 0;
 }
 
 .table-card { min-width: 0; }

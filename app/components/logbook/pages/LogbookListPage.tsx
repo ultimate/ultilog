@@ -6,6 +6,7 @@ import type {
   SheetForm,
 } from "../../../models/logbook";
 import { defaultSheetForm, sheetToForm } from "../forms";
+import { LogSheetsMapView } from "../OpenSeaMapView";
 
 type Navigate = (
   module: "details" | "logbooks",
@@ -32,6 +33,12 @@ export function LogbookListPage({
   setSheetForm: Dispatch<SetStateAction<SheetForm>>;
   setShowNewSheet: Dispatch<SetStateAction<boolean>>;
 }) {
+  function openSheet(sheet: LogSheet) {
+    setActiveSheetId(sheet.id);
+    setSheetForm(sheetToForm(sheet));
+    navigate("details", sheet.id);
+  }
+
   return (
     <section className="logbook-page module-panel" aria-label="Log sheets">
       <div className="page-heading">
@@ -65,6 +72,20 @@ export function LogbookListPage({
           <option>All time</option>
         </select>
       </div>
+      <article className="map-card logbook-overview-map-card">
+        <div className="logbook-overview-map-heading">
+          <div>
+            <p className="eyebrow">Overview map</p>
+            <h3>All log sheets</h3>
+          </div>
+          <p>Click a route section to open the corresponding logsheet.</p>
+        </div>
+        <LogSheetsMapView
+          sheets={logbook.sheets}
+          onSheetClick={openSheet}
+          ariaLabel="Overview map of all log sheets"
+        />
+      </article>
       <article className="table-card logbook-list-card">
         <div className="table-scroll">
           <table className="logbook-table">
@@ -97,9 +118,7 @@ export function LogbookListPage({
                       <button
                         className="table-title-button"
                         onClick={() => {
-                          setActiveSheetId(sheet.id);
-                          setSheetForm(sheetToForm(sheet));
-                          navigate("details", sheet.id);
+                          openSheet(sheet);
                         }}
                         type="button"
                       >
@@ -122,9 +141,7 @@ export function LogbookListPage({
                       <button
                         className="edit-chip"
                         onClick={() => {
-                          setActiveSheetId(sheet.id);
-                          setSheetForm(sheetToForm(sheet));
-                          navigate("details", sheet.id);
+                          openSheet(sheet);
                         }}
                         type="button"
                       >
