@@ -12,9 +12,9 @@ const boatWithDeviation = {
 } as Pick<Boat, "deviationTable">;
 
 describe("log line editor business logic", () => {
-  it("normalizes coordinate edits before returning the updated form", () => {
-    expect(updateLogLineFormForInput(defaultLineForm, { field: "latitude", value: "91" })).toMatchObject({ latitude: "90" });
-    const updated = updateLogLineFormForInput(defaultLineForm, { field: "longitude", value: "180.1" });
+  it("normalizes coordinate edits before returning the updated form", async () => {
+    await expect(Promise.resolve(updateLogLineFormForInput(defaultLineForm, { field: "latitude", value: "91" }))).resolves.toMatchObject({ latitude: "90" });
+    const updated = await Promise.resolve(updateLogLineFormForInput(defaultLineForm, { field: "longitude", value: "180.1" }));
     expect(Number(updated.longitude)).toBeCloseTo(-179.9, 6);
   });
 
