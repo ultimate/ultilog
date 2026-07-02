@@ -16,37 +16,37 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   await page.goto("/login");
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);
-  await page.getByRole("button", { name: "Log in" }).click();
+  await clickButton(page, "Log in");
   await expect(page.getByRole("button", { name: "Logout" })).toBeVisible();
 
   await openModule(page, "Crew manager", "New crew");
-  await page.getByRole("button", { name: "New crew" }).click();
+  await clickButton(page, "New crew");
   const crewForm = page.locator("form").filter({ hasText: "New crew" });
   await crewForm.getByLabel("Name").fill(crewName);
   await crewForm.getByLabel("Nationality").fill("Swiss");
   await crewForm.getByLabel("Role").fill("Navigator");
-  await page.getByRole("button", { name: "Save crew" }).click();
+  await clickButton(page, "Save crew");
   await expect(page.getByText(crewName)).toBeVisible();
 
   await openModule(page, "Boat manager", "New boat");
-  await page.getByRole("button", { name: "New boat" }).click();
+  await clickButton(page, "New boat");
   const boatForm = page.locator("form").filter({ hasText: "New boat" });
   await boatForm.getByLabel("Name").fill(boatName);
   await boatForm.getByLabel("Registration").fill(`REG-${unique}`);
   await boatForm.getByLabel("Flag state").fill("CH");
   await boatForm.getByLabel("Home port").fill("Basel");
   await boatForm.getByLabel("Owner").fill("E2E Owner");
-  await page.getByRole("button", { name: "Create boat" }).click();
+  await clickButton(page, "Create boat");
   await expect(page.getByText(boatName)).toBeVisible();
 
   await openModule(page, "Logbook list", "+ New sheet");
-  await page.getByRole("button", { name: "+ New sheet" }).click();
+  await clickButton(page, "+ New sheet");
   const sheetForm = page.locator("form").filter({ hasText: "New sheet" });
   await sheetForm.getByLabel("Title").fill(sheetTitle);
   await sheetForm.getByLabel("Boat").selectOption({ label: boatName });
   await sheetForm.getByLabel("From position").fill("Port A");
   await sheetForm.getByLabel("To position").fill("Port B");
-  await page.getByRole("button", { name: "Save" }).click();
+  await clickButton(page, "Save");
   await expect(page.getByRole("heading", { name: sheetTitle })).toBeVisible();
   await expect(page.getByText(`1. ⭐ Skipper · E2E Skipper ${unique}`)).toBeVisible();
 
@@ -62,11 +62,11 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   await expect(page.getByRole("button", { name: "Logout" })).toBeVisible();
   await assertCreatedItemsVisible(page, { crewName, boatName, sheetTitle });
 
-  await page.getByRole("button", { name: "Logout" }).click();
+  await clickButton(page, "Logout");
   await expect(page).toHaveURL(/\/login$/);
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);
-  await page.getByRole("button", { name: "Log in" }).click();
+  await clickButton(page, "Log in");
   await expect(page.getByRole("button", { name: "Logout" })).toBeVisible();
   await assertCreatedItemsVisible(page, { crewName, boatName, sheetTitle });
 });
@@ -88,5 +88,14 @@ async function openModule(page: Page, moduleName: string, expectedActionName: st
   await expect(async () => {
     await page.getByRole("button", { name: moduleName }).click();
     await expect(page.getByRole("button", { name: expectedActionName })).toBeVisible({ timeout: 2_000 });
+  }).toPass({ timeout: 15_000 });
+}
+
+async function clickButton(page: Page, name: string | RegExp) {
+  await expect(async () => {
+    const button = page.getByRole("button", { name });
+    await expect(button).toBeVisible({ timeout: 2_000 });
+    await expect(button).toBeEnabled({ timeout: 2_000 });
+    await button.click();
   }).toPass({ timeout: 15_000 });
 }
