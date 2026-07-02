@@ -57,7 +57,7 @@ describe("LogSheetsRepository", () => {
     const boatRow: BoatRow = { ...boat, flag_state: boat.flagState, home_port: boat.homePort, yacht_data: JSON.stringify(boat.yachtData), deviation_table: JSON.stringify(boat.deviationTable) };
     const sheetRow = logSheetRow();
     const crewRow: CrewMemberRow = { sheet_id: sheet.id, crew_member_id: "luca-frei-swiss", sort_order: 0, ...crew, embarkation_datetime: crew.embarkationDateTime, embarkation_position: crew.embarkationPosition, disembarkation_datetime: crew.disembarkationDateTime, disembarkation_position: crew.disembarkationPosition };
-    const lineRow: LogLineRow = { ...line, sheet_id: sheet.id, sort_order: 0, log_nm: line.logNm, magnetic_course: line.magneticCourse, sea_state: line.seaState };
+    const lineRow: LogLineRow = logLineRow();
 
     expect(LogSheetsRepository.toLogbook([boatRow], [sheetRow], [crewRow], [lineRow])).toEqual({
       boats: [boat],
@@ -82,4 +82,9 @@ function logSheetRow(): LogSheetRow {
     watch_plan: JSON.stringify(sheet.watchPlan),
     technical_checks: JSON.stringify(sheet.technicalChecks),
   };
+}
+
+function logLineRow(): LogLineRow {
+  const { position, logNm, windDirection, windStrength, windUnit, seaState, seaUnit, tideUnit, magneticCourse, magneticCourseCorrected, trueCourse, driftAngle, courseThroughWater, currentDrift, courseOverGround, speedKn, sailSm, sailNote, motorSm, motorHours, motorNote, ...rest } = line;
+  return { ...rest, sheet_id: sheet.id, sort_order: 0, position_name: position, log_nm: logNm, wind_direction: windDirection, wind_strength: windStrength, wind_unit: windUnit, sea_state: seaState, sea_unit: seaUnit, tide_unit: tideUnit, magnetic_course: magneticCourse, magnetic_course_corrected: magneticCourseCorrected, true_course: trueCourse, drift_angle: driftAngle, course_through_water: courseThroughWater, current_drift: currentDrift, course_over_ground: courseOverGround, speed_kn: speedKn, sail_sm: sailSm, sail_note: sailNote, motor_sm: motorSm, motor_hours: motorHours, motor_note: motorNote };
 }

@@ -11,10 +11,6 @@ export type BoatForm = Pick<Boat, "name" | "registration" | "flagState" | "homeP
   deviationTable: Boat["deviationTable"];
 };
 
-export type LineForm = Omit<Record<keyof LogLine, string>, "logNm" | "latitude" | "longitude"> & {
-  latitude: string;
-  longitude: string;
-  logNm: string;
-};
+export type LineForm = Record<keyof LogLine, string>;
 
 export type CrewForm = CrewMember;

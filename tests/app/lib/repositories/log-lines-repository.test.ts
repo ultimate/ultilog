@@ -27,7 +27,7 @@ const line = sheet.lines[0];
 
 describe("LogLinesRepository", () => {
   it("finds all log line rows", async () => {
-    const row: LogLineRow = { ...line, sheet_id: sheet.id, sort_order: 0, log_nm: line.logNm, magnetic_course: line.magneticCourse, sea_state: line.seaState };
+    const row: LogLineRow = logLineRow();
     const db = new MockDatabase({ log_lines: [row] });
 
     await expect(new LogLinesRepository(db).findAll()).resolves.toEqual([row]);
@@ -49,6 +49,11 @@ describe("LogLinesRepository", () => {
     await new LogLinesRepository(db).insert(sheet.id, 0, line);
 
     expect(db.calls[0].sql).toContain("insert into log_lines");
-    expect(db.calls[0].values).toEqual([`legacy-user:${sheet.id}`, 0, line.time, line.position, line.latitude, line.longitude, line.logNm, line.course, line.magneticCourse, line.seaState, line.barometer, line.wind, line.weather, line.sails, line.engine, line.remarks]);
+    expect(db.calls[0].values).toEqual([`legacy-user:${sheet.id}`, 0, line.time, line.position, line.latitude, line.longitude, line.logNm, String(line.courseOverGround), String(line.magneticCourse), String(line.seaState), line.barometer, `${line.windDirection} ${line.windStrength}`.trim(), line.weather, line.sailNote, line.motorNote, line.windDirection, line.windStrength, line.windUnit, line.seaUnit, line.tide, line.tideUnit, line.moon, line.deviation, line.magneticCourseCorrected, line.variation, line.trueCourse, line.driftAngle, line.courseThroughWater, line.currentDrift, line.courseOverGround, line.speedKn, line.sailSm, line.sailNote, line.motorSm, line.motorHours, line.motorNote, line.remarks]);
   });
 });
+
+function logLineRow(): LogLineRow {
+  const { position, logNm, windDirection, windStrength, windUnit, seaState, seaUnit, tideUnit, magneticCourse, magneticCourseCorrected, trueCourse, driftAngle, courseThroughWater, currentDrift, courseOverGround, speedKn, sailSm, sailNote, motorSm, motorHours, motorNote, ...rest } = line;
+  return { ...rest, sheet_id: sheet.id, sort_order: 0, position_name: position, log_nm: logNm, wind_direction: windDirection, wind_strength: windStrength, wind_unit: windUnit, sea_state: seaState, sea_unit: seaUnit, tide_unit: tideUnit, magnetic_course: magneticCourse, magnetic_course_corrected: magneticCourseCorrected, true_course: trueCourse, drift_angle: driftAngle, course_through_water: courseThroughWater, current_drift: currentDrift, course_over_ground: courseOverGround, speed_kn: speedKn, sail_sm: sailSm, sail_note: sailNote, motor_sm: motorSm, motor_hours: motorHours, motor_note: motorNote };
+}

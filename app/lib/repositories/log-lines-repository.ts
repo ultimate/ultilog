@@ -6,7 +6,7 @@ export class LogLinesRepository {
   constructor(private db: QueryableDatabase) {}
 
   async findAll(ownerId = "legacy-user") {
-    return (await this.db.query<LogLineRow>(`select log_lines.sheet_id, log_lines.sort_order, log_lines.time, log_lines.position_name as position, log_lines.latitude, log_lines.longitude, log_lines.log_nm, log_lines.course, log_lines.magnetic_course, log_lines.sea_state, log_lines.barometer, log_lines.wind, log_lines.weather, log_lines.sails, log_lines.engine, log_lines.remarks from log_lines join log_sheets on log_sheets.id = log_lines.sheet_id where log_sheets.owner_id = ${this.db.placeholder(1)} order by log_lines.sheet_id, sort_order`, [ownerId])).rows;
+    return (await this.db.query<LogLineRow>(`select log_lines.* from log_lines join log_sheets on log_sheets.id = log_lines.sheet_id where log_sheets.owner_id = ${this.db.placeholder(1)} order by log_lines.sheet_id, time, sort_order`, [ownerId])).rows;
   }
 
   async deleteAll(ownerId = "legacy-user") {
@@ -14,9 +14,10 @@ export class LogLinesRepository {
   }
 
   async insert(sheetId: string, sortOrder: number, line: LogLine, ownerId = "legacy-user") {
+    const columns = ["sheet_id", "sort_order", "time", "position_name", "latitude", "longitude", "log_nm", "course", "magnetic_course", "sea_state", "barometer", "wind", "weather", "sails", "engine", "wind_direction", "wind_strength", "wind_unit", "sea_unit", "tide", "tide_unit", "moon", "deviation", "magnetic_course_corrected", "variation", "true_course", "drift_angle", "course_through_water", "current_drift", "course_over_ground", "speed_kn", "sail_sm", "sail_note", "motor_sm", "motor_hours", "motor_note", "remarks"];
     await this.db.query(
-      `insert into log_lines (sheet_id, sort_order, time, position_name, latitude, longitude, log_nm, course, magnetic_course, sea_state, barometer, wind, weather, sails, engine, remarks) values (${this.values(16)})`,
-      [scopedId(ownerId, sheetId), sortOrder, line.time, line.position, line.latitude, line.longitude, line.logNm, line.course, line.magneticCourse, line.seaState, line.barometer, line.wind, line.weather, line.sails, line.engine, line.remarks],
+      `insert into log_lines (${columns.join(", ")}) values (${this.values(columns.length)})`,
+      [scopedId(ownerId, sheetId), sortOrder, line.time, line.position, line.latitude, line.longitude, line.logNm, String(line.courseOverGround), String(line.magneticCourse), String(line.seaState), line.barometer, `${line.windDirection} ${line.windStrength}`.trim(), line.weather, line.sailNote, line.motorNote, line.windDirection, line.windStrength, line.windUnit, line.seaUnit, line.tide, line.tideUnit, line.moon, line.deviation, line.magneticCourseCorrected, line.variation, line.trueCourse, line.driftAngle, line.courseThroughWater, line.currentDrift, line.courseOverGround, line.speedKn, line.sailSm, line.sailNote, line.motorSm, line.motorHours, line.motorNote, line.remarks],
     );
   }
 

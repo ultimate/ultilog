@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import type {
   Boat,
   LineForm,
@@ -6,6 +6,7 @@ import type {
   PersistedLogbook,
 } from "../../../models/logbook";
 import { courseConversionColumns } from "../../../domain/nautical/course-conversion";
+import { coordinateToInput, type CoordinateFormat } from "../../../domain/nautical/coordinates";
 import { boatToForm, sheetToForm } from "../forms";
 import { dateTimeLocalFromParts, splitDateTimeLocal } from "../date-utils";
 
@@ -33,11 +34,13 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     activeSheetSummary,
     showCourseColumns,
     startAddingLine,
+    startAddingLineHereNow,
     showAddLine,
     saveLineFromFields,
     editingLineIndex,
     cancelLineEdit,
     startEditingLine,
+    deleteLine,
     updateCrewAssignment,
     moveCrewOnActiveSheet,
     deleteCrewFromActiveSheet,
@@ -51,6 +54,31 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const setShowCourseColumns = props.setShowCourseColumns as Dispatch<
     SetStateAction<boolean>
   >;
+  const [coordinateFormat, setCoordinateFormat] = useState<CoordinateFormat>("decimal");
+
+  const renderNumberInput = (field: keyof LineForm, options?: { min?: number; max?: number; step?: string }) => (
+    <input type="number" min={options?.min} max={options?.max} step={options?.step ?? "1"} value={lineForm[field]} onChange={(e) => setLineForm({ ...lineForm, [field]: e.target.value })} />
+  );
+  const renderTextInput = (field: keyof LineForm, label?: string) => (
+    <input aria-label={label} value={lineForm[field]} onChange={(e) => setLineForm({ ...lineForm, [field]: e.target.value })} />
+  );
+  const renderLineEditor = (key: string) => (
+    <tr key={key} className="inline-line-row">
+      <td>{renderTextInput("time")}</td><td>{renderTextInput("latitude", "Latitude")}</td><td>{renderTextInput("longitude", "Longitude")}</td>
+      <td><select value={lineForm.weather} onChange={(e) => setLineForm({ ...lineForm, weather: e.target.value })}><option value="">—</option>{weatherEmojis.map((emoji) => <option key={emoji} value={emoji}>{emoji}</option>)}</select></td>
+      <td>{renderNumberInput("barometer", { min: 800, max: 1200 })}</td>
+      <td><div className="compound-inputs">{renderTextInput("windDirection", "Wind direction")}{renderNumberInput("windStrength")}<select value={lineForm.windUnit} onChange={(e) => setLineForm({ ...lineForm, windUnit: e.target.value })}><option value="bft">bft</option><option value="kn">kn</option></select></div></td>
+      <td><div className="compound-inputs">{renderNumberInput("seaState", { step: "0.1" })}<select value={lineForm.seaUnit} onChange={(e) => setLineForm({ ...lineForm, seaUnit: e.target.value })}><option value="m">m</option><option value="ft">ft</option></select></div></td>
+      <td><div className="compound-inputs">{renderNumberInput("tide", { step: "0.1" })}<select value={lineForm.tideUnit} onChange={(e) => setLineForm({ ...lineForm, tideUnit: e.target.value })}><option value="m">m</option><option value="ft">ft</option></select></div></td>
+      <td><select value={lineForm.moon} onChange={(e) => setLineForm({ ...lineForm, moon: e.target.value })}><option value="">—</option>{moonEmojis.map((emoji) => <option key={emoji} value={emoji}>{emoji}</option>)}</select></td>
+      <td>{renderNumberInput("magneticCourse", { min: 0, max: 359 })}</td>
+      {showCourseColumns && courseFieldNames.map((field) => <td className="optional-course-cell" key={field}>{renderNumberInput(field, courseSignedFields.has(field) ? { min: -180, max: 180 } : { min: 0, max: 359 })}</td>)}
+      <td>{renderNumberInput("courseOverGround", { min: 0, max: 359 })}</td><td>{renderNumberInput("speedKn", { step: "0.1" })}</td><td>{renderNumberInput("logNm", { step: "0.1" })}</td>
+      <td><div className="compound-inputs">{renderNumberInput("sailSm", { step: "0.1" })}{renderTextInput("sailNote", "Sail note")}</div></td>
+      <td><div className="compound-inputs">{renderNumberInput("motorSm", { step: "0.1" })}{renderNumberInput("motorHours", { step: "0.1" })}{renderTextInput("motorNote", "Motor note")}</div></td>
+      <td>{renderTextInput("remarks")}</td><td colSpan={2}><div className="table-actions"><button type="button" onClick={saveLineFromFields}>{editingLineIndex === null ? "Save line" : "Update line"}</button><button type="button" className="ghost-button" onClick={cancelLineEdit}>Cancel</button></div></td>
+    </tr>
+  );
 
   return (
     <>
@@ -341,471 +369,37 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
 
               <article className="table-card">
                 <div className="table-header">
-                  <div>
-                    <h3>Meteorological and nautical log</h3>
-                  </div>
+                  <div><h3>Meteorological and nautical log</h3></div>
                   <div className="table-actions">
-                    <button
-                      type="button"
-                      onClick={() => setShowCourseColumns((show) => !show)}
-                    >
-                      {showCourseColumns ? "Hide" : "Show"} course conversion
-                      columns
-                    </button>
-                    <button
-                      type="button"
-                      disabled={isActiveSheetLocked}
-                      onClick={startAddingLine}
-                    >
-                      + Add line
-                    </button>
+                    <button type="button" onClick={() => setCoordinateFormat((format) => format === "decimal" ? "dms" : "decimal")}>Coordinates: {coordinateFormat === "decimal" ? "Decimal" : "DMS"}</button>
+                    <button type="button" onClick={() => setShowCourseColumns((show) => !show)}>{showCourseColumns ? "Hide" : "Show"} course conversion columns</button>
+                    <button type="button" disabled={isActiveSheetLocked} onClick={startAddingLine}>+ Add line</button>
+                    <button type="button" disabled={isActiveSheetLocked} onClick={startAddingLineHereNow}>+ Add line here & now</button>
                   </div>
                 </div>
                 <div className="table-scroll">
-                  <table
-                    className={
-                      showCourseColumns ? "with-course-columns" : undefined
-                    }
-                  >
+                  <table className={showCourseColumns ? "with-course-columns" : undefined}>
                     <thead>
+                      <tr className="column-groups">
+                        <th colSpan={3}>Time &amp; Pos</th><th colSpan={6}>Weather &amp; Sea</th><th colSpan={showCourseColumns ? 9 : 2}>Course</th><th colSpan={4}>Travel</th><th>Remarks</th><th colSpan={2}>Actions</th>
+                      </tr>
                       <tr>
-                        <th>Time</th>
-                        <th>Weather</th>
-                        <th>Baro</th>
-                        <th>Sea</th>
-                        <th>Wind</th>
-                        <th>MgK / CC</th>
-                        {showCourseColumns &&
-                          courseConversionColumns.map((column) => (
-                            <th key={column}>{column}</th>
-                          ))}
-                        <th>KüG / COG</th>
-                        <th>Log</th>
-                        <th>Sail</th>
-                        <th>Motor</th>
-                        <th>Position</th>
-                        <th>Lat / Lon</th>
-                        <th>Remarks</th>
-                        <th>Actions</th>
+                        <th>Time</th><th>Lat</th><th>Lon</th><th>Weather</th><th>Baro</th><th>Wind</th><th>Sea</th><th>Tide</th><th>Moon</th><th>MgK / CC</th>
+                        {showCourseColumns && courseConversionColumns.map((column) => <th key={column}>{column}</th>)}
+                        <th>KüG / COG</th><th>Speed [kn]</th><th>Log [sm]</th><th>Sail</th><th>Motor</th><th>Remarks, Maneuver, Event</th><th>Edit</th><th>Delete</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {showAddLine && (
-                        <tr className="inline-line-row">
-                          <td>
-                            <input
-                              value={lineForm.time}
-                              onChange={(e) =>
-                                setLineForm({
-                                  ...lineForm,
-                                  time: e.target.value,
-                                })
-                              }
-                            />
-                          </td>
-                          <td>
-                            <input
-                              value={lineForm.weather}
-                              onChange={(e) =>
-                                setLineForm({
-                                  ...lineForm,
-                                  weather: e.target.value,
-                                })
-                              }
-                            />
-                          </td>
-                          <td>
-                            <input
-                              value={lineForm.barometer}
-                              onChange={(e) =>
-                                setLineForm({
-                                  ...lineForm,
-                                  barometer: e.target.value,
-                                })
-                              }
-                            />
-                          </td>
-                          <td>
-                            <input
-                              value={lineForm.seaState}
-                              onChange={(e) =>
-                                setLineForm({
-                                  ...lineForm,
-                                  seaState: e.target.value,
-                                })
-                              }
-                            />
-                          </td>
-                          <td>
-                            <input
-                              value={lineForm.wind}
-                              onChange={(e) =>
-                                setLineForm({
-                                  ...lineForm,
-                                  wind: e.target.value,
-                                })
-                              }
-                            />
-                          </td>
-                          <td>
-                            <input
-                              value={lineForm.magneticCourse}
-                              onChange={(e) =>
-                                setLineForm({
-                                  ...lineForm,
-                                  magneticCourse: e.target.value,
-                                })
-                              }
-                            />
-                          </td>
-                          {showCourseColumns &&
-                            courseConversionColumns.map((column) => (
-                              <td
-                                className="optional-course-cell"
-                                key={`new-${column}`}
-                              >
-                                —
-                              </td>
-                            ))}
-                          <td>
-                            <input
-                              value={lineForm.course}
-                              onChange={(e) =>
-                                setLineForm({
-                                  ...lineForm,
-                                  course: e.target.value,
-                                })
-                              }
-                            />
-                          </td>
-                          <td>
-                            <input
-                              value={lineForm.logNm}
-                              onChange={(e) =>
-                                setLineForm({
-                                  ...lineForm,
-                                  logNm: e.target.value,
-                                })
-                              }
-                            />
-                          </td>
-                          <td>
-                            <input
-                              value={lineForm.sails}
-                              onChange={(e) =>
-                                setLineForm({
-                                  ...lineForm,
-                                  sails: e.target.value,
-                                })
-                              }
-                            />
-                          </td>
-                          <td>
-                            <input
-                              value={lineForm.engine}
-                              onChange={(e) =>
-                                setLineForm({
-                                  ...lineForm,
-                                  engine: e.target.value,
-                                })
-                              }
-                            />
-                          </td>
-                          <td>
-                            <input
-                              value={lineForm.position}
-                              onChange={(e) =>
-                                setLineForm({
-                                  ...lineForm,
-                                  position: e.target.value,
-                                })
-                              }
-                            />
-                          </td>
-                          <td>
-                            <div className="coordinate-inputs">
-                              <input
-                                aria-label="Latitude"
-                                value={lineForm.latitude}
-                                onChange={(e) =>
-                                  setLineForm({
-                                    ...lineForm,
-                                    latitude: e.target.value,
-                                  })
-                                }
-                              />
-                              <input
-                                aria-label="Longitude"
-                                value={lineForm.longitude}
-                                onChange={(e) =>
-                                  setLineForm({
-                                    ...lineForm,
-                                    longitude: e.target.value,
-                                  })
-                                }
-                              />
-                            </div>
-                          </td>
-                          <td>
-                            <input
-                              value={lineForm.remarks}
-                              onChange={(e) =>
-                                setLineForm({
-                                  ...lineForm,
-                                  remarks: e.target.value,
-                                })
-                              }
-                            />
-                          </td>
-                          <td>
-                            <div className="table-actions">
-                              <button
-                                type="button"
-                                onClick={saveLineFromFields}
-                              >
-                                {editingLineIndex === null
-                                  ? "Save line"
-                                  : "Update line"}
-                              </button>
-                              <button
-                                type="button"
-                                className="ghost-button"
-                                onClick={cancelLineEdit}
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          </td>
+                      {showAddLine && renderLineEditor("new")}
+                      {activeSheet.lines.map((line, index) => editingLineIndex === index ? renderLineEditor(`edit-${index}`) : (
+                        <tr key={`${line.time}-${line.position}-${index}`}>
+                          <td>{line.time}</td><td>{coordinateToInput(line.latitude, "lat", coordinateFormat)}</td><td>{coordinateToInput(line.longitude, "lon", coordinateFormat)}</td><td>{line.weather}</td><td>{line.barometer}</td><td>{line.windDirection} {line.windStrength} {line.windUnit}</td><td>{line.seaState} {line.seaUnit}</td><td>{line.tide} {line.tideUnit}</td><td>{line.moon}</td><td>{line.magneticCourse}</td>
+                          {showCourseColumns && [line.deviation, line.magneticCourseCorrected, line.variation, line.trueCourse, line.driftAngle, line.courseThroughWater, line.currentDrift].map((value, courseIndex) => <td className="optional-course-cell" key={`${line.time}-${index}-${courseIndex}`}>{value}</td>)}
+                          <td>{line.courseOverGround}</td><td>{line.speedKn}</td><td>{line.logNm}</td><td>{line.sailSm} sm {line.sailNote}</td><td>{line.motorSm} sm · {line.motorHours} h {line.motorNote}</td><td>{line.remarks}</td>
+                          <td><button type="button" className="edit-chip" disabled={isActiveSheetLocked} onClick={() => startEditingLine(line, index)}>✏️</button></td>
+                          <td><button type="button" className="edit-chip" disabled={isActiveSheetLocked} onClick={() => deleteLine(index)}>🗑️</button></td>
                         </tr>
-                      )}
-                      {activeSheet.lines.map((line, index) =>
-                        editingLineIndex === index ? (
-                          <tr key={`edit-${index}`} className="inline-line-row">
-                            <td>
-                              <input
-                                value={lineForm.time}
-                                onChange={(e) =>
-                                  setLineForm({
-                                    ...lineForm,
-                                    time: e.target.value,
-                                  })
-                                }
-                              />
-                            </td>
-                            <td>
-                              <input
-                                value={lineForm.weather}
-                                onChange={(e) =>
-                                  setLineForm({
-                                    ...lineForm,
-                                    weather: e.target.value,
-                                  })
-                                }
-                              />
-                            </td>
-                            <td>
-                              <input
-                                value={lineForm.barometer}
-                                onChange={(e) =>
-                                  setLineForm({
-                                    ...lineForm,
-                                    barometer: e.target.value,
-                                  })
-                                }
-                              />
-                            </td>
-                            <td>
-                              <input
-                                value={lineForm.seaState}
-                                onChange={(e) =>
-                                  setLineForm({
-                                    ...lineForm,
-                                    seaState: e.target.value,
-                                  })
-                                }
-                              />
-                            </td>
-                            <td>
-                              <input
-                                value={lineForm.wind}
-                                onChange={(e) =>
-                                  setLineForm({
-                                    ...lineForm,
-                                    wind: e.target.value,
-                                  })
-                                }
-                              />
-                            </td>
-                            <td>
-                              <input
-                                value={lineForm.magneticCourse}
-                                onChange={(e) =>
-                                  setLineForm({
-                                    ...lineForm,
-                                    magneticCourse: e.target.value,
-                                  })
-                                }
-                              />
-                            </td>
-                            {showCourseColumns &&
-                              courseConversionColumns.map((column) => (
-                                <td
-                                  className="optional-course-cell"
-                                  key={`new-${column}`}
-                                >
-                                  —
-                                </td>
-                              ))}
-                            <td>
-                              <input
-                                value={lineForm.course}
-                                onChange={(e) =>
-                                  setLineForm({
-                                    ...lineForm,
-                                    course: e.target.value,
-                                  })
-                                }
-                              />
-                            </td>
-                            <td>
-                              <input
-                                value={lineForm.logNm}
-                                onChange={(e) =>
-                                  setLineForm({
-                                    ...lineForm,
-                                    logNm: e.target.value,
-                                  })
-                                }
-                              />
-                            </td>
-                            <td>
-                              <input
-                                value={lineForm.sails}
-                                onChange={(e) =>
-                                  setLineForm({
-                                    ...lineForm,
-                                    sails: e.target.value,
-                                  })
-                                }
-                              />
-                            </td>
-                            <td>
-                              <input
-                                value={lineForm.engine}
-                                onChange={(e) =>
-                                  setLineForm({
-                                    ...lineForm,
-                                    engine: e.target.value,
-                                  })
-                                }
-                              />
-                            </td>
-                            <td>
-                              <input
-                                value={lineForm.position}
-                                onChange={(e) =>
-                                  setLineForm({
-                                    ...lineForm,
-                                    position: e.target.value,
-                                  })
-                                }
-                              />
-                            </td>
-                            <td>
-                              <div className="coordinate-inputs">
-                                <input
-                                  aria-label="Latitude"
-                                  value={lineForm.latitude}
-                                  onChange={(e) =>
-                                    setLineForm({
-                                      ...lineForm,
-                                      latitude: e.target.value,
-                                    })
-                                  }
-                                />
-                                <input
-                                  aria-label="Longitude"
-                                  value={lineForm.longitude}
-                                  onChange={(e) =>
-                                    setLineForm({
-                                      ...lineForm,
-                                      longitude: e.target.value,
-                                    })
-                                  }
-                                />
-                              </div>
-                            </td>
-                            <td>
-                              <input
-                                value={lineForm.remarks}
-                                onChange={(e) =>
-                                  setLineForm({
-                                    ...lineForm,
-                                    remarks: e.target.value,
-                                  })
-                                }
-                              />
-                            </td>
-                            <td>
-                              <div className="table-actions">
-                                <button
-                                  type="button"
-                                  onClick={saveLineFromFields}
-                                >
-                                  {editingLineIndex === null
-                                    ? "Save line"
-                                    : "Update line"}
-                                </button>
-                                <button
-                                  type="button"
-                                  className="ghost-button"
-                                  onClick={cancelLineEdit}
-                                >
-                                  Cancel
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ) : (
-                          <tr key={`${line.time}-${line.position}-${index}`}>
-                            <td>{line.time}</td>
-                            <td>{line.weather}</td>
-                            <td>{line.barometer}</td>
-                            <td>{line.seaState}</td>
-                            <td>{line.wind}</td>
-                            <td>{line.magneticCourse}</td>
-                            {showCourseColumns &&
-                              courseConversionColumns.map((column) => (
-                                <td
-                                  className="optional-course-cell"
-                                  key={`${line.time}-${index}-${column}`}
-                                >
-                                  —
-                                </td>
-                              ))}
-                            <td>{line.course}</td>
-                            <td>{line.logNm} nm</td>
-                            <td>{line.sails}</td>
-                            <td>{line.engine}</td>
-                            <td>{line.position}</td>
-                            <td>
-                              {line.latitude.toFixed(3)} /{" "}
-                              {line.longitude.toFixed(3)}
-                            </td>
-                            <td>{line.remarks}</td>
-                            <td>
-                              <button
-                                type="button"
-                                className="edit-chip"
-                                disabled={isActiveSheetLocked}
-                                onClick={() => startEditingLine(line, index)}
-                              >
-                                Edit
-                              </button>
-                            </td>
-                          </tr>
-                        ),
-                      )}
+                      ))}
                     </tbody>
                   </table>
                 </div>
@@ -988,3 +582,8 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     </>
   );
 }
+
+const weatherEmojis = ["☁️", "⛅", "⛈️", "🌤️", "🌥️", "🌦️", "🌧️", "🌨️", "🌩️", "🌪️", "🌫️", "☀️", "❄️", "⭐"];
+const moonEmojis = ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌘"];
+const courseFieldNames = ["deviation", "magneticCourseCorrected", "variation", "trueCourse", "driftAngle", "courseThroughWater", "currentDrift"] as const;
+const courseSignedFields = new Set<keyof LineForm>(["deviation", "variation", "driftAngle", "currentDrift"]);

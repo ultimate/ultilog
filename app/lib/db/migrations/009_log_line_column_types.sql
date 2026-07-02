@@ -1,0 +1,27 @@
+alter table log_lines add column wind_direction text not null default '';
+alter table log_lines add column wind_strength real not null default 0;
+alter table log_lines add column wind_unit text not null default 'bft';
+alter table log_lines add column sea_unit text not null default 'm';
+alter table log_lines add column tide real not null default 0;
+alter table log_lines add column tide_unit text not null default 'm';
+alter table log_lines add column moon text not null default '';
+alter table log_lines add column deviation integer not null default 0;
+alter table log_lines add column magnetic_course_corrected integer not null default 0;
+alter table log_lines add column variation integer not null default 0;
+alter table log_lines add column true_course integer not null default 0;
+alter table log_lines add column drift_angle integer not null default 0;
+alter table log_lines add column course_through_water integer not null default 0;
+alter table log_lines add column current_drift integer not null default 0;
+alter table log_lines add column course_over_ground integer not null default 0;
+alter table log_lines add column speed_kn real not null default 0;
+alter table log_lines add column sail_sm real not null default 0;
+alter table log_lines add column sail_note text not null default '';
+alter table log_lines add column motor_sm real not null default 0;
+alter table log_lines add column motor_hours real not null default 0;
+alter table log_lines add column motor_note text not null default '';
+
+update log_lines set wind_direction = coalesce(nullif(substr(wind, 1, instr(wind || ' ', ' ') - 1), ''), wind) where wind_direction = '';
+update log_lines set wind_strength = cast(coalesce(nullif(substr(wind, instr(wind || ' ', ' ') + 1), ''), '0') as real) where wind_strength = 0;
+update log_lines set sail_note = sails where sail_note = '';
+update log_lines set motor_note = engine where motor_note = '';
+update log_lines set course_over_ground = cast(replace(course, '°', '') as integer) where course_over_ground = 0;
