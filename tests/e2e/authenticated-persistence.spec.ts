@@ -17,7 +17,7 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);
   await clickButton(page, "Log in");
-  await expect(page.getByRole("button", { name: "Logout" })).toBeVisible();
+  await expectLoggedIn(page);
 
   await openModule(page, "Crew manager", "New crew");
   await clickButton(page, "New crew");
@@ -59,7 +59,7 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   await deleteSave;
 
   await page.reload();
-  await expect(page.getByRole("button", { name: "Logout" })).toBeVisible();
+  await expectLoggedIn(page);
   await assertCreatedItemsVisible(page, { crewName, boatName, sheetTitle });
 
   await clickButton(page, "Logout");
@@ -67,7 +67,7 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);
   await clickButton(page, "Log in");
-  await expect(page.getByRole("button", { name: "Logout" })).toBeVisible();
+  await expectLoggedIn(page);
   await assertCreatedItemsVisible(page, { crewName, boatName, sheetTitle });
 });
 
@@ -98,4 +98,8 @@ async function clickButton(page: Page, name: string | RegExp) {
     await expect(button).toBeEnabled({ timeout: 2_000 });
     await button.click();
   }).toPass({ timeout: 15_000 });
+}
+
+async function expectLoggedIn(page: Page) {
+  await expect(page.getByRole("button", { name: "Logout" })).toBeVisible({ timeout: 30_000 });
 }

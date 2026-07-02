@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decimalToDmsParts, dmsPartsToDecimal, parseCoordinate } from "../../../../app/domain/nautical/coordinates";
+import { coordinateToInput, decimalToDmsParts, dmsPartsToDecimal, normalizeCoordinate, parseCoordinate } from "../../../../app/domain/nautical/coordinates";
 
 describe("coordinate helpers", () => {
   it("round-trips DMS input parts through decimal storage", () => {
@@ -16,7 +16,19 @@ describe("coordinate helpers", () => {
 
   it("normalizes minute and second rollover through decimal storage", () => {
     expect(decimalToDmsParts(dmsPartsToDecimal({ degrees: "38", minutes: "59", seconds: "60" }))).toEqual({ degrees: "39", minutes: "0", seconds: "0.00" });
+    expect(decimalToDmsParts(dmsPartsToDecimal({ degrees: "38", minutes: "59", seconds: "59.999" }))).toEqual({ degrees: "39", minutes: "0", seconds: "0.00" });
     expect(decimalToDmsParts(dmsPartsToDecimal({ degrees: "38", minutes: "60", seconds: "0" }))).toEqual({ degrees: "39", minutes: "0", seconds: "0.00" });
     expect(decimalToDmsParts(dmsPartsToDecimal({ degrees: "38", minutes: "0", seconds: "-1" }))).toEqual({ degrees: "37", minutes: "59", seconds: "59.00" });
+  });
+
+  it("limits latitude and rolls longitude", () => {
+    expect(normalizeCoordinate(90.1, "lat")).toBe(90);
+    expect(normalizeCoordinate(-90.1, "lat")).toBe(-90);
+    expect(normalizeCoordinate(180.1, "lon")).toBeCloseTo(-179.9, 6);
+    expect(normalizeCoordinate(-180.1, "lon")).toBeCloseTo(179.9, 6);
+  });
+
+  it("rounds decimal coordinate display to five fractional digits", () => {
+    expect(coordinateToInput(38.9561234, "lat", "decimal")).toBe("38.95612");
   });
 });
