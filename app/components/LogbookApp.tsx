@@ -919,7 +919,7 @@ export function LogbookApp({
   function startAddingLineHereNow() {
     if (activeSheet.status === "Locked") return;
     const now = new Date();
-    const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    const time = dateTimeLocalFromDate(now);
     setEditingLineIndex(null);
     setLineForm({ ...defaultLineForm, time });
     setShowAddLine(true);
@@ -1671,4 +1671,13 @@ function lineTimeValue(line: LogLine) {
 
 function sortLogLines(lines: LogLine[]) {
   return [...lines].sort((a, b) => lineTimeValue(a) - lineTimeValue(b));
+}
+
+function dateTimeLocalFromDate(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
 }

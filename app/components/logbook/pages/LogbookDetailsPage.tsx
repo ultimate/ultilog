@@ -64,19 +64,19 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   );
   const renderLineEditor = (key: string) => (
     <tr key={key} className="inline-line-row">
-      <td>{renderTextInput("time")}</td><td>{renderTextInput("latitude", "Latitude")}</td><td>{renderTextInput("longitude", "Longitude")}</td>
+      <td><input type="datetime-local" value={lineForm.time} onChange={(e) => setLineForm({ ...lineForm, time: e.target.value })} /></td><td>{renderTextInput("latitude", "Latitude")}</td><td>{renderTextInput("longitude", "Longitude")}</td>
       <td><select value={lineForm.weather} onChange={(e) => setLineForm({ ...lineForm, weather: e.target.value })}><option value="">—</option>{weatherEmojis.map((emoji) => <option key={emoji} value={emoji}>{emoji}</option>)}</select></td>
       <td>{renderNumberInput("barometer", { min: 800, max: 1200 })}</td>
-      <td><div className="compound-inputs">{renderTextInput("windDirection", "Wind direction")}{renderNumberInput("windStrength")}<select value={lineForm.windUnit} onChange={(e) => setLineForm({ ...lineForm, windUnit: e.target.value })}><option value="bft">bft</option><option value="kn">kn</option></select></div></td>
+      <td><div className="compound-inputs"><select aria-label="Wind direction" value={lineForm.windDirection} onChange={(e) => setLineForm({ ...lineForm, windDirection: e.target.value })}><option value="">—</option>{compassDirections.map((direction) => <option key={direction} value={direction}>{direction}</option>)}</select>{renderNumberInput("windStrength")}<select value={lineForm.windUnit} onChange={(e) => setLineForm({ ...lineForm, windUnit: e.target.value })}><option value="bft">bft</option><option value="kn">kn</option></select></div></td>
       <td><div className="compound-inputs">{renderNumberInput("seaState", { step: "0.1" })}<select value={lineForm.seaUnit} onChange={(e) => setLineForm({ ...lineForm, seaUnit: e.target.value })}><option value="m">m</option><option value="ft">ft</option></select></div></td>
       <td><div className="compound-inputs">{renderNumberInput("tide", { step: "0.1" })}<select value={lineForm.tideUnit} onChange={(e) => setLineForm({ ...lineForm, tideUnit: e.target.value })}><option value="m">m</option><option value="ft">ft</option></select></div></td>
       <td><select value={lineForm.moon} onChange={(e) => setLineForm({ ...lineForm, moon: e.target.value })}><option value="">—</option>{moonEmojis.map((emoji) => <option key={emoji} value={emoji}>{emoji}</option>)}</select></td>
       <td>{renderNumberInput("magneticCourse", { min: 0, max: 359 })}</td>
       {showCourseColumns && courseFieldNames.map((field) => <td className="optional-course-cell" key={field}>{renderNumberInput(field, courseSignedFields.has(field) ? { min: -180, max: 180 } : { min: 0, max: 359 })}</td>)}
       <td>{renderNumberInput("courseOverGround", { min: 0, max: 359 })}</td><td>{renderNumberInput("speedKn", { step: "0.1" })}</td><td>{renderNumberInput("logNm", { step: "0.1" })}</td>
-      <td><div className="compound-inputs">{renderNumberInput("sailSm", { step: "0.1" })}{renderTextInput("sailNote", "Sail note")}</div></td>
-      <td><div className="compound-inputs">{renderNumberInput("motorSm", { step: "0.1" })}{renderNumberInput("motorHours", { step: "0.1" })}{renderTextInput("motorNote", "Motor note")}</div></td>
-      <td>{renderTextInput("remarks")}</td><td colSpan={2}><div className="table-actions"><button type="button" onClick={saveLineFromFields}>{editingLineIndex === null ? "Save line" : "Update line"}</button><button type="button" className="ghost-button" onClick={cancelLineEdit}>Cancel</button></div></td>
+      <td><div className="compound-inputs labeled-inputs"><label><span>[sm]</span>{renderNumberInput("sailSm", { step: "0.1" })}</label><label><span>[note]</span>{renderTextInput("sailNote", "Sail note")}</label></div></td>
+      <td><div className="compound-inputs labeled-inputs"><label><span>[sm]</span>{renderNumberInput("motorSm", { step: "0.1" })}</label><label><span>[h]</span>{renderNumberInput("motorHours", { step: "0.1" })}</label><label><span>[note]</span>{renderTextInput("motorNote", "Motor note")}</label></div></td>
+      <td>{renderTextInput("remarks")}</td><td colSpan={2}><div className="table-actions"><button type="button" onClick={saveLineFromFields}>{editingLineIndex === null ? "Save line" : "💾"}</button><button type="button" className="ghost-button" onClick={cancelLineEdit}>Cancel</button></div></td>
     </tr>
   );
 
@@ -378,7 +378,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                   </div>
                 </div>
                 <div className="table-scroll">
-                  <table className={showCourseColumns ? "with-course-columns" : undefined}>
+                  <table className={showCourseColumns ? "log-lines-table with-course-columns" : "log-lines-table"}>
                     <thead>
                       <tr className="column-groups">
                         <th colSpan={3}>Time &amp; Pos</th><th colSpan={6}>Weather &amp; Sea</th><th colSpan={showCourseColumns ? 9 : 2}>Course</th><th colSpan={4}>Travel</th><th>Remarks</th><th colSpan={2}>Actions</th>
@@ -583,6 +583,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   );
 }
 
+const compassDirections = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
 const weatherEmojis = ["☁️", "⛅", "⛈️", "🌤️", "🌥️", "🌦️", "🌧️", "🌨️", "🌩️", "🌪️", "🌫️", "☀️", "❄️", "⭐"];
 const moonEmojis = ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌘"];
 const courseFieldNames = ["deviation", "magneticCourseCorrected", "variation", "trueCourse", "driftAngle", "courseThroughWater", "currentDrift"] as const;
