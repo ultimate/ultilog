@@ -14,7 +14,27 @@ export async function runMigrations(db: QueryableDatabase) {
 
   for (const migration of await readMigrations()) {
     if (applied.has(migration.id)) continue;
-    await db.query(migration.sql);
+    await applyMigration(db, migration.id, migration.sql);
     await db.query(`insert into schema_migrations (id) values (${db.placeholder(1)})`, [migration.id]);
   }
+}
+
+async function applyMigration(db: QueryableDatabase, id: string, sql: string) {
+  if (id !== "009_log_line_column_types") {
+    await db.query(sql);
+    return;
+  }
+
+  for (const statement of sql.split(";").map((part) => part.trim()).filter(Boolean)) {
+    try {
+      await db.query(statement);
+    } catch (error) {
+      if (!isDuplicateColumnError(error)) throw error;
+    }
+  }
+}
+
+function isDuplicateColumnError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  return /duplicate column|already exists|column .* exists/i.test(message);
 }
