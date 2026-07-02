@@ -35,10 +35,28 @@ export type CrewMemberRow = Omit<SheetCrewMember, "embarkationDateTime" | "embar
   is_primary?: number;
 };
 
-export type LogLineRow = Omit<LogLine, "logNm" | "magneticCourse" | "seaState"> & {
+export type LogLineRow = Omit<LogLine, "position" | "logNm" | "windDirection" | "windStrength" | "windUnit" | "seaState" | "seaUnit" | "tideUnit" | "magneticCourse" | "magneticCourseCorrected" | "trueCourse" | "driftAngle" | "courseThroughWater" | "currentDrift" | "courseOverGround" | "speedKn" | "sailSm" | "sailNote" | "motorSm" | "motorHours" | "motorNote"> & {
   sheet_id: string;
   sort_order: number;
+  position_name: string;
   log_nm: number;
-  magnetic_course: string;
-  sea_state: string;
+  wind_direction: string;
+  wind_strength: number;
+  wind_unit: LogLine["windUnit"];
+  sea_state: number;
+  sea_unit: LogLine["seaUnit"];
+  tide_unit: LogLine["tideUnit"];
+  magnetic_course: number;
+  magnetic_course_corrected: number;
+  true_course: number;
+  drift_angle: number;
+  course_through_water: number;
+  current_drift: number;
+  course_over_ground: number;
+  speed_kn: number;
+  sail_sm: number;
+  sail_note: string;
+  motor_sm: number;
+  motor_hours: number;
+  motor_note: string;
 };

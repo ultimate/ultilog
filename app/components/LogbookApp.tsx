@@ -45,6 +45,7 @@ import {
 } from "./logbook/date-utils";
 import { ManagerShell } from "./managers/ManagerShell";
 import { courseConversionColumns } from "../domain/nautical/course-conversion";
+import { parseCoordinate } from "../domain/nautical/coordinates";
 import { ModuleTabs, type ActiveView } from "../templates/ModuleTabs";
 import { PasswordField } from "./PasswordField";
 import { CompliancePage } from "./logbook/pages/CompliancePage";
@@ -136,7 +137,7 @@ function calculateSheetSummary(sheet: LogSheet) {
   const deltas = logLineDistanceDeltas(sheet.lines);
   const motorMiles = deltas.reduce(
     (sum, delta, index) =>
-      sum + (sheet.lines[index]?.engine.trim() ? delta : 0),
+      sum + ((sheet.lines[index]?.motorHours ?? 0) > 0 || (sheet.lines[index]?.motorSm ?? 0) > 0 ? delta : 0),
     0,
   );
   const totalMiles = deltas.reduce((sum, delta) => sum + delta, 0);
@@ -846,17 +847,34 @@ export function LogbookApp({
     const line: LogLine = {
       time: lineForm.time,
       position: lineForm.position,
-      latitude: numberOrZero(lineForm.latitude),
-      longitude: numberOrZero(lineForm.longitude),
-      logNm: numberOrZero(lineForm.logNm),
-      course: lineForm.course,
-      magneticCourse: lineForm.magneticCourse,
-      seaState: lineForm.seaState,
-      barometer: lineForm.barometer,
-      wind: lineForm.wind,
+      latitude: parseCoordinate(lineForm.latitude),
+      longitude: parseCoordinate(lineForm.longitude),
       weather: lineForm.weather,
-      sails: lineForm.sails,
-      engine: lineForm.engine,
+      barometer: clampInt(lineForm.barometer, 800, 1200),
+      windDirection: lineForm.windDirection,
+      windStrength: numberOrZero(lineForm.windStrength),
+      windUnit: lineForm.windUnit === "kn" ? "kn" : "bft",
+      seaState: numberOrZero(lineForm.seaState),
+      seaUnit: lineForm.seaUnit === "ft" ? "ft" : "m",
+      tide: numberOrZero(lineForm.tide),
+      tideUnit: lineForm.tideUnit === "ft" ? "ft" : "m",
+      moon: lineForm.moon,
+      magneticCourse: bearing(lineForm.magneticCourse),
+      deviation: signedCourse(lineForm.deviation),
+      magneticCourseCorrected: bearing(lineForm.magneticCourseCorrected),
+      variation: signedCourse(lineForm.variation),
+      trueCourse: bearing(lineForm.trueCourse),
+      driftAngle: signedCourse(lineForm.driftAngle),
+      courseThroughWater: bearing(lineForm.courseThroughWater),
+      currentDrift: signedCourse(lineForm.currentDrift),
+      courseOverGround: bearing(lineForm.courseOverGround),
+      speedKn: numberOrZero(lineForm.speedKn),
+      logNm: numberOrZero(lineForm.logNm),
+      sailSm: numberOrZero(lineForm.sailSm),
+      sailNote: lineForm.sailNote,
+      motorSm: numberOrZero(lineForm.motorSm),
+      motorHours: numberOrZero(lineForm.motorHours),
+      motorNote: lineForm.motorNote,
       remarks: lineForm.remarks,
     };
     const currentLogbook = logbookRef.current;
@@ -870,7 +888,7 @@ export function LogbookApp({
             : sheet.lines.map((candidate, index) =>
                 index === editingLineIndex ? line : candidate,
               );
-        return { ...sheet, lines };
+        return { ...sheet, lines: sortLogLines(lines) };
       }),
     };
     if (!(await saveLogbookNow(nextLogbook))) return;
@@ -896,6 +914,35 @@ export function LogbookApp({
     setEditingLineIndex(null);
     setLineForm(defaultLineForm);
     setShowAddLine((show) => !show);
+  }
+
+  function startAddingLineHereNow() {
+    if (activeSheet.status === "Locked") return;
+    const now = new Date();
+    const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    setEditingLineIndex(null);
+    setLineForm({ ...defaultLineForm, time });
+    setShowAddLine(true);
+    navigator.geolocation?.getCurrentPosition((position) => {
+      setLineForm((current) => ({
+        ...current,
+        latitude: String(position.coords.latitude),
+        longitude: String(position.coords.longitude),
+      }));
+    });
+  }
+
+  async function deleteLine(indexToDelete: number) {
+    if (activeSheet.status === "Locked") return;
+    const currentLogbook = logbookRef.current;
+    await saveLogbookNow({
+      ...currentLogbook,
+      sheets: currentLogbook.sheets.map((sheet) =>
+        sheet.id === activeSheet.id
+          ? { ...sheet, lines: sheet.lines.filter((_, index) => index !== indexToDelete) }
+          : sheet,
+      ),
+    });
   }
 
   function cancelLineEdit() {
@@ -1353,6 +1400,7 @@ export function LogbookApp({
               setShowCourseColumns={setShowCourseColumns}
               showCourseColumns={showCourseColumns}
               startAddingLine={startAddingLine}
+              startAddingLineHereNow={startAddingLineHereNow}
               showAddLine={showAddLine}
               lineForm={lineForm}
               setLineForm={setLineForm}
@@ -1360,6 +1408,7 @@ export function LogbookApp({
               editingLineIndex={editingLineIndex}
               cancelLineEdit={cancelLineEdit}
               startEditingLine={startEditingLine}
+              deleteLine={deleteLine}
               updateCrewAssignment={updateCrewAssignment}
               moveCrewOnActiveSheet={moveCrewOnActiveSheet}
               deleteCrewFromActiveSheet={deleteCrewFromActiveSheet}
@@ -1597,4 +1646,29 @@ export function LogbookApp({
       </section>
     </main>
   );
+}
+
+function clampInt(value: string, min: number, max: number) {
+  const parsed = Math.round(numberOrZero(value));
+  return Math.min(Math.max(parsed, min), max);
+}
+
+function bearing(value: string) {
+  return clampInt(value, 0, 359);
+}
+
+function signedCourse(value: string) {
+  return clampInt(value, -180, 180);
+}
+
+function lineTimeValue(line: LogLine) {
+  const parsed = Date.parse(line.time);
+  if (Number.isFinite(parsed)) return parsed;
+  const match = line.time.match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return Number.MAX_SAFE_INTEGER;
+  return Number(match[1]) * 60 + Number(match[2]);
+}
+
+function sortLogLines(lines: LogLine[]) {
+  return [...lines].sort((a, b) => lineTimeValue(a) - lineTimeValue(b));
 }
