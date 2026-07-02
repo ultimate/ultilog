@@ -6,7 +6,7 @@ import type {
   PersistedLogbook,
 } from "../../../models/logbook";
 import { courseConversionColumns } from "../../../domain/nautical/course-conversion";
-import { coordinateToInput, type CoordinateFormat } from "../../../domain/nautical/coordinates";
+import { coordinateToInput, decimalToDmsParts, dmsPartsToDecimal, parseCoordinate, type CoordinateFormat, type DmsParts } from "../../../domain/nautical/coordinates";
 import { boatToForm, sheetToForm } from "../forms";
 import { dateTimeLocalFromParts, splitDateTimeLocal } from "../date-utils";
 
@@ -62,9 +62,26 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const renderTextInput = (field: keyof LineForm, label?: string) => (
     <input aria-label={label} value={lineForm[field]} onChange={(e) => setLineForm({ ...lineForm, [field]: e.target.value })} />
   );
+
+  const renderCoordinateInput = (field: "latitude" | "longitude", label: string) => {
+    if (coordinateFormat === "decimal") return renderTextInput(field, label);
+    const parts = lineForm[field].trim() ? decimalToDmsParts(parseCoordinate(lineForm[field])) : { degrees: "", minutes: "", seconds: "" };
+    const updatePart = (part: keyof DmsParts, value: string) => {
+      const nextParts = { ...parts, [part]: value };
+      setLineForm({ ...lineForm, [field]: String(dmsPartsToDecimal(nextParts)) });
+    };
+    return (
+      <div className="compound-inputs dms-inputs" aria-label={label}>
+        <label><span>[°]</span><input aria-label={`${label} degrees`} type="number" value={parts.degrees} onChange={(e) => updatePart("degrees", e.target.value)} /></label>
+        <label><span>[&prime;]</span><input aria-label={`${label} minutes`} type="number" min="0" max="59" value={parts.minutes} onChange={(e) => updatePart("minutes", e.target.value)} /></label>
+        <label><span>[&Prime;]</span><input aria-label={`${label} seconds`} type="number" min="0" max="59.999" step="0.01" value={parts.seconds} onChange={(e) => updatePart("seconds", e.target.value)} /></label>
+      </div>
+    );
+  };
+
   const renderLineEditor = (key: string) => (
     <tr key={key} className="inline-line-row">
-      <td><input type="datetime-local" value={lineForm.time} onChange={(e) => setLineForm({ ...lineForm, time: e.target.value })} /></td><td>{renderTextInput("latitude", "Latitude")}</td><td>{renderTextInput("longitude", "Longitude")}</td>
+      <td><input type="datetime-local" value={lineForm.time} onChange={(e) => setLineForm({ ...lineForm, time: e.target.value })} /></td><td>{renderCoordinateInput("latitude", "Latitude")}</td><td>{renderCoordinateInput("longitude", "Longitude")}</td>
       <td><select value={lineForm.weather} onChange={(e) => setLineForm({ ...lineForm, weather: e.target.value })}><option value="">—</option>{weatherEmojis.map((emoji) => <option key={emoji} value={emoji}>{emoji}</option>)}</select></td>
       <td>{renderNumberInput("barometer", { min: 800, max: 1200 })}</td>
       <td><div className="compound-inputs"><select aria-label="Wind direction" value={lineForm.windDirection} onChange={(e) => setLineForm({ ...lineForm, windDirection: e.target.value })}><option value="">—</option>{compassDirections.map((direction) => <option key={direction} value={direction}>{direction}</option>)}</select>{renderNumberInput("windStrength")}<select value={lineForm.windUnit} onChange={(e) => setLineForm({ ...lineForm, windUnit: e.target.value })}><option value="bft">bft</option><option value="kn">kn</option></select></div></td>
