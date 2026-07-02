@@ -10,6 +10,7 @@ import { coordinateToInput, decimalToDmsParts, dmsPartsToDecimal, parseCoordinat
 import { boatToForm, sheetToForm } from "../forms";
 import { dateTimeLocalFromParts, splitDateTimeLocal } from "../date-utils";
 import { updateLogLineFormForInput } from "../../../domain/log-lines/log-line-editor";
+import { LogLinesMapView } from "../OpenSeaMapView";
 
 type LogbookDetailsPageProps = Record<string, any>;
 
@@ -607,24 +608,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                     <p className="eyebrow">Map</p>
                     <h3>Positions connected from log lines</h3>
                   </div>
-                  <div
-                    className="route-map"
-                    aria-label="Stylized route map preview"
-                  >
-                    {activeSheet.lines.map((line, index) => (
-                      <span
-                        className="map-marker"
-                        key={`${line.time}-${line.position}-${index}`}
-                        style={{
-                          left: `${12 + index * (76 / Math.max(activeSheet.lines.length - 1, 1))}%`,
-                          top: `${62 - index * 8}%`,
-                        }}
-                        title={`${line.time} · ${line.position}`}
-                      >
-                        {index + 1}
-                      </span>
-                    ))}
-                  </div>
+                  <LogLinesMapView logLines={activeSheet.lines} />
                 </article>
               </section>
             </>
