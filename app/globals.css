@@ -738,3 +738,15 @@ td { color: #28384b; line-height: 1.45; }
   letter-spacing: 0.03em;
   text-transform: uppercase;
 }
+
+.dms-inputs label {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 3.5rem;
+}
+
+.dms-inputs span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
