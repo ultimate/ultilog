@@ -8,14 +8,259 @@ import { ManagerShell } from "../../managers/ManagerShell";
 type BoatManagerPageProps = Record<string, any>;
 
 export function BoatManagerPage(props: BoatManagerPageProps) {
-  const { showBoatManager, saveBoat, editingBoatId, cancelBoatEdit, deleteSelectedBoat, pushAppPath } = props;
+  const {
+    showBoatManager,
+    saveBoat,
+    editingBoatId,
+    cancelBoatEdit,
+    deleteSelectedBoat,
+    pushAppPath,
+  } = props;
   const boatForm = props.boatForm as BoatForm;
   const logbook = props.logbook as PersistedLogbook;
   const selectedBoat = props.selectedBoat as Boat;
   const setBoatForm = props.setBoatForm as Dispatch<SetStateAction<BoatForm>>;
-  const setEditingBoatId = props.setEditingBoatId as Dispatch<SetStateAction<string | null>>;
-  const setSelectedBoatId = props.setSelectedBoatId as Dispatch<SetStateAction<string>>;
-  const setShowBoatManager = props.setShowBoatManager as Dispatch<SetStateAction<boolean>>;
+  const setEditingBoatId = props.setEditingBoatId as Dispatch<
+    SetStateAction<string | null>
+  >;
+  const setSelectedBoatId = props.setSelectedBoatId as Dispatch<
+    SetStateAction<string>
+  >;
+  const setShowBoatManager = props.setShowBoatManager as Dispatch<
+    SetStateAction<boolean>
+  >;
 
-  return <section className="sheet-detail module-panel"><ManagerShell title="Boats" newLabel="New boat" onNew={() => { setEditingBoatId(null); setBoatForm(defaultBoatForm); setShowBoatManager(true); }} list={<ul className="manager-list">{logbook.boats.map((boat) => <li key={boat.id}><button type="button" className={boat.id === selectedBoat.id ? "active" : ""} onClick={() => { setSelectedBoatId(boat.id); setEditingBoatId(boat.id); setBoatForm(boatToForm(boat)); setShowBoatManager(false); pushAppPath(modulePath("boats", boat.id)); }}><span><strong>{boat.name}</strong><small>{boat.type} · {boat.registration || "No registration"}</small></span></button></li>)}</ul>} form={<form className="inline-edit-grid" onSubmit={saveBoat}><p className="eyebrow">{showBoatManager ? "New boat" : "Boat form"}</p><label>Name<input required value={boatForm.name} onChange={(e) => setBoatForm({ ...boatForm, name: e.target.value })} /></label><label>Type<select value={boatForm.type} onChange={(e) => setBoatForm({ ...boatForm, type: e.target.value as BoatType })}><option>Sail</option><option>Motor</option></select></label><label>Registration<input value={boatForm.registration} onChange={(e) => setBoatForm({ ...boatForm, registration: e.target.value })} /></label><label>Flag state<input value={boatForm.flagState} onChange={(e) => setBoatForm({ ...boatForm, flagState: e.target.value })} /></label><label>Home port<input value={boatForm.homePort} onChange={(e) => setBoatForm({ ...boatForm, homePort: e.target.value })} /></label><label>Owner<input value={boatForm.owner} onChange={(e) => setBoatForm({ ...boatForm, owner: e.target.value })} /></label><label>Dimensions<input value={boatForm.dimensions} onChange={(e) => setBoatForm({ ...boatForm, dimensions: e.target.value })} /></label><label>Manufacturer<input value={boatForm.manufacturer} onChange={(e) => setBoatForm({ ...boatForm, manufacturer: e.target.value })} /></label><label>MMSI<input value={boatForm.mmsi} onChange={(e) => setBoatForm({ ...boatForm, mmsi: e.target.value })} /></label><label>Engine<input value={boatForm.engine} onChange={(e) => setBoatForm({ ...boatForm, engine: e.target.value })} /></label><label className="wide-field">Safety<textarea value={boatForm.safety} onChange={(e) => setBoatForm({ ...boatForm, safety: e.target.value })} /></label><div className="wide-field deviation-table-field"><div><p className="eyebrow">Deviation table</p><p>Compass headings from 0° to 350° in 10° steps. Enter deviation values such as +2° or -1°.</p></div><div className="table-scroll"><table className="deviation-table"><thead><tr><th>Heading</th><th>Deviation</th></tr></thead><tbody>{boatForm.deviationTable.map((row, index) => <tr key={row.heading}><td>{row.heading}°</td><td><input aria-label={`Deviation for ${row.heading} degrees`} value={row.deviation} onChange={(e) => setBoatForm({ ...boatForm, deviationTable: boatForm.deviationTable.map((candidate, candidateIndex) => candidateIndex === index ? { ...candidate, deviation: e.target.value } : candidate) })} /></td></tr>)}</tbody></table></div></div><article className="info-card wide-field"><h3>Log sheets</h3><ul className="stack-list">{logbook.sheets.filter((sheet) => sheet.boatId === (editingBoatId ?? selectedBoat.id)).map((sheet) => <li key={sheet.id}><strong>{sheet.title}</strong><small>{sheet.dateRange}</small></li>)}</ul></article><div className="inline-edit-actions"><button type="submit">{showBoatManager ? "Create boat" : "Save boat"}</button><button type="button" className="ghost-button" onClick={cancelBoatEdit}>Cancel</button><button type="button" className="ghost-button" disabled={logbook.sheets.some((sheet) => sheet.boatId === selectedBoat.id)} onClick={deleteSelectedBoat}>Delete boat</button></div></form>} /></section>;
+  return (
+    <section className="sheet-detail module-panel">
+      <ManagerShell
+        title="Boats"
+        newLabel="New boat"
+        onNew={() => {
+          setEditingBoatId(null);
+          setBoatForm(defaultBoatForm);
+          setShowBoatManager(true);
+        }}
+        list={
+          <ul className="manager-list">
+            {logbook.boats.map((boat) => (
+              <li key={boat.id}>
+                <button
+                  type="button"
+                  className={boat.id === selectedBoat.id ? "active" : ""}
+                  onClick={() => {
+                    setSelectedBoatId(boat.id);
+                    setEditingBoatId(boat.id);
+                    setBoatForm(boatToForm(boat));
+                    setShowBoatManager(false);
+                    pushAppPath(modulePath("boats", boat.id));
+                  }}
+                >
+                  <span>
+                    <strong>{boat.name}</strong>
+                    <small>
+                      {boat.type} · {boat.registration || "No registration"}
+                    </small>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        }
+        form={
+          <form className="inline-edit-grid" onSubmit={saveBoat}>
+            <p className="eyebrow">
+              {showBoatManager ? "New boat" : "Boat form"}
+            </p>
+            <label>
+              Name
+              <input
+                required
+                value={boatForm.name}
+                onChange={(e) =>
+                  setBoatForm({ ...boatForm, name: e.target.value })
+                }
+              />
+            </label>
+            <label>
+              Type
+              <select
+                value={boatForm.type}
+                onChange={(e) =>
+                  setBoatForm({ ...boatForm, type: e.target.value as BoatType })
+                }
+              >
+                <option>Sail</option>
+                <option>Motor</option>
+              </select>
+            </label>
+            <label>
+              Registration
+              <input
+                value={boatForm.registration}
+                onChange={(e) =>
+                  setBoatForm({ ...boatForm, registration: e.target.value })
+                }
+              />
+            </label>
+            <label>
+              Flag state
+              <input
+                value={boatForm.flagState}
+                onChange={(e) =>
+                  setBoatForm({ ...boatForm, flagState: e.target.value })
+                }
+              />
+            </label>
+            <label>
+              Home port
+              <input
+                value={boatForm.homePort}
+                onChange={(e) =>
+                  setBoatForm({ ...boatForm, homePort: e.target.value })
+                }
+              />
+            </label>
+            <label>
+              Owner
+              <input
+                value={boatForm.owner}
+                onChange={(e) =>
+                  setBoatForm({ ...boatForm, owner: e.target.value })
+                }
+              />
+            </label>
+            <label>
+              Dimensions
+              <input
+                value={boatForm.dimensions}
+                onChange={(e) =>
+                  setBoatForm({ ...boatForm, dimensions: e.target.value })
+                }
+              />
+            </label>
+            <label>
+              Manufacturer
+              <input
+                value={boatForm.manufacturer}
+                onChange={(e) =>
+                  setBoatForm({ ...boatForm, manufacturer: e.target.value })
+                }
+              />
+            </label>
+            <label>
+              MMSI
+              <input
+                value={boatForm.mmsi}
+                onChange={(e) =>
+                  setBoatForm({ ...boatForm, mmsi: e.target.value })
+                }
+              />
+            </label>
+            <label>
+              Engine
+              <input
+                value={boatForm.engine}
+                onChange={(e) =>
+                  setBoatForm({ ...boatForm, engine: e.target.value })
+                }
+              />
+            </label>
+            <label className="wide-field">
+              Safety
+              <textarea
+                value={boatForm.safety}
+                onChange={(e) =>
+                  setBoatForm({ ...boatForm, safety: e.target.value })
+                }
+              />
+            </label>
+            <div className="wide-field deviation-table-field">
+              <div>
+                <p className="eyebrow">Deviation table</p>
+                <p>
+                  Compass headings from 0° to 350° in 10° steps. Enter deviation
+                  values such as +2° or -1°.
+                </p>
+              </div>
+              <div className="table-scroll">
+                <table className="deviation-table">
+                  <thead>
+                    <tr>
+                      <th>Heading</th>
+                      <th>Deviation</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {boatForm.deviationTable.map((row, index) => (
+                      <tr key={row.heading}>
+                        <td>{row.heading}°</td>
+                        <td>
+                          <input
+                            aria-label={`Deviation for ${row.heading} degrees`}
+                            value={row.deviation}
+                            onChange={(e) =>
+                              setBoatForm({
+                                ...boatForm,
+                                deviationTable: boatForm.deviationTable.map(
+                                  (candidate, candidateIndex) =>
+                                    candidateIndex === index
+                                      ? {
+                                          ...candidate,
+                                          deviation: e.target.value,
+                                        }
+                                      : candidate,
+                                ),
+                              })
+                            }
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <article className="info-card wide-field">
+              <h3>Log sheets</h3>
+              <ul className="stack-list">
+                {logbook.sheets
+                  .filter(
+                    (sheet) =>
+                      sheet.boatId === (editingBoatId ?? selectedBoat.id),
+                  )
+                  .map((sheet) => (
+                    <li key={sheet.id}>
+                      <strong>{sheet.title}</strong>
+                      <small>{sheet.dateRange}</small>
+                    </li>
+                  ))}
+              </ul>
+            </article>
+            <div className="inline-edit-actions">
+              <button type="submit">
+                {showBoatManager ? "Create boat" : "Save boat"}
+              </button>
+              <button
+                type="button"
+                className="ghost-button"
+                onClick={cancelBoatEdit}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="ghost-button"
+                disabled={logbook.sheets.some(
+                  (sheet) => sheet.boatId === selectedBoat.id,
+                )}
+                onClick={deleteSelectedBoat}
+              >
+                Delete boat
+              </button>
+            </div>
+          </form>
+        }
+      />
+    </section>
+  );
 }
