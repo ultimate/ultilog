@@ -25,6 +25,10 @@ export type LogLine = {
   courseThroughWater: number;
   currentDrift: number;
   courseOverGround: number;
+  /** @deprecated Use courseOverGround and related structured course fields. */
+  course?: string;
+  /** @deprecated Use windDirection, windStrength, and windUnit. */
+  wind?: string;
   speedKn: number;
   logNm: number;
   sailSm: number;
