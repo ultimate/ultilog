@@ -5,7 +5,7 @@ import type {
   LogSheet,
   PersistedLogbook,
 } from "../../../models/logbook";
-import { courseConversionColumns } from "../../../domain/nautical/course-conversion";
+import { calculateCourseConversion, courseConversionColumns, type CourseConversionInput, type DeviationTable } from "../../../domain/nautical/course-conversion";
 import { coordinateToInput, decimalToDmsParts, dmsPartsToDecimal, parseCoordinate, type CoordinateFormat, type DmsParts } from "../../../domain/nautical/coordinates";
 import { boatToForm, sheetToForm } from "../forms";
 import { dateTimeLocalFromParts, splitDateTimeLocal } from "../date-utils";
@@ -63,6 +63,32 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     <input aria-label={label} value={lineForm[field]} onChange={(e) => setLineForm({ ...lineForm, [field]: e.target.value })} />
   );
 
+
+  const applyCourseConversion = (nextForm: LineForm) => {
+    setLineForm(nextForm);
+    const input = courseInputFromForm(nextForm);
+    const deviationTable = deviationTableFromBoat(activeBoat);
+    const position = nextForm.latitude.trim() || nextForm.longitude.trim()
+      ? { latitude: parseCoordinate(nextForm.latitude), longitude: parseCoordinate(nextForm.longitude) }
+      : undefined;
+    const date = nextForm.time ? new Date(nextForm.time) : undefined;
+    const conversion = calculateCourseConversion(input, deviationTable, { position, date });
+    Promise.resolve(conversion)
+      .then((result) => setLineForm((current) => ({ ...current, ...courseFormFromConversion(result) })))
+      .catch(() => undefined);
+  };
+
+  const renderCourseInput = (field: keyof LineForm, options: { min?: number; max?: number }) => (
+    <input
+      type="number"
+      min={options.min}
+      max={options.max}
+      step="1"
+      value={lineForm[field]}
+      onChange={(e) => applyCourseConversion({ ...lineForm, [field]: e.target.value })}
+    />
+  );
+
   const renderCoordinateInput = (field: "latitude" | "longitude", label: string) => {
     if (coordinateFormat === "decimal") return renderTextInput(field, label);
     const parts = lineForm[field].trim() ? decimalToDmsParts(parseCoordinate(lineForm[field])) : { degrees: "", minutes: "", seconds: "" };
@@ -73,8 +99,8 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     return (
       <div className="compound-inputs dms-inputs" aria-label={label}>
         <label><span>[°]</span><input aria-label={`${label} degrees`} type="number" value={parts.degrees} onChange={(e) => updatePart("degrees", e.target.value)} /></label>
-        <label><span>[&prime;]</span><input aria-label={`${label} minutes`} type="number" min="0" max="59" value={parts.minutes} onChange={(e) => updatePart("minutes", e.target.value)} /></label>
-        <label><span>[&Prime;]</span><input aria-label={`${label} seconds`} type="number" min="0" max="59.999" step="0.01" value={parts.seconds} onChange={(e) => updatePart("seconds", e.target.value)} /></label>
+        <label><span>[&prime;]</span><input aria-label={`${label} minutes`} type="number" value={parts.minutes} onChange={(e) => updatePart("minutes", e.target.value)} /></label>
+        <label><span>[&Prime;]</span><input aria-label={`${label} seconds`} type="number" step="0.01" value={parts.seconds} onChange={(e) => updatePart("seconds", e.target.value)} /></label>
       </div>
     );
   };
@@ -88,9 +114,9 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
       <td><div className="compound-inputs">{renderNumberInput("seaState", { step: "0.1" })}<select value={lineForm.seaUnit} onChange={(e) => setLineForm({ ...lineForm, seaUnit: e.target.value })}><option value="m">m</option><option value="ft">ft</option></select></div></td>
       <td><div className="compound-inputs">{renderNumberInput("tide", { step: "0.1" })}<select value={lineForm.tideUnit} onChange={(e) => setLineForm({ ...lineForm, tideUnit: e.target.value })}><option value="m">m</option><option value="ft">ft</option></select></div></td>
       <td><select value={lineForm.moon} onChange={(e) => setLineForm({ ...lineForm, moon: e.target.value })}><option value="">—</option>{moonEmojis.map((emoji) => <option key={emoji} value={emoji}>{emoji}</option>)}</select></td>
-      <td>{renderNumberInput("magneticCourse", { min: 0, max: 359 })}</td>
-      {showCourseColumns && courseFieldNames.map((field) => <td className="optional-course-cell" key={field}>{renderNumberInput(field, courseSignedFields.has(field) ? { min: -180, max: 180 } : { min: 0, max: 359 })}</td>)}
-      <td>{renderNumberInput("courseOverGround", { min: 0, max: 359 })}</td><td>{renderNumberInput("speedKn", { step: "0.1" })}</td><td>{renderNumberInput("logNm", { step: "0.1" })}</td>
+      <td>{renderCourseInput("magneticCourse", { min: 0, max: 359 })}</td>
+      {showCourseColumns && courseFieldNames.map((field) => <td className="optional-course-cell" key={field}>{renderCourseInput(field, courseSignedFields.has(field) ? { min: -180, max: 180 } : { min: 0, max: 359 })}</td>)}
+      <td>{renderCourseInput("courseOverGround", { min: 0, max: 359 })}</td><td>{renderNumberInput("speedKn", { step: "0.1" })}</td><td>{renderNumberInput("logNm", { step: "0.1" })}</td>
       <td><div className="compound-inputs labeled-inputs"><label><span>[sm]</span>{renderNumberInput("sailSm", { step: "0.1" })}</label><label><span>[note]</span>{renderTextInput("sailNote", "Sail note")}</label></div></td>
       <td><div className="compound-inputs labeled-inputs"><label><span>[sm]</span>{renderNumberInput("motorSm", { step: "0.1" })}</label><label><span>[h]</span>{renderNumberInput("motorHours", { step: "0.1" })}</label><label><span>[note]</span>{renderTextInput("motorNote", "Motor note")}</label></div></td>
       <td>{renderTextInput("remarks")}</td><td colSpan={2}><div className="table-actions"><button type="button" onClick={saveLineFromFields}>{editingLineIndex === null ? "Save line" : "💾"}</button><button type="button" className="ghost-button" onClick={cancelLineEdit}>Cancel</button></div></td>
@@ -605,3 +631,48 @@ const weatherEmojis = ["☁️", "⛅", "⛈️", "🌤️", "🌥️", "🌦️
 const moonEmojis = ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌘"];
 const courseFieldNames = ["deviation", "magneticCourseCorrected", "variation", "trueCourse", "driftAngle", "courseThroughWater", "currentDrift"] as const;
 const courseSignedFields = new Set<keyof LineForm>(["deviation", "variation", "driftAngle", "currentDrift"]);
+
+function optionalNumber(value: string) {
+  if (!value.trim()) return undefined;
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function courseInputFromForm(form: LineForm): CourseConversionInput {
+  return {
+    compassCourse: optionalNumber(form.magneticCourse),
+    deviation: optionalNumber(form.deviation),
+    magneticCourse: optionalNumber(form.magneticCourseCorrected),
+    variation: optionalNumber(form.variation),
+    trueCourse: optionalNumber(form.trueCourse),
+    windDrift: optionalNumber(form.driftAngle),
+    courseThroughWater: optionalNumber(form.courseThroughWater),
+    currentDrift: optionalNumber(form.currentDrift),
+    courseOverGround: optionalNumber(form.courseOverGround),
+  };
+}
+
+function courseFormFromConversion(conversion: CourseConversionInput): Partial<LineForm> {
+  const updates: Partial<LineForm> = {};
+  setCourseFormValue(updates, "magneticCourse", conversion.compassCourse);
+  setCourseFormValue(updates, "deviation", conversion.deviation);
+  setCourseFormValue(updates, "magneticCourseCorrected", conversion.magneticCourse);
+  setCourseFormValue(updates, "variation", conversion.variation);
+  setCourseFormValue(updates, "trueCourse", conversion.trueCourse);
+  setCourseFormValue(updates, "driftAngle", conversion.windDrift);
+  setCourseFormValue(updates, "courseThroughWater", conversion.courseThroughWater);
+  setCourseFormValue(updates, "currentDrift", conversion.currentDrift);
+  setCourseFormValue(updates, "courseOverGround", conversion.courseOverGround);
+  return updates;
+}
+
+function setCourseFormValue(updates: Partial<LineForm>, field: keyof LineForm, value: number | undefined) {
+  if (value !== undefined) updates[field] = String(Math.round(value));
+}
+
+function deviationTableFromBoat(boat: Boat): DeviationTable | undefined {
+  const entries = boat.deviationTable
+    .map((row) => [row.heading, optionalNumber(row.deviation)] as const)
+    .filter((entry): entry is readonly [number, number] => entry[1] !== undefined);
+  return entries.length ? Object.fromEntries(entries) : undefined;
+}
