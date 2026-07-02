@@ -11,7 +11,7 @@ import { courseConversionColumns } from "../domain/nautical/course-conversion";
 import { ModuleTabs, type ActiveView } from "../templates/ModuleTabs";
 import { DashboardPanel } from "../templates/DashboardPanel";
 import { PasswordField } from "./PasswordField";
-import { legalRequirements } from "../templates/compliance";
+import { CompliancePage, LogbooksPage, UsersPage } from "./logbook/pages/LogbookPages";
 
 type AdminUser = { id: string; name: string; email: string; groups: string[] };
 type SocialUser = { username: string; sailMiles: number; motorMiles: number; logbookSheets: number; boats: number };
@@ -747,24 +747,7 @@ export function LogbookApp({ userId, userEmail, userName, userGroups = [] }: { u
       {activeModule === "dashboard" && <DashboardPanel stats={stats} />}
 
       <section className="workspace module-workspace">
-        {activeModule === "logbooks" && <section className="logbook-page module-panel" aria-label="Log sheets">
-          <div className="page-heading">
-            <div><h1>Logbooks</h1><p>Manage all your logbook entries</p></div>
-            <button type="button" className="primary-action" onClick={() => { setEditingSheetId(null); setSheetForm(defaultSheetForm(activeBoat.id)); setShowNewSheet(true); navigate("details"); }}>+ New sheet</button>
-          </div>
-          <div className="logbook-toolbar"><input aria-label="Search logbooks" placeholder="Search logbooks…" readOnly /><select aria-label="Vessel filter" defaultValue="All vessels"><option>All vessels</option></select><select aria-label="Time filter" defaultValue="All time"><option>All time</option></select></div>
-          <article className="table-card logbook-list-card">
-            <div className="table-scroll"><table className="logbook-table"><thead><tr><th>Date</th><th>Entry</th><th>Vessel</th><th>From → To</th><th>Sail miles</th><th>Motor miles</th><th>Total miles</th><th></th></tr></thead><tbody>{logbook.sheets.map((sheet) => {
-              const boat = logbook.boats.find((candidate) => candidate.id === sheet.boatId);
-              const totalMiles = Math.max(0, ...sheet.lines.map((line) => line.logNm));
-              const sheetSummary = calculateSheetSummary(sheet);
-              const motorMiles = sheetSummary.motorMiles;
-              const sailMiles = sheetSummary.sailMiles;
-              return <tr key={sheet.id}><td>{sheet.dateRange}</td><td><button className="table-title-button" onClick={() => { setActiveSheetId(sheet.id); setSheetForm(sheetToForm(sheet)); navigate("details", sheet.id); }} type="button">{sheet.title}</button></td><td><span className="table-vessel"><span className="picture-thumb" aria-hidden="true" />{boat?.name}</span></td><td>{sheet.route.from} → {sheet.route.to}</td><td>{sailMiles} nm</td><td>{motorMiles} nm</td><td>{totalMiles} nm</td><td><button className="edit-chip" onClick={() => { setActiveSheetId(sheet.id); setSheetForm(sheetToForm(sheet)); navigate("details", sheet.id); }} type="button">Open</button></td></tr>;
-            })}</tbody></table></div>
-            <div className="pagination-mock" aria-hidden="true"><span className="active">1</span><span>2</span><span>3</span><span>…</span><span>8</span><span>›</span></div>
-          </article>
-        </section>}
+        {activeModule === "logbooks" && <LogbooksPage activeBoat={activeBoat} calculateSheetSummary={calculateSheetSummary} logbook={logbook} navigate={navigate} setActiveSheetId={setActiveSheetId} setEditingSheetId={setEditingSheetId} setSheetForm={setSheetForm} setShowNewSheet={setShowNewSheet} />}
 
         {activeModule === "details" && !isBackendReady && <section className="sheet-detail" aria-label="Loading logbook sheet"><form className="sheet-title-row inline-edit-card"><div className="inline-edit-grid"><p className="eyebrow">Loading sheet</p><label>Title<input disabled value="" readOnly /></label><div className="header-edit-row"><span>Boat</span><select aria-label="Boat" disabled value=""><option value=""> </option></select><button type="button" className="edit-chip" disabled>Jump to boat</button></div><div className="header-edit-row"><span>From</span><input aria-label="From datetime" type="datetime-local" disabled value="" readOnly /><input aria-label="From position" disabled value="" readOnly /></div><div className="header-edit-row"><span>To</span><input aria-label="To datetime" type="datetime-local" disabled value="" readOnly /><input aria-label="To position" disabled value="" readOnly /></div></div></form></section>}
 
@@ -801,13 +784,7 @@ export function LogbookApp({ userId, userEmail, userName, userGroups = [] }: { u
         {activeModule === "crew" && <section className="sheet-detail module-panel"><ManagerShell title="Crew" newLabel="New crew" onNew={() => { setLastCrewIndex(selectedCrewIndex >= 0 ? selectedCrewIndex : lastCrewIndex); setSelectedCrewIndex(-1); setCrewForm(defaultCrewForm); }} list={<ul className="manager-list">{logbook.crewMembers.map((person, index) => <li key={person.id}><button type="button" className={index === selectedCrewIndex ? "active" : ""} onClick={() => { selectCrew(index); pushAppPath(modulePath("crew", index)); }}><span><strong>{person.isPrimary ? "⭐ " : ""}{person.name}</strong><small>{person.role || "Crew member"}</small></span></button></li>)}</ul>} form={<form className="inline-edit-grid" onSubmit={async (event) => { event.preventDefault(); await saveCrew(); }}><p className="eyebrow">{selectedCrewIndex < 0 ? "New crew profile" : crewForm.isPrimary ? "This is me" : "Crew profile"}</p><label>Name<input value={crewForm.name} onChange={(e) => setCrewForm({ ...crewForm, name: e.target.value })} /></label><label>Nationality<input value={crewForm.nationality} onChange={(e) => setCrewForm({ ...crewForm, nationality: e.target.value })} /></label><label>Role<input value={crewForm.role} onChange={(e) => setCrewForm({ ...crewForm, role: e.target.value })} /></label><label>Address<input value={crewForm.address ?? ""} onChange={(e) => setCrewForm({ ...crewForm, address: e.target.value })} /></label><label className="wide-field">Skipper certificate<input value={crewForm.certificate ?? ""} onChange={(e) => setCrewForm({ ...crewForm, certificate: e.target.value })} /></label><article className="info-card wide-field"><h3>Log sheets</h3><ul className="stack-list">{(crewAssignments.find((entry) => entry.member.id === crewForm.id)?.sheets ?? []).map(({ sheet, isSkipper }) => <li key={sheet.id}><strong>{isSkipper ? "⭐ Skipper · " : "Crew · "}{sheet.title}</strong><small>{sheet.dateRange}</small></li>)}</ul></article><div className="inline-edit-actions"><button type="submit">Save crew</button><button type="button" className="ghost-button" onClick={cancelCrewEdit}>Cancel</button><button type="button" className="ghost-button" disabled={crewForm.isPrimary || crewForm.id === "me" || Boolean(crewAssignments.find((entry) => entry.member.id === crewForm.id)?.sheets.length)} onClick={deleteSelectedCrew}>Delete</button></div></form>} /></section>}
 
 
-        {activeModule === "users" && <section className="module-panel" aria-label="Users page">
-          <div className="page-heading"><div><h1>Users</h1><p>Discover other ultilog sailors and compare high-level logbook activity.</p></div></div>
-          <article className="table-card">
-            <div className="table-header"><div><p className="eyebrow">Community directory</p><h3>All users</h3><p>Mocked summary data until shared profile statistics are connected.</p></div></div>
-            <div className="table-scroll"><table className="logbook-table users-table"><thead><tr><th>Username</th><th>Total sail mileage</th><th>Total motor mileage</th><th>Logbook sheets</th><th>Boats</th></tr></thead><tbody>{mockSocialUsers.map((user) => <tr key={user.username}><td><strong>{user.username}</strong></td><td>{user.sailMiles.toLocaleString()} nm</td><td>{user.motorMiles.toLocaleString()} nm</td><td>{user.logbookSheets}</td><td>{user.boats}</td></tr>)}</tbody></table></div>
-          </article>
-        </section>}
+        {activeModule === "users" && <UsersPage mockSocialUsers={mockSocialUsers} />}
 
         {activeModule === "profile" && <section className="profile-page module-panel" aria-label="Profile page">
           <div className="page-heading"><div><h1>Profile</h1><p>Personal settings and account details.</p></div><button className="secondary-action" type="button" onClick={logout}>{isLoggingOut ? "Saving…" : "Logout"}</button></div>
@@ -834,7 +811,7 @@ export function LogbookApp({ userId, userEmail, userName, userGroups = [] }: { u
           </article>
         </section>}
 
-        {activeModule === "compliance" && <section className="sheet-detail module-panel"><div className="page-heading"><div><h1>Compliance</h1><p>ICC / Hochseeausweis requirements</p></div><button className="secondary-action" type="button">Download report</button></div><article className="compliance-board"><section className="compliance-summary"><h3>Overall progress</h3><div className="progress-layout"><div className="progress-ring"><strong>72%</strong><span>Complete</span></div><dl><div><dt>You have</dt><dd>2,173 nm</dd></div><div><dt>Required</dt><dd>3,000 nm</dd></div><div><dt>Remaining</dt><dd>827 nm</dd></div></dl></div></section><section className="requirement-panel"><h3>Requirement checklist</h3>{legalRequirements.map((requirement, index) => <div className="requirement-row" key={requirement}><span>✓</span><strong>{requirement}</strong><progress value={[2173,1650,1020,1250,1120,860][index] ?? 860} max={[3000,1500,1000,1000,1400,500][index] ?? 500} /></div>)}</section></article><div className="mileage-breakdown"><article><span>△</span><strong>Sail miles</strong><b>1,650 nm</b><small>70%</small></article><article><span>✚</span><strong>Motor miles</strong><b>523 nm</b><small>24%</small></article><article><span>⛵</span><strong>Ocean passages</strong><b>1,120 nm</b><small>30%</small></article><article><span>♙</span><strong>As skipper</strong><b>860 nm</b><small>40%</small></article></div></section>}
+        {activeModule === "compliance" && <CompliancePage />}
       </section>
       </section>
     </main>
