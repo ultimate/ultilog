@@ -19,9 +19,3 @@ alter table log_lines add column sail_note text not null default '';
 alter table log_lines add column motor_sm real not null default 0;
 alter table log_lines add column motor_hours real not null default 0;
 alter table log_lines add column motor_note text not null default '';
-
-update log_lines set wind_direction = coalesce(nullif(substr(wind, 1, instr(wind || ' ', ' ') - 1), ''), wind) where wind_direction = '';
-update log_lines set wind_strength = cast(coalesce(nullif(substr(wind, instr(wind || ' ', ' ') + 1), ''), '0') as real) where wind_strength = 0;
-update log_lines set sail_note = sails where sail_note = '';
-update log_lines set motor_note = engine where motor_note = '';
-update log_lines set course_over_ground = cast(replace(course, '°', '') as integer) where course_over_ground = 0;
