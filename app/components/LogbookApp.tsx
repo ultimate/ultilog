@@ -45,7 +45,7 @@ import {
 } from "./logbook/date-utils";
 import { ManagerShell } from "./managers/ManagerShell";
 import { courseConversionColumns } from "../domain/nautical/course-conversion";
-import { parseCoordinate } from "../domain/nautical/coordinates";
+import { normalizeCoordinate, parseCoordinate } from "../domain/nautical/coordinates";
 import { ModuleTabs, type ActiveView } from "../templates/ModuleTabs";
 import { PasswordField } from "./PasswordField";
 import { CompliancePage } from "./logbook/pages/CompliancePage";
@@ -847,8 +847,8 @@ export function LogbookApp({
     const line: LogLine = {
       time: lineForm.time,
       position: lineForm.position,
-      latitude: parseCoordinate(lineForm.latitude),
-      longitude: parseCoordinate(lineForm.longitude),
+      latitude: normalizeCoordinate(parseCoordinate(lineForm.latitude), "lat"),
+      longitude: normalizeCoordinate(parseCoordinate(lineForm.longitude), "lon"),
       weather: lineForm.weather,
       barometer: clampInt(lineForm.barometer, 800, 1200),
       windDirection: lineForm.windDirection,
