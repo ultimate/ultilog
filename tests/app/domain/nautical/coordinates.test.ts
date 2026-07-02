@@ -13,4 +13,10 @@ describe("coordinate helpers", () => {
     expect(dmsPartsToDecimal({ degrees: "-20", minutes: "45", seconds: "14.40" })).toBeCloseTo(-20.754, 6);
     expect(parseCoordinate("20° 45' 14.40\" W")).toBeCloseTo(-20.754, 6);
   });
+
+  it("normalizes minute and second rollover through decimal storage", () => {
+    expect(decimalToDmsParts(dmsPartsToDecimal({ degrees: "38", minutes: "59", seconds: "60" }))).toEqual({ degrees: "39", minutes: "0", seconds: "0.00" });
+    expect(decimalToDmsParts(dmsPartsToDecimal({ degrees: "38", minutes: "60", seconds: "0" }))).toEqual({ degrees: "39", minutes: "0", seconds: "0.00" });
+    expect(decimalToDmsParts(dmsPartsToDecimal({ degrees: "38", minutes: "0", seconds: "-1" }))).toEqual({ degrees: "37", minutes: "59", seconds: "59.00" });
+  });
 });
