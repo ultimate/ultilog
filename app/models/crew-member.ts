@@ -9,6 +9,8 @@ export type CrewMember = {
 };
 
 export type SheetCrewMember = CrewMember & {
-  embarkation: string;
-  disembarkation: string;
+  embarkationDateTime: string;
+  embarkationPosition: string;
+  disembarkationDateTime: string;
+  disembarkationPosition: string;
 };

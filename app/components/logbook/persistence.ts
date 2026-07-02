@@ -1,6 +1,6 @@
 import { moduleTabs } from "../../templates/app-shell";
 import type { ActiveView } from "../../templates/ModuleTabs";
-import type { PersistedLogbook } from "../../models/logbook";
+import type { PersistedLogbook, SheetCrewMember } from "../../models/logbook";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const routedModules = new Set<ActiveView>([...moduleTabs.map((tab) => tab.id), "profile", "admin"]);
@@ -17,6 +17,22 @@ export function routeFromPathname(pathname: string): RouteState {
   const [, moduleSegment, itemSegment] = pathname.split("/");
   const view = routedModules.has(moduleSegment as ActiveView) ? moduleSegment as ActiveView : "dashboard";
   return { view, itemId: itemSegment ? decodeURIComponent(itemSegment) : undefined };
+}
+
+function normalizeSheetCrewMember(crew: SheetCrewMember | (Omit<SheetCrewMember, "embarkationDateTime" | "embarkationPosition" | "disembarkationDateTime" | "disembarkationPosition"> & { embarkation?: string; disembarkation?: string })): SheetCrewMember {
+  if ("embarkationDateTime" in crew) return crew;
+  const { embarkation = "", disembarkation = "", ...profile } = crew;
+  return {
+    ...profile,
+    embarkationDateTime: "",
+    embarkationPosition: embarkation,
+    disembarkationDateTime: "",
+    disembarkationPosition: disembarkation,
+  };
+}
+
+function normalizeSheetCrew(logbook: PersistedLogbook) {
+  return logbook.sheets.map((sheet) => ({ ...sheet, crew: sheet.crew.map(normalizeSheetCrewMember) }));
 }
 
 export function normalizeLogbookIds(logbook: PersistedLogbook): { logbook: PersistedLogbook; changed: boolean; boatIds: Map<string, string>; sheetIds: Map<string, string> } {
@@ -39,8 +55,10 @@ export function normalizeLogbookIds(logbook: PersistedLogbook): { logbook: Persi
   }
 
   const sourceCrew = logbook.crewMembers ?? [];
+  const normalizedSheets = normalizeSheetCrew(logbook);
   if (!("crewMembers" in logbook)) changed = true;
-  if (!changed) return { logbook: { ...logbook, crewMembers: sourceCrew }, changed, boatIds, sheetIds };
+  if (normalizedSheets.some((sheet, index) => sheet !== logbook.sheets[index])) changed = true;
+  if (!changed) return { logbook: { ...logbook, crewMembers: sourceCrew, sheets: normalizedSheets }, changed, boatIds, sheetIds };
   return {
     changed,
     boatIds,
@@ -48,7 +66,7 @@ export function normalizeLogbookIds(logbook: PersistedLogbook): { logbook: Persi
     logbook: {
       boats: logbook.boats.map((boat) => ({ ...boat, id: boatIds.get(boat.id) ?? boat.id })),
       crewMembers: sourceCrew,
-      sheets: logbook.sheets.map((sheet) => ({ ...sheet, id: sheetIds.get(sheet.id) ?? sheet.id, boatId: boatIds.get(sheet.boatId) ?? sheet.boatId })),
+      sheets: normalizedSheets.map((sheet) => ({ ...sheet, id: sheetIds.get(sheet.id) ?? sheet.id, boatId: boatIds.get(sheet.boatId) ?? sheet.boatId })),
     },
   };
 }

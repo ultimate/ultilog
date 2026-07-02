@@ -27,7 +27,7 @@ const crew = sheet.crew[0];
 
 describe("CrewRepository", () => {
   it("finds all crew rows", async () => {
-    const row: CrewMemberRow = { sheet_id: sheet.id, crew_member_id: "luca-frei-swiss", sort_order: 0, ...crew };
+    const row: CrewMemberRow = { sheet_id: sheet.id, crew_member_id: "luca-frei-swiss", sort_order: 0, ...crew, embarkation_datetime: crew.embarkationDateTime, embarkation_position: crew.embarkationPosition, disembarkation_datetime: crew.disembarkationDateTime, disembarkation_position: crew.disembarkationPosition };
     const db = new MockDatabase({ crew_members: [row] });
 
     await expect(new CrewRepository(db).findAll()).resolves.toEqual([row]);
@@ -55,6 +55,6 @@ describe("CrewRepository", () => {
     expect(db.calls[0].sql).toContain("insert into crew_members");
     expect(db.calls[0].values).toEqual(["legacy-user:luca-frei-swiss", crew.name, crew.nationality, crew.role, crew.address ?? "", crew.certificate ?? "", crew.isPrimary ? 1 : 0, "legacy-user"]);
     expect(db.calls[1].sql).toContain("insert into sheet_crew_members");
-    expect(db.calls[1].values).toEqual([`legacy-user:${sheet.id}`, "legacy-user:luca-frei-swiss", 0, crew.embarkation, crew.disembarkation]);
+    expect(db.calls[1].values).toEqual([`legacy-user:${sheet.id}`, "legacy-user:luca-frei-swiss", 0, crew.embarkationPosition, crew.disembarkationPosition, crew.embarkationDateTime, crew.embarkationPosition, crew.disembarkationDateTime, crew.disembarkationPosition]);
   });
 });
