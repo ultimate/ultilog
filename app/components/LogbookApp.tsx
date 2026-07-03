@@ -201,7 +201,7 @@ export function LogbookApp({
   const [selectedBoatId, setSelectedBoatId] = useState(
     defaultLogbook.boats[0].id,
   );
-  const [selectedCrewIndex, setSelectedCrewIndex] = useState(0);
+  const [selectedCrewIndex, setSelectedCrewIndex] = useState(-2);
   const [lastCrewIndex, setLastCrewIndex] = useState(0);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
@@ -394,6 +394,10 @@ export function LogbookApp({
       setActiveSheetId(itemId);
       if (sheet) setSheetForm(sheetToForm(sheet));
     }
+    if (view === "boats" && !itemId) {
+      setEditingBoatId(null);
+      setShowBoatManager(false);
+    }
     if (
       view === "boats" &&
       itemId &&
@@ -404,6 +408,10 @@ export function LogbookApp({
       setEditingBoatId(itemId);
       if (boat) setBoatForm(boatToForm(boat));
       setShowBoatManager(false);
+    }
+    if (view === "crew" && !itemId) {
+      setSelectedCrewIndex(-2);
+      setCrewForm(defaultCrewForm);
     }
     if (view === "crew" && itemId) {
       const index = Number.parseInt(itemId, 10);
@@ -954,7 +962,7 @@ export function LogbookApp({
   }
 
   async function saveCrew() {
-    const id = selectedCrewIndex < 0 ? createId() : crewForm.id;
+    const id = selectedCrewIndex === -1 ? createId() : crewForm.id;
     const crew = {
       id,
       name: crewForm.name,
@@ -968,14 +976,14 @@ export function LogbookApp({
     const nextLogbook = {
       ...currentLogbook,
       crewMembers:
-        selectedCrewIndex < 0
+        selectedCrewIndex === -1
           ? [...currentLogbook.crewMembers, crew]
           : currentLogbook.crewMembers.map((candidate) =>
               candidate.id === id ? crew : candidate,
             ),
     };
     if (!(await saveLogbookNow(nextLogbook))) return;
-    if (selectedCrewIndex < 0)
+    if (selectedCrewIndex === -1)
       setSelectedCrewIndex(nextLogbook.crewMembers.length - 1);
   }
 

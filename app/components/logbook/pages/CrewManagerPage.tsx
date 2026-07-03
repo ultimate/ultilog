@@ -70,6 +70,7 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
           </ul>
         }
         form={
+          selectedCrewIndex >= -1 ? (
           <form
             className="inline-edit-grid"
             onSubmit={async (event) => {
@@ -174,6 +175,9 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
               </button>
             </div>
           </form>
+          ) : (
+            <p className="empty-state">{t("common.selectEntry")}</p>
+          )
         }
       />
     </section>

@@ -53,6 +53,7 @@ export const en = {
   "common.name": "Name",
   "common.type": "Type",
   "common.registration": "Registration",
+  "common.selectEntry": "Please select an entry",
   "common.owner": "Owner",
   "dashboard.title": "Dashboard",
   "dashboard.subtitle": "Overview of your sailing experience and progress",
