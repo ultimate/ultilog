@@ -179,7 +179,7 @@ export const it: Dictionary = {
   "details.sheetSupport": "Sezioni di supporto",
   "details.technicalLog": "Log tecnico / controlli giornalieri",
   "details.map": "Mappa",
-  "details.positions": "Posizioni collegate dalle righe del log",
+  "details.positions": "Mappa delle righe del log",
   "details.windDirection": "Direzione vento",
   "details.sailNote": "Nota vela",
   "details.motorNote": "Nota motore",

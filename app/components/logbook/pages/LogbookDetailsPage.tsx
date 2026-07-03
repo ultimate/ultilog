@@ -616,7 +616,6 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                 </article>
                 <article className="map-card logbook-section">
                   <div>
-                    <p className="eyebrow">{t("details.map")}</p>
                     <h3>{t("details.positions")}</h3>
                   </div>
                   <LogLinesMapView logLines={activeSheet.lines} />

@@ -288,9 +288,24 @@ dd { margin: 0; }
   display: block;
 }
 
+.logbook-overview-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(22rem, 0.65fr);
+  gap: 1rem;
+  align-items: start;
+}
+
 .logbook-overview-map-card {
   display: grid;
   gap: 1rem;
+}
+
+.logbook-list-heading {
+  padding: clamp(1rem, 2vw, 1.5rem) clamp(1rem, 2vw, 1.5rem) 0;
+}
+
+.logbook-list-heading h3 {
+  margin: 0;
 }
 
 .logbook-overview-map-heading {
@@ -303,6 +318,12 @@ dd { margin: 0; }
 .logbook-overview-map-heading p:last-child {
   max-width: 26rem;
   margin: 0;
+}
+
+@media (max-width: 1100px) {
+  .logbook-overview-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 .table-card { min-width: 0; }

@@ -177,7 +177,7 @@ export const en = {
   "details.sheetSupport": "Sheet support sections",
   "details.technicalLog": "Technical log / daily checks",
   "details.map": "Map",
-  "details.positions": "Positions connected from log lines",
+  "details.positions": "Log line map",
   "details.windDirection": "Wind direction",
   "details.sailNote": "Sail note",
   "details.motorNote": "Motor note",
