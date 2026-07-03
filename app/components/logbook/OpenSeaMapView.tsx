@@ -116,6 +116,10 @@ export function LogSheetsMapView({
   onSheetClick,
 }: LogSheetsMapViewProps) {
   const routes = useMemo(() => sheets.map(logSheetToRoute), [sheets]);
+  const mappedRoutes = routes.filter(
+    (route) => route.sheet && route.points.length > 0,
+  );
+
   return (
     <>
       <OpenSeaMapLeaflet
@@ -127,24 +131,28 @@ export function LogSheetsMapView({
           if (route.sheet) onSheetClick?.(route.sheet);
         }}
       />
-      {onSheetClick && routes.some((route) => route.sheet) && (
-        <div
+      {onSheetClick && mappedRoutes.length > 0 && (
+        <nav
           className="open-seamap-route-targets"
-          aria-label="Overview map route targets"
+          aria-label="Open a log sheet from the overview map"
         >
-          {routes.map((route) =>
-            route.sheet ? (
-              <button
-                key={route.id}
-                type="button"
-                aria-label={`Open route ${route.title}`}
-                onClick={() => onSheetClick(route.sheet!)}
-              >
-                Open route
-              </button>
-            ) : null,
-          )}
-        </div>
+          <p className="open-seamap-route-targets-title">Map routes</p>
+          <ul>
+            {mappedRoutes.map((route) => (
+              <li key={route.id}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (route.sheet) onSheetClick(route.sheet);
+                  }}
+                >
+                  <span>{route.title}</span>
+                  {route.subtitle && <small>{route.subtitle}</small>}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
       )}
     </>
   );

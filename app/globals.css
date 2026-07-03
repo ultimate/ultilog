@@ -267,6 +267,49 @@ dd { margin: 0; }
   cursor: pointer;
 }
 
+.open-seamap-route-targets {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.open-seamap-route-targets-title {
+  margin: 0;
+  color: var(--primary-dark);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.open-seamap-route-targets ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.65rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.open-seamap-route-targets button {
+  display: grid;
+  gap: 0.2rem;
+  width: 100%;
+  min-height: 3rem;
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  padding: 0.7rem 0.85rem;
+  background: #f8fbfd;
+  color: var(--primary-dark);
+  font-weight: 900;
+  text-align: left;
+}
+
+.open-seamap-route-targets button small {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
 .leaflet-popup-content {
   display: grid;
   gap: 0.25rem;
