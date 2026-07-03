@@ -1,3 +1,4 @@
+import { useI18n } from "../../../lib/i18n";
 import type { Dispatch, SetStateAction } from "react";
 import type { Boat, PersistedLogbook } from "../../../models/logbook";
 import { PasswordField } from "../../PasswordField";
@@ -5,6 +6,7 @@ import { PasswordField } from "../../PasswordField";
 type ProfilePageProps = Record<string, any>;
 
 export function ProfilePage(props: ProfilePageProps) {
+  const { t } = useI18n();
   const {
     logout,
     isLoggingOut,
@@ -51,32 +53,32 @@ export function ProfilePage(props: ProfilePageProps) {
   >;
 
   return (
-    <section className="profile-page module-panel" aria-label="Profile page">
+    <section className="profile-page module-panel" aria-label={t("profile.aria")}>
       <div className="page-heading">
         <div>
-          <h1>Profile</h1>
-          <p>Personal settings and account details.</p>
+          <h1>{t("profile.title")}</h1>
+          <p>{t("profile.subtitle")}</p>
         </div>
         <button className="secondary-action" type="button" onClick={logout}>
-          {isLoggingOut ? "Saving…" : "Logout"}
+          {isLoggingOut ? t("nav.saving") : t("nav.logout")}
         </button>
       </div>
       <section className="profile-grid">
         <article className="profile-hero-card">
           <span className="profile-avatar">ME</span>
           <div>
-            <p className="eyebrow">User profile</p>
+            <p className="eyebrow">{t("profile.userProfile")}</p>
             <h2>
               {accountName ||
                 logbook.crewMembers.find((crew) => crew.isPrimary)?.name ||
-                "My profile"}
+                t("profile.myProfile")}
             </h2>
-            <p>{accountEmail || "No email set"}</p>
+            <p>{accountEmail || t("profile.noEmail")}</p>
             <p className="group-tags">
               {userGroups.length ? (
                 userGroups.map((group) => <span key={group}>{group}</span>)
               ) : (
-                <span>No groups</span>
+                <span>{t("profile.noGroups")}</span>
               )}
             </p>
             <button
@@ -92,21 +94,21 @@ export function ProfilePage(props: ProfilePageProps) {
                 }
               }}
             >
-              Show my crew member details
+              {t("profile.showCrew")}
             </button>
           </div>
         </article>
         {(profileMessage || profileError) && (
           <article className="info-card">
-            <h3>Account status</h3>
+            <h3>{t("profile.accountStatus")}</h3>
             {profileMessage && <p className="save-success">{profileMessage}</p>}
             {profileError && <p className="save-error">{profileError}</p>}
           </article>
         )}
         <form className="info-card inline-edit-grid" onSubmit={updateName}>
-          <h3>Change username</h3>
+          <h3>{t("profile.changeUsername")}</h3>
           <label className="wide-field">
-            New username
+            {t("profile.newUsername")}
             <input
               required
               value={nameForm.name}
@@ -117,7 +119,7 @@ export function ProfilePage(props: ProfilePageProps) {
           </label>
           <PasswordField
             className="wide-field"
-            label="Current password"
+            label={t("profile.currentPassword")}
             required
             value={nameForm.currentPassword}
             onChange={(e) =>
@@ -125,17 +127,16 @@ export function ProfilePage(props: ProfilePageProps) {
             }
           />
           <div className="inline-edit-actions">
-            <button type="submit">Update username</button>
+            <button type="submit">{t("profile.updateUsername")}</button>
           </div>
           <p className="wide-field">
-            Usernames must be unique and may not contain reserved or abusive
-            terms.
+            {t("profile.usernameHelp")}
           </p>
         </form>
         <form className="info-card inline-edit-grid" onSubmit={updateEmail}>
-          <h3>Change email</h3>
+          <h3>{t("profile.changeEmail")}</h3>
           <label className="wide-field">
-            New email
+            {t("profile.newEmail")}
             <input
               type="email"
               required
@@ -147,7 +148,7 @@ export function ProfilePage(props: ProfilePageProps) {
           </label>
           <PasswordField
             className="wide-field"
-            label="Current password"
+            label={t("profile.currentPassword")}
             required
             value={emailForm.currentPassword}
             onChange={(e) =>
@@ -155,14 +156,14 @@ export function ProfilePage(props: ProfilePageProps) {
             }
           />
           <div className="inline-edit-actions">
-            <button type="submit">Update email</button>
+            <button type="submit">{t("profile.updateEmail")}</button>
           </div>
         </form>
         <form className="info-card inline-edit-grid" onSubmit={updatePassword}>
-          <h3>Change password</h3>
+          <h3>{t("profile.changePassword")}</h3>
           <PasswordField
             className="wide-field"
-            label="Current password"
+            label={t("profile.currentPassword")}
             required
             value={passwordForm.currentPassword}
             onChange={(e) =>
@@ -174,7 +175,7 @@ export function ProfilePage(props: ProfilePageProps) {
           />
           <PasswordField
             className="wide-field"
-            label="New password"
+            label={t("profile.newPassword")}
             required
             minLength={8}
             value={passwordForm.newPassword}
@@ -184,7 +185,7 @@ export function ProfilePage(props: ProfilePageProps) {
           />
           <PasswordField
             className="wide-field"
-            label="Confirm new password"
+            label={t("profile.confirmNewPassword")}
             required
             minLength={8}
             value={passwordForm.confirmPassword}
@@ -196,35 +197,34 @@ export function ProfilePage(props: ProfilePageProps) {
             }
           />
           <div className="inline-edit-actions">
-            <button type="submit">Update password</button>
+            <button type="submit">{t("profile.updatePassword")}</button>
           </div>
         </form>
         <article className="info-card">
-          <h3>Preferences</h3>
+          <h3>{t("profile.preferences")}</h3>
           <dl>
             <div>
-              <dt>Theme</dt>
-              <dd>{theme === "dark" ? "Dark mode" : "Light mode"}</dd>
+              <dt>{t("profile.theme")}</dt>
+              <dd>{theme === "dark" ? t("profile.darkMode") : t("profile.lightMode")}</dd>
             </div>
             <div>
-              <dt>Distance units</dt>
-              <dd>Nautical miles</dd>
+              <dt>{t("profile.distanceUnits")}</dt>
+              <dd>{t("profile.nauticalMiles")}</dd>
             </div>
             <div>
-              <dt>Default vessel</dt>
+              <dt>{t("profile.defaultVessel")}</dt>
               <dd>{activeBoat.name}</dd>
             </div>
           </dl>
         </article>
         <form className="info-card inline-edit-grid" onSubmit={deleteAccount}>
-          <h3>Delete account</h3>
+          <h3>{t("profile.deleteAccount")}</h3>
           <p className="wide-field">
-            This permanently deletes your account and all logbooks, boats, crew
-            members, and log lines.
+            {t("profile.deleteHelp")}
           </p>
           <PasswordField
             className="wide-field"
-            label="Current password"
+            label={t("profile.currentPassword")}
             required
             value={deleteForm.currentPassword}
             onChange={(e) =>
@@ -232,7 +232,7 @@ export function ProfilePage(props: ProfilePageProps) {
             }
           />
           <label className="wide-field">
-            Type DELETE to confirm
+            {t("profile.typeDelete")}
             <input
               required
               value={deleteForm.confirmation}

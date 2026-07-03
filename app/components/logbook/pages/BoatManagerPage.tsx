@@ -1,3 +1,4 @@
+import { useI18n } from "../../../lib/i18n";
 import type { Dispatch, SetStateAction } from "react";
 import type { Boat, BoatForm, PersistedLogbook } from "../../../models/logbook";
 import type { BoatType } from "../../../models/logbook";
@@ -8,6 +9,7 @@ import { ManagerShell } from "../../managers/ManagerShell";
 type BoatManagerPageProps = Record<string, any>;
 
 export function BoatManagerPage(props: BoatManagerPageProps) {
+  const { t } = useI18n();
   const {
     showBoatManager,
     saveBoat,
@@ -33,8 +35,8 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
   return (
     <section className="sheet-detail module-panel">
       <ManagerShell
-        title="Boats"
-        newLabel="New boat"
+        title={t("boats.title")}
+        newLabel={t("boats.new")}
         onNew={() => {
           setEditingBoatId(null);
           setBoatForm(defaultBoatForm);
@@ -58,7 +60,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                   <span>
                     <strong>{boat.name}</strong>
                     <small>
-                      {boat.type} · {boat.registration || "No registration"}
+                      {boat.type} · {boat.registration || t("boats.noRegistration")}
                     </small>
                   </span>
                 </button>
@@ -69,10 +71,10 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
         form={
           <form className="inline-edit-grid" onSubmit={saveBoat}>
             <p className="eyebrow">
-              {showBoatManager ? "New boat" : "Boat form"}
+              {showBoatManager ? t("boats.new") : t("boats.form")}
             </p>
             <label>
-              Name
+              {t("common.name")}
               <input
                 required
                 value={boatForm.name}
@@ -82,19 +84,19 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
               />
             </label>
             <label>
-              Type
+              {t("common.type")}
               <select
                 value={boatForm.type}
                 onChange={(e) =>
                   setBoatForm({ ...boatForm, type: e.target.value as BoatType })
                 }
               >
-                <option>Sail</option>
-                <option>Motor</option>
+                <option>{t("boats.sail")}</option>
+                <option>{t("boats.motor")}</option>
               </select>
             </label>
             <label>
-              Registration
+              {t("common.registration")}
               <input
                 value={boatForm.registration}
                 onChange={(e) =>
@@ -103,7 +105,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
               />
             </label>
             <label>
-              Flag state
+              {t("boats.flagState")}
               <input
                 value={boatForm.flagState}
                 onChange={(e) =>
@@ -112,7 +114,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
               />
             </label>
             <label>
-              Home port
+              {t("boats.homePort")}
               <input
                 value={boatForm.homePort}
                 onChange={(e) =>
@@ -121,7 +123,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
               />
             </label>
             <label>
-              Owner
+              {t("common.owner")}
               <input
                 value={boatForm.owner}
                 onChange={(e) =>
@@ -130,7 +132,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
               />
             </label>
             <label>
-              Dimensions
+              {t("boats.dimensions")}
               <input
                 value={boatForm.dimensions}
                 onChange={(e) =>
@@ -139,7 +141,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
               />
             </label>
             <label>
-              Manufacturer
+              {t("boats.manufacturer")}
               <input
                 value={boatForm.manufacturer}
                 onChange={(e) =>
@@ -157,7 +159,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
               />
             </label>
             <label>
-              Engine
+              {t("boats.engine")}
               <input
                 value={boatForm.engine}
                 onChange={(e) =>
@@ -166,7 +168,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
               />
             </label>
             <label className="wide-field">
-              Safety
+              {t("boats.safety")}
               <textarea
                 value={boatForm.safety}
                 onChange={(e) =>
@@ -176,18 +178,17 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
             </label>
             <div className="wide-field deviation-table-field">
               <div>
-                <p className="eyebrow">Deviation table</p>
+                <p className="eyebrow">{t("boats.deviationTable")}</p>
                 <p>
-                  Compass headings from 0° to 350° in 10° steps. Enter deviation
-                  values such as +2° or -1°.
+                  {t("boats.deviationHelp")}
                 </p>
               </div>
               <div className="table-scroll">
                 <table className="deviation-table">
                   <thead>
                     <tr>
-                      <th>Heading</th>
-                      <th>Deviation</th>
+                      <th>{t("boats.heading")}</th>
+                      <th>{t("boats.deviation")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -196,7 +197,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                         <td>{row.heading}°</td>
                         <td>
                           <input
-                            aria-label={`Deviation for ${row.heading} degrees`}
+                            aria-label={`${t("boats.deviation")} ${row.heading}°`}
                             value={row.deviation}
                             onChange={(e) =>
                               setBoatForm({

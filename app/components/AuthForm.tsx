@@ -2,11 +2,13 @@
 
 import { FormEvent, ReactNode, useState } from "react";
 import { signIn } from "next-auth/react";
+import { LocaleSelect, useI18n } from "../lib/i18n";
 import { PasswordField } from "./PasswordField";
 
 type Props = { mode: "login" | "register"; footer: ReactNode };
 
 export function AuthForm({ mode, footer }: Props) {
+  const { t } = useI18n();
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -16,14 +18,14 @@ export function AuthForm({ mode, footer }: Props) {
     const response = await fetch("/api/demo-login", { method: "POST" });
     if (!response.ok) {
       const payload = await response.json().catch(() => ({})) as { error?: string };
-      setError(payload.error ?? "Unable to start demo.");
+      setError(payload.error ?? t("auth.demoError"));
       setIsSubmitting(false);
       return;
     }
     const result = await signIn("credentials", { demo: "true", redirect: false });
     setIsSubmitting(false);
     if (result?.error) {
-      setError("Unable to start demo.");
+      setError(t("auth.demoError"));
       return;
     }
     window.location.assign("/");
@@ -40,7 +42,7 @@ export function AuthForm({ mode, footer }: Props) {
     if (mode === "register") {
       const confirmPassword = String(form.get("confirmPassword") ?? "");
       if (password !== confirmPassword) {
-        setError("Passwords do not match.");
+        setError(t("auth.passwordMismatch"));
         setIsSubmitting(false);
         return;
       }
@@ -51,7 +53,7 @@ export function AuthForm({ mode, footer }: Props) {
       });
       if (!response.ok) {
         const payload = await response.json().catch(() => ({})) as { error?: string };
-        setError(payload.error ?? "Unable to register.");
+        setError(payload.error ?? t("auth.registerError"));
         setIsSubmitting(false);
         return;
       }
@@ -60,7 +62,7 @@ export function AuthForm({ mode, footer }: Props) {
     const result = await signIn("credentials", { email, password, redirect: false });
     setIsSubmitting(false);
     if (result?.error) {
-      setError("Invalid email or password.");
+      setError(t("auth.invalidCredentials"));
       return;
     }
     window.location.assign("/");
@@ -70,18 +72,19 @@ export function AuthForm({ mode, footer }: Props) {
     <main className="auth-shell">
       <form onSubmit={submit} className="auth-card">
         <div className="brand-mark"><span className="sail-logo">◢</span><strong>ultilog</strong></div>
+        <LocaleSelect className="auth-locale-select" />
         <div>
-          <p className="eyebrow">Personal skipper logbook</p>
-          <h1>{mode === "login" ? "Welcome back" : "Create account"}</h1>
-          <p>Keep your boats, crew, and logbooks private to your account.</p>
+          <p className="eyebrow">{t("auth.eyebrow")}</p>
+          <h1>{mode === "login" ? t("auth.welcomeBack") : t("auth.createAccount")}</h1>
+          <p>{t("auth.subtitle")}</p>
         </div>
-        {mode === "register" && <label>Username<input aria-label="Name" name="name" required /></label>}
-        <label>Email<input name="email" required type="email" /></label>
-        <PasswordField label="Password" name="password" required minLength={8} />
-        {mode === "register" && <PasswordField label="Confirm" name="confirmPassword" required minLength={8} />}
+        {mode === "register" && <label>{t("auth.username")}<input aria-label={t("auth.name")} name="name" required /></label>}
+        <label>{t("auth.email")}<input name="email" required type="email" /></label>
+        <PasswordField label={t("auth.password")} name="password" required minLength={8} />
+        {mode === "register" && <PasswordField label={t("auth.confirm")} name="confirmPassword" required minLength={8} />}
         {error && <p className="auth-error">{error}</p>}
-        <button disabled={isSubmitting} type="submit">{isSubmitting ? "Please wait…" : mode === "login" ? "Log in" : "Register"}</button>
-        {mode === "login" && <button className="demo-login-button" disabled={isSubmitting} type="button" onClick={demoLogin}>Try the demo</button>}
+        <button disabled={isSubmitting} type="submit">{isSubmitting ? t("auth.pleaseWait") : mode === "login" ? t("auth.login") : t("auth.register")}</button>
+        {mode === "login" && <button className="demo-login-button" disabled={isSubmitting} type="button" onClick={demoLogin}>{t("auth.tryDemo")}</button>}
         <div className="auth-footer">{footer}</div>
       </form>
     </main>

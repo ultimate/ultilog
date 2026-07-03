@@ -1,3 +1,4 @@
+import { useI18n } from "../../../lib/i18n";
 import type { Dispatch, SetStateAction } from "react";
 import type {
   CrewForm,
@@ -15,6 +16,7 @@ type CrewAssignment = {
 type CrewManagerPageProps = Record<string, any>;
 
 export function CrewManagerPage(props: CrewManagerPageProps) {
+  const { t } = useI18n();
   const {
     selectedCrewIndex,
     lastCrewIndex,
@@ -34,8 +36,8 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
   return (
     <section className="sheet-detail module-panel">
       <ManagerShell
-        title="Crew"
-        newLabel="New crew"
+        title={t("crew.title")}
+        newLabel={t("crew.new")}
         onNew={() => {
           setLastCrewIndex(
             selectedCrewIndex >= 0 ? selectedCrewIndex : lastCrewIndex,
@@ -60,7 +62,7 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
                       {person.isPrimary ? "⭐ " : ""}
                       {person.name}
                     </strong>
-                    <small>{person.role || "Crew member"}</small>
+                    <small>{person.role || t("crew.member")}</small>
                   </span>
                 </button>
               </li>
@@ -77,13 +79,13 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
           >
             <p className="eyebrow">
               {selectedCrewIndex < 0
-                ? "New crew profile"
+                ? t("crew.newProfile")
                 : crewForm.isPrimary
-                  ? "This is me"
-                  : "Crew profile"}
+                  ? t("crew.thisIsMe")
+                  : t("crew.profile")}
             </p>
             <label>
-              Name
+              {t("common.name")}
               <input
                 value={crewForm.name}
                 onChange={(e) =>
@@ -92,7 +94,7 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
               />
             </label>
             <label>
-              Nationality
+              {t("crew.nationality")}
               <input
                 value={crewForm.nationality}
                 onChange={(e) =>
@@ -101,7 +103,7 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
               />
             </label>
             <label>
-              Role
+              {t("crew.role")}
               <input
                 value={crewForm.role}
                 onChange={(e) =>
@@ -110,7 +112,7 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
               />
             </label>
             <label>
-              Address
+              {t("crew.address")}
               <input
                 value={crewForm.address ?? ""}
                 onChange={(e) =>
@@ -119,7 +121,7 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
               />
             </label>
             <label className="wide-field">
-              Skipper certificate
+              {t("crew.certificate")}
               <input
                 value={crewForm.certificate ?? ""}
                 onChange={(e) =>
@@ -128,7 +130,7 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
               />
             </label>
             <article className="info-card wide-field">
-              <h3>Log sheets</h3>
+              <h3>{t("crew.logSheets")}</h3>
               <ul className="stack-list">
                 {(
                   crewAssignments.find(
@@ -137,7 +139,7 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
                 ).map(({ sheet, isSkipper }) => (
                   <li key={sheet.id}>
                     <strong>
-                      {isSkipper ? "⭐ Skipper · " : "Crew · "}
+                      {isSkipper ? `⭐ ${t("crew.skipper")} · ` : `${t("crew.label")} · `}
                       {sheet.title}
                     </strong>
                     <small>{sheet.dateRange}</small>
@@ -146,7 +148,7 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
               </ul>
             </article>
             <div className="inline-edit-actions">
-              <button type="submit">Save crew</button>
+              <button type="submit">{t("crew.save")}</button>
               <button
                 type="button"
                 className="ghost-button"
