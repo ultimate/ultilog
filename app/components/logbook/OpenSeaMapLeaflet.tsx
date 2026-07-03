@@ -45,7 +45,27 @@ type OpenSeaMapLeafletProps = {
 
 const defaultCenter: LatLngExpression = [54.5, 10.25];
 const detailRouteOptions = { color: "#2563eb", weight: 4, opacity: 0.82 };
-const summaryRouteOptions = { color: "#0f6b8f", weight: 5, opacity: 0.72 };
+const summaryRouteOptions = { weight: 5, opacity: 0.76 };
+const summaryRoutePalette = [
+  "#0f6b8f", // deep harbor blue
+  "#d97706", // buoy amber
+  "#047857", // sea green
+  "#7c3aed", // chart violet
+  "#be123c", // signal rose
+  "#0891b2", // lagoon cyan
+] as const;
+
+function summaryRouteColor(route: MapRoute, routeIndex: number) {
+  if (route.id) {
+    const hash = Array.from(route.id).reduce(
+      (total, character) => total + character.charCodeAt(0),
+      0,
+    );
+    return summaryRoutePalette[hash % summaryRoutePalette.length];
+  }
+
+  return summaryRoutePalette[routeIndex % summaryRoutePalette.length];
+}
 
 function toLatLng(point: Coordinate): LatLngExpression {
   return [point.latitude, point.longitude];
@@ -146,7 +166,7 @@ export function OpenSeaMapLeaflet({
         />
         <FitMapToRoutes routes={visibleRoutes} />
 
-        {visibleRoutes.map((route) => {
+        {visibleRoutes.map((route, routeIndex) => {
           const positions = route.points.map(toLatLng);
           const isClickable = Boolean(onRouteClick && route.sheet);
           return (
@@ -157,6 +177,7 @@ export function OpenSeaMapLeaflet({
                   ? detailRouteOptions
                   : {
                       ...summaryRouteOptions,
+                      color: summaryRouteColor(route, routeIndex),
                       className: isClickable
                         ? "open-seamap-clickable-route"
                         : undefined,
