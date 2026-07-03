@@ -14,4 +14,5 @@ export type { LogLine } from "./log-line";
 export type { LogSheet } from "./log-sheet";
 
 export type { BoatForm, CrewForm, LineForm, SheetForm } from "./logbook-forms";
+export type { ScannerResult, ScannedLogLine, ScannedLogSheetDraft } from "./logbook-scanner";
 export type { BoatRow, CrewMemberRow, LogLineRow, LogSheetRow, StoredLogSheet } from "./logbook-rows";
