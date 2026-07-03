@@ -156,40 +156,6 @@ dl div { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 0.75re
 dt { color: var(--primary-dark); font-weight: 800; }
 dd { margin: 0; }
 
-.route-map {
-  position: relative;
-  overflow: hidden;
-  flex: 1;
-  min-height: 100%;
-  border-radius: 1.25rem;
-  background:
-    linear-gradient(135deg, rgba(244, 185, 66, 0.26), transparent 34%),
-    repeating-linear-gradient(45deg, rgba(15, 107, 143, 0.14) 0 1px, transparent 1px 32px),
-    #d7edf4;
-}
-.route-map::before {
-  content: "";
-  position: absolute;
-  left: 12%; right: 12%; top: 38%;
-  height: 3px;
-  border-radius: 999px;
-  background: var(--primary);
-  transform: rotate(-13deg);
-  transform-origin: left center;
-}
-.map-marker {
-  position: absolute;
-  display: grid;
-  place-items: center;
-  width: 2rem;
-  height: 2rem;
-  border: 3px solid white;
-  border-radius: 50%;
-  background: var(--accent);
-  color: #102033;
-  font-weight: 900;
-  box-shadow: 0 8px 20px rgba(16, 32, 51, 0.22);
-}
 
 .open-seamap-view {
   width: 100%;
