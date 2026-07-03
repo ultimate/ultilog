@@ -1,0 +1,51 @@
+export const defaultLocale = "en" as const;
+export type Locale = "en" | "de" | "fr" | "it";
+
+export const locales: Locale[] = ["en", "de", "fr", "it"];
+export const localeLabels: Record<Locale, string> = {
+  en: "English",
+  de: "Deutsch",
+  fr: "Français",
+  it: "Italiano",
+};
+
+const englishDictionary = {
+    "nav.dashboard": "Dashboard / statistics", "nav.logbooks": "Logbook list", "nav.details": "Logbook details", "nav.boats": "Boat manager", "nav.crew": "Crew manager", "nav.users": "Users", "nav.compliance": "Compliance", "nav.admin": "Admin", "nav.userManagement": "User management", "nav.primary": "Primary navigation", "nav.modules": "Business logic modules", "nav.expandSidebar": "Expand sidebar", "nav.collapseSidebar": "Collapse sidebar", "nav.light": "Light", "nav.dark": "Dark", "nav.profile": "Profile", "nav.noEmail": "No email", "nav.logout": "Logout", "nav.saving": "Saving…", "nav.synced": "All data is synced", "nav.switchLight": "Switch to light mode", "nav.switchDark": "Switch to dark mode",
+    "locale.label": "Language",
+    "auth.eyebrow": "Personal skipper logbook", "auth.welcomeBack": "Welcome back", "auth.createAccount": "Create account", "auth.subtitle": "Keep your boats, crew, and logbooks private to your account.", "auth.username": "Username", "auth.name": "Name", "auth.email": "Email", "auth.password": "Password", "auth.confirm": "Confirm", "auth.pleaseWait": "Please wait…", "auth.login": "Log in", "auth.register": "Register", "auth.tryDemo": "Try the demo", "auth.needAccount": "Need an account?", "auth.alreadyRegistered": "Already registered?", "auth.demoError": "Unable to start demo.", "auth.passwordMismatch": "Passwords do not match.", "auth.registerError": "Unable to register.", "auth.invalidCredentials": "Invalid email or password.",
+    "common.save": "Save", "common.cancel": "Cancel", "common.delete": "Delete", "common.open": "Open", "common.from": "From", "common.to": "To", "common.boat": "Boat", "common.title": "Title", "common.name": "Name", "common.type": "Type", "common.registration": "Registration", "common.owner": "Owner",
+    "boats.title": "Boats", "boats.new": "New boat", "boats.form": "Boat form", "boats.noRegistration": "No registration", "boats.flagState": "Flag state", "boats.homePort": "Home port", "boats.dimensions": "Dimensions", "boats.manufacturer": "Manufacturer", "boats.engine": "Engine", "boats.safety": "Safety", "boats.deviationTable": "Deviation table", "boats.deviationHelp": "Compass headings from 0° to 350° in 10° steps. Enter deviation values such as +2° or -1°.", "boats.heading": "Heading", "boats.deviation": "Deviation", "boats.sail": "Sail", "boats.motor": "Motor", "boats.save": "Save boat",
+    "crew.title": "Crew", "crew.new": "New crew", "crew.member": "Crew member", "crew.newProfile": "New crew profile", "crew.thisIsMe": "This is me", "crew.profile": "Crew profile", "crew.nationality": "Nationality", "crew.role": "Role", "crew.address": "Address", "crew.certificate": "Skipper certificate", "crew.logSheets": "Log sheets", "crew.save": "Save crew", "crew.label": "Crew", "crew.list": "Crew list", "crew.addMember": "Add crew member", "crew.select": "Select crew…", "crew.skipper": "Skipper",
+    "compliance.subtitle": "ICC / Hochseeausweis requirements", "compliance.download": "Download report", "compliance.progress": "Overall progress", "compliance.complete": "Complete", "compliance.youHave": "You have", "compliance.required": "Required", "compliance.remaining": "Remaining", "compliance.checklist": "Requirement checklist", "compliance.sailMiles": "Sail miles", "compliance.motorMiles": "Motor miles", "compliance.oceanPassages": "Ocean passages", "compliance.asSkipper": "As skipper",
+    "logbooks.aria": "Log sheets", "logbooks.title": "Logbooks", "logbooks.subtitle": "Manage all your logbook entries", "logbooks.newSheet": "+ New sheet", "logbooks.search": "Search logbooks", "logbooks.searchPlaceholder": "Search logbooks…", "logbooks.vesselFilter": "Vessel filter", "logbooks.allVessels": "All vessels", "logbooks.timeFilter": "Time filter", "logbooks.allTime": "All time", "logbooks.overviewMap": "Overview map", "logbooks.allSheets": "All log sheets", "logbooks.mapHelp": "Click a route section to open the corresponding logsheet.", "logbooks.mapAria": "Overview map of all log sheets", "logbooks.date": "Date", "logbooks.entry": "Entry", "logbooks.vessel": "Vessel", "logbooks.fromTo": "From → To", "logbooks.totalMiles": "Total miles",
+    "details.loadingAria": "Loading logbook sheet", "details.loading": "Loading sheet", "details.jumpToBoat": "Jump to boat", "details.fromDateTime": "From datetime", "details.fromPosition": "From position", "details.toDateTime": "To datetime", "details.toPosition": "To position", "details.editSheet": "Edit sheet", "details.newSheet": "New sheet", "details.discard": "Discard changes", "details.headerAria": "Logbook sheet header", "details.untitled": "Untitled sheet", "details.unlock": "Unlock", "details.lock": "Lock", "details.summaryAria": "Summary calculated from log lines", "details.duration": "Duration", "details.logTitle": "Meteorological and nautical log", "details.coordinates": "Coordinates", "details.decimal": "Decimal", "details.hide": "Hide", "details.show": "Show", "details.courseColumns": "course conversion columns", "details.addLine": "+ Add line", "details.addLineHereNow": "+ Add line here & now", "details.timePos": "Time & Pos", "details.weatherSea": "Weather & Sea", "details.course": "Course", "details.travel": "Travel", "details.remarks": "Remarks", "details.actions": "Actions", "details.time": "Time", "details.lat": "Lat", "details.lon": "Lon", "details.weather": "Weather", "details.baro": "Baro", "details.wind": "Wind", "details.sea": "Sea", "details.tide": "Tide", "details.moon": "Moon", "details.speed": "Speed [kn]", "details.log": "Log [sm]", "details.sail": "Sail", "details.motor": "Motor", "details.remarksEvent": "Remarks, Maneuver, Event", "details.edit": "Edit", "details.saveLine": "Save line", "details.sheetSupport": "Sheet support sections", "details.technicalLog": "Technical log / daily checks", "details.map": "Map", "details.positions": "Positions connected from log lines", "details.windDirection": "Wind direction", "details.sailNote": "Sail note", "details.motorNote": "Motor note",
+    "profile.aria": "Profile page", "profile.title": "Profile", "profile.subtitle": "Personal settings and account details.", "profile.userProfile": "User profile", "profile.myProfile": "My profile", "profile.noEmail": "No email set", "profile.noGroups": "No groups", "profile.showCrew": "Show my crew member details", "profile.accountStatus": "Account status", "profile.changeUsername": "Change username", "profile.newUsername": "New username", "profile.currentPassword": "Current password", "profile.updateUsername": "Update username", "profile.usernameHelp": "Usernames must be unique and may not contain reserved or abusive terms.", "profile.changeEmail": "Change email", "profile.newEmail": "New email", "profile.updateEmail": "Update email", "profile.changePassword": "Change password", "profile.newPassword": "New password", "profile.confirmNewPassword": "Confirm new password", "profile.updatePassword": "Update password", "profile.preferences": "Preferences", "profile.theme": "Theme", "profile.darkMode": "Dark mode", "profile.lightMode": "Light mode", "profile.distanceUnits": "Distance units", "profile.nauticalMiles": "Nautical miles", "profile.defaultVessel": "Default vessel", "profile.deleteAccount": "Delete account", "profile.deleteHelp": "This permanently deletes your account and all logbooks, boats, crew members, and log lines.", "profile.typeDelete": "Type DELETE to confirm",
+    "users.aria": "Users page", "users.title": "Users", "users.subtitle": "Discover other ultilog sailors and compare high-level logbook activity.", "users.directory": "Community directory", "users.all": "All users", "users.mockHelp": "Mocked summary data until shared profile statistics are connected.", "users.username": "Username", "users.totalSail": "Total sail mileage", "users.totalMotor": "Total motor mileage", "users.sheets": "Logbook sheets", "users.boats": "Boats"
+} as const;
+
+type EnglishDictionary = typeof englishDictionary;
+export type TranslationKey = keyof EnglishDictionary;
+export type Dictionary = Record<TranslationKey, string>;
+
+const localized: Record<Exclude<Locale, "en">, Partial<Dictionary>> = {
+  de: { "locale.label": "Sprache", "nav.logout": "Abmelden", "auth.login": "Anmelden", "auth.register": "Registrieren", "common.cancel": "Abbrechen", "common.save": "Speichern", "profile.title": "Profil", "users.title": "Benutzer", "boats.title": "Boote", "crew.title": "Crew" },
+  fr: { "locale.label": "Langue", "nav.logout": "Déconnexion", "auth.login": "Connexion", "auth.register": "S’inscrire", "common.cancel": "Annuler", "common.save": "Enregistrer", "profile.title": "Profil", "users.title": "Utilisateurs", "boats.title": "Bateaux", "crew.title": "Équipage" },
+  it: { "locale.label": "Lingua", "nav.logout": "Esci", "auth.login": "Accedi", "auth.register": "Registrati", "common.cancel": "Annulla", "common.save": "Salva", "profile.title": "Profilo", "users.title": "Utenti", "boats.title": "Barche", "crew.title": "Equipaggio" },
+};
+
+export const dictionaries: Record<Locale, Dictionary> = {
+  en: englishDictionary,
+  de: { ...englishDictionary, ...localized.de },
+  fr: { ...englishDictionary, ...localized.fr },
+  it: { ...englishDictionary, ...localized.it },
+};
+
+export const translations = dictionaries;
+
+export function isLocale(value: string | null | undefined): value is Locale {
+  return Boolean(value && locales.includes(value as Locale));
+}
+
+export function t(locale: Locale, key: TranslationKey) {
+  return dictionaries[locale][key];
+}

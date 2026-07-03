@@ -1,43 +1,45 @@
+import { useI18n } from "../../../lib/i18n";
 import { legalRequirements } from "../../../templates/compliance";
 
 export function CompliancePage() {
+  const { t } = useI18n();
   return (
     <section className="sheet-detail module-panel">
       <div className="page-heading">
         <div>
-          <h1>Compliance</h1>
-          <p>ICC / Hochseeausweis requirements</p>
+          <h1>{t("nav.compliance")}</h1>
+          <p>{t("compliance.subtitle")}</p>
         </div>
         <button className="secondary-action" type="button">
-          Download report
+          {t("compliance.download")}
         </button>
       </div>
       <article className="compliance-board">
         <section className="compliance-summary">
-          <h3>Overall progress</h3>
+          <h3>{t("compliance.progress")}</h3>
           <div className="progress-layout">
             <div className="progress-ring">
               <strong>72%</strong>
-              <span>Complete</span>
+              <span>{t("compliance.complete")}</span>
             </div>
             <dl>
               <div>
-                <dt>You have</dt>
+                <dt>{t("compliance.youHave")}</dt>
                 <dd>2,173 nm</dd>
               </div>
               <div>
-                <dt>Required</dt>
+                <dt>{t("compliance.required")}</dt>
                 <dd>3,000 nm</dd>
               </div>
               <div>
-                <dt>Remaining</dt>
+                <dt>{t("compliance.remaining")}</dt>
                 <dd>827 nm</dd>
               </div>
             </dl>
           </div>
         </section>
         <section className="requirement-panel">
-          <h3>Requirement checklist</h3>
+          <h3>{t("compliance.checklist")}</h3>
           {legalRequirements.map((requirement, index) => (
             <div className="requirement-row" key={requirement}>
               <span>✓</span>
@@ -53,25 +55,25 @@ export function CompliancePage() {
       <div className="mileage-breakdown">
         <article>
           <span>△</span>
-          <strong>Sail miles</strong>
+          <strong>{t("compliance.sailMiles")}</strong>
           <b>1,650 nm</b>
           <small>70%</small>
         </article>
         <article>
           <span>✚</span>
-          <strong>Motor miles</strong>
+          <strong>{t("compliance.motorMiles")}</strong>
           <b>523 nm</b>
           <small>24%</small>
         </article>
         <article>
           <span>⛵</span>
-          <strong>Ocean passages</strong>
+          <strong>{t("compliance.oceanPassages")}</strong>
           <b>1,120 nm</b>
           <small>30%</small>
         </article>
         <article>
           <span>♙</span>
-          <strong>As skipper</strong>
+          <strong>{t("compliance.asSkipper")}</strong>
           <b>860 nm</b>
           <small>40%</small>
         </article>

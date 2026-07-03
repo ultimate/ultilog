@@ -1,3 +1,4 @@
+import { useI18n } from "../../../lib/i18n";
 import type { Dispatch, SetStateAction } from "react";
 import type {
   Boat,
@@ -33,6 +34,8 @@ export function LogbookListPage({
   setSheetForm: Dispatch<SetStateAction<SheetForm>>;
   setShowNewSheet: Dispatch<SetStateAction<boolean>>;
 }) {
+  const { t } = useI18n();
+
   function openSheet(sheet: LogSheet) {
     setActiveSheetId(sheet.id);
     setSheetForm(sheetToForm(sheet));
@@ -40,11 +43,11 @@ export function LogbookListPage({
   }
 
   return (
-    <section className="logbook-page module-panel" aria-label="Log sheets">
+    <section className="logbook-page module-panel" aria-label={t("logbooks.aria")}>
       <div className="page-heading">
         <div>
-          <h1>Logbooks</h1>
-          <p>Manage all your logbook entries</p>
+          <h1>{t("logbooks.title")}</h1>
+          <p>{t("logbooks.subtitle")}</p>
         </div>
         <button
           type="button"
@@ -56,34 +59,34 @@ export function LogbookListPage({
             navigate("details");
           }}
         >
-          + New sheet
+          {t("logbooks.newSheet")}
         </button>
       </div>
       <div className="logbook-toolbar">
         <input
-          aria-label="Search logbooks"
-          placeholder="Search logbooks…"
+          aria-label={t("logbooks.search")}
+          placeholder={t("logbooks.searchPlaceholder")}
           readOnly
         />
-        <select aria-label="Vessel filter" defaultValue="All vessels">
-          <option>All vessels</option>
+        <select aria-label={t("logbooks.vesselFilter")} defaultValue={t("logbooks.allVessels")}>
+          <option>{t("logbooks.allVessels")}</option>
         </select>
-        <select aria-label="Time filter" defaultValue="All time">
-          <option>All time</option>
+        <select aria-label={t("logbooks.timeFilter")} defaultValue={t("logbooks.allTime")}>
+          <option>{t("logbooks.allTime")}</option>
         </select>
       </div>
       <article className="map-card logbook-overview-map-card">
         <div className="logbook-overview-map-heading">
           <div>
-            <p className="eyebrow">Overview map</p>
-            <h3>All log sheets</h3>
+            <p className="eyebrow">{t("logbooks.overviewMap")}</p>
+            <h3>{t("logbooks.allSheets")}</h3>
           </div>
-          <p>Click a route section to open the corresponding logsheet.</p>
+          <p>{t("logbooks.mapHelp")}</p>
         </div>
         <LogSheetsMapView
           sheets={logbook.sheets}
           onSheetClick={openSheet}
-          ariaLabel="Overview map of all log sheets"
+          ariaLabel={t("logbooks.mapAria")}
         />
       </article>
       <article className="table-card logbook-list-card">
@@ -91,13 +94,13 @@ export function LogbookListPage({
           <table className="logbook-table">
             <thead>
               <tr>
-                <th>Date</th>
-                <th>Entry</th>
-                <th>Vessel</th>
-                <th>From → To</th>
-                <th>Sail miles</th>
-                <th>Motor miles</th>
-                <th>Total miles</th>
+                <th>{t("logbooks.date")}</th>
+                <th>{t("logbooks.entry")}</th>
+                <th>{t("logbooks.vessel")}</th>
+                <th>{t("logbooks.fromTo")}</th>
+                <th>{t("compliance.sailMiles")}</th>
+                <th>{t("compliance.motorMiles")}</th>
+                <th>{t("logbooks.totalMiles")}</th>
                 <th></th>
               </tr>
             </thead>

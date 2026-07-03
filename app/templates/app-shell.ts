@@ -1,11 +1,13 @@
+import type { TranslationKey } from "../lib/i18n";
+
 export const moduleTabs = [
-  { id: "dashboard", label: "Dashboard / statistics" },
-  { id: "logbooks", label: "Logbook list" },
-  { id: "details", label: "Logbook details" },
-  { id: "boats", label: "Boat manager" },
-  { id: "crew", label: "Crew manager" },
-  { id: "users", label: "Users" },
-  { id: "compliance", label: "Compliance" },
-] as const;
+  { id: "dashboard", labelKey: "nav.dashboard" },
+  { id: "logbooks", labelKey: "nav.logbooks" },
+  { id: "details", labelKey: "nav.details" },
+  { id: "boats", labelKey: "nav.boats" },
+  { id: "crew", labelKey: "nav.crew" },
+  { id: "users", labelKey: "nav.users" },
+  { id: "compliance", labelKey: "nav.compliance" },
+] as const satisfies readonly { id: string; labelKey: TranslationKey }[];
 
 export type ModuleTab = typeof moduleTabs[number]["id"];

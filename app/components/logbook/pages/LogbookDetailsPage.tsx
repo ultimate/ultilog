@@ -1,3 +1,4 @@
+import { useI18n } from "../../../lib/i18n";
 import { useRef, useState, type Dispatch, type SetStateAction } from "react";
 import type {
   Boat,
@@ -15,6 +16,7 @@ import { LogLinesMapView } from "../OpenSeaMapView";
 type LogbookDetailsPageProps = Record<string, any>;
 
 export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
+  const { t } = useI18n();
   const {
     isBackendReady,
     showNewSheet,
@@ -117,63 +119,63 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
 
   const renderLineEditor = (key: string) => (
     <tr key={key} className="inline-line-row">
-      <td><input type="datetime-local" value={lineForm.time} onChange={(e) => updateLineFormField("time", e.target.value)} /></td><td>{renderCoordinateInput("latitude", "Latitude")}</td><td>{renderCoordinateInput("longitude", "Longitude")}</td>
+      <td><input type="datetime-local" value={lineForm.time} onChange={(e) => updateLineFormField("time", e.target.value)} /></td><td>{renderCoordinateInput("latitude", t("details.lat"))}</td><td>{renderCoordinateInput("longitude", t("details.lon"))}</td>
       <td><select value={lineForm.weather} onChange={(e) => setLineForm({ ...lineForm, weather: e.target.value })}><option value="">—</option>{weatherEmojis.map((emoji) => <option key={emoji} value={emoji}>{emoji}</option>)}</select></td>
       <td>{renderNumberInput("barometer", { min: 800, max: 1200 })}</td>
-      <td><div className="compound-inputs"><select aria-label="Wind direction" value={lineForm.windDirection} onChange={(e) => setLineForm({ ...lineForm, windDirection: e.target.value })}><option value="">—</option>{compassDirections.map((direction) => <option key={direction} value={direction}>{direction}</option>)}</select>{renderNumberInput("windStrength")}<select value={lineForm.windUnit} onChange={(e) => setLineForm({ ...lineForm, windUnit: e.target.value })}><option value="bft">bft</option><option value="kn">kn</option></select></div></td>
+      <td><div className="compound-inputs"><select aria-label={t("details.windDirection")} value={lineForm.windDirection} onChange={(e) => setLineForm({ ...lineForm, windDirection: e.target.value })}><option value="">—</option>{compassDirections.map((direction) => <option key={direction} value={direction}>{direction}</option>)}</select>{renderNumberInput("windStrength")}<select value={lineForm.windUnit} onChange={(e) => setLineForm({ ...lineForm, windUnit: e.target.value })}><option value="bft">bft</option><option value="kn">kn</option></select></div></td>
       <td><div className="compound-inputs">{renderNumberInput("seaState", { step: "0.1" })}<select value={lineForm.seaUnit} onChange={(e) => setLineForm({ ...lineForm, seaUnit: e.target.value })}><option value="m">m</option><option value="ft">ft</option></select></div></td>
       <td><div className="compound-inputs">{renderNumberInput("tide", { step: "0.1" })}<select value={lineForm.tideUnit} onChange={(e) => setLineForm({ ...lineForm, tideUnit: e.target.value })}><option value="m">m</option><option value="ft">ft</option></select></div></td>
       <td><select value={lineForm.moon} onChange={(e) => setLineForm({ ...lineForm, moon: e.target.value })}><option value="">—</option>{moonEmojis.map((emoji) => <option key={emoji} value={emoji}>{emoji}</option>)}</select></td>
       <td>{renderCourseInput("magneticCourse", { min: 0, max: 359 })}</td>
       {showCourseColumns && courseFieldNames.map((field) => <td className="optional-course-cell" key={field}>{renderCourseInput(field, courseSignedFields.has(field) ? { min: -180, max: 180 } : { min: 0, max: 359 })}</td>)}
       <td>{renderCourseInput("courseOverGround", { min: 0, max: 359 })}</td><td>{renderNumberInput("speedKn", { step: "0.1" })}</td><td>{renderNumberInput("logNm", { step: "0.1" })}</td>
-      <td><div className="compound-inputs labeled-inputs"><label><span>[sm]</span>{renderNumberInput("sailSm", { step: "0.1" })}</label><label><span>[note]</span>{renderTextInput("sailNote", "Sail note")}</label></div></td>
-      <td><div className="compound-inputs labeled-inputs"><label><span>[sm]</span>{renderNumberInput("motorSm", { step: "0.1" })}</label><label><span>[h]</span>{renderNumberInput("motorHours", { step: "0.1" })}</label><label><span>[note]</span>{renderTextInput("motorNote", "Motor note")}</label></div></td>
-      <td>{renderTextInput("remarks")}</td><td colSpan={2}><div className="table-actions"><button type="button" onClick={saveLineFromFields}>{editingLineIndex === null ? "Save line" : "💾"}</button><button type="button" className="ghost-button" onClick={cancelLineEdit}>Cancel</button></div></td>
+      <td><div className="compound-inputs labeled-inputs"><label><span>[sm]</span>{renderNumberInput("sailSm", { step: "0.1" })}</label><label><span>[note]</span>{renderTextInput("sailNote", t("details.sailNote"))}</label></div></td>
+      <td><div className="compound-inputs labeled-inputs"><label><span>[sm]</span>{renderNumberInput("motorSm", { step: "0.1" })}</label><label><span>[h]</span>{renderNumberInput("motorHours", { step: "0.1" })}</label><label><span>[note]</span>{renderTextInput("motorNote", t("details.motorNote"))}</label></div></td>
+      <td>{renderTextInput("remarks")}</td><td colSpan={2}><div className="table-actions"><button type="button" onClick={saveLineFromFields}>{editingLineIndex === null ? t("details.saveLine") : "💾"}</button><button type="button" className="ghost-button" onClick={cancelLineEdit}>{t("common.cancel")}</button></div></td>
     </tr>
   );
 
   return (
     <>
       {!isBackendReady && (
-        <section className="sheet-detail" aria-label="Loading logbook sheet">
+        <section className="sheet-detail" aria-label={t("details.loadingAria")}>
           <form className="sheet-title-row inline-edit-card">
             <div className="inline-edit-grid">
-              <p className="eyebrow">Loading sheet</p>
+              <p className="eyebrow">{t("details.loading")}</p>
               <label>
-                Title
+                {t("common.title")}
                 <input disabled value="" readOnly />
               </label>
               <div className="header-edit-row">
-                <span>Boat</span>
-                <select aria-label="Boat" disabled value="">
+                <span>{t("common.boat")}</span>
+                <select aria-label={t("common.boat")} disabled value="">
                   <option value=""> </option>
                 </select>
                 <button type="button" className="edit-chip" disabled>
-                  Jump to boat
+                  {t("details.jumpToBoat")}
                 </button>
               </div>
               <div className="header-edit-row">
-                <span>From</span>
+                <span>{t("common.from")}</span>
                 <input
-                  aria-label="From datetime"
+                  aria-label={t("details.fromDateTime")}
                   type="datetime-local"
                   disabled
                   value=""
                   readOnly
                 />
-                <input aria-label="From position" disabled value="" readOnly />
+                <input aria-label={t("details.fromPosition")} disabled value="" readOnly />
               </div>
               <div className="header-edit-row">
-                <span>To</span>
+                <span>{t("common.to")}</span>
                 <input
-                  aria-label="To datetime"
+                  aria-label={t("details.toDateTime")}
                   type="datetime-local"
                   disabled
                   value=""
                   readOnly
                 />
-                <input aria-label="To position" disabled value="" readOnly />
+                <input aria-label={t("details.toPosition")} disabled value="" readOnly />
               </div>
             </div>
           </form>
@@ -189,7 +191,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
             >
               <div className="inline-edit-grid">
                 <p className="eyebrow">
-                  {editingSheetId ? "Edit sheet" : "New sheet"}
+                  {editingSheetId ? t("details.editSheet") : t("details.newSheet")}
                 </p>
                 <label>
                   Title
@@ -202,9 +204,9 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                   />
                 </label>
                 <div className="header-edit-row">
-                  <span>Boat</span>
+                  <span>{t("common.boat")}</span>
                   <select
-                    aria-label="Boat"
+                    aria-label={t("common.boat")}
                     value={sheetForm.boatId}
                     onChange={(e) =>
                       setSheetForm({ ...sheetForm, boatId: e.target.value })
@@ -236,9 +238,9 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                   )}
                 </div>
                 <div className="header-edit-row">
-                  <span>From</span>
+                  <span>{t("common.from")}</span>
                   <input
-                    aria-label="From datetime"
+                    aria-label={t("details.fromDateTime")}
                     type="datetime-local"
                     value={dateTimeLocalFromParts(
                       sheetForm.dateRange,
@@ -254,7 +256,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                     }}
                   />
                   <input
-                    aria-label="From position"
+                    aria-label={t("details.fromPosition")}
                     value={sheetForm.from}
                     onChange={(e) =>
                       setSheetForm({ ...sheetForm, from: e.target.value })
@@ -262,9 +264,9 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                   />
                 </div>
                 <div className="header-edit-row">
-                  <span>To</span>
+                  <span>{t("common.to")}</span>
                   <input
-                    aria-label="To datetime"
+                    aria-label={t("details.toDateTime")}
                     type="datetime-local"
                     value={dateTimeLocalFromParts(
                       sheetForm.dateRange,
@@ -280,7 +282,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                     }}
                   />
                   <input
-                    aria-label="To position"
+                    aria-label={t("details.toPosition")}
                     value={sheetForm.to}
                     onChange={(e) =>
                       setSheetForm({ ...sheetForm, to: e.target.value })
@@ -289,7 +291,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                 </div>
               </div>
               <div className="inline-edit-actions">
-                <button type="submit">Save</button>
+                <button type="submit">{t("common.save")}</button>
                 {showNewSheet ? (
                   <button
                     type="button"
@@ -316,14 +318,14 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
             <>
               <section
                 className="sheet-title-row logbook-section sheet-master-header"
-                aria-label="Logbook sheet header"
+                aria-label={t("details.headerAria")}
               >
                 <div className="sheet-master-title">
                   <h2 id="sheet-title">
                     {renderInlineTextField(
                       "title",
                       activeSheet.title,
-                      "Untitled sheet",
+                      t("details.untitled"),
                     )}
                   </h2>
                 </div>
@@ -349,13 +351,13 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                 </div>
                 <div className="paper-header header-table">
                   <div className="header-table-row">
-                    <span>Boat</span>
+                    <span>{t("common.boat")}</span>
                     <strong>{renderInlineBoatField()}</strong>
                     <button
                       type="button"
                       className="edit-chip icon-chip"
-                      aria-label="Jump to boat"
-                      title="Jump to boat"
+                      aria-label={t("details.jumpToBoat")}
+                      title={t("details.jumpToBoat")}
                       onClick={() => {
                         setSelectedBoatId(activeBoat.id);
                         setEditingBoatId(activeBoat.id);
@@ -368,7 +370,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                     </button>
                   </div>
                   <div className="header-table-row">
-                    <span>From</span>
+                    <span>{t("common.from")}</span>
                     <strong>
                       {renderInlineDateField(
                         "departed",
@@ -380,7 +382,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                     </strong>
                   </div>
                   <div className="header-table-row">
-                    <span>To</span>
+                    <span>{t("common.to")}</span>
                     <strong>
                       {renderInlineDateField(
                         "arrived",
@@ -400,46 +402,46 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
             <>
               <section
                 className="entry-metrics logbook-section"
-                aria-label="Summary calculated from log lines"
+                aria-label={t("details.summaryAria")}
               >
                 <article>
-                  <span>Motor miles</span>
+                  <span>{t("compliance.motorMiles")}</span>
                   <strong>{activeSheetSummary.motorMiles} nm</strong>
                 </article>
                 <article>
-                  <span>Sail miles</span>
+                  <span>{t("compliance.sailMiles")}</span>
                   <strong>{activeSheetSummary.sailMiles} nm</strong>
                 </article>
                 <article>
-                  <span>Total miles</span>
+                  <span>{t("logbooks.totalMiles")}</span>
                   <strong>{activeSheetSummary.totalMiles} nm</strong>
                 </article>
                 <article>
-                  <span>Duration</span>
+                  <span>{t("details.duration")}</span>
                   <strong>{activeSheetSummary.duration}</strong>
                 </article>
               </section>
 
               <article className="table-card">
                 <div className="table-header">
-                  <div><h3>Meteorological and nautical log</h3></div>
+                  <div><h3>{t("details.logTitle")}</h3></div>
                   <div className="table-actions">
-                    <button type="button" onClick={() => setCoordinateFormat((format) => format === "decimal" ? "dms" : "decimal")}>Coordinates: {coordinateFormat === "decimal" ? "Decimal" : "DMS"}</button>
-                    <button type="button" onClick={() => setShowCourseColumns((show) => !show)}>{showCourseColumns ? "Hide" : "Show"} course conversion columns</button>
-                    <button type="button" disabled={isActiveSheetLocked} onClick={startAddingLine}>+ Add line</button>
-                    <button type="button" disabled={isActiveSheetLocked} onClick={startAddingLineHereNow}>+ Add line here & now</button>
+                    <button type="button" onClick={() => setCoordinateFormat((format) => format === "decimal" ? "dms" : "decimal")}>{t("details.coordinates")}: {coordinateFormat === "decimal" ? t("details.decimal") : "DMS"}</button>
+                    <button type="button" onClick={() => setShowCourseColumns((show) => !show)}>{showCourseColumns ? t("details.hide") : t("details.show")} {t("details.courseColumns")}</button>
+                    <button type="button" disabled={isActiveSheetLocked} onClick={startAddingLine}>{t("details.addLine")}</button>
+                    <button type="button" disabled={isActiveSheetLocked} onClick={startAddingLineHereNow}>{t("details.addLineHereNow")}</button>
                   </div>
                 </div>
                 <div className="table-scroll">
                   <table className={showCourseColumns ? "log-lines-table with-course-columns" : "log-lines-table"}>
                     <thead>
                       <tr className="column-groups">
-                        <th colSpan={3}>Time &amp; Pos</th><th colSpan={6}>Weather &amp; Sea</th><th colSpan={showCourseColumns ? 9 : 2}>Course</th><th colSpan={4}>Travel</th><th>Remarks</th><th colSpan={2}>Actions</th>
+                        <th colSpan={3}>{t("details.timePos")}</th><th colSpan={6}>{t("details.weatherSea")}</th><th colSpan={showCourseColumns ? 9 : 2}>{t("details.course")}</th><th colSpan={4}>{t("details.travel")}</th><th>{t("details.remarks")}</th><th colSpan={2}>{t("details.actions")}</th>
                       </tr>
                       <tr>
-                        <th>Time</th><th>Lat</th><th>Lon</th><th>Weather</th><th>Baro</th><th>Wind</th><th>Sea</th><th>Tide</th><th>Moon</th><th>MgK / CC</th>
+                        <th>{t("details.time")}</th><th>{t("details.lat")}</th><th>{t("details.lon")}</th><th>{t("details.weather")}</th><th>{t("details.baro")}</th><th>{t("details.wind")}</th><th>{t("details.sea")}</th><th>{t("details.tide")}</th><th>{t("details.moon")}</th><th>MgK / CC</th>
                         {showCourseColumns && courseConversionColumns.map((column) => <th key={column}>{column}</th>)}
-                        <th>KüG / COG</th><th>Speed [kn]</th><th>Log [sm]</th><th>Sail</th><th>Motor</th><th>Remarks, Maneuver, Event</th><th>Edit</th><th>Delete</th>
+                        <th>KüG / COG</th><th>{t("details.speed")}</th><th>{t("details.log")}</th><th>{t("details.sail")}</th><th>{t("details.motor")}</th><th>{t("details.remarksEvent")}</th><th>{t("details.edit")}</th><th>{t("common.delete")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -460,26 +462,26 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
 
               <section
                 className="sheet-support-grid logbook-section"
-                aria-label="Sheet support sections"
+                aria-label={t("details.sheetSupport")}
               >
                 <article className="info-card logbook-section">
-                  <h3>Crew list</h3>
+                  <h3>{t("crew.list")}</h3>
                   <ul className="stack-list crew-assignment-list">
                     {activeSheet.crew.map((person, index) => {
                       return (
                         <li key={`${person.id}-${index}`}>
                           <div className="crew-assignment-main">
                             <strong>
-                              {index + 1}. {index === 0 ? "⭐ Skipper · " : ""}
+                              {index + 1}. {index === 0 ? `⭐ ${t("crew.skipper")} · ` : ""}
                               {person.name}
                             </strong>
                             <span>
                               {person.nationality} · {person.role}
                             </span>
                             <div className="crew-assignment-fields">
-                              <span>From</span>
+                              <span>{t("common.from")}</span>
                               <input
-                                aria-label={`Crew ${index + 1} from datetime`}
+                                aria-label={`${t("crew.label")} ${index + 1} ${t("details.fromDateTime")}`}
                                 type="datetime-local"
                                 disabled={isActiveSheetLocked}
                                 value={person.embarkationDateTime}
@@ -492,7 +494,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                                 }
                               />
                               <input
-                                aria-label={`Crew ${index + 1} from position`}
+                                aria-label={`${t("crew.label")} ${index + 1} ${t("details.fromPosition")}`}
                                 disabled={isActiveSheetLocked}
                                 value={person.embarkationPosition}
                                 onChange={(e) =>
@@ -503,9 +505,9 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                                   )
                                 }
                               />
-                              <span>To</span>
+                              <span>{t("common.to")}</span>
                               <input
-                                aria-label={`Crew ${index + 1} to datetime`}
+                                aria-label={`${t("crew.label")} ${index + 1} ${t("details.toDateTime")}`}
                                 type="datetime-local"
                                 disabled={isActiveSheetLocked}
                                 value={person.disembarkationDateTime}
@@ -518,7 +520,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                                 }
                               />
                               <input
-                                aria-label={`Crew ${index + 1} to position`}
+                                aria-label={`${t("crew.label")} ${index + 1} ${t("details.toPosition")}`}
                                 disabled={isActiveSheetLocked}
                                 value={person.disembarkationPosition}
                                 onChange={(e) =>
@@ -566,7 +568,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                     })}
                   </ul>
                   <label>
-                    Add crew member
+                    {t("crew.addMember")}
                     <select
                       disabled={isActiveSheetLocked}
                       defaultValue=""
@@ -576,7 +578,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                         e.currentTarget.value = "";
                       }}
                     >
-                      <option value="">Select crew…</option>
+                      <option value="">{t("crew.select")}</option>
                       {logbook.crewMembers
                         .filter(
                           (member) =>
@@ -593,7 +595,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                   </label>
                 </article>
                 <article className="info-card logbook-section">
-                  <h3>Technical log / daily checks</h3>
+                  <h3>{t("details.technicalLog")}</h3>
                   <ul className="check-list">
                     {[
                       ...activeSheet.watchPlan,
@@ -605,8 +607,8 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                 </article>
                 <article className="map-card logbook-section">
                   <div>
-                    <p className="eyebrow">Map</p>
-                    <h3>Positions connected from log lines</h3>
+                    <p className="eyebrow">{t("details.map")}</p>
+                    <h3>{t("details.positions")}</h3>
                   </div>
                   <LogLinesMapView logLines={activeSheet.lines} />
                 </article>

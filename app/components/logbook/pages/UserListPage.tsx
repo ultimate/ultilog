@@ -1,3 +1,5 @@
+import { useI18n } from "../../../lib/i18n";
+
 type SocialUser = {
   username: string;
   sailMiles: number;
@@ -11,24 +13,24 @@ export function UserListPage({
 }: {
   mockSocialUsers: SocialUser[];
 }) {
+  const { t } = useI18n();
   return (
-    <section className="module-panel" aria-label="Users page">
+    <section className="module-panel" aria-label={t("users.aria")}>
       <div className="page-heading">
         <div>
-          <h1>Users</h1>
+          <h1>{t("users.title")}</h1>
           <p>
-            Discover other ultilog sailors and compare high-level logbook
-            activity.
+            {t("users.subtitle")}
           </p>
         </div>
       </div>
       <article className="table-card">
         <div className="table-header">
           <div>
-            <p className="eyebrow">Community directory</p>
-            <h3>All users</h3>
+            <p className="eyebrow">{t("users.directory")}</p>
+            <h3>{t("users.all")}</h3>
             <p>
-              Mocked summary data until shared profile statistics are connected.
+              {t("users.mockHelp")}
             </p>
           </div>
         </div>
@@ -36,11 +38,11 @@ export function UserListPage({
           <table className="logbook-table users-table">
             <thead>
               <tr>
-                <th>Username</th>
-                <th>Total sail mileage</th>
-                <th>Total motor mileage</th>
-                <th>Logbook sheets</th>
-                <th>Boats</th>
+                <th>{t("users.username")}</th>
+                <th>{t("users.totalSail")}</th>
+                <th>{t("users.totalMotor")}</th>
+                <th>{t("users.sheets")}</th>
+                <th>{t("users.boats")}</th>
               </tr>
             </thead>
             <tbody>
