@@ -1,5 +1,5 @@
 import { useI18n } from "../../../lib/i18n";
-import { useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import type {
   Boat,
   LineForm,
@@ -70,6 +70,17 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const [coordinateFormat, setCoordinateFormat] = useState<CoordinateFormat>("decimal");
   const [isMapExpanded, setIsMapExpanded] = useState(false);
   const courseConversionSequence = useRef(0);
+
+  useEffect(() => {
+    if (!isMapExpanded) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isMapExpanded]);
 
   const renderNumberInput = (field: keyof LineForm, options?: { min?: number; max?: number; step?: string }) => (
     <input type="number" min={options?.min} max={options?.max} step={options?.step ?? "1"} value={lineForm[field]} onChange={(e) => setLineForm({ ...lineForm, [field]: e.target.value })} />
