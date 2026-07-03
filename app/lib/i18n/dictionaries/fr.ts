@@ -180,6 +180,8 @@ export const fr: Dictionary = {
   "details.technicalLog": "Journal technique / contrôles quotidiens",
   "details.map": "Carte",
   "details.positions": "Carte des lignes du journal",
+  "details.fullMap": "Vue complète",
+  "details.closeMap": "Fermer la carte",
   "details.windDirection": "Direction du vent",
   "details.sailNote": "Note de voile",
   "details.motorNote": "Note moteur",

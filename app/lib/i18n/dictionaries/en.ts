@@ -178,6 +178,8 @@ export const en = {
   "details.technicalLog": "Technical log / daily checks",
   "details.map": "Map",
   "details.positions": "Log line map",
+  "details.fullMap": "Full view",
+  "details.closeMap": "Close map",
   "details.windDirection": "Wind direction",
   "details.sailNote": "Sail note",
   "details.motorNote": "Motor note",
