@@ -73,13 +73,13 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
 
 async function assertCreatedItemsVisible(page: Page, items: { crewName: string; boatName: string; sheetTitle: string }) {
   await openModule(page, "Logbook list", "+ New sheet");
-  await expect(page.getByText(items.sheetTitle)).toBeVisible();
+  await expect(page.getByRole("button", { name: items.sheetTitle, exact: true })).toBeVisible();
 
   await openModule(page, "Boat manager", "New boat");
   await expect(page.getByText(items.boatName)).toBeVisible();
 
   await openModule(page, "Logbook list", "+ New sheet");
-  await page.getByRole("button", { name: /Ionian training passage · Day 3/ }).click();
+  await page.getByRole("button", { name: "Ionian training passage · Day 3", exact: true }).click();
   await openModule(page, "Crew manager", "New crew");
   await expect(page.getByText(items.crewName)).toBeVisible();
 }
