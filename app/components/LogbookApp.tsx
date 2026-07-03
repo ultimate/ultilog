@@ -32,7 +32,6 @@ import {
   createId,
   modulePath,
   normalizeLogbookIds,
-  numberOrZero,
   persistLogbook,
   routeFromPathname,
 } from "./logbook/persistence";
@@ -45,7 +44,7 @@ import {
 } from "./logbook/date-utils";
 import { ManagerShell } from "./managers/ManagerShell";
 import { courseConversionColumns } from "../domain/nautical/course-conversion";
-import { normalizeCoordinate, parseCoordinate } from "../domain/nautical/coordinates";
+import { lineFormToLogLine } from "../domain/log-lines/log-line-form";
 import { ModuleTabs, type ActiveView } from "../templates/ModuleTabs";
 import { useI18n } from "../lib/i18n";
 import { PasswordField } from "./PasswordField";
@@ -856,39 +855,7 @@ export function LogbookApp({
 
   async function saveLineFromFields() {
     if (activeSheet.status === "Locked") return;
-    const line: LogLine = {
-      time: lineForm.time,
-      position: lineForm.position,
-      latitude: normalizeCoordinate(parseCoordinate(lineForm.latitude), "lat"),
-      longitude: normalizeCoordinate(parseCoordinate(lineForm.longitude), "lon"),
-      weather: lineForm.weather,
-      barometer: clampInt(lineForm.barometer, 800, 1200),
-      windDirection: lineForm.windDirection,
-      windStrength: numberOrZero(lineForm.windStrength),
-      windUnit: lineForm.windUnit === "kn" ? "kn" : "bft",
-      seaState: numberOrZero(lineForm.seaState),
-      seaUnit: lineForm.seaUnit === "ft" ? "ft" : "m",
-      tide: numberOrZero(lineForm.tide),
-      tideUnit: lineForm.tideUnit === "ft" ? "ft" : "m",
-      moon: lineForm.moon,
-      magneticCourse: bearing(lineForm.magneticCourse),
-      deviation: signedCourse(lineForm.deviation),
-      magneticCourseCorrected: bearing(lineForm.magneticCourseCorrected),
-      variation: signedCourse(lineForm.variation),
-      trueCourse: bearing(lineForm.trueCourse),
-      driftAngle: signedCourse(lineForm.driftAngle),
-      courseThroughWater: bearing(lineForm.courseThroughWater),
-      currentDrift: signedCourse(lineForm.currentDrift),
-      courseOverGround: bearing(lineForm.courseOverGround),
-      speedKn: numberOrZero(lineForm.speedKn),
-      logNm: numberOrZero(lineForm.logNm),
-      sailSm: numberOrZero(lineForm.sailSm),
-      sailNote: lineForm.sailNote,
-      motorSm: numberOrZero(lineForm.motorSm),
-      motorHours: numberOrZero(lineForm.motorHours),
-      motorNote: lineForm.motorNote,
-      remarks: lineForm.remarks,
-    };
+    const line = lineFormToLogLine(lineForm);
     const currentLogbook = logbookRef.current;
     const nextLogbook = {
       ...currentLogbook,
@@ -1660,18 +1627,6 @@ export function LogbookApp({
   );
 }
 
-function clampInt(value: string, min: number, max: number) {
-  const parsed = Math.round(numberOrZero(value));
-  return Math.min(Math.max(parsed, min), max);
-}
-
-function bearing(value: string) {
-  return clampInt(value, 0, 359);
-}
-
-function signedCourse(value: string) {
-  return clampInt(value, -180, 180);
-}
 
 function lineTimeValue(line: LogLine) {
   const parsed = Date.parse(line.time);
