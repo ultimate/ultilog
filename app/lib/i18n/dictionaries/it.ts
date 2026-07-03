@@ -55,6 +55,7 @@ export const it: Dictionary = {
   "common.name": "Nome",
   "common.type": "Tipo",
   "common.registration": "Registrazione",
+  "common.selectEntry": "Seleziona una voce",
   "common.owner": "Proprietario",
   "boats.title": "Barche",
   "boats.new": "Nuova barca",

@@ -48,7 +48,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
               <li key={boat.id}>
                 <button
                   type="button"
-                  className={boat.id === selectedBoat.id ? "active" : ""}
+                  className={boat.id === editingBoatId ? "active" : ""}
                   onClick={() => {
                     setSelectedBoatId(boat.id);
                     setEditingBoatId(boat.id);
@@ -69,6 +69,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
           </ul>
         }
         form={
+          showBoatManager || editingBoatId ? (
           <form className="inline-edit-grid" onSubmit={saveBoat}>
             <p className="eyebrow">
               {showBoatManager ? t("boats.new") : t("boats.form")}
@@ -260,6 +261,9 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
               </button>
             </div>
           </form>
+          ) : (
+            <p className="empty-state">{t("common.selectEntry")}</p>
+          )
         }
       />
     </section>
