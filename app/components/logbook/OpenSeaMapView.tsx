@@ -117,14 +117,34 @@ export function LogSheetsMapView({
 }: LogSheetsMapViewProps) {
   const routes = useMemo(() => sheets.map(logSheetToRoute), [sheets]);
   return (
-    <OpenSeaMapLeaflet
-      ariaLabel={ariaLabel}
-      className={className}
-      emptyMessage={emptyMessage}
-      routes={routes}
-      onRouteClick={(route) => {
-        if (route.sheet) onSheetClick?.(route.sheet);
-      }}
-    />
+    <>
+      <OpenSeaMapLeaflet
+        ariaLabel={ariaLabel}
+        className={className}
+        emptyMessage={emptyMessage}
+        routes={routes}
+        onRouteClick={(route) => {
+          if (route.sheet) onSheetClick?.(route.sheet);
+        }}
+      />
+      {onSheetClick && routes.some((route) => route.sheet) && (
+        <div
+          className="open-seamap-route-targets"
+          aria-label="Overview map route targets"
+        >
+          {routes.map((route) =>
+            route.sheet ? (
+              <button
+                key={route.id}
+                type="button"
+                onClick={() => onSheetClick(route.sheet!)}
+              >
+                Open route {route.title}
+              </button>
+            ) : null,
+          )}
+        </div>
+      )}
+    </>
   );
 }
