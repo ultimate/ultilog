@@ -200,6 +200,8 @@ export function LogbookApp({
   const [selectedBoatId, setSelectedBoatId] = useState(
     defaultLogbook.boats[0].id,
   );
+  const [scannerBoatId, setScannerBoatId] = useState(defaultLogbook.boats[0].id);
+  const [isScannerUploading, setIsScannerUploading] = useState(false);
   const [selectedCrewIndex, setSelectedCrewIndex] = useState(-2);
   const [lastCrewIndex, setLastCrewIndex] = useState(0);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -323,6 +325,11 @@ export function LogbookApp({
           : (current) => ({ ...current, boatId: fallbackBoat.id }),
       );
       setSelectedBoatId(nextBoat.id);
+      setScannerBoatId(
+        normalizedLogbook.boats.length === 1
+          ? normalizedLogbook.boats[0].id
+          : nextBoat.id,
+      );
       if (routedBoat) {
         setEditingBoatId(routedBoat.id);
         setBoatForm(boatToForm(routedBoat));
@@ -469,6 +476,55 @@ export function LogbookApp({
     };
   }, [isBackendReady]);
 
+
+  async function refreshLogbookAfterScan(sheetId: string) {
+    const response = await fetch("/api/logbook");
+    if (!response.ok) throw new Error("Unable to refresh scanned logbook");
+    const storedLogbook = (await response.json()) as PersistedLogbook;
+    const { logbook: normalizedLogbook } = normalizeLogbookIds(storedLogbook);
+    const scannedSheet = normalizedLogbook.sheets.find(
+      (sheet) => sheet.id === sheetId,
+    );
+    logbookRef.current = normalizedLogbook;
+    setLogbook(normalizedLogbook);
+    if (scannedSheet) {
+      setActiveSheetId(scannedSheet.id);
+      setSheetForm(sheetToForm(scannedSheet));
+      navigate("details", scannedSheet.id);
+    }
+  }
+
+  async function scanLogbookFiles(files: FileList | File[], boatId: string) {
+    if (!boatId) {
+      setSaveError(t("logbooks.createBoatBeforeScan"));
+      return;
+    }
+    const upload = new FormData();
+    upload.append("boatId", boatId);
+    Array.from(files).forEach((file) => upload.append("files", file));
+
+    setIsScannerUploading(true);
+    setSaveError(null);
+    try {
+      const response = await fetch("/api/logbook/scanner", {
+        method: "POST",
+        body: upload,
+      });
+      const payload = (await response.json().catch(() => ({}))) as {
+        sheetId?: string;
+        error?: string;
+      };
+      if (!response.ok || !payload.sheetId) {
+        throw new Error(payload.error ?? t("logbooks.scanUploadError"));
+      }
+      await refreshLogbookAfterScan(payload.sheetId);
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : t("logbooks.scanUploadError"));
+    } finally {
+      setIsScannerUploading(false);
+    }
+  }
+
   const activeSheet =
     logbook.sheets.find((sheet) => sheet.id === activeSheetId) ??
     logbook.sheets[0];
@@ -480,6 +536,12 @@ export function LogbookApp({
     logbook.boats[0];
   const selectedCrew =
     logbook.crewMembers[selectedCrewIndex] ?? logbook.crewMembers[0];
+  const effectiveScannerBoatId =
+    logbook.boats.length === 1
+      ? logbook.boats[0].id
+      : logbook.boats.some((boat) => boat.id === scannerBoatId)
+        ? scannerBoatId
+        : (logbook.boats[0]?.id ?? "");
   const isAdmin = userGroups.includes("admin");
   const isActiveSheetLocked = activeSheet.status === "Locked";
   const activeSheetSummary = useMemo(
@@ -1343,11 +1405,18 @@ export function LogbookApp({
           {activeModule === "logbooks" && (
             <LogbookListPage
               activeBoat={activeBoat}
+              scannerBoatId={effectiveScannerBoatId}
+              isScannerUploading={isScannerUploading}
               calculateSheetSummary={calculateSheetSummary}
               logbook={logbook}
               navigate={navigate}
-              onScanFilesSelected={(files) => {
-                console.info("Selected logbook scan files", Array.from(files));
+              onScanFilesSelected={scanLogbookFiles}
+              onScannerBoatChange={setScannerBoatId}
+              onCreateBoatRequested={() => {
+                setShowBoatManager(true);
+                setEditingBoatId(null);
+                setBoatForm(defaultBoatForm);
+                navigate("boats");
               }}
               setActiveSheetId={setActiveSheetId}
               setEditingSheetId={setEditingSheetId}

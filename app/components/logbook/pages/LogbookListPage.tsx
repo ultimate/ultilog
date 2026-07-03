@@ -17,20 +17,28 @@ type SheetSummary = { motorMiles: number; sailMiles: number };
 
 export function LogbookListPage({
   activeBoat,
+  scannerBoatId,
+  isScannerUploading,
   calculateSheetSummary,
   logbook,
   navigate,
   onScanFilesSelected,
+  onScannerBoatChange,
+  onCreateBoatRequested,
   setActiveSheetId,
   setEditingSheetId,
   setSheetForm,
   setShowNewSheet,
 }: {
   activeBoat?: Boat;
+  scannerBoatId: string;
+  isScannerUploading: boolean;
   calculateSheetSummary: (sheet: LogSheet) => SheetSummary;
   logbook: PersistedLogbook;
   navigate: Navigate;
-  onScanFilesSelected: (files: FileList | File[]) => void;
+  onScanFilesSelected: (files: FileList | File[], boatId: string) => void;
+  onScannerBoatChange: (boatId: string) => void;
+  onCreateBoatRequested: () => void;
   setActiveSheetId: Dispatch<SetStateAction<string>>;
   setEditingSheetId: Dispatch<SetStateAction<string | null>>;
   setSheetForm: Dispatch<SetStateAction<SheetForm>>;
@@ -39,11 +47,13 @@ export function LogbookListPage({
   const { t } = useI18n();
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
-  const hasBoat = Boolean(activeBoat);
+  const hasBoats = logbook.boats.length > 0;
+  const hasMultipleBoats = logbook.boats.length > 1;
 
   function handleScannerFilesSelected(files: FileList | null) {
     if (!files?.length) return;
-    onScanFilesSelected(files);
+    if (!scannerBoatId) return;
+    onScanFilesSelected(files, scannerBoatId);
   }
 
   function openSheet(sheet: LogSheet) {
@@ -73,7 +83,7 @@ export function LogbookListPage({
           {t("logbooks.newSheet")}
         </button>
       </div>
-      {hasBoat && (
+      {hasBoats ? (
         <div className="logbook-scanner-actions" aria-label={t("logbooks.scannerActions")}>
           <input
             ref={cameraInputRef}
@@ -86,9 +96,28 @@ export function LogbookListPage({
               event.currentTarget.value = "";
             }}
           />
+          {hasMultipleBoats && (
+            <label className="scanner-boat-selector">
+              <span>{t("logbooks.scannerBoat")}</span>
+              <select
+                value={scannerBoatId}
+                onChange={(event) =>
+                  onScannerBoatChange(event.currentTarget.value)
+                }
+                aria-label={t("logbooks.scannerBoat")}
+              >
+                {logbook.boats.map((boat) => (
+                  <option key={boat.id} value={boat.id}>
+                    {boat.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <button
             type="button"
             className="secondary-action"
+            disabled={isScannerUploading}
             onClick={() => cameraInputRef.current?.click()}
           >
             {t("logbooks.scanWithCamera")}
@@ -107,9 +136,23 @@ export function LogbookListPage({
           <button
             type="button"
             className="secondary-action"
+            disabled={isScannerUploading}
             onClick={() => importInputRef.current?.click()}
           >
-            {t("logbooks.importPhotos")}
+            {isScannerUploading
+              ? t("logbooks.uploadingScan")
+              : t("logbooks.importPhotos")}
+          </button>
+        </div>
+      ) : (
+        <div className="logbook-scanner-empty" role="status">
+          <p>{t("logbooks.createBoatBeforeScan")}</p>
+          <button
+            type="button"
+            className="secondary-action"
+            onClick={onCreateBoatRequested}
+          >
+            {t("boats.create")}
           </button>
         </div>
       )}
