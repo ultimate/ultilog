@@ -594,6 +594,17 @@ td { color: #28384b; line-height: 1.45; }
   min-width: 0;
 }
 
+.logbook-sheet-map-section {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: 1fr;
+  align-items: stretch;
+}
+
+.logbook-sheet-map-section .open-seamap-detail {
+  width: 100%;
+}
+
 @media (max-width: 1050px) {
   .header-details div,
   .header-details div:nth-child(-n + 2),

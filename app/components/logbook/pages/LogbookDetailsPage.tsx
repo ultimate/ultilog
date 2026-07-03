@@ -614,7 +614,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                     ))}
                   </ul>
                 </article>
-                <article className="map-card logbook-section">
+                <article className="map-card logbook-section logbook-sheet-map-section">
                   <div>
                     <h3>{t("details.positions")}</h3>
                   </div>
