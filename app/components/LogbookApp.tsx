@@ -392,7 +392,7 @@ export function LogbookApp({
       setActiveSheetId(itemId);
       if (sheet) setSheetForm(sheetToForm(sheet));
     }
-    if (view === "boats" && !itemId) {
+    if (view === "boats" && !itemId && !showBoatManager) {
       setEditingBoatId(null);
       setShowBoatManager(false);
     }
@@ -407,7 +407,7 @@ export function LogbookApp({
       if (boat) setBoatForm(boatToForm(boat));
       setShowBoatManager(false);
     }
-    if (view === "crew" && !itemId) {
+    if (view === "crew" && !itemId && selectedCrewIndex !== -1) {
       setSelectedCrewIndex(-2);
       setCrewForm(defaultCrewForm);
     }
@@ -423,7 +423,7 @@ export function LogbookApp({
         setCrewForm(crewToForm(logbook.crewMembers[index] ?? defaultCrewForm));
       }
     }
-  }, [routePath, logbook, activeSheetId]);
+  }, [routePath, logbook, activeSheetId, selectedCrewIndex, showBoatManager]);
 
   useEffect(() => {
     if (
