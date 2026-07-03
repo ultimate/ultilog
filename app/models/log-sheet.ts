@@ -6,6 +6,9 @@ export type LogSheet = {
   title: string;
   dateRange: string;
   status: "Draft" | "Locked";
+  source?: "manual" | "scanner";
+  verificationNote?: string;
+  scannerWarnings?: string[];
   boatId: string;
   route: {
     from: string;
