@@ -15,8 +15,8 @@ export class LogSheetsRepository {
 
   async insert(sheet: LogSheet, ownerId = "legacy-user") {
     await this.db.query(
-      `insert into log_sheets (id, title, date_range, status, boat_id, skipper, route, weather_briefing, day_summary, remarks, watch_plan, technical_checks, owner_id) values (${this.values(13)})`,
-      [scopedId(ownerId, sheet.id), sheet.title, sheet.dateRange, sheet.status, scopedId(ownerId, sheet.boatId), JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), ownerId],
+      `insert into log_sheets (id, title, date_range, status, source, verification_note, scanner_warnings, boat_id, skipper, route, weather_briefing, day_summary, remarks, watch_plan, technical_checks, owner_id) values (${this.values(16)})`,
+      [scopedId(ownerId, sheet.id), sheet.title, sheet.dateRange, sheet.status, sheet.source ?? null, sheet.verificationNote ?? null, sheet.scannerWarnings ? JSON.stringify(sheet.scannerWarnings) : null, scopedId(ownerId, sheet.boatId), JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), ownerId],
     );
   }
 
@@ -91,6 +91,9 @@ function mapStoredSheet(sheet: LogSheetRow): StoredLogSheet {
     title: sheet.title,
     dateRange: sheet.date_range,
     status: sheet.status,
+    ...(sheet.source ? { source: sheet.source } : {}),
+    ...(sheet.verification_note ? { verificationNote: sheet.verification_note } : {}),
+    ...(sheet.scanner_warnings ? { scannerWarnings: parseJson<string[]>(sheet.scanner_warnings) } : {}),
     boatId: unscopedId(sheet.boat_id),
     route: parseJson<LogSheet["route"]>(sheet.route),
     watchPlan: parseJson<string[]>(sheet.watch_plan),

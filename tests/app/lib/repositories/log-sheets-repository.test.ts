@@ -50,7 +50,7 @@ describe("LogSheetsRepository", () => {
     await new LogSheetsRepository(db).insert(sheet);
 
     expect(db.calls[0].sql).toContain("insert into log_sheets");
-    expect(db.calls[0].values).toEqual([`legacy-user:${sheet.id}`, sheet.title, sheet.dateRange, sheet.status, `legacy-user:${sheet.boatId}`, JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), "legacy-user"]);
+    expect(db.calls[0].values).toEqual([`legacy-user:${sheet.id}`, sheet.title, sheet.dateRange, sheet.status, null, null, null, `legacy-user:${sheet.boatId}`, JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), "legacy-user"]);
   });
 
   it("maps relational rows back to a persisted logbook", () => {
@@ -65,9 +65,27 @@ describe("LogSheetsRepository", () => {
       sheets: [{ ...sheet, crew: [{ ...crew, isPrimary: false }], lines: [line] }],
     });
   });
+
+  it("persists and maps optional scanner metadata", async () => {
+    const scannerSheet = { ...sheet, source: "scanner" as const, verificationNote: "Reviewed OCR fields", scannerWarnings: ["Missing signature"] };
+    const db = new MockDatabase();
+
+    await new LogSheetsRepository(db).insert(scannerSheet);
+
+    expect(db.calls[0].values).toContain(scannerSheet.source);
+    expect(db.calls[0].values).toContain(scannerSheet.verificationNote);
+    expect(db.calls[0].values).toContain(JSON.stringify(scannerSheet.scannerWarnings));
+
+    const sheetRow = logSheetRow({ source: scannerSheet.source, verification_note: scannerSheet.verificationNote, scanner_warnings: JSON.stringify(scannerSheet.scannerWarnings) });
+    expect(LogSheetsRepository.toLogbook([], [sheetRow], [], []).sheets[0]).toMatchObject({
+      source: scannerSheet.source,
+      verificationNote: scannerSheet.verificationNote,
+      scannerWarnings: scannerSheet.scannerWarnings,
+    });
+  });
 });
 
-function logSheetRow(): LogSheetRow {
+function logSheetRow(overrides: Partial<LogSheetRow> = {}): LogSheetRow {
   return {
     id: sheet.id,
     title: sheet.title,
@@ -81,6 +99,7 @@ function logSheetRow(): LogSheetRow {
     remarks: JSON.stringify([]),
     watch_plan: JSON.stringify(sheet.watchPlan),
     technical_checks: JSON.stringify(sheet.technicalChecks),
+    ...overrides,
   };
 }
 
