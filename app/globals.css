@@ -596,13 +596,56 @@ td { color: #28384b; line-height: 1.45; }
 
 .logbook-sheet-map-section {
   display: grid;
-  grid-column: 1 / -1;
   grid-template-columns: 1fr;
   align-items: stretch;
 }
 
 .logbook-sheet-map-section .open-seamap-detail {
   width: 100%;
+}
+
+.logbook-map-heading,
+.logbook-map-modal-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.logbook-map-heading h3,
+.logbook-map-modal-heading h2 {
+  margin: 0;
+}
+
+.logbook-map-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  padding: 1rem;
+  background: rgba(12, 24, 38, 0.72);
+}
+
+.logbook-map-modal-panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 1rem;
+  width: 100%;
+  height: 100%;
+  border-radius: 1.5rem;
+  padding: clamp(1rem, 2vw, 1.5rem);
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+
+.open-seamap-expanded {
+  height: 100%;
+  min-height: 0;
+}
+
+.open-seamap-expanded .open-seamap-map {
+  min-height: 0;
+  height: 100%;
 }
 
 @media (max-width: 1050px) {

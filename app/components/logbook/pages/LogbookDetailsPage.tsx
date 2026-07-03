@@ -68,6 +68,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     SetStateAction<boolean>
   >;
   const [coordinateFormat, setCoordinateFormat] = useState<CoordinateFormat>("decimal");
+  const [isMapExpanded, setIsMapExpanded] = useState(false);
   const courseConversionSequence = useRef(0);
 
   const renderNumberInput = (field: keyof LineForm, options?: { min?: number; max?: number; step?: string }) => (
@@ -615,12 +616,46 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                   </ul>
                 </article>
                 <article className="map-card logbook-section logbook-sheet-map-section">
-                  <div>
+                  <div className="logbook-map-heading">
                     <h3>{t("details.positions")}</h3>
+                    <button
+                      className="edit-chip"
+                      type="button"
+                      onClick={() => setIsMapExpanded(true)}
+                    >
+                      {t("details.fullMap")}
+                    </button>
                   </div>
                   <LogLinesMapView logLines={activeSheet.lines} />
                 </article>
               </section>
+              {isMapExpanded && (
+                <div
+                  className="logbook-map-modal"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="logbook-map-modal-title"
+                >
+                  <div className="logbook-map-modal-panel">
+                    <div className="logbook-map-modal-heading">
+                      <h2 id="logbook-map-modal-title">
+                        {t("details.positions")}
+                      </h2>
+                      <button
+                        className="edit-chip"
+                        type="button"
+                        onClick={() => setIsMapExpanded(false)}
+                      >
+                        {t("details.closeMap")}
+                      </button>
+                    </div>
+                    <LogLinesMapView
+                      className="open-seamap-expanded"
+                      logLines={activeSheet.lines}
+                    />
+                  </div>
+                </div>
+              )}
             </>
           )}
         </section>
