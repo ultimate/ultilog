@@ -59,7 +59,10 @@ h1 { margin:0 0 .45rem; font-size:1.8rem; line-height:1.1; letter-spacing:-.04em
 @media (max-width: 900px) { .logbook-toolbar,.compliance-board,.mileage-breakdown { grid-template-columns:1fr; }.requirement-row { grid-template-columns:1.5rem 1fr; }.requirement-row progress { grid-column:2; } }
 /* Layout refinements to match the design draft screen compositions */
 .logbook-page { display:grid; gap:1rem; }
+.logbook-overview-layout { display:grid; grid-template-columns:minmax(0,1.35fr) minmax(22rem,.65fr); gap:1rem; align-items:start; }
 .logbook-list-card { padding:0; overflow:hidden; }
+.logbook-list-heading { padding:1rem 1rem 0; }
+.logbook-list-heading h3 { margin:0; }
 .logbook-table { min-width: 860px; }
 .table-link-button { all:unset; display:flex; align-items:center; gap:.65rem; color:var(--text); font-weight:850; cursor:pointer; }
 .table-link-button .picture-thumb { width:2.35rem; height:2.35rem; border-radius:.45rem; }
@@ -76,6 +79,7 @@ h1 { margin:0 0 .45rem; font-size:1.8rem; line-height:1.1; letter-spacing:-.04em
 .manager-list button { min-height:8.5rem; grid-template-columns:1fr!important; align-content:start; }
 .manager-list .picture-thumb { width:100%; height:7rem; border-radius:12px; }
 @media (max-width: 900px) { .entry-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); }.manager-split.vertical { grid-template-columns:1fr; } }
+@media (max-width: 1100px) { .logbook-overview-layout { grid-template-columns:1fr; } }
 @media (max-width: 620px) { .entry-metrics { grid-template-columns:1fr; }.entry-tabs { overflow:auto; white-space:nowrap; } }
 .table-title-button { all:unset; color:var(--text); font-weight:900; cursor:pointer; }
 .table-vessel { display:flex; align-items:center; gap:.65rem; color:var(--text); font-weight:850; }

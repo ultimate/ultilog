@@ -18,6 +18,7 @@ type LogSheetsMapViewProps = {
   className?: string;
   emptyMessage?: string;
   onSheetClick?: (sheet: LogSheet) => void;
+  showRouteTargets?: boolean;
 };
 
 const OpenSeaMapLeaflet = dynamic(
@@ -114,6 +115,7 @@ export function LogSheetsMapView({
   className = "open-seamap-overview",
   emptyMessage = "No valid log sheet positions are available yet.",
   onSheetClick,
+  showRouteTargets = true,
 }: LogSheetsMapViewProps) {
   const routes = useMemo(() => sheets.map(logSheetToRoute), [sheets]);
   const mappedRoutes = routes.filter(
@@ -131,7 +133,7 @@ export function LogSheetsMapView({
           if (route.sheet) onSheetClick?.(route.sheet);
         }}
       />
-      {onSheetClick && mappedRoutes.length > 0 && (
+      {showRouteTargets && onSheetClick && mappedRoutes.length > 0 && (
         <nav
           className="open-seamap-route-targets"
           aria-label="Open a log sheet from the overview map"

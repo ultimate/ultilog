@@ -179,7 +179,7 @@ export const de: Dictionary = {
   "details.sheetSupport": "Unterstützende Abschnitte",
   "details.technicalLog": "Technisches Log / tägliche Checks",
   "details.map": "Karte",
-  "details.positions": "Aus Logzeilen verbundene Positionen",
+  "details.positions": "Logzeilenkarte",
   "details.windDirection": "Windrichtung",
   "details.sailNote": "Segelnotiz",
   "details.motorNote": "Motornotiz",
