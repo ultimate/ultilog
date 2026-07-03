@@ -627,6 +627,50 @@ td { color: #28384b; line-height: 1.45; }
   background: rgba(12, 24, 38, 0.72);
 }
 
+.scanner-privacy-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(12, 24, 38, 0.72);
+}
+
+.scanner-privacy-panel {
+  display: grid;
+  gap: 1rem;
+  width: min(100%, 36rem);
+  border-radius: 1.5rem;
+  padding: clamp(1rem, 2vw, 1.5rem);
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+
+.scanner-privacy-heading h2,
+.scanner-privacy-heading p {
+  margin: 0;
+}
+
+.scanner-privacy-heading {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.scanner-privacy-list {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.scanner-privacy-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
 .logbook-map-modal-panel {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);

@@ -1,5 +1,5 @@
 import { useI18n } from "../../../lib/i18n";
-import { useRef, type Dispatch, type SetStateAction } from "react";
+import { useRef, useState, type Dispatch, type SetStateAction } from "react";
 import type {
   Boat,
   LogSheet,
@@ -47,13 +47,20 @@ export function LogbookListPage({
   const { t } = useI18n();
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
+  const [pendingScannerFiles, setPendingScannerFiles] = useState<File[] | null>(null);
   const hasBoats = logbook.boats.length > 0;
   const hasMultipleBoats = logbook.boats.length > 1;
 
   function handleScannerFilesSelected(files: FileList | null) {
     if (!files?.length) return;
     if (!scannerBoatId) return;
-    onScanFilesSelected(files, scannerBoatId);
+    setPendingScannerFiles(Array.from(files));
+  }
+
+  function confirmScannerUpload() {
+    if (!pendingScannerFiles?.length) return;
+    onScanFilesSelected(pendingScannerFiles, scannerBoatId);
+    setPendingScannerFiles(null);
   }
 
   function openSheet(sheet: LogSheet) {
@@ -154,6 +161,49 @@ export function LogbookListPage({
           >
             {t("boats.create")}
           </button>
+        </div>
+      )}
+
+      {pendingScannerFiles && (
+        <div
+          className="scanner-privacy-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="scanner-privacy-title"
+        >
+          <div className="scanner-privacy-panel">
+            <div className="scanner-privacy-heading">
+              <h2 id="scanner-privacy-title">
+                {t("logbooks.scannerPrivacyTitle")}
+              </h2>
+              <p>{t("logbooks.scannerPrivacyIntro")}</p>
+            </div>
+            <ul className="scanner-privacy-list">
+              <li>{t("logbooks.scannerPrivacyPersonalInfo")}</li>
+              <li>{t("logbooks.scannerPrivacyCloudProvider")}</li>
+              <li>{t("logbooks.scannerPrivacyNoPermanentStorage")}</li>
+              <li>{t("logbooks.scannerPrivacyDraftSaved")}</li>
+              <li>{t("logbooks.scannerPrivacyVerifyBeforeLock")}</li>
+            </ul>
+            <div className="scanner-privacy-actions">
+              <button
+                type="button"
+                className="ghost-button"
+                disabled={isScannerUploading}
+                onClick={() => setPendingScannerFiles(null)}
+              >
+                {t("common.cancel")}
+              </button>
+              <button
+                type="button"
+                className="primary-action"
+                disabled={isScannerUploading}
+                onClick={confirmScannerUpload}
+              >
+                {t("logbooks.continueAndUpload")}
+              </button>
+            </div>
+          </div>
         </div>
       )}
       <div className="logbook-toolbar">
