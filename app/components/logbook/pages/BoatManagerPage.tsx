@@ -222,7 +222,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
               </div>
             </div>
             <article className="info-card wide-field">
-              <h3>Log sheets</h3>
+              <h3>{t("boats.logSheets")}</h3>
               <ul className="stack-list">
                 {logbook.sheets
                   .filter(
@@ -239,14 +239,14 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
             </article>
             <div className="inline-edit-actions">
               <button type="submit">
-                {showBoatManager ? "Create boat" : "Save boat"}
+                {showBoatManager ? t("boats.create") : t("boats.save")}
               </button>
               <button
                 type="button"
                 className="ghost-button"
                 onClick={cancelBoatEdit}
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 type="button"
@@ -256,7 +256,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                 )}
                 onClick={deleteSelectedBoat}
               >
-                Delete boat
+                {t("boats.delete")}
               </button>
             </div>
           </form>
