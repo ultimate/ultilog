@@ -370,6 +370,8 @@ export function LogbookApp({
   }, []);
 
   useEffect(() => {
+    if (typeof window !== "undefined" && routePath !== window.location.pathname)
+      return;
     const { view, itemId } = routeFromPathname(routePath);
     // Route changes are the source of truth for browser back/forward and bookmarks.
     // eslint-disable-next-line react-hooks/set-state-in-effect
