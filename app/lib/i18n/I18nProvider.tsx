@@ -55,3 +55,15 @@ export function LocaleSelect({ className }: { className?: string }) {
     </label>
   );
 }
+
+export function MobileLocaleAction({ className }: { className?: string }) {
+  const { locale, locales, localeLabels, setLocale, t } = useI18n();
+  return (
+    <label className={className} aria-label={t("locale.label")}>
+      <span aria-hidden="true">{locale.toUpperCase()}</span>
+      <select value={locale} onChange={(event) => setLocale(event.target.value as Locale)} aria-label={t("locale.label")}>
+        {locales.map((candidate) => <option key={candidate} value={candidate}>{localeLabels[candidate]}</option>)}
+      </select>
+    </label>
+  );
+}
