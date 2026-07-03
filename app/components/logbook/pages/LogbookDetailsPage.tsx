@@ -69,6 +69,9 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   >;
   const [coordinateFormat, setCoordinateFormat] = useState<CoordinateFormat>("decimal");
   const [isMapExpanded, setIsMapExpanded] = useState(false);
+  const scannerWarnings = activeSheet.scannerWarnings ?? [];
+  const showScannerDraftNotice =
+    activeSheet.source === "scanner" && activeSheet.status === "Draft";
   const courseConversionSequence = useRef(0);
 
   useEffect(() => {
@@ -421,6 +424,30 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
 
           {!showNewSheet && (
             <>
+              {showScannerDraftNotice && (
+                <aside
+                  className="scanner-draft-notice logbook-section"
+                  aria-label="Scanned draft verification notice"
+                >
+                  <div className="scanner-draft-notice-icon" aria-hidden="true">
+                    ⚠️
+                  </div>
+                  <div>
+                    <h3>Please verify scanned information before locking this sheet.</h3>
+                    {scannerWarnings.length > 0 && (
+                      <ul>
+                        {scannerWarnings.map((warning, index) => (
+                          <li key={`${warning}-${index}`}>{warning}</li>
+                        ))}
+                      </ul>
+                    )}
+                    <p>
+                      All fields and lines can be corrected using the normal editing controls.
+                    </p>
+                  </div>
+                </aside>
+              )}
+
               <section
                 className="entry-metrics logbook-section"
                 aria-label={t("details.summaryAria")}
