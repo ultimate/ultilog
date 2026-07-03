@@ -1,5 +1,5 @@
 import { useI18n } from "../../../lib/i18n";
-import { useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { useRef, type Dispatch, type SetStateAction } from "react";
 import type {
   Boat,
   LogSheet,
@@ -18,11 +18,16 @@ type SheetSummary = { motorMiles: number; sailMiles: number };
 export function LogbookListPage({
   activeBoat,
   scannerBoatId,
-  isScannerUploading,
+  selectedScannerFiles,
+  isScanning,
+  scannerError,
+  isScannerPrivacyConfirmed,
   calculateSheetSummary,
   logbook,
   navigate,
   onScanFilesSelected,
+  onScannerUploadConfirmed,
+  onScannerUploadCanceled,
   onScannerBoatChange,
   onCreateBoatRequested,
   setActiveSheetId,
@@ -32,11 +37,16 @@ export function LogbookListPage({
 }: {
   activeBoat?: Boat;
   scannerBoatId: string;
-  isScannerUploading: boolean;
+  selectedScannerFiles: File[];
+  isScanning: boolean;
+  scannerError: string | null;
+  isScannerPrivacyConfirmed: boolean;
   calculateSheetSummary: (sheet: LogSheet) => SheetSummary;
   logbook: PersistedLogbook;
   navigate: Navigate;
   onScanFilesSelected: (files: FileList | File[], boatId: string) => void;
+  onScannerUploadConfirmed: (files: File[], boatId: string) => void;
+  onScannerUploadCanceled: () => void;
   onScannerBoatChange: (boatId: string) => void;
   onCreateBoatRequested: () => void;
   setActiveSheetId: Dispatch<SetStateAction<string>>;
@@ -47,20 +57,17 @@ export function LogbookListPage({
   const { t } = useI18n();
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
-  const [pendingScannerFiles, setPendingScannerFiles] = useState<File[] | null>(null);
   const hasBoats = logbook.boats.length > 0;
   const hasMultipleBoats = logbook.boats.length > 1;
 
   function handleScannerFilesSelected(files: FileList | null) {
     if (!files?.length) return;
-    if (!scannerBoatId) return;
-    setPendingScannerFiles(Array.from(files));
+    onScanFilesSelected(files, scannerBoatId);
   }
 
   function confirmScannerUpload() {
-    if (!pendingScannerFiles?.length) return;
-    onScanFilesSelected(pendingScannerFiles, scannerBoatId);
-    setPendingScannerFiles(null);
+    if (!selectedScannerFiles.length) return;
+    onScannerUploadConfirmed(selectedScannerFiles, scannerBoatId);
   }
 
   function openSheet(sheet: LogSheet) {
@@ -124,7 +131,7 @@ export function LogbookListPage({
           <button
             type="button"
             className="secondary-action"
-            disabled={isScannerUploading}
+            disabled={isScanning}
             onClick={() => cameraInputRef.current?.click()}
           >
             {t("logbooks.scanWithCamera")}
@@ -143,10 +150,10 @@ export function LogbookListPage({
           <button
             type="button"
             className="secondary-action"
-            disabled={isScannerUploading}
+            disabled={isScanning}
             onClick={() => importInputRef.current?.click()}
           >
-            {isScannerUploading
+            {isScanning
               ? t("logbooks.uploadingScan")
               : t("logbooks.importPhotos")}
           </button>
@@ -164,7 +171,9 @@ export function LogbookListPage({
         </div>
       )}
 
-      {pendingScannerFiles && (
+      {scannerError && <p className="save-error">{scannerError}</p>}
+
+      {selectedScannerFiles.length > 0 && !isScannerPrivacyConfirmed && (
         <div
           className="scanner-privacy-modal"
           role="dialog"
@@ -189,15 +198,15 @@ export function LogbookListPage({
               <button
                 type="button"
                 className="ghost-button"
-                disabled={isScannerUploading}
-                onClick={() => setPendingScannerFiles(null)}
+                disabled={isScanning}
+                onClick={onScannerUploadCanceled}
               >
                 {t("common.cancel")}
               </button>
               <button
                 type="button"
                 className="primary-action"
-                disabled={isScannerUploading}
+                disabled={isScanning}
                 onClick={confirmScannerUpload}
               >
                 {t("logbooks.continueAndUpload")}

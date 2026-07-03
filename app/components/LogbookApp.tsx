@@ -201,7 +201,11 @@ export function LogbookApp({
     defaultLogbook.boats[0].id,
   );
   const [scannerBoatId, setScannerBoatId] = useState(defaultLogbook.boats[0].id);
-  const [isScannerUploading, setIsScannerUploading] = useState(false);
+  const [selectedScannerFiles, setSelectedScannerFiles] = useState<File[]>([]);
+  const [isScannerPrivacyConfirmed, setIsScannerPrivacyConfirmed] =
+    useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const [scannerError, setScannerError] = useState<string | null>(null);
   const [selectedCrewIndex, setSelectedCrewIndex] = useState(-2);
   const [lastCrewIndex, setLastCrewIndex] = useState(0);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -494,16 +498,41 @@ export function LogbookApp({
     }
   }
 
-  async function scanLogbookFiles(files: FileList | File[], boatId: string) {
+  function selectScannerFiles(files: FileList | File[] | null, boatId: string) {
+    if (!files?.length) return;
     if (!boatId) {
-      setSaveError(t("logbooks.createBoatBeforeScan"));
+      const message = t("logbooks.createBoatBeforeScan");
+      setScannerError(message);
+      setSaveError(message);
       return;
     }
+    setScannerBoatId(boatId);
+    setSelectedScannerFiles(Array.from(files));
+    setIsScannerPrivacyConfirmed(false);
+    setScannerError(null);
+  }
+
+  function cancelScannerUpload() {
+    setSelectedScannerFiles([]);
+    setIsScannerPrivacyConfirmed(false);
+  }
+
+  async function createSheetFromScan(files: File[], boatId: string) {
+    if (!boatId) {
+      const message = t("logbooks.createBoatBeforeScan");
+      setScannerError(message);
+      setSaveError(message);
+      return;
+    }
+    if (files.length === 0) return;
+
     const upload = new FormData();
     upload.append("boatId", boatId);
-    Array.from(files).forEach((file) => upload.append("files", file));
+    files.forEach((file) => upload.append("files", file));
 
-    setIsScannerUploading(true);
+    setIsScannerPrivacyConfirmed(true);
+    setIsScanning(true);
+    setScannerError(null);
     setSaveError(null);
     try {
       const response = await fetch("/api/logbook/scanner", {
@@ -518,10 +547,15 @@ export function LogbookApp({
         throw new Error(payload.error ?? t("logbooks.scanUploadError"));
       }
       await refreshLogbookAfterScan(payload.sheetId);
+      setSelectedScannerFiles([]);
     } catch (error) {
-      setSaveError(error instanceof Error ? error.message : t("logbooks.scanUploadError"));
+      const message =
+        error instanceof Error ? error.message : t("logbooks.scanUploadError");
+      setScannerError(message);
+      setSaveError(message);
+      setIsScannerPrivacyConfirmed(false);
     } finally {
-      setIsScannerUploading(false);
+      setIsScanning(false);
     }
   }
 
@@ -1406,11 +1440,16 @@ export function LogbookApp({
             <LogbookListPage
               activeBoat={activeBoat}
               scannerBoatId={effectiveScannerBoatId}
-              isScannerUploading={isScannerUploading}
+              selectedScannerFiles={selectedScannerFiles}
+              isScanning={isScanning}
+              scannerError={scannerError}
+              isScannerPrivacyConfirmed={isScannerPrivacyConfirmed}
               calculateSheetSummary={calculateSheetSummary}
               logbook={logbook}
               navigate={navigate}
-              onScanFilesSelected={scanLogbookFiles}
+              onScanFilesSelected={selectScannerFiles}
+              onScannerUploadConfirmed={createSheetFromScan}
+              onScannerUploadCanceled={cancelScannerUpload}
               onScannerBoatChange={setScannerBoatId}
               onCreateBoatRequested={() => {
                 setShowBoatManager(true);
