@@ -5,7 +5,7 @@ const demoSheet = {
   title: "Ionian training passage · Day 3",
 };
 
-test("opens a seeded logsheet detail page from the overview OpenSeaMap route", async ({ page }) => {
+test("opens a seeded logsheet detail page from the overview log sheet list", async ({ page }) => {
   await loginWithDemoData(page);
   await openModule(page, "Logbook list", "+ New sheet");
 
@@ -13,9 +13,9 @@ test("opens a seeded logsheet detail page from the overview OpenSeaMap route", a
   await expect(overviewMap).toBeVisible();
   await expect(overviewMap.locator(".leaflet-container")).toBeVisible();
 
-  const routeTarget = page.getByRole("button", { name: `Open route ${demoSheet.title}` });
-  await expect(routeTarget).toBeVisible();
-  await routeTarget.click();
+  const sheetLink = page.getByRole("button", { name: demoSheet.title });
+  await expect(sheetLink).toBeVisible();
+  await sheetLink.click();
 
   await expect(page).toHaveURL(new RegExp(`/details/${demoSheet.id}$`));
   await expect(page.getByRole("heading", { name: demoSheet.title })).toBeVisible();
