@@ -1,5 +1,5 @@
 import { useI18n } from "../../../lib/i18n";
-import type { Dispatch, SetStateAction } from "react";
+import { useRef, type Dispatch, type SetStateAction } from "react";
 import type {
   Boat,
   LogSheet,
@@ -20,21 +20,31 @@ export function LogbookListPage({
   calculateSheetSummary,
   logbook,
   navigate,
+  onScanFilesSelected,
   setActiveSheetId,
   setEditingSheetId,
   setSheetForm,
   setShowNewSheet,
 }: {
-  activeBoat: Boat;
+  activeBoat?: Boat;
   calculateSheetSummary: (sheet: LogSheet) => SheetSummary;
   logbook: PersistedLogbook;
   navigate: Navigate;
+  onScanFilesSelected: (files: FileList | File[]) => void;
   setActiveSheetId: Dispatch<SetStateAction<string>>;
   setEditingSheetId: Dispatch<SetStateAction<string | null>>;
   setSheetForm: Dispatch<SetStateAction<SheetForm>>;
   setShowNewSheet: Dispatch<SetStateAction<boolean>>;
 }) {
   const { t } = useI18n();
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
+  const hasBoat = Boolean(activeBoat);
+
+  function handleScannerFilesSelected(files: FileList | null) {
+    if (!files?.length) return;
+    onScanFilesSelected(files);
+  }
 
   function openSheet(sheet: LogSheet) {
     setActiveSheetId(sheet.id);
@@ -54,6 +64,7 @@ export function LogbookListPage({
           className="primary-action"
           onClick={() => {
             setEditingSheetId(null);
+            if (!activeBoat) return;
             setSheetForm(defaultSheetForm(activeBoat.id));
             setShowNewSheet(true);
             navigate("details");
@@ -62,6 +73,46 @@ export function LogbookListPage({
           {t("logbooks.newSheet")}
         </button>
       </div>
+      {hasBoat && (
+        <div className="logbook-scanner-actions" aria-label={t("logbooks.scannerActions")}>
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            hidden
+            onChange={(event) => {
+              handleScannerFilesSelected(event.currentTarget.files);
+              event.currentTarget.value = "";
+            }}
+          />
+          <button
+            type="button"
+            className="secondary-action"
+            onClick={() => cameraInputRef.current?.click()}
+          >
+            {t("logbooks.scanWithCamera")}
+          </button>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            hidden
+            onChange={(event) => {
+              handleScannerFilesSelected(event.currentTarget.files);
+              event.currentTarget.value = "";
+            }}
+          />
+          <button
+            type="button"
+            className="secondary-action"
+            onClick={() => importInputRef.current?.click()}
+          >
+            {t("logbooks.importPhotos")}
+          </button>
+        </div>
+      )}
       <div className="logbook-toolbar">
         <input
           aria-label={t("logbooks.search")}

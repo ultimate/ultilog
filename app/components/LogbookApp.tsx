@@ -1346,6 +1346,9 @@ export function LogbookApp({
               calculateSheetSummary={calculateSheetSummary}
               logbook={logbook}
               navigate={navigate}
+              onScanFilesSelected={(files) => {
+                console.info("Selected logbook scan files", Array.from(files));
+              }}
               setActiveSheetId={setActiveSheetId}
               setEditingSheetId={setEditingSheetId}
               setSheetForm={setSheetForm}
