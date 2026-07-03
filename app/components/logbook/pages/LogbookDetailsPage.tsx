@@ -6,12 +6,21 @@ import type {
   LogSheet,
   PersistedLogbook,
 } from "../../../models/logbook";
-import { courseConversionColumns } from "../../../domain/nautical/course-conversion";
 import { coordinateToInput, decimalToDmsParts, dmsPartsToDecimal, parseCoordinate, type CoordinateFormat, type DmsParts } from "../../../domain/nautical/coordinates";
 import { boatToForm, sheetToForm } from "../forms";
 import { dateTimeLocalFromParts, splitDateTimeLocal } from "../date-utils";
 import { updateLogLineFormForInput } from "../../../domain/log-lines/log-line-editor";
 import { LogLinesMapView } from "../OpenSeaMapView";
+
+const courseConversionColumnKeys = [
+  "details.course.deviation",
+  "details.course.magnetic",
+  "details.course.variation",
+  "details.course.true",
+  "details.course.windDrift",
+  "details.course.throughWater",
+  "details.course.currentDrift",
+] as const;
 
 type LogbookDetailsPageProps = Record<string, any>;
 
@@ -439,9 +448,9 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                         <th colSpan={3}>{t("details.timePos")}</th><th colSpan={6}>{t("details.weatherSea")}</th><th colSpan={showCourseColumns ? 9 : 2}>{t("details.course")}</th><th colSpan={4}>{t("details.travel")}</th><th>{t("details.remarks")}</th><th colSpan={2}>{t("details.actions")}</th>
                       </tr>
                       <tr>
-                        <th>{t("details.time")}</th><th>{t("details.lat")}</th><th>{t("details.lon")}</th><th>{t("details.weather")}</th><th>{t("details.baro")}</th><th>{t("details.wind")}</th><th>{t("details.sea")}</th><th>{t("details.tide")}</th><th>{t("details.moon")}</th><th>MgK / CC</th>
-                        {showCourseColumns && courseConversionColumns.map((column) => <th key={column}>{column}</th>)}
-                        <th>KüG / COG</th><th>{t("details.speed")}</th><th>{t("details.log")}</th><th>{t("details.sail")}</th><th>{t("details.motor")}</th><th>{t("details.remarksEvent")}</th><th>{t("details.edit")}</th><th>{t("common.delete")}</th>
+                        <th>{t("details.time")}</th><th>{t("details.lat")}</th><th>{t("details.lon")}</th><th>{t("details.weather")}</th><th>{t("details.baro")}</th><th>{t("details.wind")}</th><th>{t("details.sea")}</th><th>{t("details.tide")}</th><th>{t("details.moon")}</th><th>{t("details.course.compass")}</th>
+                        {showCourseColumns && courseConversionColumnKeys.map((key) => <th key={key}>{t(key)}</th>)}
+                        <th>{t("details.course.overGround")}</th><th>{t("details.speed")}</th><th>{t("details.log")}</th><th>{t("details.sail")}</th><th>{t("details.motor")}</th><th>{t("details.remarksEvent")}</th><th>{t("details.edit")}</th><th>{t("common.delete")}</th>
                       </tr>
                     </thead>
                     <tbody>

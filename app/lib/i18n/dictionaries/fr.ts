@@ -13,4 +13,13 @@ export const fr: Dictionary = {
   "users.title": "Utilisateurs",
   "boats.title": "Bateaux",
   "crew.title": "Équipage",
+  "details.course.compass": "MgK / CC",
+  "details.course.deviation": "Abl / Dev",
+  "details.course.magnetic": "mwK / MC",
+  "details.course.variation": "Mw / Var",
+  "details.course.true": "rwK / TC",
+  "details.course.windDrift": "BW / WD",
+  "details.course.throughWater": "KdW / CTW",
+  "details.course.currentDrift": "BS / CD",
+  "details.course.overGround": "KüG / COG",
 };
