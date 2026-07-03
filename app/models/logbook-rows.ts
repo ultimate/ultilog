@@ -14,6 +14,9 @@ export type LogSheetRow = {
   title: string;
   date_range: string;
   status: LogSheet["status"];
+  source?: LogSheet["source"] | null;
+  verification_note?: string | null;
+  scanner_warnings?: unknown;
   boat_id: string;
   skipper: unknown;
   route: unknown;
