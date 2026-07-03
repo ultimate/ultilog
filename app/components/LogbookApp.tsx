@@ -47,6 +47,7 @@ import { ManagerShell } from "./managers/ManagerShell";
 import { courseConversionColumns } from "../domain/nautical/course-conversion";
 import { normalizeCoordinate, parseCoordinate } from "../domain/nautical/coordinates";
 import { ModuleTabs, type ActiveView } from "../templates/ModuleTabs";
+import { useI18n } from "../lib/i18n";
 import { PasswordField } from "./PasswordField";
 import { CompliancePage } from "./logbook/pages/CompliancePage";
 import { LogbookListPage } from "./logbook/pages/LogbookListPage";
@@ -171,6 +172,7 @@ export function LogbookApp({
   userName?: string;
   userGroups?: string[];
 }) {
+  const { t } = useI18n();
   const router = useRouter();
   const pathname = usePathname();
   const [logbook, setLogbook] = useState<PersistedLogbook>(defaultLogbook);
@@ -265,7 +267,7 @@ export function LogbookApp({
     if (!isBackendReady) return true;
     const response = await persistLogbook(nextLogbook).catch(() => undefined);
     if (response?.ok) return true;
-    setSaveError("Unable to save the latest changes. Please try again.");
+    setSaveError(t("logbook.saveError"));
     return false;
   }
 
@@ -480,14 +482,14 @@ export function LogbookApp({
     <span className="inline-value-actions">
       <button
         type="button"
-        aria-label="Approve change"
+        aria-label={t("details.approveChange")}
         onClick={saveSheetInlineField}
       >
         ✅
       </button>
       <button
         type="button"
-        aria-label="Cancel change"
+        aria-label={t("details.cancelChange")}
         onClick={cancelSheetInlineEdit}
       >
         ❎
@@ -504,7 +506,7 @@ export function LogbookApp({
       <span className={`inline-value-editor inline-value-editor-${field}`}>
         <input
           type={inputType}
-          aria-label={`Edit ${field}`}
+          aria-label={`${t("details.edit")} ${field}`}
           value={sheetInlineDraft}
           onChange={(event) => setSheetInlineDraft(event.target.value)}
           autoFocus
@@ -525,7 +527,7 @@ export function LogbookApp({
     editingSheetField === "boatId" ? (
       <span className="inline-value-editor inline-value-editor-boatId">
         <select
-          aria-label="Edit boat"
+          aria-label={t("details.editBoat")}
           value={sheetInlineDraft}
           onChange={(event) => setSheetInlineDraft(event.target.value)}
           autoFocus
@@ -553,7 +555,7 @@ export function LogbookApp({
       <span className={`inline-value-editor inline-value-editor-${field}`}>
         <input
           type="datetime-local"
-          aria-label={`Edit ${field}`}
+          aria-label={`${t("details.edit")} ${field}`}
           value={sheetInlineDraft}
           onChange={(event) => setSheetInlineDraft(event.target.value)}
           autoFocus
@@ -1118,12 +1120,12 @@ export function LogbookApp({
       error?: string;
     };
     if (!response.ok) {
-      setProfileError(payload.error ?? "Unable to update name.");
+      setProfileError(payload.error ?? t("profile.unableUpdateName"));
       return;
     }
     setAccountName(payload.name ?? nameForm.name);
     setNameForm({ name: payload.name ?? nameForm.name, currentPassword: "" });
-    setProfileMessage("Username updated.");
+    setProfileMessage(t("profile.usernameUpdated"));
   }
 
   async function updateEmail(event: FormEvent<HTMLFormElement>) {
@@ -1140,7 +1142,7 @@ export function LogbookApp({
       error?: string;
     };
     if (!response.ok) {
-      setProfileError(payload.error ?? "Unable to update email.");
+      setProfileError(payload.error ?? t("profile.unableUpdateEmail"));
       return;
     }
     setAccountEmail(payload.email ?? emailForm.email);
@@ -1148,7 +1150,7 @@ export function LogbookApp({
       email: payload.email ?? emailForm.email,
       currentPassword: "",
     });
-    setProfileMessage("Email updated. Use the new email next time you log in.");
+    setProfileMessage(t("profile.emailUpdatedLogin"));
   }
 
   async function updatePassword(event: FormEvent<HTMLFormElement>) {
@@ -1156,7 +1158,7 @@ export function LogbookApp({
     setProfileError(null);
     setProfileMessage(null);
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setProfileError("New passwords do not match.");
+      setProfileError(t("profile.newPasswordsMismatch"));
       return;
     }
     const response = await fetch("/api/profile", {
@@ -1172,7 +1174,7 @@ export function LogbookApp({
       error?: string;
     };
     if (!response.ok) {
-      setProfileError(payload.error ?? "Unable to update password.");
+      setProfileError(payload.error ?? t("profile.unableUpdatePassword"));
       return;
     }
     setPasswordForm({
@@ -1180,7 +1182,7 @@ export function LogbookApp({
       newPassword: "",
       confirmPassword: "",
     });
-    setProfileMessage("Password updated.");
+    setProfileMessage(t("profile.passwordUpdated"));
   }
 
   async function loadAdminUsers() {
@@ -1192,7 +1194,7 @@ export function LogbookApp({
       error?: string;
     };
     if (!response.ok) {
-      setAdminError(payload.error ?? "Unable to load users.");
+      setAdminError(payload.error ?? t("admin.unableLoadUsers"));
       return;
     }
     setAdminUsers(payload.users ?? []);
@@ -1263,7 +1265,7 @@ export function LogbookApp({
       error?: string;
     };
     if (!response.ok) {
-      setAdminError(payload.error ?? "Unable to save groups.");
+      setAdminError(payload.error ?? t("admin.unableSaveGroups"));
       return;
     }
     if (payload.user)
@@ -1273,18 +1275,18 @@ export function LogbookApp({
         ),
       );
     setKnownGroups(payload.groups ?? groups);
-    setAdminMessage("Groups saved.");
+    setAdminMessage(t("admin.groupsSaved"));
   }
 
   async function deleteAdminUser(targetUser: AdminUser) {
     setAdminError(null);
     setAdminMessage(null);
     const confirmationName = window.prompt(
-      `Type ${targetUser.name} to permanently delete this user account.`,
+      `${t("admin.confirmDeletePromptPrefix")} ${targetUser.name} ${t("admin.confirmDeletePromptSuffix")}`,
     );
     if (confirmationName === null) return;
     if (confirmationName !== targetUser.name) {
-      setAdminError("Type the username to confirm account deletion.");
+      setAdminError(t("admin.confirmDeleteUsername"));
       return;
     }
     const response = await fetch("/api/admin/users", {
@@ -1296,11 +1298,11 @@ export function LogbookApp({
       error?: string;
     };
     if (!response.ok) {
-      setAdminError(payload.error ?? "Unable to delete user.");
+      setAdminError(payload.error ?? t("admin.unableDeleteUser"));
       return;
     }
     setAdminUsers((users) => users.filter((user) => user.id !== targetUser.id));
-    setAdminMessage(`Deleted user ${targetUser.name}.`);
+    setAdminMessage(`${t("admin.deletedUser")} ${targetUser.name}.`);
   }
 
   async function deleteAccount(event: FormEvent<HTMLFormElement>) {
@@ -1308,7 +1310,7 @@ export function LogbookApp({
     setProfileError(null);
     setProfileMessage(null);
     if (deleteForm.confirmation !== "DELETE") {
-      setProfileError('Type "DELETE" to confirm account deletion.');
+      setProfileError(t("profile.confirmDeleteQuoted"));
       return;
     }
     const response = await fetch("/api/profile", {
@@ -1320,7 +1322,7 @@ export function LogbookApp({
       error?: string;
     };
     if (!response.ok) {
-      setProfileError(payload.error ?? "Unable to delete account.");
+      setProfileError(payload.error ?? t("profile.unableDeleteAccount"));
       return;
     }
     await signOut({ redirect: false });
@@ -1486,18 +1488,18 @@ export function LogbookApp({
           )}
 
           {activeModule === "admin" && isAdmin && (
-            <section className="module-panel" aria-label="Admin page">
+            <section className="module-panel" aria-label={t("admin.aria")}>
               <div className="page-heading">
                 <div>
-                  <h1>Admin</h1>
-                  <p>Manage user groups for issues #45 and #46.</p>
+                  <h1>{t("admin.title")}</h1>
+                  <p>{t("admin.subtitle")}</p>
                 </div>
                 <button
                   className="secondary-action"
                   type="button"
                   onClick={loadAdminUsers}
                 >
-                  Refresh users
+                  {t("admin.refreshUsers")}
                 </button>
               </div>
               {(adminMessage || adminError) && (
@@ -1511,11 +1513,11 @@ export function LogbookApp({
               <article className="table-card">
                 <div className="table-header">
                   <div>
-                    <p className="eyebrow">Tag-style groups</p>
-                    <h3>Users</h3>
+                    <p className="eyebrow">{t("admin.tagStyleGroups")}</p>
+                    <h3>{t("users.title")}</h3>
                     <p>
-                      Existing groups:{" "}
-                      {knownGroups.length ? knownGroups.join(", ") : "none yet"}
+                      {t("admin.existingGroups")}:{" "}
+                      {knownGroups.length ? knownGroups.join(", ") : t("admin.noneYet")}
                     </p>
                   </div>
                 </div>
@@ -1523,9 +1525,9 @@ export function LogbookApp({
                   <table className="logbook-table">
                     <thead>
                       <tr>
-                        <th>Username</th>
-                        <th>Email</th>
-                        <th>Groups</th>
+                        <th>{t("users.username")}</th>
+                        <th>{t("auth.email")}</th>
+                        <th>{t("admin.groups")}</th>
                         <th></th>
                         <th></th>
                       </tr>
@@ -1538,7 +1540,7 @@ export function LogbookApp({
                           <td>
                             <div
                               className="tag-editor"
-                              aria-label={`Groups for ${user.email}`}
+                              aria-label={`${t("admin.groupsFor")} ${user.email}`}
                             >
                               {user.groups.length > 0 && (
                                 <div className="tag-editor-tags">
@@ -1547,7 +1549,7 @@ export function LogbookApp({
                                       {group}
                                       <button
                                         type="button"
-                                        aria-label={`Remove ${group} from ${user.email}`}
+                                        aria-label={`${t("admin.removeGroup")} ${group} ${t("admin.from")} ${user.email}`}
                                         disabled={
                                           !canRemoveAdminUserGroup(
                                             user.id,
@@ -1559,7 +1561,7 @@ export function LogbookApp({
                                             user.id,
                                             group,
                                           )
-                                            ? "You cannot remove admin from your own account."
+                                            ? t("admin.cannotRemoveOwnAdmin")
                                             : undefined
                                         }
                                         onClick={() =>
@@ -1574,9 +1576,9 @@ export function LogbookApp({
                               )}
                               <div className="tag-editor-add">
                                 <input
-                                  aria-label={`Add group for ${user.email}`}
+                                  aria-label={`${t("admin.addGroupFor")} ${user.email}`}
                                   list="known-groups"
-                                  placeholder="Select or type group…"
+                                  placeholder={t("admin.groupPlaceholder")}
                                   value={groupDrafts[user.id] ?? ""}
                                   onChange={(event) =>
                                     setGroupDrafts((drafts) => ({
@@ -1593,7 +1595,7 @@ export function LogbookApp({
                                   className="edit-chip"
                                   onClick={() => addAdminUserGroup(user.id)}
                                 >
-                                  Add
+                                  {t("admin.add")}
                                 </button>
                               </div>
                             </div>
@@ -1609,7 +1611,7 @@ export function LogbookApp({
                                 )
                               }
                             >
-                              Save
+                              {t("admin.save")}
                             </button>
                           </td>
                           <td>
@@ -1619,12 +1621,12 @@ export function LogbookApp({
                               disabled={user.id === userId}
                               title={
                                 user.id === userId
-                                  ? "Use your profile page to delete your own account."
+                                  ? t("admin.deleteOwnOnProfile")
                                   : undefined
                               }
                               onClick={() => deleteAdminUser(user)}
                             >
-                              Delete
+                              {t("admin.delete")}
                             </button>
                           </td>
                         </tr>

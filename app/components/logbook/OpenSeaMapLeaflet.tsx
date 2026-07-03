@@ -11,6 +11,7 @@ import {
   Tooltip,
   useMap,
 } from "react-leaflet";
+import { useI18n } from "../../lib/i18n";
 import type { LogLine, LogSheet } from "../../models/logbook";
 
 type Coordinate = {
@@ -129,11 +130,14 @@ function markerVariant(route: MapRoute, point: MapPoint, markerIndex: number) {
 
 export function OpenSeaMapLeaflet({
   routes,
-  ariaLabel = "OpenSeaMap route map",
+  ariaLabel,
   className,
-  emptyMessage = "No valid positions are available for this map yet.",
+  emptyMessage,
   onRouteClick,
 }: OpenSeaMapLeafletProps) {
+  const { t } = useI18n();
+  const mapAriaLabel = ariaLabel ?? t("map.routeMapAria");
+  const mapEmptyMessage = emptyMessage ?? t("map.noPositions");
   const visibleRoutes = routes.filter((route) => route.points.length > 0);
   const allPoints = visibleRoutes.flatMap((route) => route.points);
   const mapClassName = ["open-seamap-view", className]
@@ -142,14 +146,14 @@ export function OpenSeaMapLeaflet({
 
   if (allPoints.length === 0) {
     return (
-      <div className="open-seamap-empty" role="status" aria-label={ariaLabel}>
-        {emptyMessage}
+      <div className="open-seamap-empty" role="status" aria-label={mapAriaLabel}>
+        {mapEmptyMessage}
       </div>
     );
   }
 
   return (
-    <div className={mapClassName} aria-label={ariaLabel}>
+    <div className={mapClassName} aria-label={mapAriaLabel}>
       <MapContainer
         center={defaultCenter}
         zoom={6}

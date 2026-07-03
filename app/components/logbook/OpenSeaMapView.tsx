@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useMemo } from "react";
+import { useI18n } from "../../lib/i18n";
 import type { LogLine, LogSheet } from "../../models/logbook";
 import type { MapRoute } from "./OpenSeaMapLeaflet";
 
@@ -21,15 +22,20 @@ type LogSheetsMapViewProps = {
   showRouteTargets?: boolean;
 };
 
+function OpenSeaMapLoading() {
+  const { t } = useI18n();
+  return (
+    <div className="open-seamap-empty" role="status">
+      {t("map.loading")}
+    </div>
+  );
+}
+
 const OpenSeaMapLeaflet = dynamic(
   () => import("./OpenSeaMapLeaflet").then((module) => module.OpenSeaMapLeaflet),
   {
     ssr: false,
-    loading: () => (
-      <div className="open-seamap-empty" role="status">
-        Loading map…
-      </div>
-    ),
+    loading: OpenSeaMapLoading,
   },
 );
 
@@ -42,45 +48,45 @@ function isValidCoordinate(line: LogLine) {
   );
 }
 
-function lineDescription(line: LogLine) {
+function lineDescription(line: LogLine, labels: { weather: string; wind: string }) {
   const details = [
     line.position,
     line.remarks,
-    line.weather ? `Weather: ${line.weather}` : undefined,
-    line.wind ? `Wind: ${line.wind}` : undefined,
+    line.weather ? `${labels.weather}: ${line.weather}` : undefined,
+    line.wind ? `${labels.wind}: ${line.wind}` : undefined,
   ].filter(Boolean);
 
   return details.join(" · ");
 }
 
-function lineToPoint(line: LogLine, index: number, routeId: string) {
+function lineToPoint(line: LogLine, index: number, routeId: string, labels: { weather: string; wind: string }) {
   return {
     id: `${routeId}-${line.time || "line"}-${index}`,
     latitude: line.latitude,
     longitude: line.longitude,
     label: `${index + 1}`,
     title: line.time ? `${line.time} · ${line.position}` : line.position,
-    description: lineDescription(line),
+    description: lineDescription(line, labels),
   };
 }
 
-function logLinesToRoute(logLines: LogLine[]): MapRoute {
+function logLinesToRoute(logLines: LogLine[], labels: { weather: string; wind: string; logLinePositions: string }): MapRoute {
   const points = logLines
     .filter(isValidCoordinate)
-    .map((line, index) => lineToPoint(line, index, "log-lines"));
+    .map((line, index) => lineToPoint(line, index, "log-lines", labels));
 
   return {
     id: "log-lines",
-    title: "Log line positions",
+    title: labels.logLinePositions,
     points,
     detailLevel: "full",
   };
 }
 
-function logSheetToRoute(sheet: LogSheet): MapRoute {
+function logSheetToRoute(sheet: LogSheet, labels: { weather: string; wind: string }): MapRoute {
   const points = sheet.lines
     .filter(isValidCoordinate)
-    .map((line, index) => lineToPoint(line, index, sheet.id));
+    .map((line, index) => lineToPoint(line, index, sheet.id, labels));
 
   return {
     id: sheet.id,
@@ -94,16 +100,18 @@ function logSheetToRoute(sheet: LogSheet): MapRoute {
 
 export function LogLinesMapView({
   logLines,
-  ariaLabel = "Route positions from log lines",
+  ariaLabel,
   className = "open-seamap-detail",
-  emptyMessage = "No valid positions are recorded for this sheet yet.",
+  emptyMessage,
 }: LogLinesMapViewProps) {
-  const routes = useMemo(() => [logLinesToRoute(logLines)], [logLines]);
+  const { t } = useI18n();
+  const mapLabels = useMemo(() => ({ weather: t("details.weather"), wind: t("details.wind"), logLinePositions: t("map.logLinePositions") }), [t]);
+  const routes = useMemo(() => [logLinesToRoute(logLines, mapLabels)], [logLines, mapLabels]);
   return (
     <OpenSeaMapLeaflet
-      ariaLabel={ariaLabel}
+      ariaLabel={ariaLabel ?? t("map.routePositionsAria")}
       className={className}
-      emptyMessage={emptyMessage}
+      emptyMessage={emptyMessage ?? t("map.noSheetPositions")}
       routes={routes}
     />
   );
@@ -111,13 +119,15 @@ export function LogLinesMapView({
 
 export function LogSheetsMapView({
   sheets,
-  ariaLabel = "Overview map of all log sheets",
+  ariaLabel,
   className = "open-seamap-overview",
-  emptyMessage = "No valid log sheet positions are available yet.",
+  emptyMessage,
   onSheetClick,
   showRouteTargets = true,
 }: LogSheetsMapViewProps) {
-  const routes = useMemo(() => sheets.map(logSheetToRoute), [sheets]);
+  const { t } = useI18n();
+  const mapLabels = useMemo(() => ({ weather: t("details.weather"), wind: t("details.wind") }), [t]);
+  const routes = useMemo(() => sheets.map((sheet) => logSheetToRoute(sheet, mapLabels)), [sheets, mapLabels]);
   const mappedRoutes = routes.filter(
     (route) => route.sheet && route.points.length > 0,
   );
@@ -125,9 +135,9 @@ export function LogSheetsMapView({
   return (
     <>
       <OpenSeaMapLeaflet
-        ariaLabel={ariaLabel}
+        ariaLabel={ariaLabel ?? t("logbooks.mapAria")}
         className={className}
-        emptyMessage={emptyMessage}
+        emptyMessage={emptyMessage ?? t("map.noLogSheetPositions")}
         routes={routes}
         onRouteClick={(route) => {
           if (route.sheet) onSheetClick?.(route.sheet);
@@ -136,15 +146,15 @@ export function LogSheetsMapView({
       {showRouteTargets && onSheetClick && mappedRoutes.length > 0 && (
         <nav
           className="open-seamap-route-targets"
-          aria-label="Open a log sheet from the overview map"
+          aria-label={t("map.openSheetFromOverview")}
         >
-          <p className="open-seamap-route-targets-title">Map routes</p>
+          <p className="open-seamap-route-targets-title">{t("map.routes")}</p>
           <ul>
             {mappedRoutes.map((route) => (
               <li key={route.id}>
                 <button
                   type="button"
-                  aria-label={`Open route ${route.title}`}
+                  aria-label={`${t("map.openRoute")} ${route.title}`}
                   onClick={() => {
                     if (route.sheet) onSheetClick(route.sheet);
                   }}
