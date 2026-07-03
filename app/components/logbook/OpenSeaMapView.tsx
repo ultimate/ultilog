@@ -142,6 +142,7 @@ export function LogSheetsMapView({
               <li key={route.id}>
                 <button
                   type="button"
+                  aria-label={`Open route ${route.title}`}
                   onClick={() => {
                     if (route.sheet) onSheetClick(route.sheet);
                   }}
