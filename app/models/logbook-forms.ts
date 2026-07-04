@@ -11,6 +11,6 @@ export type BoatForm = Pick<Boat, "name" | "registration" | "flagState" | "homeP
   deviationTable: Boat["deviationTable"];
 };
 
-export type LineForm = Omit<Record<keyof LogLine, string>, "course" | "wind">;
+export type LineForm = Record<keyof LogLine, string>;
 
 export type CrewForm = CrewMember;
