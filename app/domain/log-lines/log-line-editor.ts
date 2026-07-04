@@ -14,7 +14,7 @@ export type LogLineFormUpdateContext = {
   variationLookup?: CourseConversionLookupOptions["variationLookup"];
 };
 
-const courseInputFieldNames = ["magneticCourse", "deviation", "magneticCourseCorrected", "variation", "trueCourse", "driftAngle", "courseThroughWater", "currentDrift", "courseOverGround"] as const;
+const courseInputFieldNames = ["compassCourse", "deviation", "magneticCourse", "variation", "trueCourse", "windDrift", "courseThroughWater", "currentDrift", "courseOverGround"] as const;
 const coordinateAxes: Partial<Record<keyof LineForm, CoordinateAxis>> = { latitude: "lat", longitude: "lon" };
 
 export function updateLogLineFormForInput(form: LineForm, update: LogLineFormUpdate, context: LogLineFormUpdateContext = {}) {
@@ -60,12 +60,12 @@ function hasAnyCourseInput(form: LineForm) {
 
 function courseInputFromForm(form: LineForm, forceDeviationFromTable = false): CourseConversionInput {
   return {
-    compassCourse: optionalNumber(form.magneticCourse),
+    compassCourse: optionalNumber(form.compassCourse),
     deviation: forceDeviationFromTable ? undefined : optionalNumber(form.deviation),
-    magneticCourse: optionalNumber(form.magneticCourseCorrected),
+    magneticCourse: optionalNumber(form.magneticCourse),
     variation: optionalNumber(form.variation),
     trueCourse: optionalNumber(form.trueCourse),
-    windDrift: optionalNumber(form.driftAngle),
+    windDrift: optionalNumber(form.windDrift),
     courseThroughWater: optionalNumber(form.courseThroughWater),
     currentDrift: optionalNumber(form.currentDrift),
     courseOverGround: optionalNumber(form.courseOverGround),
@@ -74,12 +74,12 @@ function courseInputFromForm(form: LineForm, forceDeviationFromTable = false): C
 
 function courseFormFromConversion(conversion: CourseConversionInput): Partial<LineForm> {
   const updates: Partial<LineForm> = {};
-  setCourseFormValue(updates, "magneticCourse", conversion.compassCourse);
+  setCourseFormValue(updates, "compassCourse", conversion.compassCourse);
   setCourseFormValue(updates, "deviation", conversion.deviation);
-  setCourseFormValue(updates, "magneticCourseCorrected", conversion.magneticCourse);
+  setCourseFormValue(updates, "magneticCourse", conversion.magneticCourse);
   setCourseFormValue(updates, "variation", conversion.variation);
   setCourseFormValue(updates, "trueCourse", conversion.trueCourse);
-  setCourseFormValue(updates, "driftAngle", conversion.windDrift);
+  setCourseFormValue(updates, "windDrift", conversion.windDrift);
   setCourseFormValue(updates, "courseThroughWater", conversion.courseThroughWater);
   setCourseFormValue(updates, "currentDrift", conversion.currentDrift);
   setCourseFormValue(updates, "courseOverGround", conversion.courseOverGround);
