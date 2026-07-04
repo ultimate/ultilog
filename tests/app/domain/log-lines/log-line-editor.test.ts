@@ -30,6 +30,16 @@ describe("log line editor business logic", () => {
     });
   });
 
+  it("uses renamed course form fields when calculating drift corrections", () => {
+    const form = { ...defaultLineForm, trueCourse: "100", windDrift: "5" };
+
+    expect(updateLogLineFormForInput(form, { field: "windDrift", value: "5" })).toMatchObject({
+      trueCourse: "100",
+      windDrift: "5",
+      courseThroughWater: "105",
+    });
+  });
+
   it("uses coordinates and date for async variation lookup", async () => {
     const form = { ...defaultLineForm, time: "2026-05-14T07:35", latitude: "38", longitude: "20", magneticCourse: "15" };
 
