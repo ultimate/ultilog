@@ -41,7 +41,45 @@ const LOG_LINE_FIELDS = [
   "remarks",
 ] as const;
 
-const lineProperties = Object.fromEntries(LOG_LINE_FIELDS.map((field) => [field, { type: "string" }]));
+const lineFieldDescriptions = {
+  time: "Log row time as visible text.",
+  position: "Named position, waypoint, or place description for map context; keep this field even when coordinates are present.",
+  latitude: "Latitude as visible text; use decimal degrees only if the sheet already uses them.",
+  longitude: "Longitude as visible text; use decimal degrees only if the sheet already uses them.",
+  weather: "Short weather code or condition text.",
+  weatherRemark: "Free-text weather remark or visibility/horizon note.",
+  temperature: "Air temperature as numeric text when visible, preserving any written unit if present.",
+  barometer: "Barometric pressure as numeric text when visible.",
+  windDirection: "Wind direction as visible text, such as N, NE, 270, or WSW.",
+  windStrength: "Wind strength as numeric text.",
+  windUnit: "Wind strength unit; expected values are bft or kn when visible, otherwise empty string.",
+  waves: "Wave or sea height/state as numeric text when visible.",
+  seaUnit: "Wave/sea unit; expected values are m or ft when visible, otherwise empty string.",
+  tide: "Tide height or tide value as numeric text when visible.",
+  tideUnit: "Tide unit; expected values are m or ft when visible, otherwise empty string.",
+  moon: "Moon phase or moon remark as visible text.",
+  compassCourse: "Compass course as numeric degrees text.",
+  deviation: "Deviation as signed numeric degrees text.",
+  magneticCourse: "Magnetic course as numeric degrees text.",
+  variation: "Variation as signed numeric degrees text.",
+  trueCourse: "True course as numeric degrees text.",
+  windDrift: "Wind drift/leeway as signed numeric degrees text.",
+  courseThroughWater: "Course through water as numeric degrees text.",
+  currentDrift: "Current drift/set correction as signed numeric degrees text.",
+  courseOverGround: "Course over ground as numeric degrees text.",
+  speedKn: "Speed as numeric knots text.",
+  logNm: "Log distance as numeric nautical miles text.",
+  sailSm: "Sailing distance as numeric seamiles text.",
+  sailNote: "Sail configuration or sail-specific note.",
+  motorSm: "Motor distance as numeric seamiles text.",
+  motorHours: "Engine hours as numeric text.",
+  motorNote: "Engine or motor-specific note.",
+  remarks: "General row remarks or events.",
+} satisfies Record<(typeof LOG_LINE_FIELDS)[number], string>;
+
+const lineProperties = Object.fromEntries(
+  LOG_LINE_FIELDS.map((field) => [field, { type: "string", description: lineFieldDescriptions[field] }]),
+);
 
 const scannerResultJsonSchema = {
   type: "object",
@@ -95,6 +133,10 @@ const userPrompt = `Extract a logbook draft from these image(s). The JSON must m
 - draft.dateRange: visible date or date range, otherwise empty string.
 - draft.route.from/to/departed/arrived: visible route information, otherwise empty strings.
 - draft.lines: one object per logbook row using only the schema's log line fields.
+- Use the renamed log line fields waves, compassCourse, magneticCourse, windDrift, weatherRemark, and temperature.
+- Do not output deprecated course or wind fields; split wind into windDirection, windStrength, and windUnit.
+- Keep position in each row for named positions or waypoint text, even when latitude and longitude are present.
+- Expected row data types are strings in the JSON schema. Transcribe numeric values as strings for numeric fields such as temperature, barometer, waves, compassCourse, magneticCourse, windDrift, speedKn, and logNm.
 - warnings: concise human-readable warnings for missing or ambiguous fields.`;
 
 export async function extractLogbookDraft(input: ScannerProviderInput): Promise<ScannerResult> {
