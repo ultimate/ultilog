@@ -19,19 +19,19 @@ describe("log line editor business logic", () => {
   });
 
   it("recalculates course fields and lets the boat deviation table override a typed deviation", () => {
-    const form = { ...defaultLineForm, magneticCourse: "10", deviation: "99", variation: "2" };
+    const form = { ...defaultLineForm, compassCourse: "10", deviation: "99", variation: "2" };
 
-    expect(updateLogLineFormForInput(form, { field: "magneticCourse", value: "10" }, { boat: boatWithDeviation })).toMatchObject({
-      magneticCourse: "10",
+    expect(updateLogLineFormForInput(form, { field: "compassCourse", value: "10" }, { boat: boatWithDeviation })).toMatchObject({
+      compassCourse: "10",
       deviation: "5",
-      magneticCourseCorrected: "15",
+      magneticCourse: "15",
       variation: "2",
       trueCourse: "17",
     });
   });
 
   it("uses coordinates and date for async variation lookup", async () => {
-    const form = { ...defaultLineForm, time: "2026-05-14T07:35", latitude: "38", longitude: "20", magneticCourseCorrected: "15" };
+    const form = { ...defaultLineForm, time: "2026-05-14T07:35", latitude: "38", longitude: "20", magneticCourse: "15" };
 
     await expect(updateLogLineFormForInput(form, { field: "latitude", value: "39" }, {
       variationLookup: async (request) => {

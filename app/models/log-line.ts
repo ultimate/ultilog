@@ -7,28 +7,26 @@ export type LogLine = {
   latitude: number;
   longitude: number;
   weather: string;
+  weatherRemark: string;
+  temperature: number;
   barometer: number;
   windDirection: string;
   windStrength: number;
   windUnit: WindUnit;
-  seaState: number;
+  waves: number;
   seaUnit: DistanceUnit;
   tide: number;
   tideUnit: DistanceUnit;
   moon: string;
-  magneticCourse: number;
+  compassCourse: number;
   deviation: number;
-  magneticCourseCorrected: number;
+  magneticCourse: number;
   variation: number;
   trueCourse: number;
-  driftAngle: number;
+  windDrift: number;
   courseThroughWater: number;
   currentDrift: number;
   courseOverGround: number;
-  /** @deprecated Use courseOverGround and related structured course fields. */
-  course?: string;
-  /** @deprecated Use windDirection, windStrength, and windUnit. */
-  wind?: string;
   speedKn: number;
   logNm: number;
   sailSm: number;

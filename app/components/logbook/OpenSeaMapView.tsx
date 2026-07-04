@@ -53,7 +53,7 @@ function lineDescription(line: LogLine, labels: { weather: string; wind: string 
     line.position,
     line.remarks,
     line.weather ? `${labels.weather}: ${line.weather}` : undefined,
-    line.wind ? `${labels.wind}: ${line.wind}` : undefined,
+    line.windDirection || line.windStrength ? `${labels.wind}: ${[line.windDirection, line.windStrength, line.windUnit].filter(Boolean).join(" ")}` : undefined,
   ].filter(Boolean);
 
   return details.join(" · ");
