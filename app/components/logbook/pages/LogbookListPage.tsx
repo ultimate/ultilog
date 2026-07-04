@@ -171,7 +171,11 @@ export function LogbookListPage({
         </div>
       )}
 
-      {scannerError && <p className="save-error">{scannerError}</p>}
+      {scannerError && (
+        <p className="save-error" role="alert">
+          {scannerError}
+        </p>
+      )}
 
       {selectedScannerFiles.length > 0 && !isScannerPrivacyConfirmed && (
         <div
