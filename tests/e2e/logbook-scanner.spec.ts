@@ -1,0 +1,96 @@
+import { expect, type Page, test } from "@playwright/test";
+
+test("imports a scanned logbook image and opens the created draft sheet", async ({ page }) => {
+  const createdSheetId = "11111111-2222-4333-8444-555555555555";
+  let scannerRequestReceived = false;
+
+  await loginWithDemoData(page);
+  await openModule(page, "Logbook list", "+ New sheet");
+
+  const currentLogbookResponse = await page.request.get("/api/logbook");
+  expect(currentLogbookResponse.ok()).toBeTruthy();
+  const currentLogbook = await currentLogbookResponse.json();
+  const scannedSheet = {
+    id: createdSheetId,
+    title: "Scanned marina departure",
+    dateRange: "04 Jul 2026",
+    status: "Draft",
+    source: "scanner",
+    verificationNote: "Please verify scanned information before locking this sheet.",
+    scannerWarnings: ["Verify the scanned engine hours."],
+    boatId: currentLogbook.boats[0].id,
+    route: {
+      from: "Sample Harbor",
+      to: "Test Anchorage",
+      departed: "04 Jul 2026, 09:00",
+      arrived: "04 Jul 2026, 11:30",
+    },
+    crew: [],
+    watchPlan: [],
+    technicalChecks: [],
+    lines: [],
+  };
+
+  await page.route("**/api/logbook/scanner", async (route) => {
+    scannerRequestReceived = true;
+    expect(route.request().method()).toBe("POST");
+    await route.fulfill({
+      status: 201,
+      contentType: "application/json",
+      body: JSON.stringify({ sheetId: createdSheetId }),
+    });
+  });
+
+  await page.route("**/api/logbook", async (route) => {
+    if (route.request().method() === "GET" && scannerRequestReceived) {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          ...currentLogbook,
+          sheets: [...currentLogbook.sheets, scannedSheet],
+        }),
+      });
+      return;
+    }
+    await route.continue();
+  });
+
+  const fileChooserPromise = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: "Import photos" }).click();
+  const fileChooser = await fileChooserPromise;
+  await fileChooser.setFiles({
+    name: "sample-logbook-scan.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(samplePngBase64, "base64"),
+  });
+
+  await expect(page.getByRole("dialog", { name: "Privacy notice before upload" })).toBeVisible();
+  await page.getByRole("button", { name: "Continue and upload" }).click();
+
+  await expect(page).toHaveURL(new RegExp(`/details/${createdSheetId}$`));
+  await expect(page.getByRole("heading", { name: scannedSheet.title })).toBeVisible();
+  await expect(page.getByLabel("Scanned draft verification notice")).toBeVisible();
+  await expect(page.getByLabel("Scanned draft verification notice")).toContainText("Please verify scanned information before locking this sheet.");
+  await expect(page.getByLabel("Scanned draft verification notice")).toContainText("Verify the scanned engine hours.");
+  expect(scannerRequestReceived).toBeTruthy();
+});
+
+async function loginWithDemoData(page: Page) {
+  await page.goto("/login");
+  const demoLogin = page.getByRole("button", { name: "Try the demo" });
+  await expect(demoLogin).toBeVisible();
+  await expect(demoLogin).toBeEnabled();
+  await demoLogin.click();
+  await expect(page.getByRole("button", { name: "Logout" })).toBeVisible({ timeout: 30_000 });
+}
+
+async function openModule(page: Page, moduleName: string, expectedActionName: string | RegExp) {
+  await expect(async () => {
+    await page.getByRole("button", { name: moduleName }).click();
+    await expect(page.getByRole("button", { name: expectedActionName })).toBeVisible({ timeout: 2_000 });
+  }).toPass({ timeout: 15_000 });
+}
+
+const samplePngBase64 =
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=";
