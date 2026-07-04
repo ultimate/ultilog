@@ -145,6 +145,8 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     <tr key={key} className="inline-line-row">
       <td><input type="datetime-local" value={lineForm.time} onChange={(e) => updateLineFormField("time", e.target.value)} /></td><td>{renderCoordinateInput("latitude", t("details.lat"))}</td><td>{renderCoordinateInput("longitude", t("details.lon"))}</td>
       <td><select value={lineForm.weather} onChange={(e) => setLineForm({ ...lineForm, weather: e.target.value })}><option value="">—</option>{weatherEmojis.map((emoji) => <option key={emoji} value={emoji}>{emoji}</option>)}</select></td>
+      <td>{renderTextInput("weatherRemark", t("details.weatherRemark"))}</td>
+      <td>{renderNumberInput("temperature", { step: "0.1" })}</td>
       <td>{renderNumberInput("barometer", { min: 800, max: 1200 })}</td>
       <td><div className="compound-inputs"><select aria-label={t("details.windDirection")} value={lineForm.windDirection} onChange={(e) => setLineForm({ ...lineForm, windDirection: e.target.value })}><option value="">—</option>{compassDirections.map((direction) => <option key={direction} value={direction}>{direction}</option>)}</select>{renderNumberInput("windStrength")}<select value={lineForm.windUnit} onChange={(e) => setLineForm({ ...lineForm, windUnit: e.target.value })}><option value="bft">bft</option><option value="kn">kn</option></select></div></td>
       <td><div className="compound-inputs">{renderNumberInput("waves", { step: "0.1" })}<select value={lineForm.seaUnit} onChange={(e) => setLineForm({ ...lineForm, seaUnit: e.target.value })}><option value="m">m</option><option value="ft">ft</option></select></div></td>
@@ -484,10 +486,10 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                   <table className={showCourseColumns ? "log-lines-table with-course-columns" : "log-lines-table"}>
                     <thead>
                       <tr className="column-groups">
-                        <th colSpan={3}>{t("details.timePos")}</th><th colSpan={6}>{t("details.weatherSea")}</th><th colSpan={showCourseColumns ? 9 : 2}>{t("details.course")}</th><th colSpan={4}>{t("details.travel")}</th><th>{t("details.remarks")}</th><th colSpan={2}>{t("details.actions")}</th>
+                        <th colSpan={3}>{t("details.timePos")}</th><th colSpan={8}>{t("details.weatherSea")}</th><th colSpan={showCourseColumns ? 9 : 2}>{t("details.course")}</th><th colSpan={4}>{t("details.travel")}</th><th>{t("details.remarks")}</th><th colSpan={2}>{t("details.actions")}</th>
                       </tr>
                       <tr>
-                        <th>{t("details.time")}</th><th>{t("details.lat")}</th><th>{t("details.lon")}</th><th>{t("details.weather")}</th><th>{t("details.baro")}</th><th>{t("details.wind")}</th><th>{t("details.sea")}</th><th>{t("details.tide")}</th><th>{t("details.moon")}</th><th>{t("details.course.compass")}</th>
+                        <th>{t("details.time")}</th><th>{t("details.lat")}</th><th>{t("details.lon")}</th><th>{t("details.weather")}</th><th>{t("details.weatherRemark")}</th><th>{t("details.temperature")}</th><th>{t("details.baro")}</th><th>{t("details.wind")}</th><th>{t("details.sea")}</th><th>{t("details.tide")}</th><th>{t("details.moon")}</th><th>{t("details.course.compass")}</th>
                         {showCourseColumns && courseConversionColumnKeys.map((key) => <th key={key}>{t(key)}</th>)}
                         <th>{t("details.course.overGround")}</th><th>{t("details.speed")}</th><th>{t("details.log")}</th><th>{t("details.sail")}</th><th>{t("details.motor")}</th><th>{t("details.remarksEvent")}</th><th>{t("details.edit")}</th><th>{t("common.delete")}</th>
                       </tr>
@@ -496,7 +498,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                       {showAddLine && renderLineEditor("new")}
                       {activeSheet.lines.map((line, index) => editingLineIndex === index ? renderLineEditor(`edit-${index}`) : (
                         <tr key={`${line.time}-${line.position}-${index}`}>
-                          <td>{line.time}</td><td>{coordinateToInput(line.latitude, "lat", coordinateFormat)}</td><td>{coordinateToInput(line.longitude, "lon", coordinateFormat)}</td><td>{line.weather}</td><td>{line.barometer}</td><td>{line.windDirection} {line.windStrength} {line.windUnit}</td><td>{line.waves} {line.seaUnit}</td><td>{line.tide} {line.tideUnit}</td><td>{line.moon}</td><td>{line.compassCourse}</td>
+                          <td>{line.time}</td><td>{coordinateToInput(line.latitude, "lat", coordinateFormat)}</td><td>{coordinateToInput(line.longitude, "lon", coordinateFormat)}</td><td>{line.weather}</td><td>{line.weatherRemark}</td><td>{line.temperature}</td><td>{line.barometer}</td><td>{line.windDirection} {line.windStrength} {line.windUnit}</td><td>{line.waves} {line.seaUnit}</td><td>{line.tide} {line.tideUnit}</td><td>{line.moon}</td><td>{line.compassCourse}</td>
                           {showCourseColumns && [line.deviation, line.magneticCourse, line.variation, line.trueCourse, line.windDrift, line.courseThroughWater, line.currentDrift].map((value, courseIndex) => <td className="optional-course-cell" key={`${line.time}-${index}-${courseIndex}`}>{value}</td>)}
                           <td>{line.courseOverGround}</td><td>{line.speedKn}</td><td>{line.logNm}</td><td>{line.sailSm} sm {line.sailNote}</td><td>{line.motorSm} sm · {line.motorHours} h {line.motorNote}</td><td>{line.remarks}</td>
                           <td><button type="button" className="edit-chip" disabled={isActiveSheetLocked} onClick={() => startEditingLine(line, index)}>✏️</button></td>
