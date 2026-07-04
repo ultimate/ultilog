@@ -25,6 +25,15 @@ const mockedScanner = vi.mocked(openAiScannerProvider.extractLogbookDraft);
 const session = { user: { id: "user-1", name: "User", email: "user@example.test", groups: [] }, expires: "2099-01-01T00:00:00.000Z" };
 const boat = { id: "boat-1", name: "Aurora", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", yachtData: {}, deviationTable: [] };
 const logbook = { boats: [boat], crewMembers: [], sheets: [] };
+const partialScannerResult = {
+  draft: {
+    title: "",
+    dateRange: "2026-07-03",
+    route: { from: "A", to: "", departed: "2026-07-03, 10:00", arrived: "" },
+    lines: [{ time: "2026-07-03T10:30", latitude: "47° 30.000' N", remarks: "Smudged row" }],
+  },
+  warnings: ["Arrival port was unreadable.", "Verify line 1."],
+};
 
 function scannerRequest(formData: FormData) {
   return new Request("https://ultilog.test/api/logbook/scanner", { method: "POST", body: formData });
@@ -50,17 +59,22 @@ describe("logbook scanner endpoint", () => {
     expect(mockedReadLogbook).not.toHaveBeenCalled();
   });
 
-  it("rejects boats outside the current user's logbook", async () => {
+  it.each([
+    { label: "missing boat selections", boatId: undefined, status: 400, body: { code: "missing_boat", error: "Choose a boat before scanning logbook pages." } },
+    { label: "blank boat selections", boatId: "   ", status: 400, body: { code: "missing_boat", error: "Choose a boat before scanning logbook pages." } },
+    { label: "boats outside the current user's logbook", boatId: "missing-boat", status: 404, body: { code: "invalid_boat", error: "The selected boat is not available in your logbook." } },
+  ])("rejects $label", async ({ boatId, status, body }) => {
     mockedAuth.mockResolvedValueOnce(session);
-    mockedReadLogbook.mockResolvedValueOnce(logbook);
+    if (boatId?.trim()) mockedReadLogbook.mockResolvedValueOnce(logbook);
     const formData = new FormData();
-    formData.set("boatId", "missing-boat");
+    if (boatId !== undefined) formData.set("boatId", boatId);
     formData.append("files", imageFile());
 
     const response = await POST(scannerRequest(formData));
 
-    expect(response.status).toBe(404);
-    await expect(response.json()).resolves.toEqual({ code: "invalid_boat", error: "The selected boat is not available in your logbook." });
+    expect(response.status).toBe(status);
+    await expect(response.json()).resolves.toEqual(body);
+    if (!boatId?.trim()) expect(mockedReadLogbook).not.toHaveBeenCalled();
     expect(mockedScanner).not.toHaveBeenCalled();
   });
 
@@ -78,18 +92,6 @@ describe("logbook scanner endpoint", () => {
     expect(mockedScanner).not.toHaveBeenCalled();
   });
 
-
-  it("rejects missing boat selections", async () => {
-    mockedAuth.mockResolvedValueOnce(session);
-    const formData = new FormData();
-    formData.append("files", imageFile());
-
-    const response = await POST(scannerRequest(formData));
-
-    expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toEqual({ code: "missing_boat", error: "Choose a boat before scanning logbook pages." });
-    expect(mockedReadLogbook).not.toHaveBeenCalled();
-  });
 
   it("rejects oversized uploads", async () => {
     mockedAuth.mockResolvedValueOnce(session);
@@ -152,17 +154,14 @@ describe("logbook scanner endpoint", () => {
     expect(mockedWriteLogbook).not.toHaveBeenCalled();
   });
 
-  it("adds a scanned sheet to the current user's logbook", async () => {
+  it("creates a draft scanner sheet from partial scanner data without persisting raw image content", async () => {
     mockedAuth.mockResolvedValueOnce(session);
     mockedReadLogbook.mockResolvedValueOnce(logbook);
-    mockedScanner.mockResolvedValueOnce({
-      draft: { title: "Scanned page", dateRange: "2026-07-03", route: { from: "A", to: "B", departed: "2026-07-03, 10:00", arrived: "2026-07-03, 12:00" }, lines: [] },
-      warnings: ["Verify route."],
-    });
+    mockedScanner.mockResolvedValueOnce(partialScannerResult);
     mockedWriteLogbook.mockImplementationOnce(async (updated) => updated);
     const formData = new FormData();
     formData.set("boatId", "boat-1");
-    formData.append("files", imageFile());
+    formData.append("files", imageFile("sheet.png", 4));
 
     const response = await POST(scannerRequest(formData));
 
@@ -171,7 +170,19 @@ describe("logbook scanner endpoint", () => {
     expect(body.sheetId).toEqual(expect.any(String));
     expect(mockedScanner).toHaveBeenCalledWith({ files: [{ name: "sheet.png", type: "image/png", buffer: expect.any(Buffer) }] });
     expect(mockedWriteLogbook).toHaveBeenCalledWith(expect.objectContaining({
-      sheets: [expect.objectContaining({ id: body.sheetId, boatId: "boat-1", source: "scanner", title: "Scanned page" })],
+      sheets: [expect.objectContaining({
+        id: body.sheetId,
+        boatId: "boat-1",
+        status: "Draft",
+        source: "scanner",
+        title: "Scanned log sheet",
+        scannerWarnings: partialScannerResult.warnings,
+        lines: [expect.objectContaining({ time: "2026-07-03T10:30", latitude: 47.5, remarks: "Smudged row" })],
+      })],
     }), "user-1");
+
+    const [[persistedLogbook]] = mockedWriteLogbook.mock.calls;
+    expect(JSON.stringify(persistedLogbook)).not.toContain("sheet.png");
+    expect(JSON.stringify(persistedLogbook)).not.toContain("buffer");
   });
 });
