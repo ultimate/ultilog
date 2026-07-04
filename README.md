@@ -46,6 +46,38 @@ For local development, leave `POSTGRES_URL` empty. The app creates `.data/ultilo
 Open [http://localhost:3000](http://localhost:3000) to view the app.
 
 
+## Configuration and environment variables
+
+Create `.env.local` from `.env.example` for development. The app uses these environment variables:
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `POSTGRES_URL` or `DATABASE_URL` | Required for hosted/PostgreSQL deployments; leave empty for local SQLite development. | Connects the persistence layer to PostgreSQL. If neither is set, local development uses the SQLite-compatible sql.js database. |
+| `LOCAL_DATABASE_PATH` | Optional. | Overrides the local sql.js database path. Defaults to `.data/ultilog.sqlite`. |
+| `OPENAI_API_KEY` | Required when the scanner feature calls the OpenAI cloud provider. | Authenticates logbook photo extraction requests. The scanner endpoint returns a provider-unavailable error if scans are attempted without it. |
+| `LOGBOOK_SCANNER_MODEL` | Optional. | Selects the OpenAI model used by the scanner provider. Defaults to `gpt-4.1-mini`. |
+| `AUTH_SECRET` / platform-provided NextAuth secret | Required for secure production authentication. | Used by NextAuth to sign/encrypt authentication state. Development may rely on framework defaults, but production should set a stable secret. |
+
+## Logbook scanner
+
+The scanner imports photographed or handwritten paper logbook sheets and turns extracted fields into a new digital sheet. It is an assistive import flow, not an automatic source of truth.
+
+### Scanner provider choice
+
+The current scanner implementation uses the OpenAI Responses API as its cloud recognition provider. Configure it with `OPENAI_API_KEY`; optionally set `LOGBOOK_SCANNER_MODEL` to choose a different compatible model. If you add another provider, keep it behind the scanner provider interface and make the API route choose the provider explicitly rather than spreading provider-specific code through the app.
+
+Tests must mock the scanner provider and must not call the real cloud LLM. Unit and route tests should replace the provider with deterministic fixtures, and end-to-end tests should intercept `/api/logbook/scanner` rather than uploading photos to the real service.
+
+### Upload limits
+
+Scanner uploads must be `multipart/form-data` image uploads. The endpoint accepts at most 5 images per scan request, and each image must be 10 MB or smaller. Non-image files, empty uploads, missing boat selections, and scans for boats outside the signed-in user's logbook are rejected before provider extraction.
+
+### Privacy behavior
+
+Photos may contain personal, crew, vessel, and voyage information. Before upload, the UI shows a privacy notice explaining that photos are sent to the configured cloud recognition provider for extraction. Raw photos are converted in memory for the provider request and are not permanently stored by Ultilog. Only the extracted draft sheet data, scanner warnings, and verification metadata are written to the logbook database.
+
+Scanned sheets are always created with `Draft` status. Users must review and verify the extracted information and warnings before locking the sheet.
+
 ## Project structure guidelines
 
 Keep the app organized by responsibility so feature work does not collect in a single component:
