@@ -46,7 +46,7 @@ describe("logbook scanner endpoint", () => {
     const response = await POST(scannerRequest(formData));
 
     expect(response.status).toBe(401);
-    await expect(response.json()).resolves.toEqual({ error: "Unauthorized" });
+    await expect(response.json()).resolves.toEqual({ code: "unauthenticated", error: "Sign in to scan logbook pages." });
     expect(mockedReadLogbook).not.toHaveBeenCalled();
   });
 
@@ -60,7 +60,7 @@ describe("logbook scanner endpoint", () => {
     const response = await POST(scannerRequest(formData));
 
     expect(response.status).toBe(404);
-    await expect(response.json()).resolves.toEqual({ error: "Boat not found" });
+    await expect(response.json()).resolves.toEqual({ code: "invalid_boat", error: "The selected boat is not available in your logbook." });
     expect(mockedScanner).not.toHaveBeenCalled();
   });
 
@@ -73,9 +73,83 @@ describe("logbook scanner endpoint", () => {
 
     const response = await POST(scannerRequest(formData));
 
-    expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toEqual({ error: "Only image files can be scanned" });
+    expect(response.status).toBe(415);
+    await expect(response.json()).resolves.toEqual({ code: "unsupported_file_type", error: "Only image files can be scanned." });
     expect(mockedScanner).not.toHaveBeenCalled();
+  });
+
+
+  it("rejects missing boat selections", async () => {
+    mockedAuth.mockResolvedValueOnce(session);
+    const formData = new FormData();
+    formData.append("files", imageFile());
+
+    const response = await POST(scannerRequest(formData));
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ code: "missing_boat", error: "Choose a boat before scanning logbook pages." });
+    expect(mockedReadLogbook).not.toHaveBeenCalled();
+  });
+
+  it("rejects oversized uploads", async () => {
+    mockedAuth.mockResolvedValueOnce(session);
+    mockedReadLogbook.mockResolvedValueOnce(logbook);
+    const formData = new FormData();
+    formData.set("boatId", "boat-1");
+    formData.append("files", imageFile("sheet.png", 10 * 1024 * 1024 + 1));
+
+    const response = await POST(scannerRequest(formData));
+
+    expect(response.status).toBe(413);
+    await expect(response.json()).resolves.toEqual({ code: "file_too_large", error: "Each image must be 10 MB or smaller." });
+    expect(mockedScanner).not.toHaveBeenCalled();
+  });
+
+  it("rejects too many uploads", async () => {
+    mockedAuth.mockResolvedValueOnce(session);
+    mockedReadLogbook.mockResolvedValueOnce(logbook);
+    const formData = new FormData();
+    formData.set("boatId", "boat-1");
+    Array.from({ length: 6 }, (_, index) => formData.append("files", imageFile(`sheet-${index}.png`)));
+
+    const response = await POST(scannerRequest(formData));
+
+    expect(response.status).toBe(413);
+    await expect(response.json()).resolves.toEqual({ code: "too_many_files", error: "Upload at most 5 images at a time." });
+    expect(mockedScanner).not.toHaveBeenCalled();
+  });
+
+  it("reports provider outages", async () => {
+    mockedAuth.mockResolvedValueOnce(session);
+    mockedReadLogbook.mockResolvedValueOnce(logbook);
+    mockedScanner.mockRejectedValueOnce(new Error("offline"));
+    const formData = new FormData();
+    formData.set("boatId", "boat-1");
+    formData.append("files", imageFile());
+
+    const response = await POST(scannerRequest(formData));
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({ code: "provider_unavailable", error: "Scanner provider is temporarily unavailable. Please try again later." });
+    expect(mockedWriteLogbook).not.toHaveBeenCalled();
+  });
+
+  it("rejects scans without readable logbook data", async () => {
+    mockedAuth.mockResolvedValueOnce(session);
+    mockedReadLogbook.mockResolvedValueOnce(logbook);
+    mockedScanner.mockResolvedValueOnce({
+      draft: { title: "", dateRange: "", route: { from: "", to: "", departed: "", arrived: "" }, lines: [] },
+      warnings: ["No logbook rows were detected."],
+    });
+    const formData = new FormData();
+    formData.set("boatId", "boat-1");
+    formData.append("files", imageFile());
+
+    const response = await POST(scannerRequest(formData));
+
+    expect(response.status).toBe(422);
+    await expect(response.json()).resolves.toEqual({ code: "no_readable_logbook_data", error: "No readable logbook data was found in the uploaded image(s). Try a clearer photo or enter the sheet manually." });
+    expect(mockedWriteLogbook).not.toHaveBeenCalled();
   });
 
   it("adds a scanned sheet to the current user's logbook", async () => {
