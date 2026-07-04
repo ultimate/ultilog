@@ -38,21 +38,22 @@ export type CrewMemberRow = Omit<SheetCrewMember, "embarkationDateTime" | "embar
   is_primary?: number;
 };
 
-export type LogLineRow = Omit<LogLine, "position" | "logNm" | "windDirection" | "windStrength" | "windUnit" | "waves" | "seaUnit" | "tideUnit" | "compassCourse" | "magneticCourse" | "trueCourse" | "windDrift" | "courseThroughWater" | "currentDrift" | "courseOverGround" | "speedKn" | "sailSm" | "sailNote" | "motorSm" | "motorHours" | "motorNote"> & {
+export type LogLineRow = Omit<LogLine, "position" | "weatherRemark" | "logNm" | "windDirection" | "windStrength" | "windUnit" | "waves" | "seaUnit" | "tideUnit" | "compassCourse" | "magneticCourse" | "trueCourse" | "windDrift" | "courseThroughWater" | "currentDrift" | "courseOverGround" | "speedKn" | "sailSm" | "sailNote" | "motorSm" | "motorHours" | "motorNote"> & {
   sheet_id: string;
   sort_order: number;
   position_name: string;
   log_nm: number;
+  weather_remark: string;
   wind_direction: string;
   wind_strength: number;
   wind_unit: LogLine["windUnit"];
-  sea_state: number;
+  waves: number;
   sea_unit: LogLine["seaUnit"];
   tide_unit: LogLine["tideUnit"];
+  compass_course: number;
   magnetic_course: number;
-  magnetic_course_corrected: number;
   true_course: number;
-  drift_angle: number;
+  wind_drift: number;
   course_through_water: number;
   current_drift: number;
   course_over_ground: number;
