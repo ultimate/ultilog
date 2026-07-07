@@ -19,6 +19,8 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   await clickButton(page, "Log in");
   await expectLoggedIn(page);
   await expect(page.getByRole("heading", { name: "Onboarding checklist" })).toBeVisible();
+  await expect(page.getByText("Read the compliance information for your country")).toBeVisible();
+  await expect(page.getByText("Create your first boat")).toBeVisible();
   await openModule(page, "Logbook list", "+ New sheet");
   await expect(page.getByRole("button", { name: "Ionian training passage · Day 3", exact: true })).toHaveCount(0);
 

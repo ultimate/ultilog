@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { signOut } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -57,11 +57,10 @@ import { DashboardPage } from "./logbook/pages/DashboardPage";
 import { CrewManagerPage } from "./logbook/pages/CrewManagerPage";
 import { ProfilePage } from "./logbook/pages/ProfilePage";
 import { OnboardingChecklist } from "./onboarding/OnboardingChecklist";
-import { detectOnboardingCompletion } from "../lib/onboarding/detect";
+import { useOnboardingProfile } from "./onboarding/useOnboardingProfile";
 import type { OnboardingTaskId } from "../lib/onboarding/tasks";
 
 type AdminUser = { id: string; name: string; email: string; groups: string[] };
-type ProfilePayload = { name?: string; email?: string; groups?: string[]; onboardingCompletedTasks?: OnboardingTaskId[]; theme?: "light" | "dark"; isNavSlim?: boolean; hasReadCompliance?: boolean; error?: string };
 type SocialUser = {
   username: string;
   sailMiles: number;
@@ -213,11 +212,7 @@ export function LogbookApp({
   const [selectedCrewIndex, setSelectedCrewIndex] = useState(-2);
   const [lastCrewIndex, setLastCrewIndex] = useState(0);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [theme, setTheme] = useState<"light" | "dark">("light");
-  const [isNavSlim, setIsNavSlim] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [accountName, setAccountName] = useState(userName ?? "");
-  const [accountEmail, setAccountEmail] = useState(userEmail ?? "");
   const [nameForm, setNameForm] = useState({
     name: userName ?? "",
     currentPassword: "",
@@ -233,9 +228,6 @@ export function LogbookApp({
   });
   const [profileMessage, setProfileMessage] = useState<string | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
-  const [onboardingCompletedTasks, setOnboardingCompletedTasks] = useState<OnboardingTaskId[]>([]);
-  const [isSavingOnboarding, setIsSavingOnboarding] = useState(false);
-  const [hasReadCompliance, setHasReadCompliance] = useState(false);
   const [deleteForm, setDeleteForm] = useState({
     currentPassword: "",
     confirmation: "",
@@ -263,34 +255,27 @@ export function LogbookApp({
     logbookRef.current = logbook;
   }, [logbook]);
 
-  const onboardingCompletion = useMemo(() => detectOnboardingCompletion({
+  const {
+    accountEmail,
+    accountName,
+    isNavSlim,
+    isOnboardingComplete,
+    isSavingOnboarding,
+    onboardingCompletedTasks,
+    onboardingCompletion,
+    setAccountEmail,
+    setAccountName,
+    theme,
+    updateOnboardingCompletedTasks,
+    updateViewPreferences,
+  } = useOnboardingProfile({
+    activeModule,
+    initialEmail: userEmail,
+    initialName: userName,
     logbook,
-    manualCompletedTasks: onboardingCompletedTasks,
-    hasPersonalizedView: theme !== "light" || isNavSlim,
-    hasReadCompliance,
-  }), [hasReadCompliance, isNavSlim, logbook, onboardingCompletedTasks, theme]);
-
-  const isOnboardingComplete = Object.values(onboardingCompletion).every((task) => task.completed);
-
-  useEffect(() => {
-    let isMounted = true;
-    async function loadProfile() {
-      const response = await fetch("/api/profile").catch(() => undefined);
-      if (!response?.ok) return;
-      const payload = await response.json().catch(() => ({})) as ProfilePayload;
-      if (!isMounted) return;
-      if (payload.name) setAccountName(payload.name);
-      if (payload.email) setAccountEmail(payload.email);
-      if (Array.isArray(payload.onboardingCompletedTasks)) setOnboardingCompletedTasks(payload.onboardingCompletedTasks);
-      if (payload.theme === "light" || payload.theme === "dark") setTheme(payload.theme);
-      if (typeof payload.isNavSlim === "boolean") setIsNavSlim(payload.isNavSlim);
-      if (typeof payload.hasReadCompliance === "boolean") setHasReadCompliance(payload.hasReadCompliance);
-    }
-    loadProfile();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    onProfileError: setProfileError,
+    t,
+  });
 
   async function logout() {
     setSaveError(null);
@@ -475,14 +460,34 @@ export function LogbookApp({
     }
   }, [routePath, logbook, activeSheetId, selectedCrewIndex, showBoatManager]);
 
+  const loadAdminUsers = useCallback(async () => {
+    await Promise.resolve();
+    setAdminError(null);
+    const response = await fetch("/api/admin/users");
+    const payload = (await response.json().catch(() => ({}))) as {
+      users?: AdminUser[];
+      groups?: string[];
+      error?: string;
+    };
+    if (!response.ok) {
+      setAdminError(payload.error ?? t("admin.unableLoadUsers"));
+      return;
+    }
+    setAdminUsers(payload.users ?? []);
+    setKnownGroups(payload.groups ?? []);
+  }, [t]);
+
   useEffect(() => {
     if (
-      activeModule === "admin" &&
-      userGroups.includes("admin") &&
-      adminUsers.length === 0
-    )
+      activeModule !== "admin" ||
+      !userGroups.includes("admin") ||
+      adminUsers.length > 0
+    ) return;
+    const timeout = window.setTimeout(() => {
       loadAdminUsers().catch(() => undefined);
-  }, [activeModule, userGroups, adminUsers.length]);
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, [activeModule, adminUsers.length, loadAdminUsers, userGroups]);
 
   useEffect(() => {
     if (!isBackendReady) return;
@@ -1218,68 +1223,6 @@ export function LogbookApp({
     setCrewForm(crewToForm(logbook.crewMembers[nextIndex] ?? defaultCrewForm));
   }
 
-  useEffect(() => {
-    if (activeModule !== "compliance" || hasReadCompliance) return;
-    let isMounted = true;
-    async function markComplianceRead() {
-      const response = await fetch("/api/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "compliance-read" }),
-      }).catch(() => undefined);
-      if (!response?.ok) return;
-      const payload = await response.json().catch(() => ({})) as ProfilePayload;
-      if (isMounted && typeof payload.hasReadCompliance === "boolean") setHasReadCompliance(payload.hasReadCompliance);
-    }
-    markComplianceRead();
-    return () => {
-      isMounted = false;
-    };
-  }, [activeModule, hasReadCompliance]);
-
-  async function updateViewPreferences(nextPreferences: { theme?: "light" | "dark"; isNavSlim?: boolean }) {
-    const previousTheme = theme;
-    const previousIsNavSlim = isNavSlim;
-    const nextTheme = nextPreferences.theme ?? theme;
-    const nextIsNavSlim = nextPreferences.isNavSlim ?? isNavSlim;
-    setTheme(nextTheme);
-    setIsNavSlim(nextIsNavSlim);
-    const response = await fetch("/api/profile", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "preferences", theme: nextTheme, isNavSlim: nextIsNavSlim }),
-    });
-    const payload = await response.json().catch(() => ({})) as ProfilePayload;
-    if (!response.ok) {
-      setTheme(previousTheme);
-      setIsNavSlim(previousIsNavSlim);
-      setProfileError(payload.error ?? t("profile.unableUpdatePreferences"));
-      return;
-    }
-    if (payload.theme === "light" || payload.theme === "dark") setTheme(payload.theme);
-    if (typeof payload.isNavSlim === "boolean") setIsNavSlim(payload.isNavSlim);
-  }
-
-  async function updateOnboardingCompletedTasks(nextTasks: OnboardingTaskId[]) {
-    const previousTasks = onboardingCompletedTasks;
-    setOnboardingCompletedTasks(nextTasks);
-    setIsSavingOnboarding(true);
-    setProfileError(null);
-    const response = await fetch("/api/profile", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "onboarding", onboardingCompletedTasks: nextTasks }),
-    });
-    const payload = await response.json().catch(() => ({})) as ProfilePayload;
-    setIsSavingOnboarding(false);
-    if (!response.ok) {
-      setOnboardingCompletedTasks(previousTasks);
-      setProfileError(payload.error ?? t("profile.unableUpdateOnboarding"));
-      return;
-    }
-    setOnboardingCompletedTasks(payload.onboardingCompletedTasks ?? nextTasks);
-  }
-
   function openOnboardingTask(taskId: OnboardingTaskId) {
     if (taskId === "read_compliance") navigate("compliance");
     else if (taskId === "complete_primary_crew") {
@@ -1368,22 +1311,6 @@ export function LogbookApp({
       confirmPassword: "",
     });
     setProfileMessage(t("profile.passwordUpdated"));
-  }
-
-  async function loadAdminUsers() {
-    setAdminError(null);
-    const response = await fetch("/api/admin/users");
-    const payload = (await response.json().catch(() => ({}))) as {
-      users?: AdminUser[];
-      groups?: string[];
-      error?: string;
-    };
-    if (!response.ok) {
-      setAdminError(payload.error ?? t("admin.unableLoadUsers"));
-      return;
-    }
-    setAdminUsers(payload.users ?? []);
-    setKnownGroups(payload.groups ?? []);
   }
 
   function addAdminUserGroup(userId: string) {
