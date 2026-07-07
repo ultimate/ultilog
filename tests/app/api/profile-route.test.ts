@@ -7,6 +7,7 @@ vi.mock("../../../auth", () => ({
 vi.mock("../../../app/lib/users", () => ({
   deleteUserAccount: vi.fn(),
   findUserById: vi.fn(),
+  updateUserComplianceRead: vi.fn(),
   updateUserEmail: vi.fn(),
   updateUserName: vi.fn(),
   updateUserOnboardingCompletedTasks: vi.fn(),
@@ -21,6 +22,7 @@ const { DELETE, GET, PATCH } = await import("../../../app/api/profile/route");
 const mockedAuth = auth as unknown as Mock;
 const mockedDeleteUserAccount = vi.mocked(users.deleteUserAccount);
 const mockedFindUserById = vi.mocked(users.findUserById);
+const mockedUpdateUserComplianceRead = vi.mocked(users.updateUserComplianceRead);
 const mockedUpdateUserEmail = vi.mocked(users.updateUserEmail);
 const mockedUpdateUserName = vi.mocked(users.updateUserName);
 const mockedUpdateUserOnboardingCompletedTasks = vi.mocked(users.updateUserOnboardingCompletedTasks);
@@ -47,18 +49,18 @@ describe("profile endpoint", () => {
 
   it("returns the signed-in user profile", async () => {
     mockedAuth.mockResolvedValueOnce(session);
-    mockedFindUserById.mockResolvedValueOnce({ id: "user-1", name: "User", email: "user@example.test", groups: [], onboardingCompletedTasks: ["create_first_boat"], theme: "dark", isNavSlim: true });
+    mockedFindUserById.mockResolvedValueOnce({ id: "user-1", name: "User", email: "user@example.test", groups: [], onboardingCompletedTasks: ["create_first_boat"], theme: "dark", isNavSlim: true, hasReadCompliance: true });
 
     const response = await GET();
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ id: "user-1", name: "User", email: "user@example.test", groups: [], onboardingCompletedTasks: ["create_first_boat"], theme: "dark", isNavSlim: true });
+    await expect(response.json()).resolves.toEqual({ id: "user-1", name: "User", email: "user@example.test", groups: [], onboardingCompletedTasks: ["create_first_boat"], theme: "dark", isNavSlim: true, hasReadCompliance: true });
     expect(mockedFindUserById).toHaveBeenCalledWith("user-1");
   });
 
   it("updates the signed-in user's name", async () => {
     mockedAuth.mockResolvedValueOnce(session);
-    mockedUpdateUserName.mockResolvedValueOnce({ id: "user-1", name: "Updated User", email: "user@example.test", groups: [], onboardingCompletedTasks: [], theme: "light", isNavSlim: false });
+    mockedUpdateUserName.mockResolvedValueOnce({ id: "user-1", name: "Updated User", email: "user@example.test", groups: [], onboardingCompletedTasks: [], theme: "light", isNavSlim: false, hasReadCompliance: false });
 
     const response = await PATCH(new Request("https://ultilog.test/api/profile", {
       method: "PATCH",
@@ -72,7 +74,7 @@ describe("profile endpoint", () => {
 
   it("updates the signed-in user's email", async () => {
     mockedAuth.mockResolvedValueOnce(session);
-    mockedUpdateUserEmail.mockResolvedValueOnce({ id: "user-1", name: "User", email: "updated@example.test", groups: [], onboardingCompletedTasks: [], theme: "light", isNavSlim: false });
+    mockedUpdateUserEmail.mockResolvedValueOnce({ id: "user-1", name: "User", email: "updated@example.test", groups: [], onboardingCompletedTasks: [], theme: "light", isNavSlim: false, hasReadCompliance: false });
 
     const response = await PATCH(new Request("https://ultilog.test/api/profile", {
       method: "PATCH",
@@ -100,7 +102,7 @@ describe("profile endpoint", () => {
 
   it("updates manual onboarding completion", async () => {
     mockedAuth.mockResolvedValueOnce(session);
-    mockedUpdateUserOnboardingCompletedTasks.mockResolvedValueOnce({ id: "user-1", name: "User", email: "user@example.test", groups: [], onboardingCompletedTasks: ["create_first_boat", "create_first_logsheet"], theme: "light", isNavSlim: false });
+    mockedUpdateUserOnboardingCompletedTasks.mockResolvedValueOnce({ id: "user-1", name: "User", email: "user@example.test", groups: [], onboardingCompletedTasks: ["create_first_boat", "create_first_logsheet"], theme: "light", isNavSlim: false, hasReadCompliance: false });
 
     const response = await PATCH(new Request("https://ultilog.test/api/profile", {
       method: "PATCH",
@@ -114,16 +116,30 @@ describe("profile endpoint", () => {
 
   it("updates profile view preferences", async () => {
     mockedAuth.mockResolvedValueOnce(session);
-    mockedUpdateUserViewPreferences.mockResolvedValueOnce({ id: "user-1", name: "User", email: "user@example.test", groups: [], onboardingCompletedTasks: [], theme: "dark", isNavSlim: true });
+    mockedUpdateUserViewPreferences.mockResolvedValueOnce({ id: "user-1", name: "User", email: "user@example.test", groups: [], onboardingCompletedTasks: [], theme: "dark", isNavSlim: true, hasReadCompliance: true });
 
     const response = await PATCH(new Request("https://ultilog.test/api/profile", {
       method: "PATCH",
-      body: JSON.stringify({ action: "preferences", theme: "dark", isNavSlim: true }),
+      body: JSON.stringify({ action: "preferences", theme: "dark", isNavSlim: true, hasReadCompliance: true }),
     }));
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ theme: "dark", isNavSlim: true });
     expect(mockedUpdateUserViewPreferences).toHaveBeenCalledWith("user-1", { theme: "dark", isNavSlim: true });
+  });
+
+  it("marks compliance information as read", async () => {
+    mockedAuth.mockResolvedValueOnce(session);
+    mockedUpdateUserComplianceRead.mockResolvedValueOnce({ id: "user-1", name: "User", email: "user@example.test", groups: [], onboardingCompletedTasks: [], theme: "light", isNavSlim: false, hasReadCompliance: true });
+
+    const response = await PATCH(new Request("https://ultilog.test/api/profile", {
+      method: "PATCH",
+      body: JSON.stringify({ action: "compliance-read" }),
+    }));
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ hasReadCompliance: true });
+    expect(mockedUpdateUserComplianceRead).toHaveBeenCalledWith("user-1");
   });
 
   it("deletes the signed-in user's account", async () => {

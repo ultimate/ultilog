@@ -4,10 +4,10 @@ import { isOnboardingTaskId, type OnboardingTaskId } from "./onboarding/tasks";
 import { getDatabase, writeLogbook } from "./logbook-store";
 
 export type UserTheme = "light" | "dark";
-export type AppUser = { id: string; name: string; email: string; groups: string[]; onboardingCompletedTasks: OnboardingTaskId[]; theme: UserTheme; isNavSlim: boolean };
+export type AppUser = { id: string; name: string; email: string; groups: string[]; onboardingCompletedTasks: OnboardingTaskId[]; theme: UserTheme; isNavSlim: boolean; hasReadCompliance: boolean };
 export type AdminUserListItem = AppUser;
 
-type UserRow = Omit<AppUser, "groups" | "onboardingCompletedTasks" | "theme" | "isNavSlim"> & { password_hash: string; onboarding_completed_tasks: string; theme: string; nav_slim: number | boolean };
+type UserRow = Omit<AppUser, "groups" | "onboardingCompletedTasks" | "theme" | "isNavSlim" | "hasReadCompliance"> & { password_hash: string; onboarding_completed_tasks: string; theme: string; nav_slim: number | boolean; has_read_compliance: number | boolean };
 type GroupRow = { user_id?: string; name: string };
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
@@ -47,7 +47,7 @@ function normalizeTheme(theme: unknown): UserTheme {
   return theme === "dark" ? "dark" : "light";
 }
 
-function normalizeNavSlim(value: unknown) {
+function normalizeBooleanFlag(value: unknown) {
   return value === true || value === 1;
 }
 
@@ -59,7 +59,8 @@ function toAppUser(user: UserRow, groups: string[]): AppUser {
     groups,
     onboardingCompletedTasks: parseOnboardingCompletedTasks(user.onboarding_completed_tasks),
     theme: normalizeTheme(user.theme),
-    isNavSlim: normalizeNavSlim(user.nav_slim),
+    isNavSlim: normalizeBooleanFlag(user.nav_slim),
+    hasReadCompliance: normalizeBooleanFlag(user.has_read_compliance),
   };
 }
 
@@ -92,28 +93,28 @@ async function withGroups(user: UserRow | undefined): Promise<AppUser | undefine
 async function findUserByName(name: string) {
   const db = getDatabase();
   await db.migrate();
-  const result = await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks, theme, nav_slim from users where lower(name) = lower(${db.placeholder(1)})`, [normalizeName(name)]);
+  const result = await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks, theme, nav_slim, has_read_compliance from users where lower(name) = lower(${db.placeholder(1)})`, [normalizeName(name)]);
   return result.rows[0];
 }
 
 export async function findUserByEmail(email: string) {
   const db = getDatabase();
   await db.migrate();
-  const result = await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks, theme, nav_slim from users where email = ${db.placeholder(1)}`, [normalizeEmail(email)]);
+  const result = await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks, theme, nav_slim, has_read_compliance from users where email = ${db.placeholder(1)}`, [normalizeEmail(email)]);
   return withGroups(result.rows[0]);
 }
 
 export async function findUserById(userId: string) {
   const db = getDatabase();
   await db.migrate();
-  const result = await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks, theme, nav_slim from users where id = ${db.placeholder(1)}`, [userId]);
+  const result = await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks, theme, nav_slim, has_read_compliance from users where id = ${db.placeholder(1)}`, [userId]);
   return withGroups(result.rows[0]);
 }
 
 async function findUserRowByEmail(email: string) {
   const db = getDatabase();
   await db.migrate();
-  const result = await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks, theme, nav_slim from users where email = ${db.placeholder(1)}`, [normalizeEmail(email)]);
+  const result = await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks, theme, nav_slim, has_read_compliance from users where email = ${db.placeholder(1)}`, [normalizeEmail(email)]);
   return result.rows[0];
 }
 
@@ -146,7 +147,7 @@ export async function registerUser(input: { name: string; email: string; passwor
   if (await findUserByEmail(email)) throw new Error("An account with this email already exists.");
   if (await findUserByName(name)) throw new Error("An account with this name already exists.");
 
-  const user: AppUser = { id: randomUUID(), name, email, groups: [], onboardingCompletedTasks: [], theme: "light", isNavSlim: false };
+  const user: AppUser = { id: randomUUID(), name, email, groups: [], onboardingCompletedTasks: [], theme: "light", isNavSlim: false, hasReadCompliance: false };
   const passwordHash = await bcrypt.hash(input.password, 10);
   const db = getDatabase();
   await db.query(
@@ -162,7 +163,7 @@ export async function updateUserEmail(userId: string, input: { email: string; cu
   if (!email.includes("@")) throw new Error("Enter a valid email address.");
   const db = getDatabase();
   await db.migrate();
-  const current = (await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks, theme, nav_slim from users where id = ${db.placeholder(1)}`, [userId])).rows[0];
+  const current = (await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks, theme, nav_slim, has_read_compliance from users where id = ${db.placeholder(1)}`, [userId])).rows[0];
   if (!current) throw new Error("User not found.");
   if (!await bcrypt.compare(input.currentPassword, current.password_hash)) throw new Error("Current password is incorrect.");
   const existing = await findUserByEmail(email);
@@ -175,7 +176,7 @@ export async function updateUserPassword(userId: string, input: { currentPasswor
   if (input.newPassword.length < 8) throw new Error("Password must be at least 8 characters.");
   const db = getDatabase();
   await db.migrate();
-  const current = (await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks, theme, nav_slim from users where id = ${db.placeholder(1)}`, [userId])).rows[0];
+  const current = (await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks, theme, nav_slim, has_read_compliance from users where id = ${db.placeholder(1)}`, [userId])).rows[0];
   if (!current) throw new Error("User not found.");
   if (!await bcrypt.compare(input.currentPassword, current.password_hash)) throw new Error("Current password is incorrect.");
   const passwordHash = await bcrypt.hash(input.newPassword, 10);
@@ -187,7 +188,7 @@ export async function updateUserName(userId: string, input: { name: string; curr
   assertAllowedName(name);
   const db = getDatabase();
   await db.migrate();
-  const current = (await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks, theme, nav_slim from users where id = ${db.placeholder(1)}`, [userId])).rows[0];
+  const current = (await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks, theme, nav_slim, has_read_compliance from users where id = ${db.placeholder(1)}`, [userId])).rows[0];
   if (!current) throw new Error("User not found.");
   if (!await bcrypt.compare(input.currentPassword, current.password_hash)) throw new Error("Current password is incorrect.");
   const existing = await findUserByName(name);
@@ -199,7 +200,7 @@ export async function updateUserName(userId: string, input: { name: string; curr
 export async function deleteUserAccount(userId: string, input: { currentPassword: string }): Promise<void> {
   const db = getDatabase();
   await db.migrate();
-  const current = (await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks, theme, nav_slim from users where id = ${db.placeholder(1)}`, [userId])).rows[0];
+  const current = (await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks, theme, nav_slim, has_read_compliance from users where id = ${db.placeholder(1)}`, [userId])).rows[0];
   if (!current) throw new Error("User not found.");
   if (!await bcrypt.compare(input.currentPassword, current.password_hash)) throw new Error("Current password is incorrect.");
   await db.query(`delete from users where id = ${db.placeholder(1)}`, [userId]);
@@ -208,7 +209,7 @@ export async function deleteUserAccount(userId: string, input: { currentPassword
 export async function deleteUserAccountAsAdmin(userId: string, confirmationName: string): Promise<void> {
   const db = getDatabase();
   await db.migrate();
-  const current = (await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks, theme, nav_slim from users where id = ${db.placeholder(1)}`, [userId])).rows[0];
+  const current = (await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks, theme, nav_slim, has_read_compliance from users where id = ${db.placeholder(1)}`, [userId])).rows[0];
   if (!current) throw new Error("User not found.");
   if (confirmationName !== current.name) throw new Error("Type the username to confirm account deletion.");
   await db.query(`delete from users where id = ${db.placeholder(1)}`, [userId]);
@@ -217,7 +218,7 @@ export async function deleteUserAccountAsAdmin(userId: string, confirmationName:
 export async function listUsersForAdmin(): Promise<AdminUserListItem[]> {
   const db = getDatabase();
   await db.migrate();
-  const users = (await db.query<UserRow>("select id, name, email, password_hash, onboarding_completed_tasks, theme, nav_slim from users order by lower(name), lower(email)")).rows;
+  const users = (await db.query<UserRow>("select id, name, email, password_hash, onboarding_completed_tasks, theme, nav_slim, has_read_compliance from users order by lower(name), lower(email)")).rows;
   const groupRows = (await db.query<GroupRow>("select user_id, name from user_groups order by name")).rows;
   return users.map((user) => toAppUser(user, groupRows.filter((group) => group.user_id === user.id).map((group) => group.name)));
 }
@@ -232,7 +233,7 @@ export async function listKnownGroups(): Promise<string[]> {
 export async function updateUserGroups(userId: string, groups: string[]): Promise<AppUser> {
   const db = getDatabase();
   await db.migrate();
-  const current = (await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks, theme, nav_slim from users where id = ${db.placeholder(1)}`, [userId])).rows[0];
+  const current = (await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks, theme, nav_slim, has_read_compliance from users where id = ${db.placeholder(1)}`, [userId])).rows[0];
   if (!current) throw new Error("User not found.");
   const normalizedGroups = normalizeGroups(groups);
   normalizedGroups.forEach(assertAllowedGroupName);
@@ -246,7 +247,7 @@ export async function updateUserGroups(userId: string, groups: string[]): Promis
 export async function updateUserOnboardingCompletedTasks(userId: string, tasks: unknown): Promise<AppUser> {
   const db = getDatabase();
   await db.migrate();
-  const current = (await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks, theme, nav_slim from users where id = ${db.placeholder(1)}`, [userId])).rows[0];
+  const current = (await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks, theme, nav_slim, has_read_compliance from users where id = ${db.placeholder(1)}`, [userId])).rows[0];
   if (!current) throw new Error("User not found.");
   const onboardingCompletedTasks = normalizeOnboardingCompletedTasks(tasks);
   await db.query(`update users set onboarding_completed_tasks = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [serializeOnboardingCompletedTasks(onboardingCompletedTasks), userId]);
@@ -259,14 +260,26 @@ export async function updateUserOnboardingCompletedTasks(userId: string, tasks: 
 export async function updateUserViewPreferences(userId: string, input: { theme?: unknown; isNavSlim?: unknown }): Promise<AppUser> {
   const db = getDatabase();
   await db.migrate();
-  const current = (await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks, theme, nav_slim from users where id = ${db.placeholder(1)}`, [userId])).rows[0];
+  const current = (await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks, theme, nav_slim, has_read_compliance from users where id = ${db.placeholder(1)}`, [userId])).rows[0];
   if (!current) throw new Error("User not found.");
   const theme = input.theme === undefined ? normalizeTheme(current.theme) : normalizeTheme(input.theme);
-  const isNavSlim = input.isNavSlim === undefined ? normalizeNavSlim(current.nav_slim) : Boolean(input.isNavSlim);
+  const isNavSlim = input.isNavSlim === undefined ? normalizeBooleanFlag(current.nav_slim) : Boolean(input.isNavSlim);
   await db.query(`update users set theme = ${db.placeholder(1)}, nav_slim = ${db.placeholder(2)} where id = ${db.placeholder(3)}`, [theme, isNavSlim ? 1 : 0, userId]);
   return {
     ...toAppUser(current, await groupsForUser(userId)),
     theme,
     isNavSlim,
+  };
+}
+
+export async function updateUserComplianceRead(userId: string): Promise<AppUser> {
+  const db = getDatabase();
+  await db.migrate();
+  const current = (await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks, theme, nav_slim, has_read_compliance from users where id = ${db.placeholder(1)}`, [userId])).rows[0];
+  if (!current) throw new Error("User not found.");
+  await db.query(`update users set has_read_compliance = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [1, userId]);
+  return {
+    ...toAppUser(current, await groupsForUser(userId)),
+    hasReadCompliance: true,
   };
 }

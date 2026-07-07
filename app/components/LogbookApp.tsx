@@ -61,7 +61,7 @@ import { detectOnboardingCompletion } from "../lib/onboarding/detect";
 import type { OnboardingTaskId } from "../lib/onboarding/tasks";
 
 type AdminUser = { id: string; name: string; email: string; groups: string[] };
-type ProfilePayload = { name?: string; email?: string; groups?: string[]; onboardingCompletedTasks?: OnboardingTaskId[]; theme?: "light" | "dark"; isNavSlim?: boolean; error?: string };
+type ProfilePayload = { name?: string; email?: string; groups?: string[]; onboardingCompletedTasks?: OnboardingTaskId[]; theme?: "light" | "dark"; isNavSlim?: boolean; hasReadCompliance?: boolean; error?: string };
 type SocialUser = {
   username: string;
   sailMiles: number;
@@ -235,6 +235,7 @@ export function LogbookApp({
   const [profileError, setProfileError] = useState<string | null>(null);
   const [onboardingCompletedTasks, setOnboardingCompletedTasks] = useState<OnboardingTaskId[]>([]);
   const [isSavingOnboarding, setIsSavingOnboarding] = useState(false);
+  const [hasReadCompliance, setHasReadCompliance] = useState(false);
   const [deleteForm, setDeleteForm] = useState({
     currentPassword: "",
     confirmation: "",
@@ -266,7 +267,8 @@ export function LogbookApp({
     logbook,
     manualCompletedTasks: onboardingCompletedTasks,
     hasPersonalizedView: theme !== "light" || isNavSlim,
-  }), [isNavSlim, logbook, onboardingCompletedTasks, theme]);
+    hasReadCompliance,
+  }), [hasReadCompliance, isNavSlim, logbook, onboardingCompletedTasks, theme]);
 
   const isOnboardingComplete = Object.values(onboardingCompletion).every((task) => task.completed);
 
@@ -282,6 +284,7 @@ export function LogbookApp({
       if (Array.isArray(payload.onboardingCompletedTasks)) setOnboardingCompletedTasks(payload.onboardingCompletedTasks);
       if (payload.theme === "light" || payload.theme === "dark") setTheme(payload.theme);
       if (typeof payload.isNavSlim === "boolean") setIsNavSlim(payload.isNavSlim);
+      if (typeof payload.hasReadCompliance === "boolean") setHasReadCompliance(payload.hasReadCompliance);
     }
     loadProfile();
     return () => {
@@ -1211,6 +1214,25 @@ export function LogbookApp({
     setSelectedCrewIndex(nextIndex);
     setCrewForm(crewToForm(logbook.crewMembers[nextIndex] ?? defaultCrewForm));
   }
+
+  useEffect(() => {
+    if (activeModule !== "compliance" || hasReadCompliance) return;
+    let isMounted = true;
+    async function markComplianceRead() {
+      const response = await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "compliance-read" }),
+      }).catch(() => undefined);
+      if (!response?.ok) return;
+      const payload = await response.json().catch(() => ({})) as ProfilePayload;
+      if (isMounted && typeof payload.hasReadCompliance === "boolean") setHasReadCompliance(payload.hasReadCompliance);
+    }
+    markComplianceRead();
+    return () => {
+      isMounted = false;
+    };
+  }, [activeModule, hasReadCompliance]);
 
   async function updateViewPreferences(nextPreferences: { theme?: "light" | "dark"; isNavSlim?: boolean }) {
     const previousTheme = theme;
