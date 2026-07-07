@@ -2,7 +2,7 @@
 	"title": "St Peter Port - Le-Havre",
 	"dateRange": "",
 	"route": {
-		"from": "St Peter Port"
+		"from": "St Peter Port",
 		"to": "Le-Havre",
 		"departed": "2026-07-01 07:30:00",
 		"arrived":  "2026-07-01 17:50:00"
