@@ -26,10 +26,12 @@ export type CrewEncryptionEnvelope = {
   tag: string;
 };
 
-export function encryptCrewField(ownerId: string, plaintext: string): string {
+export function encryptCrewField(ownerId: string, crewMemberId: string, fieldName: string, plaintext: string): string {
   const key = deriveCrewKey(ownerId);
+  const aad = crewFieldAad(ownerId, crewMemberId, fieldName);
   const iv = randomBytes(GCM_IV_BYTES);
   const cipher = createCipheriv("aes-256-gcm", key, iv, { authTagLength: GCM_TAG_BYTES });
+  cipher.setAAD(aad);
   const ciphertext = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
   const envelope: CrewEncryptionEnvelope = {
     v: ENCRYPTION_VERSION,
@@ -43,13 +45,15 @@ export function encryptCrewField(ownerId: string, plaintext: string): string {
   return JSON.stringify(envelope);
 }
 
-export function decryptCrewField(ownerId: string, value: string): string {
+export function decryptCrewField(ownerId: string, crewMemberId: string, fieldName: string, value: string): string {
   if (value.startsWith(LEGACY_ENCRYPTED_PREFIX)) return decryptLegacyCrewField(ownerId, value);
   if (!looksLikeJsonEnvelope(value)) return decryptWithEnvelope(value);
 
   const key = deriveCrewKey(ownerId);
+  const aad = crewFieldAad(ownerId, crewMemberId, fieldName);
   const envelope = parseCrewEncryptionEnvelope(value);
   const decipher = createDecipheriv("aes-256-gcm", key, decodeRequiredBase64(envelope.iv, "iv", GCM_IV_BYTES), { authTagLength: GCM_TAG_BYTES });
+  decipher.setAAD(aad);
   decipher.setAuthTag(decodeRequiredBase64(envelope.tag, "tag", GCM_TAG_BYTES));
 
   return Buffer.concat([decipher.update(decodeRequiredBase64(envelope.ct, "ct")), decipher.final()]).toString("utf8");
@@ -83,6 +87,10 @@ export function parseCrewEncryptionEnvelope(value: string): CrewEncryptionEnvelo
   decodeRequiredBase64(validatedEnvelope.ct, "ct");
 
   return validatedEnvelope;
+}
+
+export function crewFieldAad(ownerId: string, crewMemberId: string, fieldName: string): Buffer {
+  return Buffer.from(`ultilog:crew-pii:v${ENCRYPTION_VERSION}:${ownerId}:${crewMemberId}:${fieldName}`, "utf8");
 }
 
 export function deriveCrewKey(ownerId: string): Buffer {

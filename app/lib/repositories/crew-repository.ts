@@ -46,9 +46,10 @@ export class CrewRepository {
   }
 
   async insertProfile(crew: CrewMember, ownerId = "legacy-user") {
+    const crewMemberId = scopedId(ownerId, crew.id);
     await this.db.query(
       `insert into crew_members (id, name, nationality, role, address, certificate, is_primary, owner_id) values (${this.values(8)}) on conflict(id) do update set name = excluded.name, nationality = excluded.nationality, role = excluded.role, address = excluded.address, certificate = excluded.certificate, is_primary = excluded.is_primary`,
-      [scopedId(ownerId, crew.id), encryptCrewField(ownerId, crew.name), encryptCrewField(ownerId, crew.nationality), encryptCrewField(ownerId, crew.role), encryptCrewField(ownerId, crew.address ?? ""), encryptCrewField(ownerId, crew.certificate ?? ""), crew.isPrimary ? 1 : 0, ownerId],
+      [crewMemberId, encryptCrewField(ownerId, crewMemberId, "name", crew.name), encryptCrewField(ownerId, crewMemberId, "nationality", crew.nationality), encryptCrewField(ownerId, crewMemberId, "role", crew.role), encryptCrewField(ownerId, crewMemberId, "address", crew.address ?? ""), encryptCrewField(ownerId, crewMemberId, "certificate", crew.certificate ?? ""), crew.isPrimary ? 1 : 0, ownerId],
     );
   }
 
@@ -61,14 +62,14 @@ export class CrewRepository {
     );
   }
 
-  private decryptCrewRow<Row extends Pick<CrewMemberRow, "name" | "nationality" | "role" | "address" | "certificate">>(row: Row, ownerId: string): Row {
+  private decryptCrewRow<Row extends Pick<CrewMemberRow, "crew_member_id" | "name" | "nationality" | "role" | "address" | "certificate">>(row: Row, ownerId: string): Row {
     return {
       ...row,
-      name: decryptCrewField(ownerId, row.name),
-      nationality: decryptCrewField(ownerId, row.nationality),
-      role: decryptCrewField(ownerId, row.role),
-      address: decryptCrewField(ownerId, row.address ?? ""),
-      certificate: decryptCrewField(ownerId, row.certificate ?? ""),
+      name: decryptCrewField(ownerId, row.crew_member_id, "name", row.name),
+      nationality: decryptCrewField(ownerId, row.crew_member_id, "nationality", row.nationality),
+      role: decryptCrewField(ownerId, row.crew_member_id, "role", row.role),
+      address: decryptCrewField(ownerId, row.crew_member_id, "address", row.address ?? ""),
+      certificate: decryptCrewField(ownerId, row.crew_member_id, "certificate", row.certificate ?? ""),
     };
   }
 
