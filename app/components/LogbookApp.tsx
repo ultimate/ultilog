@@ -61,6 +61,7 @@ import { useOnboardingProfile } from "./onboarding/useOnboardingProfile";
 import type { OnboardingTaskId } from "../lib/onboarding/tasks";
 
 type AdminUser = { id: string; name: string; email: string; groups: string[] };
+type ProfilePayload = { name?: string; email?: string; groups?: string[]; onboardingCompletedTasks?: OnboardingTaskId[]; error?: string };
 type SocialUser = {
   username: string;
   sailMiles: number;
@@ -228,6 +229,8 @@ export function LogbookApp({
   });
   const [profileMessage, setProfileMessage] = useState<string | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
+  const [onboardingCompletedTasks, setOnboardingCompletedTasks] = useState<OnboardingTaskId[]>([]);
+  const [isSavingOnboarding, setIsSavingOnboarding] = useState(false);
   const [deleteForm, setDeleteForm] = useState({
     currentPassword: "",
     confirmation: "",
@@ -1221,6 +1224,26 @@ export function LogbookApp({
     );
     setSelectedCrewIndex(nextIndex);
     setCrewForm(crewToForm(logbook.crewMembers[nextIndex] ?? defaultCrewForm));
+  }
+
+  async function updateOnboardingCompletedTasks(nextTasks: OnboardingTaskId[]) {
+    const previousTasks = onboardingCompletedTasks;
+    setOnboardingCompletedTasks(nextTasks);
+    setIsSavingOnboarding(true);
+    setProfileError(null);
+    const response = await fetch("/api/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "onboarding", onboardingCompletedTasks: nextTasks }),
+    });
+    const payload = await response.json().catch(() => ({})) as ProfilePayload;
+    setIsSavingOnboarding(false);
+    if (!response.ok) {
+      setOnboardingCompletedTasks(previousTasks);
+      setProfileError(payload.error ?? t("profile.unableUpdateOnboarding"));
+      return;
+    }
+    setOnboardingCompletedTasks(payload.onboardingCompletedTasks ?? nextTasks);
   }
 
   function openOnboardingTask(taskId: OnboardingTaskId) {

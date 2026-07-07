@@ -139,16 +139,20 @@ const userPrompt = `Extract a logbook draft from these image(s). The JSON must m
 - Expected row data types are strings in the JSON schema. Transcribe numeric values as strings for numeric fields such as temperature, barometer, waves, compassCourse, magneticCourse, windDrift, speedKn, and logNm.
 - warnings: concise human-readable warnings for missing or ambiguous fields.`;
 
+export function isOpenAiScannerProviderConfigured() {
+  return Boolean(process.env.OPENAI_API_KEY);
+}
+
 export async function extractLogbookDraft(input: ScannerProviderInput): Promise<ScannerResult> {
   if (input.files.length === 0) {
     return { draft: { title: "", dateRange: "", route: { from: "", to: "", departed: "", arrived: "" }, lines: [] }, warnings: ["No images were provided for scanning."] };
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
+  if (!isOpenAiScannerProviderConfigured()) {
     throw new Error("OPENAI_API_KEY is required to scan logbook images.");
   }
 
+  const apiKey = process.env.OPENAI_API_KEY as string;
   const model = process.env.LOGBOOK_SCANNER_MODEL ?? DEFAULT_MODEL;
   const response = await fetch(OPENAI_RESPONSES_URL, {
     method: "POST",
@@ -195,7 +199,7 @@ export async function extractLogbookDraft(input: ScannerProviderInput): Promise<
   return parsed;
 }
 
-export const openAiScannerProvider = { extractLogbookDraft };
+export const openAiScannerProvider = { extractLogbookDraft, isConfigured: isOpenAiScannerProviderConfigured };
 
 function parseScannerResult(payload: OpenAIResponsePayload): ScannerResult {
   const outputText = payload.output_text ?? payload.output?.flatMap((item) => item.content ?? []).find((content) => content.type === "output_text")?.text;
