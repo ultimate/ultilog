@@ -1,11 +1,12 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useI18n } from "../lib/i18n";
 
 type DashboardStats = { totalNm: number; sailNm: number; motorNm: number; sheets: number; boats: number; };
-type DashboardPanelProps = { stats: DashboardStats; };
+type DashboardPanelProps = { stats: DashboardStats; onboardingChecklist?: ReactNode; };
 
-export function DashboardPanel({ stats }: DashboardPanelProps) {
+export function DashboardPanel({ stats, onboardingChecklist }: DashboardPanelProps) {
   const { t } = useI18n();
   const total = Math.max(stats.totalNm, 1);
   const sailPct = Math.round((stats.sailNm / total) * 100);
@@ -20,6 +21,7 @@ export function DashboardPanel({ stats }: DashboardPanelProps) {
         </div>
         <span className="sync-pill">● {t("dashboard.allSynced")}</span>
       </div>
+      {onboardingChecklist}
       <div className="stat-grid" aria-label={t("dashboard.personalStats")}>
         <article><i>⛵</i><span>{t("dashboard.totalMiles")}</span><strong>{stats.totalNm.toLocaleString()} nm</strong><small>{t("dashboard.allTime")}</small></article>
         <article><i>△</i><span>{t("dashboard.sailMiles")}</span><strong>{stats.sailNm.toLocaleString()} nm</strong><small>{sailPct}% {t("dashboard.ofTotal")}</small></article>
