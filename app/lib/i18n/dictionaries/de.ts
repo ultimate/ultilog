@@ -218,7 +218,7 @@ export const de: Dictionary = {
   "details.tide": "Tide",
   "details.moon": "Mond",
   "details.speed": "Geschwindigkeit [kn]",
-  "details.log": "Log [sm]",
+  "details.log": "Log [nm]",
   "details.sail": "Segel",
   "details.motor": "Motor",
   "details.remarksEvent": "Bemerkungen, Manöver, Ereignis",
