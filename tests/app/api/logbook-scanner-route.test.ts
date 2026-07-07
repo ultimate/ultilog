@@ -10,7 +10,7 @@ vi.mock("../../../app/lib/logbook-store", () => ({
 }));
 
 vi.mock("../../../app/lib/logbook-scanner/openai-provider", () => ({
-  openAiScannerProvider: { extractLogbookDraft: vi.fn() },
+  openAiScannerProvider: { extractLogbookDraft: vi.fn(), isConfigured: vi.fn() },
 }));
 
 const { auth } = await import("../../../auth");
@@ -22,6 +22,7 @@ const mockedAuth = auth as unknown as Mock;
 const mockedReadLogbook = vi.mocked(store.readLogbook);
 const mockedWriteLogbook = vi.mocked(store.writeLogbook);
 const mockedScanner = vi.mocked(openAiScannerProvider.extractLogbookDraft);
+const mockedScannerConfigured = vi.mocked(openAiScannerProvider.isConfigured);
 const session = { user: { id: "user-1", name: "User", email: "user@example.test", groups: [] }, expires: "2099-01-01T00:00:00.000Z" };
 const boat = { id: "boat-1", name: "Aurora", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", yachtData: {}, deviationTable: [] };
 const logbook = { boats: [boat], crewMembers: [], sheets: [] };
@@ -46,6 +47,7 @@ function imageFile(name = "sheet.png", size = 1) {
 describe("logbook scanner endpoint", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockedScannerConfigured.mockReturnValue(true);
   });
 
   it("requires authentication", async () => {
@@ -119,6 +121,22 @@ describe("logbook scanner endpoint", () => {
     expect(response.status).toBe(413);
     await expect(response.json()).resolves.toEqual({ code: "too_many_files", error: "Upload at most 5 images at a time." });
     expect(mockedScanner).not.toHaveBeenCalled();
+  });
+
+  it("reports missing scanner provider configuration", async () => {
+    mockedAuth.mockResolvedValueOnce(session);
+    mockedReadLogbook.mockResolvedValueOnce(logbook);
+    mockedScannerConfigured.mockReturnValueOnce(false);
+    const formData = new FormData();
+    formData.set("boatId", "boat-1");
+    formData.append("files", imageFile());
+
+    const response = await POST(scannerRequest(formData));
+
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({ code: "provider_configuration_missing", error: "Scanner provider is not configured. Set OPENAI_API_KEY before scanning logbook pages." });
+    expect(mockedScanner).not.toHaveBeenCalled();
+    expect(mockedWriteLogbook).not.toHaveBeenCalled();
   });
 
   it("reports provider outages", async () => {

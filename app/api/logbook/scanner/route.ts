@@ -15,6 +15,7 @@ type ScannerErrorCode =
   | "file_too_large"
   | "too_many_files"
   | "missing_files"
+  | "provider_configuration_missing"
   | "provider_unavailable"
   | "no_readable_logbook_data";
 
@@ -47,6 +48,10 @@ export async function POST(request: Request) {
   const fileValidationError = validateFiles(uploadedFiles);
   if (fileValidationError) {
     return scannerError(fileValidationError.code, fileValidationError.error, fileValidationError.status);
+  }
+
+  if (!openAiScannerProvider.isConfigured()) {
+    return scannerError("provider_configuration_missing", "Scanner provider is not configured. Set OPENAI_API_KEY before scanning logbook pages.", 503);
   }
 
   let scannerResult;
