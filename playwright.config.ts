@@ -18,6 +18,7 @@ export default defineConfig({
     env: {
       AUTH_SECRET: "playwright-test-secret-playwright-test-secret",
       AUTH_URL: "http://127.0.0.1:3000",
+      CREW_DATA_ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
       LOCAL_DATABASE_PATH: ".data/playwright.sqlite",
       NODE_ENV: "test",
     },
