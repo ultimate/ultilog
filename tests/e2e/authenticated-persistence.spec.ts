@@ -18,6 +18,9 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   await page.getByLabel("Password", { exact: true }).fill(password);
   await clickButton(page, "Log in");
   await expectLoggedIn(page);
+  await expect(page.getByRole("heading", { name: "Onboarding checklist" })).toBeVisible();
+  await openModule(page, "Logbook list", "+ New sheet");
+  await expect(page.getByRole("button", { name: "Ionian training passage · Day 3", exact: true })).toHaveCount(0);
 
   await openModule(page, "Crew manager", "New crew");
   await clickButton(page, "New crew");
@@ -78,8 +81,6 @@ async function assertCreatedItemsVisible(page: Page, items: { crewName: string; 
   await openModule(page, "Boat manager", "New boat");
   await expect(page.getByText(items.boatName)).toBeVisible();
 
-  await openModule(page, "Logbook list", "+ New sheet");
-  await page.getByRole("button", { name: "Ionian training passage · Day 3", exact: true }).click();
   await openModule(page, "Crew manager", "New crew");
   await expect(page.getByText(items.crewName)).toBeVisible();
 }

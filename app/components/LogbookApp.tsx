@@ -597,13 +597,16 @@ export function LogbookApp({
 
   const activeSheet =
     logbook.sheets.find((sheet) => sheet.id === activeSheetId) ??
-    logbook.sheets[0];
+    logbook.sheets[0] ??
+    seedSheets[0];
   const activeBoat =
     logbook.boats.find((boat) => boat.id === activeSheet.boatId) ??
-    logbook.boats[0];
+    logbook.boats[0] ??
+    seedBoats[0];
   const selectedBoat =
     logbook.boats.find((boat) => boat.id === selectedBoatId) ??
-    logbook.boats[0];
+    logbook.boats[0] ??
+    seedBoats[0];
   const selectedCrew =
     logbook.crewMembers[selectedCrewIndex] ?? logbook.crewMembers[0];
   const effectiveScannerBoatId =
