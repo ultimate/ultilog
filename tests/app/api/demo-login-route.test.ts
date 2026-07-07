@@ -12,7 +12,7 @@ const mockedValidateDemoUser = vi.mocked(validateDemoUser);
 
 describe("demo login endpoint", () => {
   it("returns ok when the seeded demo user is available", async () => {
-    mockedValidateDemoUser.mockResolvedValueOnce({ id: "legacy-user", name: "Local demo user", email: "demo@ultilog.local", groups: ["demo"] });
+    mockedValidateDemoUser.mockResolvedValueOnce({ id: "legacy-user", name: "Local demo user", email: "demo@ultilog.local", groups: ["demo"], onboardingCompletedTasks: [], theme: "light", isNavSlim: false });
 
     const response = await POST();
 
