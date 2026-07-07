@@ -1,4 +1,4 @@
-import type { TranslationKey } from "../i18n";
+import type { TranslationKey } from "../i18n/translations";
 
 export const onboardingTaskIds = [
   "read_compliance",
