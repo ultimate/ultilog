@@ -1,5 +1,6 @@
 import type { CrewMember, CrewMemberRow, SheetCrewMember } from "../../models/logbook";
 import type { QueryableDatabase } from "../db/logbook-database";
+import { decryptWithEnvelope, encryptWithEnvelope } from "../security/envelope-encryption";
 import { scopedId } from "./boats-repository";
 
 export class CrewRepository {
@@ -10,8 +11,8 @@ export class CrewRepository {
       select id as crew_member_id, name, nationality, role, address, certificate, is_primary
       from crew_members
       where owner_id = ${this.db.placeholder(1)}
-      order by is_primary desc, name
-    `, [ownerId])).rows;
+      order by is_primary desc, id
+    `, [ownerId])).rows.map((row) => this.decryptCrewRow(row)).sort((left, right) => Number(right.is_primary ?? 0) - Number(left.is_primary ?? 0) || left.name.localeCompare(right.name));
   }
 
   async findAll(ownerId = "legacy-user") {
@@ -36,7 +37,7 @@ export class CrewRepository {
       join crew_members on crew_members.id = sheet_crew_members.crew_member_id
       where log_sheets.owner_id = ${this.db.placeholder(1)}
       order by sheet_crew_members.sheet_id, sheet_crew_members.sort_order
-    `, [ownerId])).rows;
+    `, [ownerId])).rows.map((row) => this.decryptCrewRow(row));
   }
 
   async deleteAll(ownerId = "legacy-user") {
@@ -47,7 +48,7 @@ export class CrewRepository {
   async insertProfile(crew: CrewMember, ownerId = "legacy-user") {
     await this.db.query(
       `insert into crew_members (id, name, nationality, role, address, certificate, is_primary, owner_id) values (${this.values(8)}) on conflict(id) do update set name = excluded.name, nationality = excluded.nationality, role = excluded.role, address = excluded.address, certificate = excluded.certificate, is_primary = excluded.is_primary`,
-      [scopedId(ownerId, crew.id), crew.name, crew.nationality, crew.role, crew.address ?? "", crew.certificate ?? "", crew.isPrimary ? 1 : 0, ownerId],
+      [scopedId(ownerId, crew.id), encryptWithEnvelope(crew.name), encryptWithEnvelope(crew.nationality), encryptWithEnvelope(crew.role), encryptWithEnvelope(crew.address ?? ""), encryptWithEnvelope(crew.certificate ?? ""), crew.isPrimary ? 1 : 0, ownerId],
     );
   }
 
@@ -58,6 +59,17 @@ export class CrewRepository {
       `insert into sheet_crew_members (sheet_id, crew_member_id, sort_order, embarkation, disembarkation, embarkation_datetime, embarkation_position, disembarkation_datetime, disembarkation_position) values (${this.values(9)})`,
       [scopedId(ownerId, sheetId), crewMemberId, sortOrder, crew.embarkationPosition, crew.disembarkationPosition, crew.embarkationDateTime, crew.embarkationPosition, crew.disembarkationDateTime, crew.disembarkationPosition],
     );
+  }
+
+  private decryptCrewRow<Row extends Pick<CrewMemberRow, "name" | "nationality" | "role" | "address" | "certificate">>(row: Row): Row {
+    return {
+      ...row,
+      name: decryptWithEnvelope(row.name),
+      nationality: decryptWithEnvelope(row.nationality),
+      role: decryptWithEnvelope(row.role),
+      address: decryptWithEnvelope(row.address ?? ""),
+      certificate: decryptWithEnvelope(row.certificate ?? ""),
+    };
   }
 
   private values(count: number) {
