@@ -56,8 +56,12 @@ import { BoatManagerPage } from "./logbook/pages/BoatManagerPage";
 import { DashboardPage } from "./logbook/pages/DashboardPage";
 import { CrewManagerPage } from "./logbook/pages/CrewManagerPage";
 import { ProfilePage } from "./logbook/pages/ProfilePage";
+import { OnboardingChecklist } from "./onboarding/OnboardingChecklist";
+import { detectOnboardingCompletion } from "../lib/onboarding/detect";
+import type { OnboardingTaskId } from "../lib/onboarding/tasks";
 
 type AdminUser = { id: string; name: string; email: string; groups: string[] };
+type ProfilePayload = { name?: string; email?: string; groups?: string[]; onboardingCompletedTasks?: OnboardingTaskId[]; theme?: "light" | "dark"; isNavSlim?: boolean; error?: string };
 type SocialUser = {
   username: string;
   sailMiles: number;
@@ -229,6 +233,8 @@ export function LogbookApp({
   });
   const [profileMessage, setProfileMessage] = useState<string | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
+  const [onboardingCompletedTasks, setOnboardingCompletedTasks] = useState<OnboardingTaskId[]>([]);
+  const [isSavingOnboarding, setIsSavingOnboarding] = useState(false);
   const [deleteForm, setDeleteForm] = useState({
     currentPassword: "",
     confirmation: "",
@@ -255,6 +261,33 @@ export function LogbookApp({
   useEffect(() => {
     logbookRef.current = logbook;
   }, [logbook]);
+
+  const onboardingCompletion = useMemo(() => detectOnboardingCompletion({
+    logbook,
+    manualCompletedTasks: onboardingCompletedTasks,
+    hasPersonalizedView: theme !== "light" || isNavSlim,
+  }), [isNavSlim, logbook, onboardingCompletedTasks, theme]);
+
+  const isOnboardingComplete = Object.values(onboardingCompletion).every((task) => task.completed);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadProfile() {
+      const response = await fetch("/api/profile").catch(() => undefined);
+      if (!response?.ok) return;
+      const payload = await response.json().catch(() => ({})) as ProfilePayload;
+      if (!isMounted) return;
+      if (payload.name) setAccountName(payload.name);
+      if (payload.email) setAccountEmail(payload.email);
+      if (Array.isArray(payload.onboardingCompletedTasks)) setOnboardingCompletedTasks(payload.onboardingCompletedTasks);
+      if (payload.theme === "light" || payload.theme === "dark") setTheme(payload.theme);
+      if (typeof payload.isNavSlim === "boolean") setIsNavSlim(payload.isNavSlim);
+    }
+    loadProfile();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   async function logout() {
     setSaveError(null);
@@ -1179,6 +1212,60 @@ export function LogbookApp({
     setCrewForm(crewToForm(logbook.crewMembers[nextIndex] ?? defaultCrewForm));
   }
 
+  async function updateViewPreferences(nextPreferences: { theme?: "light" | "dark"; isNavSlim?: boolean }) {
+    const previousTheme = theme;
+    const previousIsNavSlim = isNavSlim;
+    const nextTheme = nextPreferences.theme ?? theme;
+    const nextIsNavSlim = nextPreferences.isNavSlim ?? isNavSlim;
+    setTheme(nextTheme);
+    setIsNavSlim(nextIsNavSlim);
+    const response = await fetch("/api/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "preferences", theme: nextTheme, isNavSlim: nextIsNavSlim }),
+    });
+    const payload = await response.json().catch(() => ({})) as ProfilePayload;
+    if (!response.ok) {
+      setTheme(previousTheme);
+      setIsNavSlim(previousIsNavSlim);
+      setProfileError(payload.error ?? t("profile.unableUpdatePreferences"));
+      return;
+    }
+    if (payload.theme === "light" || payload.theme === "dark") setTheme(payload.theme);
+    if (typeof payload.isNavSlim === "boolean") setIsNavSlim(payload.isNavSlim);
+  }
+
+  async function updateOnboardingCompletedTasks(nextTasks: OnboardingTaskId[]) {
+    const previousTasks = onboardingCompletedTasks;
+    setOnboardingCompletedTasks(nextTasks);
+    setIsSavingOnboarding(true);
+    setProfileError(null);
+    const response = await fetch("/api/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "onboarding", onboardingCompletedTasks: nextTasks }),
+    });
+    const payload = await response.json().catch(() => ({})) as ProfilePayload;
+    setIsSavingOnboarding(false);
+    if (!response.ok) {
+      setOnboardingCompletedTasks(previousTasks);
+      setProfileError(payload.error ?? t("profile.unableUpdateOnboarding"));
+      return;
+    }
+    setOnboardingCompletedTasks(payload.onboardingCompletedTasks ?? nextTasks);
+  }
+
+  function openOnboardingTask(taskId: OnboardingTaskId) {
+    if (taskId === "read_compliance") navigate("compliance");
+    else if (taskId === "complete_primary_crew") {
+      const meIndex = Math.max(logbookRef.current.crewMembers.findIndex((crew) => crew.isPrimary), 0);
+      selectCrew(meIndex);
+      navigate("crew", meIndex);
+    } else if (taskId === "personalize_view") navigate("profile");
+    else if (taskId === "create_first_boat") navigate("boats");
+    else if (taskId === "create_first_logsheet") navigate("logbooks");
+  }
+
   async function updateName(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setProfileError(null);
@@ -1419,21 +1506,33 @@ export function LogbookApp({
         onSelectModule={(module) => navigate(module)}
         onOpenProfile={() => navigate("profile")}
         theme={theme}
-        onToggleTheme={() =>
-          setTheme((current) => (current === "dark" ? "light" : "dark"))
-        }
+        onToggleTheme={() => updateViewPreferences({ theme: theme === "dark" ? "light" : "dark" })}
         userEmail={accountEmail || userEmail}
         userName={accountName || userName}
         userGroups={userGroups}
         isNavSlim={isNavSlim}
-        onToggleNavSlim={() => setIsNavSlim((current) => !current)}
+        onToggleNavSlim={() => updateViewPreferences({ isNavSlim: !isNavSlim })}
         onLogout={logout}
         isLoggingOut={isLoggingOut}
       />
       <section className="app-content">
         {saveError && <p className="save-error">{saveError}</p>}
 
-        {activeModule === "dashboard" && <DashboardPage stats={stats} />}
+        {activeModule === "dashboard" && (
+          <DashboardPage
+            stats={stats}
+            onboardingChecklist={!isOnboardingComplete ? (
+              <OnboardingChecklist
+                completion={onboardingCompletion}
+                manualCompletedTasks={onboardingCompletedTasks}
+                onManualCompletedTasksChange={updateOnboardingCompletedTasks}
+                onOpenTask={openOnboardingTask}
+                isSaving={isSavingOnboarding}
+                compact
+              />
+            ) : null}
+          />
+        )}
 
         <section className="workspace module-workspace">
           {activeModule === "logbooks" && (
@@ -1562,6 +1661,15 @@ export function LogbookApp({
               selectCrew={selectCrew}
               navigate={navigate}
               theme={theme}
+              onboardingChecklist={
+                <OnboardingChecklist
+                  completion={onboardingCompletion}
+                  manualCompletedTasks={onboardingCompletedTasks}
+                  onManualCompletedTasksChange={updateOnboardingCompletedTasks}
+                  onOpenTask={openOnboardingTask}
+                  isSaving={isSavingOnboarding}
+                />
+              }
               logbook={logbook}
               activeBoat={activeBoat}
               nameForm={nameForm}
