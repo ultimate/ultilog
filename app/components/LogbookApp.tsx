@@ -137,7 +137,7 @@ function calculateSheetSummary(sheet: LogSheet) {
   const deltas = logLineDistanceDeltas(sheet.lines);
   const motorMiles = deltas.reduce(
     (sum, delta, index) =>
-      sum + ((sheet.lines[index]?.motorHours ?? 0) > 0 || (sheet.lines[index]?.motorSm ?? 0) > 0 ? delta : 0),
+      sum + ((sheet.lines[index]?.motorHours ?? 0) > 0 || (sheet.lines[index]?.motorMiles ?? 0) > 0 ? delta : 0),
     0,
   );
   const totalMiles = deltas.reduce((sum, delta) => sum + delta, 0);

@@ -216,7 +216,7 @@ export const en = {
   "details.tide": "Tide",
   "details.moon": "Moon",
   "details.speed": "Speed [kn]",
-  "details.log": "Log [sm]",
+  "details.log": "Log [nm]",
   "details.sail": "Sail",
   "details.motor": "Motor",
   "details.remarksEvent": "Remarks, Maneuver, Event",
