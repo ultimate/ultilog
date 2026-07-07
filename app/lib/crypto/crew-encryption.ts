@@ -59,6 +59,15 @@ export function decryptCrewField(ownerId: string, crewMemberId: string, fieldNam
   return Buffer.concat([decipher.update(decodeRequiredBase64(envelope.ct, "ct")), decipher.final()]).toString("utf8");
 }
 
+export function isCrewEncryptionEnvelope(value: string): boolean {
+  try {
+    parseCrewEncryptionEnvelope(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function parseCrewEncryptionEnvelope(value: string): CrewEncryptionEnvelope {
   let parsed: unknown;
   try {

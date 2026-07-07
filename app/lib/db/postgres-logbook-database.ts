@@ -25,7 +25,7 @@ export class PostgresLogbookDatabase extends LogbookDatabase {
   }
 
   override async writeLogbook(logbook: PersistedLogbook) {
-    await this.ensureSchema();
+    await this.ensureSchemaAndBackfill();
     const client = await this.pool.connect();
     try {
       await client.query("begin");
