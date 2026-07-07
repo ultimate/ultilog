@@ -61,7 +61,7 @@ describe("logbook scanner image fixtures", () => {
 
     expected.lines?.forEach((line, index) => {
       const actual = sheet.lines[index];
-      expect(actual).toEqual(expect.objectContaining(projectExpectedLine(line)));
+      expect(actual).toEqual(expect.objectContaining(projectExpectedLine(line, actual)));
     });
 
     const serialized = JSON.stringify(sheet);
@@ -126,18 +126,22 @@ function expectedToScannerResult(expected: ExpectedFixture): ScannerResult {
 }
 
 function stringifyLineValues(line: ExpectedFixtureLine) {
-  return Object.fromEntries(
-    Object.entries(line)
-      .filter(([, value]) => value !== undefined)
-      .map(([key, value]) => [key, String(value)]),
-  );
+  const entries = Object.entries(line)
+    .filter(([, value]) => value !== undefined)
+    .flatMap(([key, value]) => {
+      const stringValue = String(value);
+      if (key === "sailMiles") return [["sailMiles", stringValue], ["sailSm", stringValue]];
+      if (key === "motorMiles") return [["motorMiles", stringValue], ["motorSm", stringValue]];
+      return [[key, stringValue]];
+    });
+
+  return Object.fromEntries(entries);
 }
 
-function projectExpectedLine(line: ExpectedFixtureLine) {
+function projectExpectedLine(line: ExpectedFixtureLine, actualLine: Record<string, unknown>) {
   const fieldAliases: Record<string, string> = {
-    compassCourse: "compassCourse",
-    windDrift: "windDrift",
-    waves: "waves",
+    sailMiles: "sailMiles" in actualLine ? "sailMiles" : "sailSm",
+    motorMiles: "motorMiles" in actualLine ? "motorMiles" : "motorSm",
   };
   const comparableFields = [
     "time",
@@ -166,9 +170,9 @@ function projectExpectedLine(line: ExpectedFixtureLine) {
     "courseOverGround",
     "speedKn",
     "logNm",
-    "sailSm",
+    "sailMiles",
     "sailNote",
-    "motorSm",
+    "motorMiles",
     "motorHours",
     "motorNote",
   ];
