@@ -3,7 +3,7 @@ import { sampleLogSheets } from "../../../../resources/sample-data/logbook";
 import type { CrewMemberRow } from "../../../../app/models/logbook";
 import type { QueryableDatabase, QueryResult } from "../../../../app/lib/db/logbook-database";
 import { CrewRepository } from "../../../../app/lib/repositories/crew-repository";
-import { encryptWithEnvelope } from "../../../../app/lib/security/envelope-encryption";
+import { encryptCrewField } from "../../../../app/lib/crypto/crew-encryption";
 
 type QueryCall = { sql: string; values?: unknown[] };
 
@@ -29,10 +29,11 @@ const testMasterKey = "0123456789abcdef0123456789abcdef0123456789abcdef012345678
 
 describe("CrewRepository", () => {
   beforeEach(() => {
-    process.env.CREW_DATA_ENCRYPTION_KEY = testMasterKey;
+    process.env.CREW_ENCRYPTION_MASTER_KEY = testMasterKey;
+    delete process.env.CREW_DATA_ENCRYPTION_KEY;
   });
   it("finds all crew rows", async () => {
-    const row: CrewMemberRow = { sheet_id: sheet.id, crew_member_id: "luca-frei-swiss", sort_order: 0, ...crew, name: encryptWithEnvelope(crew.name), nationality: encryptWithEnvelope(crew.nationality), role: encryptWithEnvelope(crew.role), address: encryptWithEnvelope(crew.address ?? ""), certificate: encryptWithEnvelope(crew.certificate ?? ""), embarkation_datetime: crew.embarkationDateTime, embarkation_position: crew.embarkationPosition, disembarkation_datetime: crew.disembarkationDateTime, disembarkation_position: crew.disembarkationPosition };
+    const row: CrewMemberRow = { sheet_id: sheet.id, crew_member_id: "luca-frei-swiss", sort_order: 0, ...crew, name: encryptCrewField("legacy-user", crew.name), nationality: encryptCrewField("legacy-user", crew.nationality), role: encryptCrewField("legacy-user", crew.role), address: encryptCrewField("legacy-user", crew.address ?? ""), certificate: encryptCrewField("legacy-user", crew.certificate ?? ""), embarkation_datetime: crew.embarkationDateTime, embarkation_position: crew.embarkationPosition, disembarkation_datetime: crew.disembarkationDateTime, disembarkation_position: crew.disembarkationPosition };
     const decryptedRow = { ...row, name: crew.name, nationality: crew.nationality, role: crew.role, address: crew.address ?? "", certificate: crew.certificate ?? "" };
     const db = new MockDatabase({ crew_members: [row] });
 
@@ -63,7 +64,7 @@ describe("CrewRepository", () => {
     expect(db.calls[0].values?.slice(6)).toEqual([crew.isPrimary ? 1 : 0, "legacy-user"]);
     for (const [index, plaintext] of [crew.name, crew.nationality, crew.role, crew.address ?? "", crew.certificate ?? ""].entries()) {
       expect(db.calls[0].values?.[index + 1]).not.toBe(plaintext);
-      expect(db.calls[0].values?.[index + 1]).toEqual(expect.stringMatching(/^enc:v1:/));
+      expect(db.calls[0].values?.[index + 1]).toEqual(expect.stringMatching(/^crew:v1:/));
     }
     expect(db.calls[1].sql).toContain("insert into sheet_crew_members");
     expect(db.calls[1].values).toEqual([`legacy-user:${sheet.id}`, "legacy-user:luca-frei-swiss", 0, crew.embarkationPosition, crew.disembarkationPosition, crew.embarkationDateTime, crew.embarkationPosition, crew.disembarkationDateTime, crew.disembarkationPosition]);
