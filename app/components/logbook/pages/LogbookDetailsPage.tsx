@@ -1,5 +1,5 @@
 import { useI18n } from "../../../lib/i18n";
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type Dispatch, type MouseEvent, type SetStateAction } from "react";
 import type {
   Boat,
   LineForm,
@@ -73,6 +73,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const [coordinateFormat, setCoordinateFormat] = useState<CoordinateFormat>("decimal");
   const [isMapExpanded, setIsMapExpanded] = useState(false);
   const [openCourseTooltip, setOpenCourseTooltip] = useState<TranslationKey | null>(null);
+  const [courseTooltipPosition, setCourseTooltipPosition] = useState({ left: 0, top: 0 });
   const scannerWarnings = activeSheet.scannerWarnings ?? [];
   const showScannerDraftNotice =
     activeSheet.source === "scanner" && activeSheet.status === "Draft";
@@ -88,6 +89,19 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
       document.body.style.overflow = previousOverflow;
     };
   }, [isMapExpanded]);
+
+  useEffect(() => {
+    if (!openCourseTooltip) return;
+
+    const closeTooltip = () => setOpenCourseTooltip(null);
+    window.addEventListener("resize", closeTooltip);
+    window.addEventListener("scroll", closeTooltip, true);
+
+    return () => {
+      window.removeEventListener("resize", closeTooltip);
+      window.removeEventListener("scroll", closeTooltip, true);
+    };
+  }, [openCourseTooltip]);
 
   const renderNumberInput = (field: keyof LineForm, options?: { min?: number; max?: number; step?: string }) => (
     <input type="number" min={options?.min} max={options?.max} step={options?.step ?? "1"} value={lineForm[field]} onChange={(e) => setLineForm({ ...lineForm, [field]: e.target.value })} />
@@ -120,6 +134,20 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     />
   );
 
+  const toggleCourseTooltip = (descriptionKey: TranslationKey, event: MouseEvent<HTMLButtonElement>) => {
+    if (openCourseTooltip === descriptionKey) {
+      setOpenCourseTooltip(null);
+      return;
+    }
+
+    const { bottom, left, width } = event.currentTarget.getBoundingClientRect();
+    setCourseTooltipPosition({
+      left: left + width / 2,
+      top: bottom + 8,
+    });
+    setOpenCourseTooltip(descriptionKey);
+  };
+
   const renderCourseHeader = (column: typeof courseConversionColumns[number]) => {
     const isOpen = openCourseTooltip === column.descriptionKey;
     return (
@@ -131,13 +159,21 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
             aria-label={t(column.descriptionKey)}
             aria-describedby={isOpen ? `${column.descriptionKey}-tooltip` : undefined}
             aria-expanded={isOpen}
-            onClick={() => setOpenCourseTooltip(isOpen ? null : column.descriptionKey)}
+            onClick={(event) => toggleCourseTooltip(column.descriptionKey, event)}
           >
             {t(column.labelKey)}
             <span aria-hidden="true" className="course-tooltip-icon">?</span>
           </button>
           {isOpen && (
-            <span id={`${column.descriptionKey}-tooltip`} role="tooltip" className="course-tooltip-bubble">
+            <span
+              id={`${column.descriptionKey}-tooltip`}
+              role="tooltip"
+              className="course-tooltip-bubble"
+              style={{
+                "--course-tooltip-left": `${courseTooltipPosition.left}px`,
+                "--course-tooltip-top": `${courseTooltipPosition.top}px`,
+              } as CSSProperties}
+            >
               {t(column.descriptionKey)}
             </span>
           )}

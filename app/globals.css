@@ -340,11 +340,10 @@ td { color: #28384b; line-height: 1.45; }
 }
 
 .course-tooltip {
+  position: relative;
   display: inline-flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.35rem;
 }
 
 .course-tooltip-trigger {
@@ -382,9 +381,13 @@ td { color: #28384b; line-height: 1.45; }
 }
 
 .course-tooltip-bubble {
-  z-index: 5;
+  position: fixed;
+  z-index: 1000;
+  top: var(--course-tooltip-top);
+  left: clamp(7rem, var(--course-tooltip-left), calc(100vw - 7rem));
   width: max-content;
   max-width: min(14rem, 72vw);
+  transform: translateX(-50%);
   border: 1px solid var(--border);
   border-radius: 0.7rem;
   padding: 0.55rem 0.65rem;
@@ -397,6 +400,7 @@ td { color: #28384b; line-height: 1.45; }
   line-height: 1.25;
   text-align: center;
   text-transform: none;
+  pointer-events: none;
 }
 
 .stack-list, .check-list, .compliance-card ul { display: grid; gap: 0.75rem; margin: 0; padding: 0; list-style: none; }
