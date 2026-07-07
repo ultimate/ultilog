@@ -29,7 +29,7 @@ export class SqliteLogbookDatabase extends LogbookDatabase {
   }
 
   override async writeLogbook(logbook: PersistedLogbook) {
-    await this.ensureSchema();
+    await this.ensureSchemaAndBackfill();
     const db = await this.getDb();
     try {
       db.run("begin");
