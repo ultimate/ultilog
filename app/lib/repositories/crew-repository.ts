@@ -11,7 +11,7 @@ export class CrewRepository {
       select id as crew_member_id, name, nationality, role, address, certificate, is_primary
       from crew_members
       where owner_id = ${this.db.placeholder(1)}
-      order by is_primary desc, id
+      order by is_primary desc
     `, [ownerId])).rows.map((row) => this.decryptCrewRow(row, ownerId)).sort((left, right) => Number(right.is_primary ?? 0) - Number(left.is_primary ?? 0) || left.name.localeCompare(right.name));
   }
 
