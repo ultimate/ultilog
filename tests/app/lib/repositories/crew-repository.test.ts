@@ -64,7 +64,7 @@ describe("CrewRepository", () => {
     expect(db.calls[0].values?.slice(6)).toEqual([crew.isPrimary ? 1 : 0, "legacy-user"]);
     for (const [index, plaintext] of [crew.name, crew.nationality, crew.role, crew.address ?? "", crew.certificate ?? ""].entries()) {
       expect(db.calls[0].values?.[index + 1]).not.toBe(plaintext);
-      expect(db.calls[0].values?.[index + 1]).toEqual(expect.stringMatching(/^crew:v1:/));
+      expect(db.calls[0].values?.[index + 1]).toEqual(expect.stringMatching(/^\{"v":1,"alg":"AES-256-GCM","kid":"crew-pii-v1",/));
     }
     expect(db.calls[1].sql).toContain("insert into sheet_crew_members");
     expect(db.calls[1].values).toEqual([`legacy-user:${sheet.id}`, "legacy-user:luca-frei-swiss", 0, crew.embarkationPosition, crew.disembarkationPosition, crew.embarkationDateTime, crew.embarkationPosition, crew.disembarkationDateTime, crew.disembarkationPosition]);
