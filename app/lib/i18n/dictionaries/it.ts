@@ -344,5 +344,6 @@ export const it: Dictionary = {
   "profile.unableDeleteAccount": "Impossibile eliminare l’account.",
   "profile.confirmDeleteQuoted": "Digita \"DELETE\" per confermare l’eliminazione dell’account.",
   "profile.unableUpdateOnboarding": "Impossibile aggiornare l’avanzamento dell’onboarding.",
+  "profile.unableUpdatePreferences": "Impossibile aggiornare le preferenze del profilo.",
   "logbook.saveError": "Impossibile salvare le ultime modifiche. Riprova.",
 };

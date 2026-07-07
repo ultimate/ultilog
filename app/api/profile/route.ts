@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "../../../auth";
-import { deleteUserAccount, findUserById, updateUserEmail, updateUserName, updateUserOnboardingCompletedTasks, updateUserPassword } from "../../lib/users";
+import { deleteUserAccount, findUserById, updateUserComplianceRead, updateUserEmail, updateUserName, updateUserOnboardingCompletedTasks, updateUserPassword, updateUserViewPreferences } from "../../lib/users";
 
 export async function GET() {
   const session = await auth();
@@ -13,6 +13,9 @@ export async function GET() {
     email: user.email,
     groups: user.groups,
     onboardingCompletedTasks: user.onboardingCompletedTasks,
+    theme: user.theme,
+    isNavSlim: user.isNavSlim,
+    hasReadCompliance: user.hasReadCompliance,
   });
 }
 
@@ -20,7 +23,7 @@ export async function PATCH(request: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
-    const body = await request.json() as { action?: string; name?: string; email?: string; currentPassword?: string; newPassword?: string; onboardingCompletedTasks?: unknown };
+    const body = await request.json() as { action?: string; name?: string; email?: string; currentPassword?: string; newPassword?: string; onboardingCompletedTasks?: unknown; theme?: unknown; isNavSlim?: unknown };
     if (body.action === "name") {
       const user = await updateUserName(session.user.id, { name: body.name ?? "", currentPassword: body.currentPassword ?? "" });
       return NextResponse.json({ name: user.name });
@@ -36,6 +39,14 @@ export async function PATCH(request: Request) {
     if (body.action === "onboarding") {
       const user = await updateUserOnboardingCompletedTasks(session.user.id, body.onboardingCompletedTasks);
       return NextResponse.json({ onboardingCompletedTasks: user.onboardingCompletedTasks });
+    }
+    if (body.action === "preferences") {
+      const user = await updateUserViewPreferences(session.user.id, { theme: body.theme, isNavSlim: body.isNavSlim });
+      return NextResponse.json({ theme: user.theme, isNavSlim: user.isNavSlim });
+    }
+    if (body.action === "compliance-read") {
+      const user = await updateUserComplianceRead(session.user.id);
+      return NextResponse.json({ hasReadCompliance: user.hasReadCompliance });
     }
     return NextResponse.json({ error: "Unsupported profile update." }, { status: 400 });
   } catch (error) {

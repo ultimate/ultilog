@@ -344,5 +344,6 @@ export const de: Dictionary = {
   "profile.unableDeleteAccount": "Konto konnte nicht gelöscht werden.",
   "profile.confirmDeleteQuoted": "Gib \"DELETE\" ein, um die Kontolöschung zu bestätigen.",
   "profile.unableUpdateOnboarding": "Onboarding-Fortschritt konnte nicht aktualisiert werden.",
+  "profile.unableUpdatePreferences": "Profileinstellungen konnten nicht aktualisiert werden.",
   "logbook.saveError": "Die neuesten Änderungen konnten nicht gespeichert werden. Bitte versuche es erneut.",
 };

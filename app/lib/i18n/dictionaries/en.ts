@@ -342,6 +342,7 @@ export const en = {
   "profile.unableDeleteAccount": "Unable to delete account.",
   "profile.confirmDeleteQuoted": "Type \"DELETE\" to confirm account deletion.",
   "profile.unableUpdateOnboarding": "Unable to update onboarding progress.",
+  "profile.unableUpdatePreferences": "Unable to update profile preferences.",
   "logbook.saveError": "Unable to save the latest changes. Please try again.",
 } as const;
 
