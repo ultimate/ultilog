@@ -1105,3 +1105,21 @@ td { color: #28384b; line-height: 1.45; }
   background: #fef3c7;
   font-size: 1.3rem;
 }
+
+.onboarding-card { display: grid; gap: 1rem; }
+.onboarding-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.onboarding-heading h3 { margin: 0.1rem 0 0.35rem; }
+.onboarding-heading p:last-child { margin: 0; color: var(--muted); }
+.onboarding-progress { display: inline-flex; align-items: center; justify-content: center; min-width: 3rem; min-height: 3rem; border-radius: 999px; background: rgba(15, 107, 143, 0.12); color: var(--primary); }
+.onboarding-task-list { display: grid; gap: 0.75rem; margin: 0; padding: 0; list-style: none; }
+.onboarding-task-list li { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; border: 1px solid var(--border); border-radius: 1rem; padding: 0.8rem; background: #f8fbfd; }
+.onboarding-task-list li.complete { border-color: rgba(25, 135, 84, 0.35); background: rgba(25, 135, 84, 0.08); }
+.onboarding-task-list label { display: flex; align-items: flex-start; gap: 0.75rem; }
+.onboarding-task-list input { width: 1.15rem; height: 1.15rem; margin-top: 0.2rem; accent-color: var(--primary); }
+.onboarding-task-list span { display: grid; gap: 0.2rem; }
+.onboarding-task-list small { color: var(--muted); }
+.onboarding-task-list em { color: var(--success); font-size: 0.82rem; font-style: normal; font-weight: 800; }
+.onboarding-card.compact { margin-bottom: 1rem; }
+@media (max-width: 720px) {
+  .onboarding-heading, .onboarding-task-list li { align-items: stretch; flex-direction: column; }
+}

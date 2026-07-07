@@ -76,6 +76,12 @@ export const en = {
   "dashboard.youHave": "You have",
   "dashboard.remaining": "Remaining",
   "dashboard.viewComplianceDetails": "View compliance details",
+  "onboarding.eyebrow": "Getting started",
+  "onboarding.checklistTitle": "Onboarding checklist",
+  "onboarding.checklistSubtitle": "Complete these steps to set up your personal logbook.",
+  "onboarding.checklistAria": "Onboarding checklist",
+  "onboarding.allDone": "All onboarding tasks are complete.",
+  "onboarding.detectedAutomatically": "Detected automatically",
   "onboarding.readCompliance.title": "Read the compliance information for your country",
   "onboarding.readCompliance.description": "Open the compliance section and review the requirements that apply to your licence and sailing area.",
   "onboarding.completePrimaryCrew.title": "Fill in your personal crew member item",
@@ -335,6 +341,7 @@ export const en = {
   "profile.passwordUpdated": "Password updated.",
   "profile.unableDeleteAccount": "Unable to delete account.",
   "profile.confirmDeleteQuoted": "Type \"DELETE\" to confirm account deletion.",
+  "profile.unableUpdateOnboarding": "Unable to update onboarding progress.",
   "logbook.saveError": "Unable to save the latest changes. Please try again.",
 } as const;
 
