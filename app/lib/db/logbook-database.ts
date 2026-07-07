@@ -38,7 +38,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
   async readLogbook(): Promise<PersistedLogbook> {
     await this.ensureSchema();
     const logbook = await this.readTables();
-    if (logbook.boats.length || logbook.sheets.length) return logbook;
+    if (logbook.boats.length || logbook.sheets.length || (this.ownerId !== "legacy-user" && logbook.crewMembers.length)) return logbook;
     await this.writeLogbook(defaultLogbook);
     return defaultLogbook;
   }

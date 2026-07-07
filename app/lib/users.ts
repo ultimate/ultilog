@@ -154,7 +154,7 @@ export async function registerUser(input: { name: string; email: string; passwor
     `insert into users (id, name, email, password_hash) values (${db.placeholder(1)}, ${db.placeholder(2)}, ${db.placeholder(3)}, ${db.placeholder(4)})`,
     [user.id, user.name, user.email, passwordHash],
   );
-  await writeLogbook({ boats: [], crewMembers: [{ id: "me", name: user.name, nationality: "", role: "Owner", address: "", certificate: "", isPrimary: true }], sheets: [] }, user.id);
+  await writeLogbook({ boats: [], crewMembers: [{ id: "me", name: user.name, nationality: "", role: "", address: "", certificate: "", isPrimary: true }], sheets: [] }, user.id);
   return user;
 }
 
