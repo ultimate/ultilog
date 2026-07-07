@@ -155,8 +155,8 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
       <td>{renderCourseInput("compassCourse", { min: 0, max: 359 })}</td>
       {showCourseColumns && courseFieldNames.map((field) => <td className="optional-course-cell" key={field}>{renderCourseInput(field, courseSignedFields.has(field) ? { min: -180, max: 180 } : { min: 0, max: 359 })}</td>)}
       <td>{renderCourseInput("courseOverGround", { min: 0, max: 359 })}</td><td>{renderNumberInput("speedKn", { step: "0.1" })}</td><td>{renderNumberInput("logNm", { step: "0.1" })}</td>
-      <td><div className="compound-inputs labeled-inputs"><label><span>[sm]</span>{renderNumberInput("sailSm", { step: "0.1" })}</label><label><span>[note]</span>{renderTextInput("sailNote", t("details.sailNote"))}</label></div></td>
-      <td><div className="compound-inputs labeled-inputs"><label><span>[sm]</span>{renderNumberInput("motorSm", { step: "0.1" })}</label><label><span>[h]</span>{renderNumberInput("motorHours", { step: "0.1" })}</label><label><span>[note]</span>{renderTextInput("motorNote", t("details.motorNote"))}</label></div></td>
+      <td><div className="compound-inputs labeled-inputs"><label><span>[nm]</span>{renderNumberInput("sailMiles", { step: "0.1" })}</label><label><span>[note]</span>{renderTextInput("sailNote", t("details.sailNote"))}</label></div></td>
+      <td><div className="compound-inputs labeled-inputs"><label><span>[nm]</span>{renderNumberInput("motorMiles", { step: "0.1" })}</label><label><span>[h]</span>{renderNumberInput("motorHours", { step: "0.1" })}</label><label><span>[note]</span>{renderTextInput("motorNote", t("details.motorNote"))}</label></div></td>
       <td>{renderTextInput("remarks")}</td><td colSpan={2}><div className="table-actions"><button type="button" onClick={saveLineFromFields}>{editingLineIndex === null ? t("details.saveLine") : "💾"}</button><button type="button" className="ghost-button" onClick={cancelLineEdit}>{t("common.cancel")}</button></div></td>
     </tr>
   );
@@ -500,7 +500,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                         <tr key={`${line.time}-${line.position}-${index}`}>
                           <td>{line.time}</td><td>{coordinateToInput(line.latitude, "lat", coordinateFormat)}</td><td>{coordinateToInput(line.longitude, "lon", coordinateFormat)}</td><td>{line.weather}</td><td>{line.weatherRemark}</td><td>{line.temperature}</td><td>{line.barometer}</td><td>{line.windDirection} {line.windStrength} {line.windUnit}</td><td>{line.waves} {line.seaUnit}</td><td>{line.tide} {line.tideUnit}</td><td>{line.moon}</td><td>{line.compassCourse}</td>
                           {showCourseColumns && [line.deviation, line.magneticCourse, line.variation, line.trueCourse, line.windDrift, line.courseThroughWater, line.currentDrift].map((value, courseIndex) => <td className="optional-course-cell" key={`${line.time}-${index}-${courseIndex}`}>{value}</td>)}
-                          <td>{line.courseOverGround}</td><td>{line.speedKn}</td><td>{line.logNm}</td><td>{line.sailSm} sm {line.sailNote}</td><td>{line.motorSm} sm · {line.motorHours} h {line.motorNote}</td><td>{line.remarks}</td>
+                          <td>{line.courseOverGround}</td><td>{line.speedKn}</td><td>{line.logNm}</td><td>{line.sailMiles} nm {line.sailNote}</td><td>{line.motorMiles} nm · {line.motorHours} h {line.motorNote}</td><td>{line.remarks}</td>
                           <td><button type="button" className="edit-chip" disabled={isActiveSheetLocked} onClick={() => startEditingLine(line, index)}>✏️</button></td>
                           <td><button type="button" className="edit-chip" disabled={isActiveSheetLocked} onClick={() => deleteLine(index)}>🗑️</button></td>
                         </tr>

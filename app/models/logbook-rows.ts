@@ -38,7 +38,7 @@ export type CrewMemberRow = Omit<SheetCrewMember, "embarkationDateTime" | "embar
   is_primary?: number;
 };
 
-export type LogLineRow = Omit<LogLine, "position" | "weatherRemark" | "temperature" | "logNm" | "windDirection" | "windStrength" | "windUnit" | "waves" | "seaUnit" | "tideUnit" | "compassCourse" | "magneticCourse" | "trueCourse" | "windDrift" | "courseThroughWater" | "currentDrift" | "courseOverGround" | "speedKn" | "sailSm" | "sailNote" | "motorSm" | "motorHours" | "motorNote"> & {
+export type LogLineRow = Omit<LogLine, "position" | "weatherRemark" | "temperature" | "logNm" | "windDirection" | "windStrength" | "windUnit" | "waves" | "seaUnit" | "tideUnit" | "compassCourse" | "magneticCourse" | "trueCourse" | "windDrift" | "courseThroughWater" | "currentDrift" | "courseOverGround" | "speedKn" | "sailMiles" | "sailNote" | "motorMiles" | "motorHours" | "motorNote"> & {
   sheet_id: string;
   sort_order: number;
   position_name: string;
@@ -59,9 +59,9 @@ export type LogLineRow = Omit<LogLine, "position" | "weatherRemark" | "temperatu
   current_drift: number;
   course_over_ground: number;
   speed_kn: number;
-  sail_sm: number;
+  sail_miles: number;
   sail_note: string;
-  motor_sm: number;
+  motor_miles: number;
   motor_hours: number;
   motor_note: string;
 };

@@ -39,7 +39,7 @@ export class LogSheetsRepository {
     const sheets: LogSheet[] = sheetRows.map((sheet) => ({
       ...mapStoredSheet(sheet),
       crew: (crewBySheet.get(sheet.id) ?? []).map(({ sheet_id, crew_member_id, sort_order, is_primary, embarkation_datetime, embarkation_position, disembarkation_datetime, disembarkation_position, ...crew }) => ({ ...crew, id: unscopedId(crew_member_id), isPrimary: Boolean(is_primary), embarkationDateTime: embarkation_datetime, embarkationPosition: embarkation_position, disembarkationDateTime: disembarkation_datetime, disembarkationPosition: disembarkation_position })),
-      lines: (linesBySheet.get(sheet.id) ?? []).map(({ sheet_id, sort_order, position_name, weather_remark, log_nm, wind_direction, wind_strength, wind_unit, waves, sea_unit, tide_unit, compass_course, magnetic_course, true_course, wind_drift, course_through_water, current_drift, course_over_ground, speed_kn, sail_sm, sail_note, motor_sm, motor_hours, motor_note, ...line }) => ({
+      lines: (linesBySheet.get(sheet.id) ?? []).map(({ sheet_id, sort_order, position_name, weather_remark, log_nm, wind_direction, wind_strength, wind_unit, waves, sea_unit, tide_unit, compass_course, magnetic_course, true_course, wind_drift, course_through_water, current_drift, course_over_ground, speed_kn, sail_miles, sail_note, motor_miles, motor_hours, motor_note, ...line }) => ({
         ...line,
         barometer: Number(line.barometer) || 0,
         weatherRemark: weather_remark ?? "",
@@ -60,9 +60,9 @@ export class LogSheetsRepository {
         currentDrift: Number(current_drift) || 0,
         courseOverGround: Number(course_over_ground) || 0,
         speedKn: Number(speed_kn) || 0,
-        sailSm: Number(sail_sm) || 0,
+        sailMiles: Number(sail_miles) || 0,
         sailNote: sail_note,
-        motorSm: Number(motor_sm) || 0,
+        motorMiles: Number(motor_miles) || 0,
         motorHours: Number(motor_hours) || 0,
         motorNote: motor_note,
       })),

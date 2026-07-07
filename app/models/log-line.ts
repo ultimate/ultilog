@@ -29,9 +29,9 @@ export type LogLine = {
   courseOverGround: number;
   speedKn: number;
   logNm: number;
-  sailSm: number;
+  sailMiles: number;
   sailNote: string;
-  motorSm: number;
+  motorMiles: number;
   motorHours: number;
   motorNote: string;
   remarks: string;
