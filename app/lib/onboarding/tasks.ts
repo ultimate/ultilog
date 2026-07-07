@@ -10,6 +10,12 @@ export const onboardingTaskIds = [
 
 export type OnboardingTaskId = (typeof onboardingTaskIds)[number];
 
+const onboardingTaskIdSet = new Set<string>(onboardingTaskIds);
+
+export function isOnboardingTaskId(value: unknown): value is OnboardingTaskId {
+  return typeof value === "string" && onboardingTaskIdSet.has(value);
+}
+
 export type OnboardingTask = {
   id: OnboardingTaskId;
   titleKey: TranslationKey;

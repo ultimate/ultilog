@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import bcrypt from "bcryptjs";
-import { onboardingTaskIds, type OnboardingTaskId } from "./onboarding/tasks";
+import { isOnboardingTaskId, type OnboardingTaskId } from "./onboarding/tasks";
 import { getDatabase, writeLogbook } from "./logbook-store";
 
 export type AppUser = { id: string; name: string; email: string; groups: string[]; onboardingCompletedTasks: OnboardingTaskId[] };
@@ -24,11 +24,9 @@ function normalizeGroups(groups: string[]) {
   return [...new Set(groups.map(normalizeGroupName).filter(Boolean))].sort((a, b) => a.localeCompare(b));
 }
 
-const onboardingTaskIdSet = new Set<string>(onboardingTaskIds);
-
 function normalizeOnboardingCompletedTasks(tasks: unknown): OnboardingTaskId[] {
   if (!Array.isArray(tasks)) return [];
-  return [...new Set(tasks.filter((task): task is OnboardingTaskId => typeof task === "string" && onboardingTaskIdSet.has(task)))];
+  return [...new Set(tasks.filter(isOnboardingTaskId))];
 }
 
 function parseOnboardingCompletedTasks(value: string | null | undefined): OnboardingTaskId[] {
