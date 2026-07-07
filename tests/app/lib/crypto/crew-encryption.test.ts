@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { decryptCrewField, deriveCrewKey, encryptCrewField } from "../../../../app/lib/crypto/crew-encryption";
+import { decryptCrewField, deriveCrewKey, encryptCrewField, parseCrewEncryptionEnvelope } from "../../../../app/lib/crypto/crew-encryption";
 
 const testMasterKey = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
@@ -9,11 +9,15 @@ describe("crew encryption", () => {
     delete process.env.CREW_DATA_ENCRYPTION_KEY;
   });
 
-  it("encrypts and decrypts crew fields with an owner-derived AES-GCM key", () => {
+  it("encrypts and decrypts crew fields as JSON AES-GCM envelopes with an owner-derived key", () => {
     const encrypted = encryptCrewField("owner-a", "Ada Lovelace");
+    const envelope = parseCrewEncryptionEnvelope(encrypted);
 
-    expect(encrypted).toMatch(/^crew:v1:/);
     expect(encrypted).not.toContain("Ada Lovelace");
+    expect(envelope).toMatchObject({ v: 1, alg: "AES-256-GCM", kid: "crew-pii-v1" });
+    expect(envelope.iv).toMatch(/^[A-Za-z0-9+/]+={0,2}$/);
+    expect(envelope.ct).toMatch(/^[A-Za-z0-9+/]+={0,2}$/);
+    expect(envelope.tag).toMatch(/^[A-Za-z0-9+/]+={0,2}$/);
     expect(decryptCrewField("owner-a", encrypted)).toBe("Ada Lovelace");
   });
 
@@ -26,5 +30,19 @@ describe("crew encryption", () => {
     const encrypted = encryptCrewField("owner-a", "private crew data");
 
     expect(() => decryptCrewField("owner-b", encrypted)).toThrow();
+  });
+
+  it("rejects unsupported envelope versions and algorithms", () => {
+    const envelope = parseCrewEncryptionEnvelope(encryptCrewField("owner-a", "private crew data"));
+
+    expect(() => decryptCrewField("owner-a", JSON.stringify({ ...envelope, v: 2 }))).toThrow(/Unsupported crew encryption envelope version/);
+    expect(() => decryptCrewField("owner-a", JSON.stringify({ ...envelope, alg: "AES-128-GCM" }))).toThrow(/Unsupported crew encryption algorithm/);
+  });
+
+  it("rejects malformed envelope fields before decrypting", () => {
+    const envelope = parseCrewEncryptionEnvelope(encryptCrewField("owner-a", "private crew data"));
+
+    expect(() => decryptCrewField("owner-a", JSON.stringify({ ...envelope, iv: "not base64!" }))).toThrow(/iv is not valid base64/);
+    expect(() => decryptCrewField("owner-a", JSON.stringify({ ...envelope, tag: envelope.ct }))).toThrow(/tag must decode to 16 bytes/);
   });
 });
