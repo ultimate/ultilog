@@ -25,7 +25,9 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   await crewForm.getByLabel("Name").fill(crewName);
   await crewForm.getByLabel("Nationality").fill("Swiss");
   await crewForm.getByLabel("Role").fill("Navigator");
+  const crewSave = waitForLogbookSave(page);
   await clickButton(page, "Save crew");
+  await crewSave;
   await expect(page.getByText(crewName)).toBeVisible();
 
   await openModule(page, "Boat manager", "New boat");
@@ -89,6 +91,10 @@ async function openModule(page: Page, moduleName: string, expectedActionName: st
     await page.getByRole("button", { name: moduleName }).click();
     await expect(page.getByRole("button", { name: expectedActionName })).toBeVisible({ timeout: 2_000 });
   }).toPass({ timeout: 15_000 });
+}
+
+function waitForLogbookSave(page: Page) {
+  return page.waitForResponse((response) => response.url().endsWith("/api/logbook") && response.request().method() === "PUT" && response.ok());
 }
 
 async function clickButton(page: Page, name: string | RegExp) {
