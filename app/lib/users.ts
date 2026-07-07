@@ -1,11 +1,12 @@
 import { randomUUID } from "node:crypto";
 import bcrypt from "bcryptjs";
+import { onboardingTaskIds, type OnboardingTaskId } from "./onboarding/tasks";
 import { getDatabase, writeLogbook } from "./logbook-store";
 
-export type AppUser = { id: string; name: string; email: string; groups: string[] };
+export type AppUser = { id: string; name: string; email: string; groups: string[]; onboardingCompletedTasks: OnboardingTaskId[] };
 export type AdminUserListItem = AppUser;
 
-type UserRow = Omit<AppUser, "groups"> & { password_hash: string };
+type UserRow = Omit<AppUser, "groups" | "onboardingCompletedTasks"> & { password_hash: string; onboarding_completed_tasks: string };
 type GroupRow = { user_id?: string; name: string };
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
@@ -21,6 +22,26 @@ function normalizeGroupName(name: string) {
 
 function normalizeGroups(groups: string[]) {
   return [...new Set(groups.map(normalizeGroupName).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+}
+
+const onboardingTaskIdSet = new Set<string>(onboardingTaskIds);
+
+function normalizeOnboardingCompletedTasks(tasks: unknown): OnboardingTaskId[] {
+  if (!Array.isArray(tasks)) return [];
+  return [...new Set(tasks.filter((task): task is OnboardingTaskId => typeof task === "string" && onboardingTaskIdSet.has(task)))];
+}
+
+function parseOnboardingCompletedTasks(value: string | null | undefined): OnboardingTaskId[] {
+  if (!value) return [];
+  try {
+    return normalizeOnboardingCompletedTasks(JSON.parse(value));
+  } catch {
+    return [];
+  }
+}
+
+function serializeOnboardingCompletedTasks(tasks: unknown) {
+  return JSON.stringify(normalizeOnboardingCompletedTasks(tasks));
 }
 
 function assertAllowedName(name: string) {
@@ -46,27 +67,34 @@ async function groupsForUser(userId: string) {
 
 async function withGroups(user: UserRow | undefined): Promise<AppUser | undefined> {
   if (!user) return undefined;
-  return { id: user.id, name: user.name, email: user.email, groups: await groupsForUser(user.id) };
+  return { id: user.id, name: user.name, email: user.email, groups: await groupsForUser(user.id), onboardingCompletedTasks: parseOnboardingCompletedTasks(user.onboarding_completed_tasks) };
 }
 
 async function findUserByName(name: string) {
   const db = getDatabase();
   await db.migrate();
-  const result = await db.query<UserRow>(`select id, name, email, password_hash from users where lower(name) = lower(${db.placeholder(1)})`, [normalizeName(name)]);
+  const result = await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks from users where lower(name) = lower(${db.placeholder(1)})`, [normalizeName(name)]);
   return result.rows[0];
 }
 
 export async function findUserByEmail(email: string) {
   const db = getDatabase();
   await db.migrate();
-  const result = await db.query<UserRow>(`select id, name, email, password_hash from users where email = ${db.placeholder(1)}`, [normalizeEmail(email)]);
+  const result = await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks from users where email = ${db.placeholder(1)}`, [normalizeEmail(email)]);
+  return withGroups(result.rows[0]);
+}
+
+export async function findUserById(userId: string) {
+  const db = getDatabase();
+  await db.migrate();
+  const result = await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks from users where id = ${db.placeholder(1)}`, [userId]);
   return withGroups(result.rows[0]);
 }
 
 async function findUserRowByEmail(email: string) {
   const db = getDatabase();
   await db.migrate();
-  const result = await db.query<UserRow>(`select id, name, email, password_hash from users where email = ${db.placeholder(1)}`, [normalizeEmail(email)]);
+  const result = await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks from users where email = ${db.placeholder(1)}`, [normalizeEmail(email)]);
   return result.rows[0];
 }
 
@@ -74,7 +102,7 @@ export async function validateUser(email: string, password: string): Promise<App
   const user = await findUserRowByEmail(email);
   if (!user?.password_hash) return null;
   const isValid = await bcrypt.compare(password, user.password_hash);
-  return isValid ? { id: user.id, name: user.name, email: user.email, groups: await groupsForUser(user.id) } : null;
+  return isValid ? { id: user.id, name: user.name, email: user.email, groups: await groupsForUser(user.id), onboardingCompletedTasks: parseOnboardingCompletedTasks(user.onboarding_completed_tasks) } : null;
 }
 
 export async function validateDemoUser(): Promise<AppUser | null> {
@@ -99,7 +127,7 @@ export async function registerUser(input: { name: string; email: string; passwor
   if (await findUserByEmail(email)) throw new Error("An account with this email already exists.");
   if (await findUserByName(name)) throw new Error("An account with this name already exists.");
 
-  const user = { id: randomUUID(), name, email, groups: [] };
+  const user: AppUser = { id: randomUUID(), name, email, groups: [], onboardingCompletedTasks: [] };
   const passwordHash = await bcrypt.hash(input.password, 10);
   const db = getDatabase();
   await db.query(
@@ -115,20 +143,20 @@ export async function updateUserEmail(userId: string, input: { email: string; cu
   if (!email.includes("@")) throw new Error("Enter a valid email address.");
   const db = getDatabase();
   await db.migrate();
-  const current = (await db.query<UserRow>(`select id, name, email, password_hash from users where id = ${db.placeholder(1)}`, [userId])).rows[0];
+  const current = (await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks from users where id = ${db.placeholder(1)}`, [userId])).rows[0];
   if (!current) throw new Error("User not found.");
   if (!await bcrypt.compare(input.currentPassword, current.password_hash)) throw new Error("Current password is incorrect.");
   const existing = await findUserByEmail(email);
   if (existing && existing.id !== userId) throw new Error("An account with this email already exists.");
   await db.query(`update users set email = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [email, userId]);
-  return { id: current.id, name: current.name, email, groups: await groupsForUser(userId) };
+  return { id: current.id, name: current.name, email, groups: await groupsForUser(userId), onboardingCompletedTasks: parseOnboardingCompletedTasks(current.onboarding_completed_tasks) };
 }
 
 export async function updateUserPassword(userId: string, input: { currentPassword: string; newPassword: string }): Promise<void> {
   if (input.newPassword.length < 8) throw new Error("Password must be at least 8 characters.");
   const db = getDatabase();
   await db.migrate();
-  const current = (await db.query<UserRow>(`select id, name, email, password_hash from users where id = ${db.placeholder(1)}`, [userId])).rows[0];
+  const current = (await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks from users where id = ${db.placeholder(1)}`, [userId])).rows[0];
   if (!current) throw new Error("User not found.");
   if (!await bcrypt.compare(input.currentPassword, current.password_hash)) throw new Error("Current password is incorrect.");
   const passwordHash = await bcrypt.hash(input.newPassword, 10);
@@ -140,19 +168,19 @@ export async function updateUserName(userId: string, input: { name: string; curr
   assertAllowedName(name);
   const db = getDatabase();
   await db.migrate();
-  const current = (await db.query<UserRow>(`select id, name, email, password_hash from users where id = ${db.placeholder(1)}`, [userId])).rows[0];
+  const current = (await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks from users where id = ${db.placeholder(1)}`, [userId])).rows[0];
   if (!current) throw new Error("User not found.");
   if (!await bcrypt.compare(input.currentPassword, current.password_hash)) throw new Error("Current password is incorrect.");
   const existing = await findUserByName(name);
   if (existing && existing.id !== userId) throw new Error("An account with this name already exists.");
   await db.query(`update users set name = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [name, userId]);
-  return { id: current.id, name, email: current.email, groups: await groupsForUser(userId) };
+  return { id: current.id, name, email: current.email, groups: await groupsForUser(userId), onboardingCompletedTasks: parseOnboardingCompletedTasks(current.onboarding_completed_tasks) };
 }
 
 export async function deleteUserAccount(userId: string, input: { currentPassword: string }): Promise<void> {
   const db = getDatabase();
   await db.migrate();
-  const current = (await db.query<UserRow>(`select id, name, email, password_hash from users where id = ${db.placeholder(1)}`, [userId])).rows[0];
+  const current = (await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks from users where id = ${db.placeholder(1)}`, [userId])).rows[0];
   if (!current) throw new Error("User not found.");
   if (!await bcrypt.compare(input.currentPassword, current.password_hash)) throw new Error("Current password is incorrect.");
   await db.query(`delete from users where id = ${db.placeholder(1)}`, [userId]);
@@ -161,7 +189,7 @@ export async function deleteUserAccount(userId: string, input: { currentPassword
 export async function deleteUserAccountAsAdmin(userId: string, confirmationName: string): Promise<void> {
   const db = getDatabase();
   await db.migrate();
-  const current = (await db.query<UserRow>(`select id, name, email, password_hash from users where id = ${db.placeholder(1)}`, [userId])).rows[0];
+  const current = (await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks from users where id = ${db.placeholder(1)}`, [userId])).rows[0];
   if (!current) throw new Error("User not found.");
   if (confirmationName !== current.name) throw new Error("Type the username to confirm account deletion.");
   await db.query(`delete from users where id = ${db.placeholder(1)}`, [userId]);
@@ -170,9 +198,9 @@ export async function deleteUserAccountAsAdmin(userId: string, confirmationName:
 export async function listUsersForAdmin(): Promise<AdminUserListItem[]> {
   const db = getDatabase();
   await db.migrate();
-  const users = (await db.query<UserRow>("select id, name, email, password_hash from users order by lower(name), lower(email)")).rows;
+  const users = (await db.query<UserRow>("select id, name, email, password_hash, onboarding_completed_tasks from users order by lower(name), lower(email)")).rows;
   const groupRows = (await db.query<GroupRow>("select user_id, name from user_groups order by name")).rows;
-  return users.map((user) => ({ id: user.id, name: user.name, email: user.email, groups: groupRows.filter((group) => group.user_id === user.id).map((group) => group.name) }));
+  return users.map((user) => ({ id: user.id, name: user.name, email: user.email, groups: groupRows.filter((group) => group.user_id === user.id).map((group) => group.name), onboardingCompletedTasks: parseOnboardingCompletedTasks(user.onboarding_completed_tasks) }));
 }
 
 export async function listKnownGroups(): Promise<string[]> {
@@ -185,7 +213,7 @@ export async function listKnownGroups(): Promise<string[]> {
 export async function updateUserGroups(userId: string, groups: string[]): Promise<AppUser> {
   const db = getDatabase();
   await db.migrate();
-  const current = (await db.query<UserRow>(`select id, name, email, password_hash from users where id = ${db.placeholder(1)}`, [userId])).rows[0];
+  const current = (await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks from users where id = ${db.placeholder(1)}`, [userId])).rows[0];
   if (!current) throw new Error("User not found.");
   const normalizedGroups = normalizeGroups(groups);
   normalizedGroups.forEach(assertAllowedGroupName);
@@ -193,5 +221,21 @@ export async function updateUserGroups(userId: string, groups: string[]): Promis
   for (const group of normalizedGroups) {
     await db.query(`insert into user_groups (user_id, name) values (${db.placeholder(1)}, ${db.placeholder(2)})`, [userId, group]);
   }
-  return { id: current.id, name: current.name, email: current.email, groups: normalizedGroups };
+  return { id: current.id, name: current.name, email: current.email, groups: normalizedGroups, onboardingCompletedTasks: parseOnboardingCompletedTasks(current.onboarding_completed_tasks) };
+}
+
+export async function updateUserOnboardingCompletedTasks(userId: string, tasks: unknown): Promise<AppUser> {
+  const db = getDatabase();
+  await db.migrate();
+  const current = (await db.query<UserRow>(`select id, name, email, password_hash, onboarding_completed_tasks from users where id = ${db.placeholder(1)}`, [userId])).rows[0];
+  if (!current) throw new Error("User not found.");
+  const onboardingCompletedTasks = normalizeOnboardingCompletedTasks(tasks);
+  await db.query(`update users set onboarding_completed_tasks = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [serializeOnboardingCompletedTasks(onboardingCompletedTasks), userId]);
+  return {
+    id: current.id,
+    name: current.name,
+    email: current.email,
+    groups: await groupsForUser(userId),
+    onboardingCompletedTasks,
+  };
 }
