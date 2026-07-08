@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type CSSProperties, type Dispatch, type Mo
 import type {
   Boat,
   LineForm,
+  LogLine,
   LogSheet,
   PersistedLogbook,
 } from "../../../models/logbook";
@@ -13,17 +14,40 @@ import { updateLogLineFormForInput } from "../../../domain/log-lines/log-line-ed
 import { LogLinesMapView } from "../OpenSeaMapView";
 import type { TranslationKey } from "../../../lib/i18n";
 
+type CourseColumn = {
+  field: keyof Pick<
+    LineForm,
+    | "compassCourse"
+    | "deviation"
+    | "magneticCourse"
+    | "variation"
+    | "trueCourse"
+    | "windDrift"
+    | "courseThroughWater"
+    | "currentDrift"
+    | "courseOverGround"
+  >;
+  labelKey: TranslationKey;
+  descriptionKey: TranslationKey;
+  min: number;
+  max: number;
+  isOptional: boolean;
+};
+
+const signedCourseInput = { min: -180, max: 180 } as const;
+const unsignedCourseInput = { min: 0, max: 359 } as const;
+
 const courseConversionColumns = [
-  { labelKey: "details.course.compass", descriptionKey: "details.course.compass.description" },
-  { labelKey: "details.course.deviation", descriptionKey: "details.course.deviation.description" },
-  { labelKey: "details.course.magnetic", descriptionKey: "details.course.magnetic.description" },
-  { labelKey: "details.course.variation", descriptionKey: "details.course.variation.description" },
-  { labelKey: "details.course.true", descriptionKey: "details.course.true.description" },
-  { labelKey: "details.course.windDrift", descriptionKey: "details.course.windDrift.description" },
-  { labelKey: "details.course.throughWater", descriptionKey: "details.course.throughWater.description" },
-  { labelKey: "details.course.currentDrift", descriptionKey: "details.course.currentDrift.description" },
-  { labelKey: "details.course.overGround", descriptionKey: "details.course.overGround.description" },
-] as const;
+  { field: "compassCourse", labelKey: "details.course.compass", descriptionKey: "details.course.compass.description", ...unsignedCourseInput, isOptional: false },
+  { field: "deviation", labelKey: "details.course.deviation", descriptionKey: "details.course.deviation.description", ...signedCourseInput, isOptional: true },
+  { field: "magneticCourse", labelKey: "details.course.magnetic", descriptionKey: "details.course.magnetic.description", ...unsignedCourseInput, isOptional: true },
+  { field: "variation", labelKey: "details.course.variation", descriptionKey: "details.course.variation.description", ...signedCourseInput, isOptional: true },
+  { field: "trueCourse", labelKey: "details.course.true", descriptionKey: "details.course.true.description", ...unsignedCourseInput, isOptional: true },
+  { field: "windDrift", labelKey: "details.course.windDrift", descriptionKey: "details.course.windDrift.description", ...signedCourseInput, isOptional: true },
+  { field: "courseThroughWater", labelKey: "details.course.throughWater", descriptionKey: "details.course.throughWater.description", ...unsignedCourseInput, isOptional: true },
+  { field: "currentDrift", labelKey: "details.course.currentDrift", descriptionKey: "details.course.currentDrift.description", ...signedCourseInput, isOptional: true },
+  { field: "courseOverGround", labelKey: "details.course.overGround", descriptionKey: "details.course.overGround.description", ...unsignedCourseInput, isOptional: false },
+] as const satisfies readonly CourseColumn[];
 
 type LogbookDetailsPageProps = Record<string, any>;
 
@@ -148,7 +172,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     setOpenCourseTooltip(descriptionKey);
   };
 
-  const renderCourseHeader = (column: typeof courseConversionColumns[number]) => {
+  const renderCourseHeader = (column: CourseColumn) => {
     const isOpen = openCourseTooltip === column.descriptionKey;
     return (
       <th key={column.labelKey} className="course-tooltip-header">
@@ -218,9 +242,11 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
       <td><div className="compound-inputs">{renderNumberInput("waves", { step: "0.1" })}<select value={lineForm.seaUnit} onChange={(e) => setLineForm({ ...lineForm, seaUnit: e.target.value })}><option value="m">m</option><option value="ft">ft</option></select></div></td>
       <td><div className="compound-inputs">{renderNumberInput("tide", { step: "0.1" })}<select value={lineForm.tideUnit} onChange={(e) => setLineForm({ ...lineForm, tideUnit: e.target.value })}><option value="m">m</option><option value="ft">ft</option></select></div></td>
       <td><select value={lineForm.moon} onChange={(e) => setLineForm({ ...lineForm, moon: e.target.value })}><option value="">—</option>{moonEmojis.map((emoji) => <option key={emoji} value={emoji}>{emoji}</option>)}</select></td>
-      <td>{renderCourseInput("compassCourse", { min: 0, max: 359 })}</td>
-      {showCourseColumns && courseFieldNames.map((field) => <td className="optional-course-cell" key={field}>{renderCourseInput(field, courseSignedFields.has(field) ? { min: -180, max: 180 } : { min: 0, max: 359 })}</td>)}
-      <td>{renderCourseInput("courseOverGround", { min: 0, max: 359 })}</td><td>{renderNumberInput("speedKn", { step: "0.1" })}</td><td>{renderNumberInput("logNm", { step: "0.1" })}</td>
+      {courseConversionColumns.map((column) => (!column.isOptional || showCourseColumns) && (
+        <td className={column.isOptional ? "optional-course-cell" : undefined} key={column.field}>
+          {renderCourseInput(column.field, { min: column.min, max: column.max })}
+        </td>
+      ))}<td>{renderNumberInput("speedKn", { step: "0.1" })}</td><td>{renderNumberInput("logNm", { step: "0.1" })}</td>
       <td><div className="compound-inputs labeled-inputs"><label><span>[nm]</span>{renderNumberInput("sailMiles", { step: "0.1" })}</label><label><span>[note]</span>{renderTextInput("sailNote", t("details.sailNote"))}</label></div></td>
       <td><div className="compound-inputs labeled-inputs"><label><span>[nm]</span>{renderNumberInput("motorMiles", { step: "0.1" })}</label><label><span>[h]</span>{renderNumberInput("motorHours", { step: "0.1" })}</label><label><span>[note]</span>{renderTextInput("motorNote", t("details.motorNote"))}</label></div></td>
       <td>{renderTextInput("remarks")}</td><td colSpan={2}><div className="table-actions"><button type="button" onClick={saveLineFromFields}>{editingLineIndex === null ? t("details.saveLine") : "💾"}</button><button type="button" className="ghost-button" onClick={cancelLineEdit}>{t("common.cancel")}</button></div></td>
@@ -555,18 +581,18 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                         <th colSpan={3}>{t("details.timePos")}</th><th colSpan={8}>{t("details.weatherSea")}</th><th colSpan={showCourseColumns ? 9 : 2}>{t("details.course")}</th><th colSpan={4}>{t("details.travel")}</th><th>{t("details.remarks")}</th><th colSpan={2}>{t("details.actions")}</th>
                       </tr>
                       <tr>
-                        <th>{t("details.time")}</th><th>{t("details.lat")}</th><th>{t("details.lon")}</th><th>{t("details.weather")}</th><th>{t("details.weatherRemark")}</th><th>{t("details.temperature")}</th><th>{t("details.baro")}</th><th>{t("details.wind")}</th><th>{t("details.sea")}</th><th>{t("details.tide")}</th><th>{t("details.moon")}</th>{renderCourseHeader(courseConversionColumns[0])}
-                        {showCourseColumns && courseConversionColumns.slice(1, 8).map(renderCourseHeader)}
-                        {renderCourseHeader(courseConversionColumns[8])}<th>{t("details.speed")}</th><th>{t("details.log")}</th><th>{t("details.sail")}</th><th>{t("details.motor")}</th><th>{t("details.remarksEvent")}</th><th>{t("details.edit")}</th><th>{t("common.delete")}</th>
+                        <th>{t("details.time")}</th><th>{t("details.lat")}</th><th>{t("details.lon")}</th><th>{t("details.weather")}</th><th>{t("details.weatherRemark")}</th><th>{t("details.temperature")}</th><th>{t("details.baro")}</th><th>{t("details.wind")}</th><th>{t("details.sea")}</th><th>{t("details.tide")}</th><th>{t("details.moon")}</th>{courseConversionColumns.map((column) => (!column.isOptional || showCourseColumns) && renderCourseHeader(column))}<th>{t("details.speed")}</th><th>{t("details.log")}</th><th>{t("details.sail")}</th><th>{t("details.motor")}</th><th>{t("details.remarksEvent")}</th><th>{t("details.edit")}</th><th>{t("common.delete")}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {showAddLine && renderLineEditor("new")}
                       {activeSheet.lines.map((line, index) => editingLineIndex === index ? renderLineEditor(`edit-${index}`) : (
                         <tr key={`${line.time}-${line.position}-${index}`}>
-                          <td>{line.time}</td><td>{coordinateToInput(line.latitude, "lat", coordinateFormat)}</td><td>{coordinateToInput(line.longitude, "lon", coordinateFormat)}</td><td>{line.weather}</td><td>{line.weatherRemark}</td><td>{line.temperature}</td><td>{line.barometer}</td><td>{line.windDirection} {line.windStrength} {line.windUnit}</td><td>{line.waves} {line.seaUnit}</td><td>{line.tide} {line.tideUnit}</td><td>{line.moon}</td><td>{line.compassCourse}</td>
-                          {showCourseColumns && [line.deviation, line.magneticCourse, line.variation, line.trueCourse, line.windDrift, line.courseThroughWater, line.currentDrift].map((value, courseIndex) => <td className="optional-course-cell" key={`${line.time}-${index}-${courseIndex}`}>{value}</td>)}
-                          <td>{line.courseOverGround}</td><td>{line.speedKn}</td><td>{line.logNm}</td><td>{line.sailMiles} nm {line.sailNote}</td><td>{line.motorMiles} nm · {line.motorHours} h {line.motorNote}</td><td>{line.remarks}</td>
+                          <td>{line.time}</td><td>{coordinateToInput(line.latitude, "lat", coordinateFormat)}</td><td>{coordinateToInput(line.longitude, "lon", coordinateFormat)}</td><td>{line.weather}</td><td>{line.weatherRemark}</td><td>{line.temperature}</td><td>{line.barometer}</td><td>{line.windDirection} {line.windStrength} {line.windUnit}</td><td>{line.waves} {line.seaUnit}</td><td>{line.tide} {line.tideUnit}</td><td>{line.moon}</td>
+                          {courseConversionColumns.map((column) => (!column.isOptional || showCourseColumns) && (
+                            <td className={column.isOptional ? "optional-course-cell" : undefined} key={`${line.time}-${index}-${column.field}`}>{line[column.field as keyof LogLine]}</td>
+                          ))}
+                          <td>{line.speedKn}</td><td>{line.logNm}</td><td>{line.sailMiles} nm {line.sailNote}</td><td>{line.motorMiles} nm · {line.motorHours} h {line.motorNote}</td><td>{line.remarks}</td>
                           <td><button type="button" className="edit-chip" disabled={isActiveSheetLocked} onClick={() => startEditingLine(line, index)}>✏️</button></td>
                           <td><button type="button" className="edit-chip" disabled={isActiveSheetLocked} onClick={() => deleteLine(index)}>🗑️</button></td>
                         </tr>
@@ -773,5 +799,3 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
 const compassDirections = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
 const weatherEmojis = ["☁️", "⛅", "⛈️", "🌤️", "🌥️", "🌦️", "🌧️", "🌨️", "🌩️", "🌪️", "🌫️", "☀️", "❄️", "⭐"];
 const moonEmojis = ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌘"];
-const courseFieldNames = ["deviation", "magneticCourse", "variation", "trueCourse", "windDrift", "courseThroughWater", "currentDrift"] as const;
-const courseSignedFields = new Set<keyof LineForm>(["deviation", "variation", "windDrift", "currentDrift"]);
