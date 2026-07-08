@@ -5,6 +5,20 @@ const DEFAULT_MODEL = "gpt-4.1-mini";
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 const IMAGE_DETAIL = "high";
 
+export type ScannerProviderErrorCode = "authentication_failed" | "quota_exceeded" | "service_unavailable" | "request_failed";
+
+export class ScannerProviderError extends Error {
+  constructor(
+    message: string,
+    readonly scannerProviderErrorCode: ScannerProviderErrorCode,
+    readonly status?: number,
+    readonly providerCode?: string,
+  ) {
+    super(message);
+    this.name = "ScannerProviderError";
+  }
+}
+
 const LOG_LINE_FIELDS = [
   "time",
   "position",
@@ -188,8 +202,7 @@ export async function extractLogbookDraft(input: ScannerProviderInput): Promise<
   });
 
   if (!response.ok) {
-    const message = await response.text();
-    throw new Error(`OpenAI logbook scanner request failed (${response.status}): ${message}`);
+    throw await createOpenAiScannerProviderError(response);
   }
 
   const payload = (await response.json()) as OpenAIResponsePayload;
@@ -200,6 +213,36 @@ export async function extractLogbookDraft(input: ScannerProviderInput): Promise<
 }
 
 export const openAiScannerProvider = { extractLogbookDraft, isConfigured: isOpenAiScannerProviderConfigured };
+
+async function createOpenAiScannerProviderError(response: Response) {
+  const responseText = await response.text();
+  const providerCode = parseOpenAiErrorCode(responseText);
+  const scannerProviderErrorCode = classifyOpenAiError(response.status, providerCode);
+
+  return new ScannerProviderError(
+    `OpenAI logbook scanner request failed (${response.status}): ${responseText}`,
+    scannerProviderErrorCode,
+    response.status,
+    providerCode,
+  );
+}
+
+function classifyOpenAiError(status: number, providerCode?: string): ScannerProviderErrorCode {
+  if (status === 401 || providerCode === "invalid_api_key") return "authentication_failed";
+  if (providerCode === "insufficient_quota") return "quota_exceeded";
+  if ([500, 502, 503, 504].includes(status)) return "service_unavailable";
+
+  return "request_failed";
+}
+
+function parseOpenAiErrorCode(responseText: string) {
+  try {
+    const payload = JSON.parse(responseText) as { error?: { code?: unknown } };
+    return typeof payload.error?.code === "string" ? payload.error.code : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 function parseScannerResult(payload: OpenAIResponsePayload): ScannerResult {
   const outputText = payload.output_text ?? payload.output?.flatMap((item) => item.content ?? []).find((content) => content.type === "output_text")?.text;

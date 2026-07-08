@@ -16,6 +16,9 @@ type ScannerErrorCode =
   | "too_many_files"
   | "missing_files"
   | "provider_configuration_missing"
+  | "provider_authentication_failed"
+  | "provider_quota_exceeded"
+  | "provider_service_unavailable"
   | "provider_unavailable"
   | "no_readable_logbook_data";
 
@@ -61,7 +64,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Logbook scanner provider failed", error);
-    return scannerError("provider_unavailable", "Scanner provider is temporarily unavailable. Please try again later.", 503);
+    return scannerError(...providerErrorResponse(error));
   }
 
   if (!hasReadableLogbookData(scannerResult)) {
@@ -98,6 +101,21 @@ function validateFiles(files: File[]) {
   }
 
   return undefined;
+}
+
+function providerErrorResponse(error: unknown): [ScannerErrorCode, string, number] {
+  const providerCode = typeof error === "object" && error !== null && "scannerProviderErrorCode" in error ? error.scannerProviderErrorCode : undefined;
+
+  switch (providerCode) {
+    case "authentication_failed":
+      return ["provider_authentication_failed", "Scanner provider authentication failed. Check the configured OpenAI API key.", 502];
+    case "quota_exceeded":
+      return ["provider_quota_exceeded", "Scanner provider quota or credits are exhausted. Check the OpenAI account billing and usage limits.", 402];
+    case "service_unavailable":
+      return ["provider_service_unavailable", "Scanner provider service is unavailable. Please try again later.", 503];
+    default:
+      return ["provider_unavailable", "Scanner provider is temporarily unavailable. Please try again later.", 503];
+  }
 }
 
 function scannerError(code: ScannerErrorCode, error: string, status: number) {

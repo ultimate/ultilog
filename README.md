@@ -68,6 +68,8 @@ The current scanner implementation uses the OpenAI Responses API as its cloud re
 
 Tests must mock the scanner provider and must not call the real cloud LLM. Unit and route tests should replace the provider with deterministic fixtures, and end-to-end tests should intercept `/api/logbook/scanner` rather than uploading photos to the real service.
 
+Scanner provider failures are reported with distinct API error codes where possible: `provider_authentication_failed` for invalid OpenAI API keys, `provider_quota_exceeded` for exhausted credits or quota, `provider_service_unavailable` for OpenAI service outages, and `provider_unavailable` for unclassified provider failures.
+
 ### Upload limits
 
 Scanner uploads must be `multipart/form-data` image uploads. The endpoint accepts at most 5 images per scan request, and each image must be 10 MB or smaller. Non-image files, empty uploads, missing boat selections, and scans for boats outside the signed-in user's logbook are rejected before provider extraction.

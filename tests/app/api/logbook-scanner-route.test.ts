@@ -139,18 +139,43 @@ describe("logbook scanner endpoint", () => {
     expect(mockedWriteLogbook).not.toHaveBeenCalled();
   });
 
-  it("reports provider outages", async () => {
+  it.each([
+    {
+      label: "invalid OpenAI API keys",
+      error: { scannerProviderErrorCode: "authentication_failed" },
+      status: 502,
+      body: { code: "provider_authentication_failed", error: "Scanner provider authentication failed. Check the configured OpenAI API key." },
+    },
+    {
+      label: "exhausted provider credits",
+      error: { scannerProviderErrorCode: "quota_exceeded" },
+      status: 402,
+      body: { code: "provider_quota_exceeded", error: "Scanner provider quota or credits are exhausted. Check the OpenAI account billing and usage limits." },
+    },
+    {
+      label: "OpenAI service outages",
+      error: { scannerProviderErrorCode: "service_unavailable" },
+      status: 503,
+      body: { code: "provider_service_unavailable", error: "Scanner provider service is unavailable. Please try again later." },
+    },
+    {
+      label: "unknown provider errors",
+      error: new Error("offline"),
+      status: 503,
+      body: { code: "provider_unavailable", error: "Scanner provider is temporarily unavailable. Please try again later." },
+    },
+  ])("reports $label", async ({ error, status, body }) => {
     mockedAuth.mockResolvedValueOnce(session);
     mockedReadLogbook.mockResolvedValueOnce(logbook);
-    mockedScanner.mockRejectedValueOnce(new Error("offline"));
+    mockedScanner.mockRejectedValueOnce(error);
     const formData = new FormData();
     formData.set("boatId", "boat-1");
     formData.append("files", imageFile());
 
     const response = await POST(scannerRequest(formData));
 
-    expect(response.status).toBe(503);
-    await expect(response.json()).resolves.toEqual({ code: "provider_unavailable", error: "Scanner provider is temporarily unavailable. Please try again later." });
+    expect(response.status).toBe(status);
+    await expect(response.json()).resolves.toEqual(body);
     expect(mockedWriteLogbook).not.toHaveBeenCalled();
   });
 
