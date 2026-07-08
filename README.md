@@ -54,7 +54,7 @@ Create `.env.local` from `.env.example` for development. The app uses these envi
 | --- | --- | --- |
 | `POSTGRES_URL` or `DATABASE_URL` | Required for hosted/PostgreSQL deployments; leave empty for local SQLite development. | Connects the persistence layer to PostgreSQL. If neither is set, local development uses the SQLite-compatible sql.js database. |
 | `LOCAL_DATABASE_PATH` | Optional. | Overrides the local sql.js database path. Defaults to `.data/ultilog.sqlite`. |
-| `OPENAI_API_KEY` | Required when the scanner feature calls the OpenAI cloud provider. | Authenticates logbook photo extraction requests. The scanner endpoint returns a provider-unavailable error if scans are attempted without it. |
+| `OPENAI_API_KEY` | Required when the scanner feature calls the OpenAI cloud provider. | Authenticates logbook photo extraction requests. The scanner endpoint returns a provider-configuration error if scans are attempted without it. |
 | `LOGBOOK_SCANNER_MODEL` | Optional. | Selects the OpenAI model used by the scanner provider. Defaults to `gpt-4.1-mini`. |
 | `AUTH_SECRET` / platform-provided NextAuth secret | Required for secure production authentication. | Used by NextAuth to sign/encrypt authentication state. Development may rely on framework defaults, but production should set a stable secret. |
 
@@ -67,6 +67,8 @@ The scanner imports photographed or handwritten paper logbook sheets and turns e
 The current scanner implementation uses the OpenAI Responses API as its cloud recognition provider. Configure it with `OPENAI_API_KEY`; optionally set `LOGBOOK_SCANNER_MODEL` to choose a different compatible model. If you add another provider, keep it behind the scanner provider interface and make the API route choose the provider explicitly rather than spreading provider-specific code through the app.
 
 Tests must mock the scanner provider and must not call the real cloud LLM. Unit and route tests should replace the provider with deterministic fixtures, and end-to-end tests should intercept `/api/logbook/scanner` rather than uploading photos to the real service.
+
+Scanner provider failures are reported with distinct API error codes where possible: `provider_authentication_failed` for invalid OpenAI API keys, `provider_quota_exceeded` for exhausted credits or quota, `provider_service_unavailable` for OpenAI service outages, and `provider_unavailable` for unclassified provider failures.
 
 ### Upload limits
 
