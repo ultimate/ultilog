@@ -1,6 +1,6 @@
 import type { CrewMember, CrewMemberRow, SheetCrewMember } from "../../models/logbook";
 import type { QueryableDatabase } from "../db/logbook-database";
-import { decryptCrewField, encryptCrewField } from "../crypto/crew-encryption";
+import { decryptCrewField, encryptCrewField, isEncryptedCrewFieldValue } from "../crypto/crew-encryption";
 import { scopedId } from "./boats-repository";
 
 export class CrewRepository {
@@ -49,7 +49,7 @@ export class CrewRepository {
     const crewMemberId = scopedId(ownerId, crew.id);
     await this.db.query(
       `insert into crew_members (id, name, nationality, role, address, certificate, is_primary, owner_id) values (${this.values(8)}) on conflict(id) do update set name = excluded.name, nationality = excluded.nationality, role = excluded.role, address = excluded.address, certificate = excluded.certificate, is_primary = excluded.is_primary`,
-      [crewMemberId, encryptCrewField(ownerId, crewMemberId, "name", crew.name), encryptCrewField(ownerId, crewMemberId, "nationality", crew.nationality), encryptCrewField(ownerId, crewMemberId, "role", crew.role), encryptCrewField(ownerId, crewMemberId, "address", crew.address ?? ""), encryptCrewField(ownerId, crewMemberId, "certificate", crew.certificate ?? ""), crew.isPrimary ? 1 : 0, ownerId],
+      [crewMemberId, encryptCrewField(ownerId, crewMemberId, "name", this.plainCrewField(ownerId, crewMemberId, "name", crew.name)), encryptCrewField(ownerId, crewMemberId, "nationality", this.plainCrewField(ownerId, crewMemberId, "nationality", crew.nationality)), encryptCrewField(ownerId, crewMemberId, "role", this.plainCrewField(ownerId, crewMemberId, "role", crew.role)), encryptCrewField(ownerId, crewMemberId, "address", this.plainCrewField(ownerId, crewMemberId, "address", crew.address ?? "")), encryptCrewField(ownerId, crewMemberId, "certificate", this.plainCrewField(ownerId, crewMemberId, "certificate", crew.certificate ?? "")), crew.isPrimary ? 1 : 0, ownerId],
     );
   }
 
@@ -71,6 +71,10 @@ export class CrewRepository {
       address: decryptCrewField(ownerId, row.crew_member_id, "address", row.address ?? ""),
       certificate: decryptCrewField(ownerId, row.crew_member_id, "certificate", row.certificate ?? ""),
     };
+  }
+
+  private plainCrewField(ownerId: string, crewMemberId: string, fieldName: string, value: string) {
+    return isEncryptedCrewFieldValue(value) ? decryptCrewField(ownerId, crewMemberId, fieldName, value) : value;
   }
 
   private values(count: number) {
