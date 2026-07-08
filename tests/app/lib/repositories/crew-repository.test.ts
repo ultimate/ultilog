@@ -3,7 +3,7 @@ import { sampleLogSheets } from "../../../../resources/sample-data/logbook";
 import type { CrewMemberRow } from "../../../../app/models/logbook";
 import type { QueryableDatabase, QueryResult } from "../../../../app/lib/db/logbook-database";
 import { CrewRepository } from "../../../../app/lib/repositories/crew-repository";
-import { encryptCrewField } from "../../../../app/lib/crypto/crew-encryption";
+import { decryptCrewField, encryptCrewField } from "../../../../app/lib/crypto/crew-encryption";
 
 type QueryCall = { sql: string; values?: unknown[] };
 
@@ -61,6 +61,42 @@ describe("CrewRepository", () => {
     expect(db.calls[0].sql).toContain("join crew_members");
     expect(db.calls[0].sql).toContain("where log_sheets.owner_id = $1");
     expect(db.calls[0].values).toEqual(["legacy-user"]);
+  });
+
+  it("unwraps double-encrypted crew rows before returning logbook data", async () => {
+    const crewMemberId = "legacy-user:luca-frei-swiss";
+    const encryptedName = encryptCrewField("legacy-user", crewMemberId, "name", crew.name);
+    const row: CrewMemberRow = {
+      sheet_id: sheet.id,
+      crew_member_id: crewMemberId,
+      sort_order: 0,
+      ...crew,
+      name: encryptCrewField("legacy-user", crewMemberId, "name", encryptedName),
+      nationality: encryptCrewField("legacy-user", crewMemberId, "nationality", crew.nationality),
+      role: encryptCrewField("legacy-user", crewMemberId, "role", crew.role),
+      address: encryptCrewField("legacy-user", crewMemberId, "address", crew.address ?? ""),
+      certificate: encryptCrewField("legacy-user", crewMemberId, "certificate", crew.certificate ?? ""),
+      embarkation_datetime: crew.embarkationDateTime,
+      embarkation_position: crew.embarkationPosition,
+      disembarkation_datetime: crew.disembarkationDateTime,
+      disembarkation_position: crew.disembarkationPosition,
+    };
+    const db = new MockDatabase({ crew_members: [row] });
+
+    await expect(new CrewRepository(db).findAll()).resolves.toMatchObject([{ name: crew.name }]);
+  });
+
+  it("stores plaintext when a submitted crew field already contains an encrypted value", async () => {
+    const crewMemberId = "legacy-user:luca-frei-swiss";
+    const encryptedName = encryptCrewField("legacy-user", crewMemberId, "name", crew.name);
+    const db = new MockDatabase();
+
+    await new CrewRepository(db).insert(sheet.id, 0, { ...crew, name: encryptedName });
+
+    const storedName = db.calls[0].values?.[1] as string;
+    expect(storedName).toEqual(expect.stringMatching(/^\{"v":1,"alg":"AES-256-GCM","kid":"crew-pii-v1",/));
+    expect(storedName).not.toBe(encryptedName);
+    expect(decryptCrewField("legacy-user", crewMemberId, "name", storedName)).toBe(crew.name);
   });
 
   it("deletes all crew rows", async () => {

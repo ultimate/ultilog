@@ -46,7 +46,12 @@ export function encryptCrewField(ownerId: string, crewMemberId: string, fieldNam
 }
 
 export function decryptCrewField(ownerId: string, crewMemberId: string, fieldName: string, value: string): string {
-  if (value.startsWith(LEGACY_ENCRYPTED_PREFIX)) return decryptLegacyCrewField(ownerId, value);
+  return decryptCrewFieldValue(ownerId, crewMemberId, fieldName, value, 0);
+}
+
+function decryptCrewFieldValue(ownerId: string, crewMemberId: string, fieldName: string, value: string, depth: number): string {
+  if (depth > 3) throw new Error("Crew field appears to be encrypted too many times.");
+  if (value.startsWith(LEGACY_ENCRYPTED_PREFIX)) return decryptCrewFieldValue(ownerId, crewMemberId, fieldName, decryptLegacyCrewField(ownerId, value), depth + 1);
   if (!looksLikeJsonEnvelope(value)) return decryptWithEnvelope(value);
 
   const key = deriveCrewKey(ownerId);
@@ -56,7 +61,12 @@ export function decryptCrewField(ownerId: string, crewMemberId: string, fieldNam
   decipher.setAAD(aad);
   decipher.setAuthTag(decodeRequiredBase64(envelope.tag, "tag", GCM_TAG_BYTES));
 
-  return Buffer.concat([decipher.update(decodeRequiredBase64(envelope.ct, "ct")), decipher.final()]).toString("utf8");
+  const plaintext = Buffer.concat([decipher.update(decodeRequiredBase64(envelope.ct, "ct")), decipher.final()]).toString("utf8");
+  return isEncryptedCrewFieldValue(plaintext) ? decryptCrewFieldValue(ownerId, crewMemberId, fieldName, plaintext, depth + 1) : plaintext;
+}
+
+export function isEncryptedCrewFieldValue(value: string): boolean {
+  return value.startsWith(LEGACY_ENCRYPTED_PREFIX) || isCrewEncryptionEnvelope(value);
 }
 
 export function isCrewEncryptionEnvelope(value: string): boolean {
