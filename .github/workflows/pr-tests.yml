@@ -10,6 +10,9 @@ jobs:
   test:
     name: Typecheck, test, build, and e2e
     runs-on: ubuntu-latest
+    environment: Preview
+    env:
+      CREW_ENCRYPTION_MASTER_KEY: ${{ secrets.CREW_ENCRYPTION_MASTER_KEY }}
 
     steps:
       - name: Check out repository
