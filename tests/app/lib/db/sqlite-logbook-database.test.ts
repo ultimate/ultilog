@@ -18,6 +18,22 @@ describe("SqliteLogbookDatabase", () => {
     await expect(db.readLogbook()).resolves.toMatchObject({ boats: sampleBoats, sheets: sampleLogSheets });
   });
 
+  it("does not replace an intentionally empty user logbook that already has a crew profile", async () => {
+    const databasePath = await tempDatabasePath();
+    const db = new SqliteLogbookDatabase(databasePath).forUser("new-user");
+    await db.migrate();
+    await db.query("insert into users (id, name, email, password_hash) values (?, ?, ?, ?)", ["new-user", "New User", "new@example.test", ""]);
+    const emptyUserLogbook = {
+      boats: [],
+      crewMembers: [{ id: "me", name: "New User", nationality: "", role: "", address: "", certificate: "", isPrimary: true }],
+      sheets: [],
+    };
+
+    await db.writeLogbook(emptyUserLogbook);
+
+    await expect(new SqliteLogbookDatabase(databasePath).forUser("new-user").readLogbook()).resolves.toEqual(emptyUserLogbook);
+  });
+
   it("persists replaced logbook data and can read it from a new database wrapper", async () => {
     const databasePath = await tempDatabasePath();
     const firstWrapper = new SqliteLogbookDatabase(databasePath);

@@ -1,5 +1,5 @@
 import { useI18n } from "../../../lib/i18n";
-import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type Dispatch, type MouseEvent, type SetStateAction } from "react";
 import type {
   Boat,
   LineForm,
@@ -11,15 +11,18 @@ import { boatToForm, sheetToForm } from "../forms";
 import { dateTimeLocalFromParts, splitDateTimeLocal } from "../date-utils";
 import { updateLogLineFormForInput } from "../../../domain/log-lines/log-line-editor";
 import { LogLinesMapView } from "../OpenSeaMapView";
+import type { TranslationKey } from "../../../lib/i18n";
 
-const courseConversionColumnKeys = [
-  "details.course.deviation",
-  "details.course.magnetic",
-  "details.course.variation",
-  "details.course.true",
-  "details.course.windDrift",
-  "details.course.throughWater",
-  "details.course.currentDrift",
+const courseConversionColumns = [
+  { labelKey: "details.course.compass", descriptionKey: "details.course.compass.description" },
+  { labelKey: "details.course.deviation", descriptionKey: "details.course.deviation.description" },
+  { labelKey: "details.course.magnetic", descriptionKey: "details.course.magnetic.description" },
+  { labelKey: "details.course.variation", descriptionKey: "details.course.variation.description" },
+  { labelKey: "details.course.true", descriptionKey: "details.course.true.description" },
+  { labelKey: "details.course.windDrift", descriptionKey: "details.course.windDrift.description" },
+  { labelKey: "details.course.throughWater", descriptionKey: "details.course.throughWater.description" },
+  { labelKey: "details.course.currentDrift", descriptionKey: "details.course.currentDrift.description" },
+  { labelKey: "details.course.overGround", descriptionKey: "details.course.overGround.description" },
 ] as const;
 
 type LogbookDetailsPageProps = Record<string, any>;
@@ -69,6 +72,8 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   >;
   const [coordinateFormat, setCoordinateFormat] = useState<CoordinateFormat>("decimal");
   const [isMapExpanded, setIsMapExpanded] = useState(false);
+  const [openCourseTooltip, setOpenCourseTooltip] = useState<TranslationKey | null>(null);
+  const [courseTooltipPosition, setCourseTooltipPosition] = useState({ left: 0, top: 0 });
   const scannerWarnings = activeSheet.scannerWarnings ?? [];
   const showScannerDraftNotice =
     activeSheet.source === "scanner" && activeSheet.status === "Draft";
@@ -84,6 +89,19 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
       document.body.style.overflow = previousOverflow;
     };
   }, [isMapExpanded]);
+
+  useEffect(() => {
+    if (!openCourseTooltip) return;
+
+    const closeTooltip = () => setOpenCourseTooltip(null);
+    window.addEventListener("resize", closeTooltip);
+    window.addEventListener("scroll", closeTooltip, true);
+
+    return () => {
+      window.removeEventListener("resize", closeTooltip);
+      window.removeEventListener("scroll", closeTooltip, true);
+    };
+  }, [openCourseTooltip]);
 
   const renderNumberInput = (field: keyof LineForm, options?: { min?: number; max?: number; step?: string }) => (
     <input type="number" min={options?.min} max={options?.max} step={options?.step ?? "1"} value={lineForm[field]} onChange={(e) => setLineForm({ ...lineForm, [field]: e.target.value })} />
@@ -115,6 +133,54 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
       onChange={(e) => updateLineFormField(field, e.target.value)}
     />
   );
+
+  const toggleCourseTooltip = (descriptionKey: TranslationKey, event: MouseEvent<HTMLButtonElement>) => {
+    if (openCourseTooltip === descriptionKey) {
+      setOpenCourseTooltip(null);
+      return;
+    }
+
+    const { bottom, left, width } = event.currentTarget.getBoundingClientRect();
+    setCourseTooltipPosition({
+      left: left + width / 2,
+      top: bottom + 8,
+    });
+    setOpenCourseTooltip(descriptionKey);
+  };
+
+  const renderCourseHeader = (column: typeof courseConversionColumns[number]) => {
+    const isOpen = openCourseTooltip === column.descriptionKey;
+    return (
+      <th key={column.labelKey} className="course-tooltip-header">
+        <span className="course-tooltip">
+          <button
+            type="button"
+            className="course-tooltip-trigger"
+            aria-label={t(column.descriptionKey)}
+            aria-describedby={isOpen ? `${column.descriptionKey}-tooltip` : undefined}
+            aria-expanded={isOpen}
+            onClick={(event) => toggleCourseTooltip(column.descriptionKey, event)}
+          >
+            {t(column.labelKey)}
+            <span aria-hidden="true" className="course-tooltip-icon">?</span>
+          </button>
+          {isOpen && (
+            <span
+              id={`${column.descriptionKey}-tooltip`}
+              role="tooltip"
+              className="course-tooltip-bubble"
+              style={{
+                "--course-tooltip-left": `${courseTooltipPosition.left}px`,
+                "--course-tooltip-top": `${courseTooltipPosition.top}px`,
+              } as CSSProperties}
+            >
+              {t(column.descriptionKey)}
+            </span>
+          )}
+        </span>
+      </th>
+    );
+  };
 
 
   const updateCoordinateField = (field: "latitude" | "longitude", value: string) => {
@@ -489,9 +555,9 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                         <th colSpan={3}>{t("details.timePos")}</th><th colSpan={8}>{t("details.weatherSea")}</th><th colSpan={showCourseColumns ? 9 : 2}>{t("details.course")}</th><th colSpan={4}>{t("details.travel")}</th><th>{t("details.remarks")}</th><th colSpan={2}>{t("details.actions")}</th>
                       </tr>
                       <tr>
-                        <th>{t("details.time")}</th><th>{t("details.lat")}</th><th>{t("details.lon")}</th><th>{t("details.weather")}</th><th>{t("details.weatherRemark")}</th><th>{t("details.temperature")}</th><th>{t("details.baro")}</th><th>{t("details.wind")}</th><th>{t("details.sea")}</th><th>{t("details.tide")}</th><th>{t("details.moon")}</th><th>{t("details.course.compass")}</th>
-                        {showCourseColumns && courseConversionColumnKeys.map((key) => <th key={key}>{t(key)}</th>)}
-                        <th>{t("details.course.overGround")}</th><th>{t("details.speed")}</th><th>{t("details.log")}</th><th>{t("details.sail")}</th><th>{t("details.motor")}</th><th>{t("details.remarksEvent")}</th><th>{t("details.edit")}</th><th>{t("common.delete")}</th>
+                        <th>{t("details.time")}</th><th>{t("details.lat")}</th><th>{t("details.lon")}</th><th>{t("details.weather")}</th><th>{t("details.weatherRemark")}</th><th>{t("details.temperature")}</th><th>{t("details.baro")}</th><th>{t("details.wind")}</th><th>{t("details.sea")}</th><th>{t("details.tide")}</th><th>{t("details.moon")}</th>{renderCourseHeader(courseConversionColumns[0])}
+                        {showCourseColumns && courseConversionColumns.slice(1, 8).map(renderCourseHeader)}
+                        {renderCourseHeader(courseConversionColumns[8])}<th>{t("details.speed")}</th><th>{t("details.log")}</th><th>{t("details.sail")}</th><th>{t("details.motor")}</th><th>{t("details.remarksEvent")}</th><th>{t("details.edit")}</th><th>{t("common.delete")}</th>
                       </tr>
                     </thead>
                     <tbody>

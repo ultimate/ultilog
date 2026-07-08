@@ -18,6 +18,11 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   await page.getByLabel("Password", { exact: true }).fill(password);
   await clickButton(page, "Log in");
   await expectLoggedIn(page);
+  await expect(page.getByRole("heading", { name: "Onboarding checklist" })).toBeVisible();
+  await expect(page.getByText("Read the compliance information for your country")).toBeVisible();
+  await expect(page.getByText("Create your first boat")).toBeVisible();
+  await openModule(page, "Logbook list", "+ New sheet");
+  await expect(page.getByRole("button", { name: "Ionian training passage · Day 3", exact: true })).toHaveCount(0);
 
   await openModule(page, "Crew manager", "New crew");
   await clickButton(page, "New crew");
@@ -25,7 +30,9 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   await crewForm.getByLabel("Name").fill(crewName);
   await crewForm.getByLabel("Nationality").fill("Swiss");
   await crewForm.getByLabel("Role").fill("Navigator");
+  const crewSave = waitForLogbookSave(page);
   await clickButton(page, "Save crew");
+  await crewSave;
   await expect(page.getByText(crewName)).toBeVisible();
 
   await openModule(page, "Boat manager", "New boat");
@@ -78,8 +85,6 @@ async function assertCreatedItemsVisible(page: Page, items: { crewName: string; 
   await openModule(page, "Boat manager", "New boat");
   await expect(page.getByText(items.boatName)).toBeVisible();
 
-  await openModule(page, "Logbook list", "+ New sheet");
-  await page.getByRole("button", { name: "Ionian training passage · Day 3", exact: true }).click();
   await openModule(page, "Crew manager", "New crew");
   await expect(page.getByText(items.crewName)).toBeVisible();
 }
@@ -89,6 +94,10 @@ async function openModule(page: Page, moduleName: string, expectedActionName: st
     await page.getByRole("button", { name: moduleName }).click();
     await expect(page.getByRole("button", { name: expectedActionName })).toBeVisible({ timeout: 2_000 });
   }).toPass({ timeout: 15_000 });
+}
+
+function waitForLogbookSave(page: Page) {
+  return page.waitForResponse((response) => response.url().endsWith("/api/logbook") && response.request().method() === "PUT" && response.ok());
 }
 
 async function clickButton(page: Page, name: string | RegExp) {

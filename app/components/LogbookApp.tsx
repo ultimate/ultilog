@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { signOut } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -56,6 +56,9 @@ import { BoatManagerPage } from "./logbook/pages/BoatManagerPage";
 import { DashboardPage } from "./logbook/pages/DashboardPage";
 import { CrewManagerPage } from "./logbook/pages/CrewManagerPage";
 import { ProfilePage } from "./logbook/pages/ProfilePage";
+import { OnboardingChecklist } from "./onboarding/OnboardingChecklist";
+import { useOnboardingProfile } from "./onboarding/useOnboardingProfile";
+import type { OnboardingTaskId } from "../lib/onboarding/tasks";
 
 type AdminUser = { id: string; name: string; email: string; groups: string[] };
 type SocialUser = {
@@ -209,11 +212,7 @@ export function LogbookApp({
   const [selectedCrewIndex, setSelectedCrewIndex] = useState(-2);
   const [lastCrewIndex, setLastCrewIndex] = useState(0);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [theme, setTheme] = useState<"light" | "dark">("light");
-  const [isNavSlim, setIsNavSlim] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [accountName, setAccountName] = useState(userName ?? "");
-  const [accountEmail, setAccountEmail] = useState(userEmail ?? "");
   const [nameForm, setNameForm] = useState({
     name: userName ?? "",
     currentPassword: "",
@@ -255,6 +254,28 @@ export function LogbookApp({
   useEffect(() => {
     logbookRef.current = logbook;
   }, [logbook]);
+
+  const {
+    accountEmail,
+    accountName,
+    isNavSlim,
+    isOnboardingComplete,
+    isSavingOnboarding,
+    onboardingCompletedTasks,
+    onboardingCompletion,
+    setAccountEmail,
+    setAccountName,
+    theme,
+    updateOnboardingCompletedTasks,
+    updateViewPreferences,
+  } = useOnboardingProfile({
+    activeModule,
+    initialEmail: userEmail,
+    initialName: userName,
+    logbook,
+    onProfileError: setProfileError,
+    t,
+  });
 
   async function logout() {
     setSaveError(null);
@@ -439,14 +460,34 @@ export function LogbookApp({
     }
   }, [routePath, logbook, activeSheetId, selectedCrewIndex, showBoatManager]);
 
+  const loadAdminUsers = useCallback(async () => {
+    await Promise.resolve();
+    setAdminError(null);
+    const response = await fetch("/api/admin/users");
+    const payload = (await response.json().catch(() => ({}))) as {
+      users?: AdminUser[];
+      groups?: string[];
+      error?: string;
+    };
+    if (!response.ok) {
+      setAdminError(payload.error ?? t("admin.unableLoadUsers"));
+      return;
+    }
+    setAdminUsers(payload.users ?? []);
+    setKnownGroups(payload.groups ?? []);
+  }, [t]);
+
   useEffect(() => {
     if (
-      activeModule === "admin" &&
-      userGroups.includes("admin") &&
-      adminUsers.length === 0
-    )
+      activeModule !== "admin" ||
+      !userGroups.includes("admin") ||
+      adminUsers.length > 0
+    ) return;
+    const timeout = window.setTimeout(() => {
       loadAdminUsers().catch(() => undefined);
-  }, [activeModule, userGroups, adminUsers.length]);
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, [activeModule, adminUsers.length, loadAdminUsers, userGroups]);
 
   useEffect(() => {
     if (!isBackendReady) return;
@@ -561,13 +602,16 @@ export function LogbookApp({
 
   const activeSheet =
     logbook.sheets.find((sheet) => sheet.id === activeSheetId) ??
-    logbook.sheets[0];
+    logbook.sheets[0] ??
+    seedSheets[0];
   const activeBoat =
     logbook.boats.find((boat) => boat.id === activeSheet.boatId) ??
-    logbook.boats[0];
+    logbook.boats[0] ??
+    seedBoats[0];
   const selectedBoat =
     logbook.boats.find((boat) => boat.id === selectedBoatId) ??
-    logbook.boats[0];
+    logbook.boats[0] ??
+    seedBoats[0];
   const selectedCrew =
     logbook.crewMembers[selectedCrewIndex] ?? logbook.crewMembers[0];
   const effectiveScannerBoatId =
@@ -1179,6 +1223,17 @@ export function LogbookApp({
     setCrewForm(crewToForm(logbook.crewMembers[nextIndex] ?? defaultCrewForm));
   }
 
+  function openOnboardingTask(taskId: OnboardingTaskId) {
+    if (taskId === "read_compliance") navigate("compliance");
+    else if (taskId === "complete_primary_crew") {
+      const meIndex = Math.max(logbookRef.current.crewMembers.findIndex((crew) => crew.isPrimary), 0);
+      selectCrew(meIndex);
+      navigate("crew", meIndex);
+    } else if (taskId === "personalize_view") navigate("profile");
+    else if (taskId === "create_first_boat") navigate("boats");
+    else if (taskId === "create_first_logsheet") navigate("logbooks");
+  }
+
   async function updateName(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setProfileError(null);
@@ -1256,22 +1311,6 @@ export function LogbookApp({
       confirmPassword: "",
     });
     setProfileMessage(t("profile.passwordUpdated"));
-  }
-
-  async function loadAdminUsers() {
-    setAdminError(null);
-    const response = await fetch("/api/admin/users");
-    const payload = (await response.json().catch(() => ({}))) as {
-      users?: AdminUser[];
-      groups?: string[];
-      error?: string;
-    };
-    if (!response.ok) {
-      setAdminError(payload.error ?? t("admin.unableLoadUsers"));
-      return;
-    }
-    setAdminUsers(payload.users ?? []);
-    setKnownGroups(payload.groups ?? []);
   }
 
   function addAdminUserGroup(userId: string) {
@@ -1419,21 +1458,33 @@ export function LogbookApp({
         onSelectModule={(module) => navigate(module)}
         onOpenProfile={() => navigate("profile")}
         theme={theme}
-        onToggleTheme={() =>
-          setTheme((current) => (current === "dark" ? "light" : "dark"))
-        }
+        onToggleTheme={() => updateViewPreferences({ theme: theme === "dark" ? "light" : "dark" })}
         userEmail={accountEmail || userEmail}
         userName={accountName || userName}
         userGroups={userGroups}
         isNavSlim={isNavSlim}
-        onToggleNavSlim={() => setIsNavSlim((current) => !current)}
+        onToggleNavSlim={() => updateViewPreferences({ isNavSlim: !isNavSlim })}
         onLogout={logout}
         isLoggingOut={isLoggingOut}
       />
       <section className="app-content">
         {saveError && <p className="save-error">{saveError}</p>}
 
-        {activeModule === "dashboard" && <DashboardPage stats={stats} />}
+        {activeModule === "dashboard" && (
+          <DashboardPage
+            stats={stats}
+            onboardingChecklist={!isOnboardingComplete ? (
+              <OnboardingChecklist
+                completion={onboardingCompletion}
+                manualCompletedTasks={onboardingCompletedTasks}
+                onManualCompletedTasksChange={updateOnboardingCompletedTasks}
+                onOpenTask={openOnboardingTask}
+                isSaving={isSavingOnboarding}
+                compact
+              />
+            ) : null}
+          />
+        )}
 
         <section className="workspace module-workspace">
           {activeModule === "logbooks" && (
@@ -1562,6 +1613,15 @@ export function LogbookApp({
               selectCrew={selectCrew}
               navigate={navigate}
               theme={theme}
+              onboardingChecklist={
+                <OnboardingChecklist
+                  completion={onboardingCompletion}
+                  manualCompletedTasks={onboardingCompletedTasks}
+                  onManualCompletedTasksChange={updateOnboardingCompletedTasks}
+                  onOpenTask={openOnboardingTask}
+                  isSaving={isSavingOnboarding}
+                />
+              }
               logbook={logbook}
               activeBoat={activeBoat}
               nameForm={nameForm}

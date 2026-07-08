@@ -1,5 +1,5 @@
 import { useI18n } from "../../../lib/i18n";
-import type { Dispatch, SetStateAction } from "react";
+import type { Dispatch, ReactNode, SetStateAction } from "react";
 import type { Boat, PersistedLogbook } from "../../../models/logbook";
 import { PasswordField } from "../../PasswordField";
 
@@ -25,6 +25,7 @@ export function ProfilePage(props: ProfilePageProps) {
   const userGroups = props.userGroups as string[];
   const logbook = props.logbook as PersistedLogbook;
   const activeBoat = props.activeBoat as Boat;
+  const onboardingChecklist = props.onboardingChecklist as ReactNode;
   const nameForm = props.nameForm as { name: string; currentPassword: string };
   const emailForm = props.emailForm as {
     email: string;
@@ -98,6 +99,7 @@ export function ProfilePage(props: ProfilePageProps) {
             </button>
           </div>
         </article>
+        {onboardingChecklist}
         {(profileMessage || profileError) && (
           <article className="info-card">
             <h3>{t("profile.accountStatus")}</h3>

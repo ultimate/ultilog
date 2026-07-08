@@ -4,6 +4,7 @@ import { BoatsRepository } from "../repositories/boats-repository";
 import { CrewRepository } from "../repositories/crew-repository";
 import { LogLinesRepository } from "../repositories/log-lines-repository";
 import { LogSheetsRepository } from "../repositories/log-sheets-repository";
+import { backfillCrewMemberEncryption } from "./encryption-backfill";
 
 export type QueryResult<Row> = { rows: Row[] };
 
@@ -26,25 +27,30 @@ export abstract class LogbookDatabase implements QueryableDatabase {
   protected abstract ensureSchema(): Promise<void>;
 
   async migrate() {
-    await this.ensureSchema();
+    await this.ensureSchemaAndBackfill();
   }
 
   forUser(userId: string) {
     this.ownerId = userId;
     return this;
   }
+  protected async ensureSchemaAndBackfill() {
+    await this.ensureSchema();
+    await backfillCrewMemberEncryption(this);
+  }
+
   protected abstract insertLogbook(logbook: PersistedLogbook): Promise<void>;
 
   async readLogbook(): Promise<PersistedLogbook> {
-    await this.ensureSchema();
+    await this.ensureSchemaAndBackfill();
     const logbook = await this.readTables();
-    if (logbook.boats.length || logbook.sheets.length) return logbook;
+    if (logbook.boats.length || logbook.sheets.length || (this.ownerId !== "legacy-user" && logbook.crewMembers.length)) return logbook;
     await this.writeLogbook(defaultLogbook);
     return defaultLogbook;
   }
 
   async writeLogbook(logbook: PersistedLogbook) {
-    await this.ensureSchema();
+    await this.ensureSchemaAndBackfill();
     await this.replaceTables(logbook);
     return logbook;
   }
