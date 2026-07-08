@@ -55,6 +55,16 @@ h1 { margin:0 0 .45rem; font-size:1.8rem; line-height:1.1; letter-spacing:-.04em
 .scanner-boat-selector select { min-height:2.5rem; border-radius:10px; padding:.55rem .8rem; }
 .logbook-scanner-empty { display:flex; flex-wrap:wrap; gap:.75rem; justify-content:flex-end; align-items:center; margin:-.5rem 0 1rem; color:var(--subtle); }
 .logbook-scanner-empty p { margin:0; font-weight:800; }
+.scanner-upload-status { display:grid; grid-template-columns:auto minmax(0,1fr); gap:.25rem .8rem; align-items:center; margin:-.25rem 0 1rem; border:1px solid color-mix(in srgb, var(--blue) 28%, var(--line)); border-radius:16px; padding:.85rem 1rem; background:linear-gradient(135deg, rgba(37,99,235,.1), rgba(37,99,235,.04)); color:var(--text); box-shadow:var(--design-shadow); }
+.scanner-upload-spinner { grid-row:1/3; width:2rem; height:2rem; border-radius:50%; border:3px solid color-mix(in srgb, var(--blue) 22%, transparent); border-top-color:var(--blue); animation:scanner-spin .8s linear infinite; }
+.scanner-upload-copy { display:grid; gap:.15rem; min-width:0; }
+.scanner-upload-copy strong { font-size:.95rem; }
+.scanner-upload-copy p { margin:0; color:var(--subtle); font-size:.85rem; font-weight:700; }
+.scanner-upload-progress { grid-column:2; height:.45rem; overflow:hidden; border-radius:999px; background:color-mix(in srgb, var(--blue) 14%, var(--line)); }
+.scanner-upload-progress span { display:block; width:45%; height:100%; border-radius:inherit; background:linear-gradient(90deg, var(--blue), #5eb5ff); animation:scanner-progress 1.25s ease-in-out infinite; }
+@keyframes scanner-spin { to { transform:rotate(360deg); } }
+@keyframes scanner-progress { 0% { transform:translateX(-110%); } 100% { transform:translateX(240%); } }
+@media (prefers-reduced-motion: reduce) { .scanner-upload-spinner,.scanner-upload-progress span { animation:none; } .scanner-upload-progress span { width:100%; } }
 .logbook-toolbar { display:grid; grid-template-columns:minmax(220px,1fr) 160px 140px; gap:.75rem; margin-bottom:1rem; }
 .logbook-toolbar input,.logbook-toolbar select { min-height:2.5rem; border-radius:10px; padding:.55rem .8rem; }
 .compliance-board { display:grid; grid-template-columns:minmax(280px,.65fr) minmax(0,1.35fr); gap:1rem; }

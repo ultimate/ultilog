@@ -34,6 +34,7 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
   await page.route("**/api/logbook/scanner", async (route) => {
     scannerRequestReceived = true;
     expect(route.request().method()).toBe("POST");
+    await new Promise((resolve) => setTimeout(resolve, 250));
     await route.fulfill({
       status: 201,
       contentType: "application/json",
@@ -67,6 +68,8 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
 
   await expect(page.getByRole("dialog", { name: "Privacy notice before upload" })).toBeVisible();
   await page.getByRole("button", { name: "Continue and upload" }).click();
+  await expect(page.getByRole("status")).toContainText("Scanning logbook photo");
+  await expect(page.getByRole("progressbar", { name: "Scanning logbook photo…" })).toBeVisible();
 
   await expect(page).toHaveURL(new RegExp(`/details/${createdSheetId}$`));
   await expect(page.getByRole("heading", { name: scannedSheet.title })).toBeVisible();

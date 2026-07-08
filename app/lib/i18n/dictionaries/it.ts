@@ -134,6 +134,8 @@ export const it: Dictionary = {
   "logbooks.scannerBoat": "Barca per scansione",
   "logbooks.createBoatBeforeScan": "Crea una barca prima di scansionare un logbook.",
   "logbooks.uploadingScan": "Caricamento scansione…",
+  "logbooks.processingScan": "Scansione della foto del logbook…",
+  "logbooks.processingScanHelp": "L’immagine viene caricata e i campi del logbook vengono estratti. Potrebbe richiedere qualche istante.",
   "logbooks.scanUploadError": "Impossibile caricare la scansione. Riprova.",
   "logbooks.scannerPrivacyTitle": "Informativa sulla privacy prima del caricamento",
   "logbooks.scannerPrivacyIntro": "Controlla come vengono gestite le foto dello scanner prima di continuare.",

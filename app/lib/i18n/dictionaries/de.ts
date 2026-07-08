@@ -134,6 +134,8 @@ export const de: Dictionary = {
   "logbooks.scannerBoat": "Boot für Scan",
   "logbooks.createBoatBeforeScan": "Erstelle ein Boot, bevor du ein Logbuch scannst.",
   "logbooks.uploadingScan": "Scan wird hochgeladen…",
+  "logbooks.processingScan": "Logbuchfoto wird gescannt…",
+  "logbooks.processingScanHelp": "Das Bild wird hochgeladen und Logbuchfelder werden extrahiert. Das kann einen Moment dauern.",
   "logbooks.scanUploadError": "Der Scan konnte nicht hochgeladen werden. Bitte versuche es erneut.",
   "logbooks.scannerPrivacyTitle": "Datenschutzhinweis vor dem Upload",
   "logbooks.scannerPrivacyIntro": "Bitte prüfe, wie Scanner-Fotos verarbeitet werden, bevor du fortfährst.",
