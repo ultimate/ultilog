@@ -150,6 +150,8 @@ export const fr: Dictionary = {
   "logbooks.scannerBoat": "Bateau à scanner",
   "logbooks.createBoatBeforeScan": "Créez un bateau avant de scanner un journal.",
   "logbooks.uploadingScan": "Téléversement du scan…",
+  "logbooks.processingScan": "Scan de la photo du journal…",
+  "logbooks.processingScanHelp": "L’image est téléversée et les champs du journal sont extraits. Cela peut prendre quelques instants.",
   "logbooks.scanUploadError": "Impossible de téléverser le scan. Veuillez réessayer.",
   "logbooks.scannerPrivacyTitle": "Avis de confidentialité avant téléversement",
   "logbooks.scannerPrivacyIntro": "Veuillez vérifier comment les photos du scanner sont traitées avant de continuer.",

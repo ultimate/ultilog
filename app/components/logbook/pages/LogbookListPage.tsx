@@ -77,7 +77,7 @@ export function LogbookListPage({
   }
 
   return (
-    <section className="logbook-page module-panel" aria-label={t("logbooks.aria")}>
+    <section className="logbook-page module-panel" aria-label={t("logbooks.aria")} aria-busy={isScanning}>
       <div className="page-heading">
         <div>
           <h1>{t("logbooks.title")}</h1>
@@ -168,6 +168,23 @@ export function LogbookListPage({
           >
             {t("boats.create")}
           </button>
+        </div>
+      )}
+
+      {isScanning && (
+        <div className="scanner-upload-status" role="status" aria-live="polite">
+          <span className="scanner-upload-spinner" aria-hidden="true" />
+          <div className="scanner-upload-copy">
+            <strong>{t("logbooks.processingScan")}</strong>
+            <p>{t("logbooks.processingScanHelp")}</p>
+          </div>
+          <div
+            className="scanner-upload-progress"
+            role="progressbar"
+            aria-label={t("logbooks.processingScan")}
+          >
+            <span />
+          </div>
         </div>
       )}
 

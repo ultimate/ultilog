@@ -148,6 +148,8 @@ export const en = {
   "logbooks.scannerBoat": "Boat for scan",
   "logbooks.createBoatBeforeScan": "Create a boat before scanning a logbook.",
   "logbooks.uploadingScan": "Uploading scan…",
+  "logbooks.processingScan": "Scanning logbook photo…",
+  "logbooks.processingScanHelp": "Uploading the image and extracting logbook fields. This can take a few moments.",
   "logbooks.scanUploadError": "Unable to upload the scan. Please try again.",
   "logbooks.scannerPrivacyTitle": "Privacy notice before upload",
   "logbooks.scannerPrivacyIntro": "Please review how scanner photos are handled before continuing.",
