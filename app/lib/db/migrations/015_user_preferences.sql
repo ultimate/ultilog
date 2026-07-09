@@ -1,0 +1,10 @@
+alter table users add column country_code text not null default '';
+alter table users add column language text not null default 'en';
+alter table users add column wind_unit text not null default 'bft';
+alter table users add column water_height_unit text not null default 'm';
+alter table users add column temperature_unit text not null default 'c';
+alter table users add column coordinate_format text not null default 'dm';
+alter table users add column distance_display_unit text not null default 'nm';
+alter table users add column default_boat_id text not null default '';
+alter table users add column default_crew_member_ids text not null default '[]';
+alter table users add column show_course_conversion_table integer not null default 1;

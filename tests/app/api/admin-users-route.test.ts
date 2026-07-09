@@ -23,7 +23,7 @@ const mockedListUsersForAdmin = vi.mocked(users.listUsersForAdmin);
 const mockedUpdateUserGroups = vi.mocked(users.updateUserGroups);
 const mockedUserHasGroup = vi.mocked(users.userHasGroup);
 
-const adminSession = { user: { id: "admin-user", name: "Admin", email: "admin@example.test", groups: ["admin"], onboardingCompletedTasks: [], theme: "light" as const, isNavSlim: false, hasReadCompliance: false }, expires: "2099-01-01T00:00:00.000Z" };
+const adminSession = { user: { id: "admin-user", name: "Admin", email: "admin@example.test", groups: ["admin"], onboardingCompletedTasks: [], countryCode: "", language: "en" as const, windUnit: "bft" as const, waterHeightUnit: "m" as const, temperatureUnit: "c" as const, coordinateFormat: "dm" as const, distanceDisplayUnit: "nm" as const, defaultBoatId: "", defaultCrewMemberIds: [], showCourseConversionTable: true, theme: "light" as const, isNavSlim: false, hasReadCompliance: false }, expires: "2099-01-01T00:00:00.000Z" };
 
 describe("admin users endpoint", () => {
   beforeEach(() => {
@@ -52,7 +52,7 @@ describe("admin users endpoint", () => {
   });
 
   it("lists users and known groups for admins", async () => {
-    const listedUsers = [{ id: "demo", name: "Demo", email: "demo@ultilog.local", groups: ["demo"], onboardingCompletedTasks: [], theme: "light" as const, isNavSlim: false, hasReadCompliance: false }];
+    const listedUsers = [{ id: "demo", name: "Demo", email: "demo@ultilog.local", groups: ["demo"], onboardingCompletedTasks: [], countryCode: "", language: "en" as const, windUnit: "bft" as const, waterHeightUnit: "m" as const, temperatureUnit: "c" as const, coordinateFormat: "dm" as const, distanceDisplayUnit: "nm" as const, defaultBoatId: "", defaultCrewMemberIds: [], showCourseConversionTable: true, theme: "light" as const, isNavSlim: false, hasReadCompliance: false }];
     mockedAuth.mockResolvedValueOnce(adminSession);
     mockedUserHasGroup.mockResolvedValueOnce(true);
     mockedListUsersForAdmin.mockResolvedValueOnce(listedUsers);
@@ -80,7 +80,7 @@ describe("admin users endpoint", () => {
   });
 
   it("updates groups for admins", async () => {
-    const updatedUser = { id: "demo", name: "Demo", email: "demo@ultilog.local", groups: ["demo", "reviewer"], onboardingCompletedTasks: [], theme: "light" as const, isNavSlim: false, hasReadCompliance: false };
+    const updatedUser = { id: "demo", name: "Demo", email: "demo@ultilog.local", groups: ["demo", "reviewer"], onboardingCompletedTasks: [], countryCode: "", language: "en" as const, windUnit: "bft" as const, waterHeightUnit: "m" as const, temperatureUnit: "c" as const, coordinateFormat: "dm" as const, distanceDisplayUnit: "nm" as const, defaultBoatId: "", defaultCrewMemberIds: [], showCourseConversionTable: true, theme: "light" as const, isNavSlim: false, hasReadCompliance: false };
     mockedAuth.mockResolvedValueOnce(adminSession);
     mockedUserHasGroup.mockResolvedValueOnce(true);
     mockedUpdateUserGroups.mockResolvedValueOnce(updatedUser);

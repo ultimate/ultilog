@@ -30,6 +30,25 @@ const mockedUpdateUserPassword = vi.mocked(users.updateUserPassword);
 const mockedUpdateUserViewPreferences = vi.mocked(users.updateUserViewPreferences);
 const session = { user: { id: "user-1", name: "User", email: "user@example.test", groups: [] }, expires: "2099-01-01T00:00:00.000Z" };
 
+const defaultPreferences = {
+  countryCode: "",
+  language: "en" as const,
+  windUnit: "bft" as const,
+  waterHeightUnit: "m" as const,
+  temperatureUnit: "c" as const,
+  coordinateFormat: "dm" as const,
+  distanceDisplayUnit: "nm" as const,
+  defaultBoatId: "",
+  defaultCrewMemberIds: [],
+  theme: "light" as const,
+  isNavSlim: false,
+  showCourseConversionTable: true,
+};
+
+function appUser(overrides = {}) {
+  return { id: "user-1", name: "User", email: "user@example.test", groups: [], onboardingCompletedTasks: [], hasReadCompliance: false, ...defaultPreferences, ...overrides };
+}
+
 describe("profile endpoint", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -49,18 +68,18 @@ describe("profile endpoint", () => {
 
   it("returns the signed-in user profile", async () => {
     mockedAuth.mockResolvedValueOnce(session);
-    mockedFindUserById.mockResolvedValueOnce({ id: "user-1", name: "User", email: "user@example.test", groups: [], onboardingCompletedTasks: ["create_first_boat"], theme: "dark", isNavSlim: true, hasReadCompliance: true });
+    mockedFindUserById.mockResolvedValueOnce(appUser({ onboardingCompletedTasks: ["create_first_boat"], theme: "dark", isNavSlim: true, hasReadCompliance: true }));
 
     const response = await GET();
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ id: "user-1", name: "User", email: "user@example.test", groups: [], onboardingCompletedTasks: ["create_first_boat"], theme: "dark", isNavSlim: true, hasReadCompliance: true });
+    await expect(response.json()).resolves.toEqual({ id: "user-1", name: "User", email: "user@example.test", groups: [], onboardingCompletedTasks: ["create_first_boat"], preferences: { ...defaultPreferences, theme: "dark", isNavSlim: true }, theme: "dark", isNavSlim: true, hasReadCompliance: true });
     expect(mockedFindUserById).toHaveBeenCalledWith("user-1");
   });
 
   it("updates the signed-in user's name", async () => {
     mockedAuth.mockResolvedValueOnce(session);
-    mockedUpdateUserName.mockResolvedValueOnce({ id: "user-1", name: "Updated User", email: "user@example.test", groups: [], onboardingCompletedTasks: [], theme: "light", isNavSlim: false, hasReadCompliance: false });
+    mockedUpdateUserName.mockResolvedValueOnce(appUser({ name: "Updated User" }));
 
     const response = await PATCH(new Request("https://ultilog.test/api/profile", {
       method: "PATCH",
@@ -74,7 +93,7 @@ describe("profile endpoint", () => {
 
   it("updates the signed-in user's email", async () => {
     mockedAuth.mockResolvedValueOnce(session);
-    mockedUpdateUserEmail.mockResolvedValueOnce({ id: "user-1", name: "User", email: "updated@example.test", groups: [], onboardingCompletedTasks: [], theme: "light", isNavSlim: false, hasReadCompliance: false });
+    mockedUpdateUserEmail.mockResolvedValueOnce(appUser({ email: "updated@example.test" }));
 
     const response = await PATCH(new Request("https://ultilog.test/api/profile", {
       method: "PATCH",
@@ -102,7 +121,7 @@ describe("profile endpoint", () => {
 
   it("updates manual onboarding completion", async () => {
     mockedAuth.mockResolvedValueOnce(session);
-    mockedUpdateUserOnboardingCompletedTasks.mockResolvedValueOnce({ id: "user-1", name: "User", email: "user@example.test", groups: [], onboardingCompletedTasks: ["create_first_boat", "create_first_logsheet"], theme: "light", isNavSlim: false, hasReadCompliance: false });
+    mockedUpdateUserOnboardingCompletedTasks.mockResolvedValueOnce(appUser({ onboardingCompletedTasks: ["create_first_boat", "create_first_logsheet"] }));
 
     const response = await PATCH(new Request("https://ultilog.test/api/profile", {
       method: "PATCH",
@@ -116,21 +135,21 @@ describe("profile endpoint", () => {
 
   it("updates profile view preferences", async () => {
     mockedAuth.mockResolvedValueOnce(session);
-    mockedUpdateUserViewPreferences.mockResolvedValueOnce({ id: "user-1", name: "User", email: "user@example.test", groups: [], onboardingCompletedTasks: [], theme: "dark", isNavSlim: true, hasReadCompliance: true });
+    mockedUpdateUserViewPreferences.mockResolvedValueOnce(appUser({ theme: "dark", isNavSlim: true, hasReadCompliance: true, countryCode: "US", language: "de", windUnit: "kn", waterHeightUnit: "ft", temperatureUnit: "f", coordinateFormat: "dms", distanceDisplayUnit: "mi", defaultBoatId: "boat-1", defaultCrewMemberIds: ["crew-1"], showCourseConversionTable: false }));
 
     const response = await PATCH(new Request("https://ultilog.test/api/profile", {
       method: "PATCH",
-      body: JSON.stringify({ action: "preferences", theme: "dark", isNavSlim: true, hasReadCompliance: true }),
+      body: JSON.stringify({ action: "preferences", preferences: { countryCode: "US", language: "de", windUnit: "kn", waterHeightUnit: "ft", temperatureUnit: "f", coordinateFormat: "dms", distanceDisplayUnit: "mi", defaultBoatId: "boat-1", defaultCrewMemberIds: ["crew-1"], theme: "dark", isNavSlim: true, showCourseConversionTable: false } }),
     }));
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ theme: "dark", isNavSlim: true });
-    expect(mockedUpdateUserViewPreferences).toHaveBeenCalledWith("user-1", { theme: "dark", isNavSlim: true });
+    await expect(response.json()).resolves.toEqual({ preferences: { countryCode: "US", language: "de", windUnit: "kn", waterHeightUnit: "ft", temperatureUnit: "f", coordinateFormat: "dms", distanceDisplayUnit: "mi", defaultBoatId: "boat-1", defaultCrewMemberIds: ["crew-1"], theme: "dark", isNavSlim: true, showCourseConversionTable: false }, theme: "dark", isNavSlim: true });
+    expect(mockedUpdateUserViewPreferences).toHaveBeenCalledWith("user-1", { countryCode: "US", language: "de", windUnit: "kn", waterHeightUnit: "ft", temperatureUnit: "f", coordinateFormat: "dms", distanceDisplayUnit: "mi", defaultBoatId: "boat-1", defaultCrewMemberIds: ["crew-1"], theme: "dark", isNavSlim: true, showCourseConversionTable: false });
   });
 
   it("marks compliance information as read", async () => {
     mockedAuth.mockResolvedValueOnce(session);
-    mockedUpdateUserComplianceRead.mockResolvedValueOnce({ id: "user-1", name: "User", email: "user@example.test", groups: [], onboardingCompletedTasks: [], theme: "light", isNavSlim: false, hasReadCompliance: true });
+    mockedUpdateUserComplianceRead.mockResolvedValueOnce(appUser({ hasReadCompliance: true }));
 
     const response = await PATCH(new Request("https://ultilog.test/api/profile", {
       method: "PATCH",

@@ -1,3 +1,34 @@
+create table if not exists users (
+  id text primary key,
+  name text not null,
+  email text not null unique,
+  password_hash text not null,
+  created_at text not null default current_timestamp,
+  onboarding_completed_tasks text not null default '[]',
+  theme text not null default 'light',
+  nav_slim integer not null default 0,
+  has_read_compliance integer not null default 0,
+  country_code text not null default '',
+  language text not null default 'en',
+  wind_unit text not null default 'bft',
+  water_height_unit text not null default 'm',
+  temperature_unit text not null default 'c',
+  coordinate_format text not null default 'dm',
+  distance_display_unit text not null default 'nm',
+  default_boat_id text not null default '',
+  default_crew_member_ids text not null default '[]',
+  show_course_conversion_table integer not null default 1
+);
+
+create unique index if not exists users_name_unique_idx on users (lower(name));
+
+create table if not exists user_groups (
+  user_id text not null references users(id) on delete cascade,
+  name text not null,
+  created_at text not null default current_timestamp,
+  primary key (user_id, name)
+);
+
 create table if not exists boats (
   id text primary key,
   name text not null,
@@ -8,6 +39,7 @@ create table if not exists boats (
   owner text not null,
   dimensions text not null,
   yacht_data text not null,
+  owner_id text not null default 'legacy-user' references users(id) on delete cascade,
   deviation_table text not null default '[]'
 );
 
@@ -16,9 +48,6 @@ create table if not exists log_sheets (
   title text not null,
   date_range text not null,
   status text not null,
-  source text,
-  verification_note text,
-  scanner_warnings text,
   boat_id text not null references boats(id) on delete cascade,
   skipper text not null,
   route text not null,
@@ -26,14 +55,22 @@ create table if not exists log_sheets (
   day_summary text not null,
   remarks text not null,
   watch_plan text not null,
-  technical_checks text not null
+  technical_checks text not null,
+  owner_id text not null default 'legacy-user' references users(id) on delete cascade,
+  source text,
+  verification_note text,
+  scanner_warnings text
 );
 
 create table if not exists crew_members (
   id text primary key,
   name text not null,
   nationality text not null,
-  role text not null
+  role text not null,
+  owner_id text not null default 'legacy-user' references users(id) on delete cascade,
+  address text not null default '',
+  certificate text not null default '',
+  is_primary integer not null default 0
 );
 
 create table if not exists sheet_crew_members (
