@@ -7,11 +7,11 @@ export type UserTheme = "light" | "dark" | "auto";
 export type UserPreferences = {
   countryCode: string;
   language: "en" | "de" | "fr" | "it";
-  windUnit: "bft" | "kn" | "mps";
+  windUnit: "bft" | "kn" | "km/h" | "mp/h" | "m/s";
   waterHeightUnit: "m" | "ft";
-  temperatureUnit: "c" | "f";
-  coordinateFormat: "dd" | "dm" | "dms";
-  distanceDisplayUnit: "nm" | "km" | "mi";
+  temperatureUnit: "°C" | "°F";
+  coordinateFormat: "decimal" | "dms";
+  distanceDisplayUnit: "off" | "m" | "km";
   defaultBoatId: string;
   defaultCrewMemberIds: string[];
   theme: UserTheme;
@@ -97,11 +97,11 @@ function normalizeUserPreferences(input: Partial<Record<keyof UserPreferences, u
   return {
     countryCode: input.countryCode === undefined ? currentUser?.countryCode ?? "" : normalizeCountryCode(input.countryCode),
     language: normalizeEnum(input.language, ["en", "de", "fr", "it"] as const, currentUser?.language ?? "en", "Language", strict),
-    windUnit: normalizeEnum(input.windUnit, ["bft", "kn", "mps"] as const, currentUser?.windUnit ?? "bft", "Wind unit", strict),
+    windUnit: normalizeEnum(input.windUnit, ["bft", "kn", "km/h", "mp/h", "m/s"] as const, currentUser?.windUnit ?? "bft", "Wind unit", strict),
     waterHeightUnit: normalizeEnum(input.waterHeightUnit, ["m", "ft"] as const, currentUser?.waterHeightUnit ?? "m", "Water height unit", strict),
-    temperatureUnit: normalizeEnum(input.temperatureUnit, ["c", "f"] as const, currentUser?.temperatureUnit ?? "c", "Temperature unit", strict),
-    coordinateFormat: normalizeEnum(input.coordinateFormat, ["dd", "dm", "dms"] as const, currentUser?.coordinateFormat ?? "dm", "Coordinate format", strict),
-    distanceDisplayUnit: normalizeEnum(input.distanceDisplayUnit, ["nm", "km", "mi"] as const, currentUser?.distanceDisplayUnit ?? "nm", "Distance display unit", strict),
+    temperatureUnit: normalizeEnum(input.temperatureUnit, ["°C", "°F"] as const, currentUser?.temperatureUnit ?? "°C", "Temperature unit", strict),
+    coordinateFormat: normalizeEnum(input.coordinateFormat, ["decimal", "dms"] as const, currentUser?.coordinateFormat ?? "decimal", "Coordinate format", strict),
+    distanceDisplayUnit: normalizeEnum(input.distanceDisplayUnit, ["off", "m", "km"] as const, currentUser?.distanceDisplayUnit ?? "off", "Distance display unit", strict),
     defaultBoatId: typeof input.defaultBoatId === "string" ? input.defaultBoatId.trim() : currentUser?.defaultBoatId ?? "",
     defaultCrewMemberIds: input.defaultCrewMemberIds === undefined ? currentUser?.defaultCrewMemberIds ?? [] : normalizeStringList(input.defaultCrewMemberIds),
     theme: normalizeEnum(input.theme, ["light", "dark", "auto"] as const, currentUser?.theme ?? "light", "Theme", strict),
@@ -122,11 +122,11 @@ function toAppUser(user: UserRow, groups: string[]): AppUser {
     hasReadCompliance: normalizeBooleanFlag(user.has_read_compliance),
     countryCode: user.country_code ?? "",
     language: normalizeEnum(user.language, ["en", "de", "fr", "it"] as const, "en", "Language"),
-    windUnit: normalizeEnum(user.wind_unit, ["bft", "kn", "mps"] as const, "bft", "Wind unit"),
+    windUnit: normalizeEnum(user.wind_unit, ["bft", "kn", "km/h", "mp/h", "m/s"] as const, "bft", "Wind unit"),
     waterHeightUnit: normalizeEnum(user.water_height_unit, ["m", "ft"] as const, "m", "Water height unit"),
-    temperatureUnit: normalizeEnum(user.temperature_unit, ["c", "f"] as const, "c", "Temperature unit"),
-    coordinateFormat: normalizeEnum(user.coordinate_format, ["dd", "dm", "dms"] as const, "dm", "Coordinate format"),
-    distanceDisplayUnit: normalizeEnum(user.distance_display_unit, ["nm", "km", "mi"] as const, "nm", "Distance display unit"),
+    temperatureUnit: normalizeEnum(user.temperature_unit, ["°C", "°F"] as const, "°C", "Temperature unit"),
+    coordinateFormat: normalizeEnum(user.coordinate_format, ["decimal", "dms"] as const, "decimal", "Coordinate format"),
+    distanceDisplayUnit: normalizeEnum(user.distance_display_unit, ["off", "m", "km"] as const, "off", "Distance display unit"),
     defaultBoatId: user.default_boat_id ?? "",
     defaultCrewMemberIds: normalizeStringList(user.default_crew_member_ids),
     showCourseConversionTable: normalizeBooleanFlag(user.show_course_conversion_table ?? true),

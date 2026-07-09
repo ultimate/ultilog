@@ -12,7 +12,7 @@ const mockedValidateDemoUser = vi.mocked(validateDemoUser);
 
 describe("demo login endpoint", () => {
   it("returns ok when the seeded demo user is available", async () => {
-    mockedValidateDemoUser.mockResolvedValueOnce({ id: "legacy-user", name: "Local demo user", email: "demo@ultilog.local", groups: ["demo"], onboardingCompletedTasks: [], countryCode: "", language: "en" as const, windUnit: "bft" as const, waterHeightUnit: "m" as const, temperatureUnit: "c" as const, coordinateFormat: "dm" as const, distanceDisplayUnit: "nm" as const, defaultBoatId: "", defaultCrewMemberIds: [], showCourseConversionTable: true, theme: "light" as const, isNavSlim: false, hasReadCompliance: false });
+    mockedValidateDemoUser.mockResolvedValueOnce({ id: "legacy-user", name: "Local demo user", email: "demo@ultilog.local", groups: ["demo"], onboardingCompletedTasks: [], countryCode: "", language: "en" as const, windUnit: "bft" as const, waterHeightUnit: "m" as const, temperatureUnit: "°C" as const, coordinateFormat: "decimal" as const, distanceDisplayUnit: "off" as const, defaultBoatId: "", defaultCrewMemberIds: [], showCourseConversionTable: true, theme: "light" as const, isNavSlim: false, hasReadCompliance: false });
 
     const response = await POST();
 

@@ -174,7 +174,7 @@ export function LogbookApp({
   userName?: string;
   userGroups?: string[];
 }) {
-  const { t } = useI18n();
+  const { t, setLocale } = useI18n();
   const router = useRouter();
   const pathname = usePathname();
   const [logbook, setLogbook] = useState<PersistedLogbook>(defaultLogbook);
@@ -263,6 +263,7 @@ export function LogbookApp({
     isSavingOnboarding,
     onboardingCompletedTasks,
     onboardingCompletion,
+    preferences,
     setAccountEmail,
     setAccountName,
     theme,
@@ -274,8 +275,12 @@ export function LogbookApp({
     initialName: userName,
     logbook,
     onProfileError: setProfileError,
+    onProfileMessage: setProfileMessage,
+    onLocaleChange: setLocale,
+    onCourseConversionPreferenceChange: setShowCourseColumns,
     t,
   });
+
 
   async function logout() {
     setSaveError(null);
@@ -1613,6 +1618,8 @@ export function LogbookApp({
               selectCrew={selectCrew}
               navigate={navigate}
               theme={theme}
+              preferences={preferences}
+              updateViewPreferences={updateViewPreferences}
               onboardingChecklist={
                 <OnboardingChecklist
                   completion={onboardingCompletion}

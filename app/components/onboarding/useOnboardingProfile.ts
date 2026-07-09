@@ -3,13 +3,45 @@ import type { ActiveView } from "../../templates/ModuleTabs";
 import type { PersistedLogbook } from "../../models/logbook";
 import { detectOnboardingCompletion } from "../../lib/onboarding/detect";
 import type { OnboardingTaskId } from "../../lib/onboarding/tasks";
+import type { Locale } from "../../lib/i18n";
+
+export type ProfilePreferences = {
+  countryCode: string;
+  language: Locale;
+  windUnit: "bft" | "kn" | "km/h" | "mp/h" | "m/s";
+  waterHeightUnit: "m" | "ft";
+  temperatureUnit: "°C" | "°F";
+  coordinateFormat: "decimal" | "dms";
+  distanceDisplayUnit: "off" | "m" | "km";
+  defaultBoatId: string;
+  defaultCrewMemberIds: string[];
+  theme: "light" | "dark" | "auto";
+  isNavSlim: boolean;
+  showCourseConversionTable: boolean;
+};
+
+const defaultPreferences: ProfilePreferences = {
+  countryCode: "",
+  language: "en",
+  windUnit: "bft",
+  waterHeightUnit: "m",
+  temperatureUnit: "°C",
+  coordinateFormat: "decimal",
+  distanceDisplayUnit: "off",
+  defaultBoatId: "",
+  defaultCrewMemberIds: [],
+  theme: "light",
+  isNavSlim: false,
+  showCourseConversionTable: true,
+};
 
 export type ProfilePayload = {
   name?: string;
   email?: string;
   groups?: string[];
   onboardingCompletedTasks?: OnboardingTaskId[];
-  theme?: "light" | "dark";
+  preferences?: Partial<ProfilePreferences>;
+  theme?: "light" | "dark" | "auto";
   isNavSlim?: boolean;
   hasReadCompliance?: boolean;
   error?: string;
@@ -21,17 +53,31 @@ type UseOnboardingProfileOptions = {
   initialName?: string;
   logbook: PersistedLogbook;
   onProfileError: (message: string) => void;
-  t: (key: "profile.unableUpdateOnboarding" | "profile.unableUpdatePreferences") => string;
+  onProfileMessage?: (message: string) => void;
+  onLocaleChange?: (locale: Locale) => void;
+  onCourseConversionPreferenceChange?: (show: boolean) => void;
+  t: (key: "profile.unableUpdateOnboarding" | "profile.unableUpdatePreferences" | "profile.preferencesUpdated") => string;
 };
 
-export function useOnboardingProfile({ activeModule, initialEmail, initialName, logbook, onProfileError, t }: UseOnboardingProfileOptions) {
+function mergePreferences(current: ProfilePreferences, next?: Partial<ProfilePreferences>): ProfilePreferences {
+  return {
+    ...current,
+    ...next,
+    language: next?.language ?? current.language,
+    defaultCrewMemberIds: Array.isArray(next?.defaultCrewMemberIds) ? next.defaultCrewMemberIds : current.defaultCrewMemberIds,
+  };
+}
+
+export function useOnboardingProfile({ activeModule, initialEmail, initialName, logbook, onProfileError, onProfileMessage, onLocaleChange, onCourseConversionPreferenceChange, t }: UseOnboardingProfileOptions) {
   const [accountName, setAccountName] = useState(initialName ?? "");
   const [accountEmail, setAccountEmail] = useState(initialEmail ?? "");
-  const [theme, setTheme] = useState<"light" | "dark">("light");
-  const [isNavSlim, setIsNavSlim] = useState(false);
+  const [preferences, setPreferences] = useState<ProfilePreferences>(defaultPreferences);
   const [onboardingCompletedTasks, setOnboardingCompletedTasks] = useState<OnboardingTaskId[]>([]);
   const [isSavingOnboarding, setIsSavingOnboarding] = useState(false);
   const [hasReadCompliance, setHasReadCompliance] = useState(false);
+
+  const theme = preferences.theme;
+  const isNavSlim = preferences.isNavSlim;
 
   const onboardingCompletion = useMemo(() => detectOnboardingCompletion({
     logbook,
@@ -52,15 +98,17 @@ export function useOnboardingProfile({ activeModule, initialEmail, initialName, 
       if (payload.name) setAccountName(payload.name);
       if (payload.email) setAccountEmail(payload.email);
       if (Array.isArray(payload.onboardingCompletedTasks)) setOnboardingCompletedTasks(payload.onboardingCompletedTasks);
-      if (payload.theme === "light" || payload.theme === "dark") setTheme(payload.theme);
-      if (typeof payload.isNavSlim === "boolean") setIsNavSlim(payload.isNavSlim);
+      const nextPreferences = mergePreferences(defaultPreferences, { ...payload.preferences, theme: payload.theme ?? payload.preferences?.theme, isNavSlim: payload.isNavSlim ?? payload.preferences?.isNavSlim });
+      setPreferences(nextPreferences);
+      onCourseConversionPreferenceChange?.(nextPreferences.showCourseConversionTable);
+      if (payload.preferences?.language) onLocaleChange?.(payload.preferences.language);
       if (typeof payload.hasReadCompliance === "boolean") setHasReadCompliance(payload.hasReadCompliance);
     }
     loadProfile();
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [onCourseConversionPreferenceChange, onLocaleChange]);
 
   useEffect(() => {
     if (activeModule !== "compliance" || hasReadCompliance) return;
@@ -81,27 +129,27 @@ export function useOnboardingProfile({ activeModule, initialEmail, initialName, 
     };
   }, [activeModule, hasReadCompliance]);
 
-  async function updateViewPreferences(nextPreferences: { theme?: "light" | "dark"; isNavSlim?: boolean }) {
-    const previousTheme = theme;
-    const previousIsNavSlim = isNavSlim;
-    const nextTheme = nextPreferences.theme ?? theme;
-    const nextIsNavSlim = nextPreferences.isNavSlim ?? isNavSlim;
-    setTheme(nextTheme);
-    setIsNavSlim(nextIsNavSlim);
+  async function updateViewPreferences(nextPreferences: Partial<ProfilePreferences>) {
+    const previousPreferences = preferences;
+    const mergedPreferences = mergePreferences(preferences, nextPreferences);
+    setPreferences(mergedPreferences);
+    onProfileError("");
     const response = await fetch("/api/profile", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "preferences", theme: nextTheme, isNavSlim: nextIsNavSlim }),
+      body: JSON.stringify({ action: "preferences", preferences: mergedPreferences }),
     });
     const payload = await response.json().catch(() => ({})) as ProfilePayload;
     if (!response.ok) {
-      setTheme(previousTheme);
-      setIsNavSlim(previousIsNavSlim);
+      setPreferences(previousPreferences);
       onProfileError(payload.error ?? t("profile.unableUpdatePreferences"));
       return;
     }
-    if (payload.theme === "light" || payload.theme === "dark") setTheme(payload.theme);
-    if (typeof payload.isNavSlim === "boolean") setIsNavSlim(payload.isNavSlim);
+    const savedPreferences = mergePreferences(mergedPreferences, { ...payload.preferences, theme: payload.theme ?? payload.preferences?.theme, isNavSlim: payload.isNavSlim ?? payload.preferences?.isNavSlim });
+    setPreferences(savedPreferences);
+    onLocaleChange?.(savedPreferences.language);
+    onCourseConversionPreferenceChange?.(savedPreferences.showCourseConversionTable);
+    onProfileMessage?.(t("profile.preferencesUpdated"));
   }
 
   async function updateOnboardingCompletedTasks(nextTasks: OnboardingTaskId[]) {
@@ -132,6 +180,7 @@ export function useOnboardingProfile({ activeModule, initialEmail, initialName, 
     isSavingOnboarding,
     onboardingCompletedTasks,
     onboardingCompletion,
+    preferences,
     setAccountEmail,
     setAccountName,
     theme,

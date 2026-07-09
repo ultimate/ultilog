@@ -8,7 +8,7 @@ type ModuleTabsProps = {
   activeModule: ActiveView;
   onSelectModule: (module: ActiveView) => void;
   onOpenProfile: () => void;
-  theme: "light" | "dark";
+  theme: "light" | "dark" | "auto";
   onToggleTheme: () => void;
   userEmail?: string;
   userName?: string;

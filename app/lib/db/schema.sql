@@ -12,9 +12,9 @@ create table if not exists users (
   language text not null default 'en',
   wind_unit text not null default 'bft',
   water_height_unit text not null default 'm',
-  temperature_unit text not null default 'c',
-  coordinate_format text not null default 'dm',
-  distance_display_unit text not null default 'nm',
+  temperature_unit text not null default '°C',
+  coordinate_format text not null default 'decimal',
+  distance_display_unit text not null default 'off',
   default_boat_id text not null default '',
   default_crew_member_ids text not null default '[]',
   show_course_conversion_table integer not null default 1
