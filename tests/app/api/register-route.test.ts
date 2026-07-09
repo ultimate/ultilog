@@ -11,7 +11,7 @@ const mockedRegisterUser = vi.mocked(registerUser);
 
 describe("register endpoint", () => {
   it("creates a user and returns 201", async () => {
-    const user = { id: "new-user", name: "New User", email: "new@example.test", groups: [], onboardingCompletedTasks: [], theme: "light" as const, isNavSlim: false, hasReadCompliance: false };
+    const user = { id: "new-user", name: "New User", email: "new@example.test", groups: [], onboardingCompletedTasks: [], countryCode: "", language: "en" as const, windUnit: "bft" as const, waterHeightUnit: "m" as const, temperatureUnit: "c" as const, coordinateFormat: "dm" as const, distanceDisplayUnit: "nm" as const, defaultBoatId: "", defaultCrewMemberIds: [], showCourseConversionTable: true, theme: "light" as const, isNavSlim: false, hasReadCompliance: false };
     mockedRegisterUser.mockResolvedValueOnce(user);
 
     const response = await POST(new Request("https://ultilog.test/api/register", {

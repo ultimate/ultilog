@@ -13,6 +13,20 @@ export async function GET() {
     email: user.email,
     groups: user.groups,
     onboardingCompletedTasks: user.onboardingCompletedTasks,
+    preferences: {
+      countryCode: user.countryCode,
+      language: user.language,
+      windUnit: user.windUnit,
+      waterHeightUnit: user.waterHeightUnit,
+      temperatureUnit: user.temperatureUnit,
+      coordinateFormat: user.coordinateFormat,
+      distanceDisplayUnit: user.distanceDisplayUnit,
+      defaultBoatId: user.defaultBoatId,
+      defaultCrewMemberIds: user.defaultCrewMemberIds,
+      theme: user.theme,
+      isNavSlim: user.isNavSlim,
+      showCourseConversionTable: user.showCourseConversionTable,
+    },
     theme: user.theme,
     isNavSlim: user.isNavSlim,
     hasReadCompliance: user.hasReadCompliance,
@@ -23,7 +37,7 @@ export async function PATCH(request: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
-    const body = await request.json() as { action?: string; name?: string; email?: string; currentPassword?: string; newPassword?: string; onboardingCompletedTasks?: unknown; theme?: unknown; isNavSlim?: unknown };
+    const body = await request.json() as { action?: string; name?: string; email?: string; currentPassword?: string; newPassword?: string; onboardingCompletedTasks?: unknown; preferences?: Record<string, unknown>; theme?: unknown; isNavSlim?: unknown; showCourseConversionTable?: unknown };
     if (body.action === "name") {
       const user = await updateUserName(session.user.id, { name: body.name ?? "", currentPassword: body.currentPassword ?? "" });
       return NextResponse.json({ name: user.name });
@@ -41,8 +55,26 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ onboardingCompletedTasks: user.onboardingCompletedTasks });
     }
     if (body.action === "preferences") {
-      const user = await updateUserViewPreferences(session.user.id, { theme: body.theme, isNavSlim: body.isNavSlim });
-      return NextResponse.json({ theme: user.theme, isNavSlim: user.isNavSlim });
+      const preferencesInput = body.preferences ?? body;
+      const user = await updateUserViewPreferences(session.user.id, preferencesInput);
+      return NextResponse.json({
+        preferences: {
+          countryCode: user.countryCode,
+          language: user.language,
+          windUnit: user.windUnit,
+          waterHeightUnit: user.waterHeightUnit,
+          temperatureUnit: user.temperatureUnit,
+          coordinateFormat: user.coordinateFormat,
+          distanceDisplayUnit: user.distanceDisplayUnit,
+          defaultBoatId: user.defaultBoatId,
+          defaultCrewMemberIds: user.defaultCrewMemberIds,
+          theme: user.theme,
+          isNavSlim: user.isNavSlim,
+          showCourseConversionTable: user.showCourseConversionTable,
+        },
+        theme: user.theme,
+        isNavSlim: user.isNavSlim,
+      });
     }
     if (body.action === "compliance-read") {
       const user = await updateUserComplianceRead(session.user.id);
