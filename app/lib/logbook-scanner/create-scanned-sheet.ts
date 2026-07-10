@@ -7,7 +7,10 @@ import type {
   PersistedLogbook,
   ScannerResult,
   SheetCrewMember,
+  TemperatureUnit,
+  WindUnit,
 } from "../../models/logbook";
+import type { UserPreferences } from "../users";
 
 type CurrentUserCrew = Partial<CrewMember> & Pick<CrewMember, "name">;
 
@@ -17,7 +20,10 @@ export type CreateScannedSheetInput = {
   currentUser?: CurrentUserCrew;
   primaryCrew?: CrewMember;
   logbook: PersistedLogbook;
+  userPreferences?: ScannerUnitPreferences;
 };
+
+type ScannerUnitPreferences = Pick<UserPreferences, "windUnit" | "waterHeightUnit" | "temperatureUnit">;
 
 const verificationNote = "Please verify scanned information before locking this sheet.";
 
@@ -64,6 +70,7 @@ export function createScannedSheet({
   currentUser,
   primaryCrew,
   logbook,
+  userPreferences,
 }: CreateScannedSheetInput): LogSheet {
   const draft = scannerResult.draft;
   const route = {
@@ -86,12 +93,30 @@ export function createScannedSheet({
     crew: createInitialCrew({ logbook, primaryCrew, currentUser, route }),
     watchPlan: [],
     technicalChecks: [],
-    lines: draft.lines.map(scannedLineToLogLine),
+    lines: draft.lines.map((line) => scannedLineToLogLine(line, userPreferences)),
   };
 }
 
-function scannedLineToLogLine(scannedLine: ScannerResult["draft"]["lines"][number]): LogLine {
-  return lineFormToLogLine({ ...defaultLineForm, ...scannedLine });
+function scannedLineToLogLine(scannedLine: ScannerResult["draft"]["lines"][number], userPreferences?: ScannerUnitPreferences): LogLine {
+  return lineFormToLogLine({ ...defaultLineForm, ...scannerUnitDefaults(userPreferences), ...scannedLine, ...missingScannerUnitDefaults(scannedLine, userPreferences) });
+}
+
+function scannerUnitDefaults(userPreferences?: ScannerUnitPreferences): Pick<LineForm, "windUnit" | "seaUnit" | "tideUnit" | "temperatureUnit"> {
+  return {
+    windUnit: userPreferences?.windUnit ?? defaultLineForm.windUnit as WindUnit,
+    seaUnit: userPreferences?.waterHeightUnit ?? defaultLineForm.seaUnit,
+    tideUnit: userPreferences?.waterHeightUnit ?? defaultLineForm.tideUnit,
+    temperatureUnit: userPreferences?.temperatureUnit ?? defaultLineForm.temperatureUnit as TemperatureUnit,
+  };
+}
+
+function missingScannerUnitDefaults(scannedLine: ScannerResult["draft"]["lines"][number], userPreferences?: ScannerUnitPreferences): Partial<Pick<LineForm, "windUnit" | "seaUnit" | "tideUnit" | "temperatureUnit">> {
+  const defaults = scannerUnitDefaults(userPreferences);
+  return Object.fromEntries(
+    (Object.keys(defaults) as (keyof typeof defaults)[])
+      .filter((unitField) => !scannedLine[unitField]?.trim())
+      .map((unitField) => [unitField, defaults[unitField]]),
+  );
 }
 
 function createInitialCrew({

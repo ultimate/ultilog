@@ -13,9 +13,14 @@ vi.mock("../../../app/lib/logbook-scanner/openai-provider", () => ({
   openAiScannerProvider: { extractLogbookDraft: vi.fn(), isConfigured: vi.fn() },
 }));
 
+vi.mock("../../../app/lib/users", () => ({
+  findUserById: vi.fn(),
+}));
+
 const { auth } = await import("../../../auth");
 const store = await import("../../../app/lib/logbook-store");
 const { openAiScannerProvider } = await import("../../../app/lib/logbook-scanner/openai-provider");
+const { findUserById } = await import("../../../app/lib/users");
 const { POST } = await import("../../../app/api/logbook/scanner/route");
 
 const mockedAuth = auth as unknown as Mock;
@@ -23,6 +28,7 @@ const mockedReadLogbook = vi.mocked(store.readLogbook);
 const mockedWriteLogbook = vi.mocked(store.writeLogbook);
 const mockedScanner = vi.mocked(openAiScannerProvider.extractLogbookDraft);
 const mockedScannerConfigured = vi.mocked(openAiScannerProvider.isConfigured);
+const mockedFindUserById = vi.mocked(findUserById);
 const session = { user: { id: "user-1", name: "User", email: "user@example.test", groups: [] }, expires: "2099-01-01T00:00:00.000Z" };
 const boat = { id: "boat-1", name: "Aurora", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", yachtData: {}, deviationTable: [] };
 const logbook = { boats: [boat], crewMembers: [], sheets: [] };
@@ -48,6 +54,7 @@ describe("logbook scanner endpoint", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockedScannerConfigured.mockReturnValue(true);
+    mockedFindUserById.mockResolvedValue({ ...session.user, countryCode: "", language: "en", windUnit: "bft", waterHeightUnit: "m", temperatureUnit: "°C", coordinateFormat: "decimal", distanceDisplayUnit: "off", defaultBoatId: "", defaultCrewMemberIds: [], theme: "light", isNavSlim: false, onboardingCompletedTasks: [], hasReadCompliance: false, showCourseConversionTable: true });
   });
 
   it("requires authentication", async () => {
@@ -227,5 +234,55 @@ describe("logbook scanner endpoint", () => {
     const [[persistedLogbook]] = mockedWriteLogbook.mock.calls;
     expect(JSON.stringify(persistedLogbook)).not.toContain("sheet.png");
     expect(JSON.stringify(persistedLogbook)).not.toContain("buffer");
+  });
+
+  it("defaults missing scanner units from user preferences", async () => {
+    mockedAuth.mockResolvedValueOnce(session);
+    mockedReadLogbook.mockResolvedValueOnce(logbook);
+    mockedFindUserById.mockResolvedValueOnce({ ...session.user, countryCode: "", language: "en", windUnit: "kn", waterHeightUnit: "ft", temperatureUnit: "°F", coordinateFormat: "decimal", distanceDisplayUnit: "off", defaultBoatId: "", defaultCrewMemberIds: [], theme: "light", isNavSlim: false, onboardingCompletedTasks: [], hasReadCompliance: false, showCourseConversionTable: true });
+    mockedScanner.mockResolvedValueOnce({
+      draft: {
+        title: "",
+        dateRange: "2026-07-03",
+        route: { from: "A", to: "B", departed: "2026-07-03, 10:00", arrived: "2026-07-03, 11:00" },
+        lines: [{ time: "2026-07-03T10:30", windStrength: "12", windUnit: "", waves: "2", seaUnit: "", tide: "1", tideUnit: "", temperature: "70", temperatureUnit: "" }],
+      },
+      warnings: [],
+    });
+    mockedWriteLogbook.mockImplementationOnce(async (updated) => updated);
+    const formData = new FormData();
+    formData.set("boatId", "boat-1");
+    formData.append("files", imageFile());
+
+    const response = await POST(scannerRequest(formData));
+
+    expect(response.status).toBe(200);
+    const [[persistedLogbook]] = mockedWriteLogbook.mock.calls;
+    expect(persistedLogbook.sheets[0].lines[0]).toEqual(expect.objectContaining({ windUnit: "kn", seaUnit: "ft", tideUnit: "ft", temperatureUnit: "°F" }));
+  });
+
+  it("preserves explicit scanner units instead of applying user preference defaults", async () => {
+    mockedAuth.mockResolvedValueOnce(session);
+    mockedReadLogbook.mockResolvedValueOnce(logbook);
+    mockedFindUserById.mockResolvedValueOnce({ ...session.user, countryCode: "", language: "en", windUnit: "kn", waterHeightUnit: "ft", temperatureUnit: "°F", coordinateFormat: "decimal", distanceDisplayUnit: "off", defaultBoatId: "", defaultCrewMemberIds: [], theme: "light", isNavSlim: false, onboardingCompletedTasks: [], hasReadCompliance: false, showCourseConversionTable: true });
+    mockedScanner.mockResolvedValueOnce({
+      draft: {
+        title: "",
+        dateRange: "2026-07-03",
+        route: { from: "A", to: "B", departed: "2026-07-03, 10:00", arrived: "2026-07-03, 11:00" },
+        lines: [{ time: "2026-07-03T10:30", windStrength: "4", windUnit: "bft", waves: "0.5", seaUnit: "m", tide: "0.2", tideUnit: "m", temperature: "18", temperatureUnit: "°C" }],
+      },
+      warnings: [],
+    });
+    mockedWriteLogbook.mockImplementationOnce(async (updated) => updated);
+    const formData = new FormData();
+    formData.set("boatId", "boat-1");
+    formData.append("files", imageFile());
+
+    const response = await POST(scannerRequest(formData));
+
+    expect(response.status).toBe(200);
+    const [[persistedLogbook]] = mockedWriteLogbook.mock.calls;
+    expect(persistedLogbook.sheets[0].lines[0]).toEqual(expect.objectContaining({ windUnit: "bft", seaUnit: "m", tideUnit: "m", temperatureUnit: "°C" }));
   });
 });

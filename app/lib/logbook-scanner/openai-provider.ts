@@ -64,15 +64,15 @@ const lineFieldDescriptions = {
   weather: "Short weather code or condition text.",
   weatherRemark: "Free-text weather remark or visibility/horizon note.",
   temperature: "Air temperature as numeric text when visible.",
-  temperatureUnit: "Air temperature unit; expected values are °C, °F, c, or f when visible, otherwise empty string.",
+  temperatureUnit: "Air temperature unit when visible; expected values are °C or °F (c/f also accepted), otherwise empty string.",
   barometer: "Barometric pressure as numeric text when visible.",
   windDirection: "Wind direction as visible text, such as N, NE, 270, or WSW.",
   windStrength: "Wind strength as numeric text.",
-  windUnit: "Wind strength unit; expected values are bft, kn, km/h, mp/h, or m/s when visible, otherwise empty string.",
+  windUnit: "Wind strength unit when visible; expected values include bft/Beaufort/BF, kn/kt/kts/knots, km/h/kph, mp/h/mph, or m/s, otherwise empty string.",
   waves: "Wave or sea height/state as numeric text when visible.",
-  seaUnit: "Wave/sea unit; expected values are m or ft when visible, otherwise empty string.",
+  seaUnit: "Wave/sea height unit when visible; expected values are m/meters/metres or ft/feet, otherwise empty string.",
   tide: "Tide height or tide value as numeric text when visible.",
-  tideUnit: "Tide unit; expected values are m or ft when visible, otherwise empty string.",
+  tideUnit: "Tide height unit when visible; expected values are m/meters/metres or ft/feet, otherwise empty string.",
   moon: "Moon phase or moon remark as visible text.",
   compassCourse: "Compass course as numeric degrees text.",
   deviation: "Deviation as signed numeric degrees text.",
@@ -153,6 +153,7 @@ const userPrompt = `Extract a logbook draft from these image(s). The JSON must m
 - Do not output deprecated course or wind fields; split wind into windDirection, windStrength, and windUnit.
 - Keep position in each row for named positions or waypoint text, even when latitude and longitude are present.
 - Expected row data types are strings in the JSON schema. Transcribe numeric values as strings for numeric fields such as temperature, barometer, waves, compassCourse, magneticCourse, windDrift, speedKn, and logNm.
+- Include explicit units when visible for windUnit, seaUnit, tideUnit, and temperatureUnit; leave them empty only when no unit is shown.
 - warnings: concise human-readable warnings for missing or ambiguous fields.`;
 
 export function isOpenAiScannerProviderConfigured() {

@@ -3,6 +3,7 @@ import { auth } from "../../../../auth";
 import { createScannedSheet } from "../../../lib/logbook-scanner/create-scanned-sheet";
 import { openAiScannerProvider } from "../../../lib/logbook-scanner/openai-provider";
 import { readLogbook, writeLogbook } from "../../../lib/logbook-store";
+import { findUserById } from "../../../lib/users";
 
 const MAX_FILE_COUNT = 5;
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
@@ -42,7 +43,7 @@ export async function POST(request: Request) {
     return scannerError("missing_boat", "Choose a boat before scanning logbook pages.", 400);
   }
 
-  const logbook = await readLogbook(session.user.id);
+  const [logbook, user] = await Promise.all([readLogbook(session.user.id), findUserById(session.user.id)]);
   if (!logbook.boats.some((boat) => boat.id === boatId)) {
     return scannerError("invalid_boat", "The selected boat is not available in your logbook.", 404);
   }
@@ -75,6 +76,7 @@ export async function POST(request: Request) {
     boatId,
     currentUser: session.user.name ? { name: session.user.name } : undefined,
     logbook,
+    userPreferences: user ? { windUnit: user.windUnit, waterHeightUnit: user.waterHeightUnit, temperatureUnit: user.temperatureUnit } : undefined,
   });
 
   await writeLogbook({ ...logbook, sheets: [...logbook.sheets, sheet] }, session.user.id);
