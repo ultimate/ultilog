@@ -94,7 +94,9 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const setShowCourseColumns = props.setShowCourseColumns as Dispatch<
     SetStateAction<boolean>
   >;
-  const [coordinateFormat, setCoordinateFormat] = useState<CoordinateFormat>("decimal");
+  const preferredCoordinateFormat = props.coordinateFormat as CoordinateFormat | undefined;
+  const [coordinateFormatOverride, setCoordinateFormatOverride] = useState<CoordinateFormat | null>(null);
+  const coordinateFormat = coordinateFormatOverride ?? preferredCoordinateFormat ?? "decimal";
   const [isMapExpanded, setIsMapExpanded] = useState(false);
   const [openCourseTooltip, setOpenCourseTooltip] = useState<TranslationKey | null>(null);
   const [courseTooltipPosition, setCourseTooltipPosition] = useState({ left: 0, top: 0 });
@@ -568,7 +570,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                 <div className="table-header">
                   <div><h3>{t("details.logTitle")}</h3></div>
                   <div className="table-actions">
-                    <button type="button" onClick={() => setCoordinateFormat((format) => format === "decimal" ? "dms" : "decimal")}>{t("details.coordinates")}: {coordinateFormat === "decimal" ? t("details.decimal") : "DMS"}</button>
+                    <button type="button" onClick={() => setCoordinateFormatOverride(coordinateFormat === "decimal" ? "dms" : "decimal")}>{t("details.coordinates")}: {coordinateFormat === "decimal" ? t("details.decimal") : "DMS"}</button>
                     <button type="button" onClick={() => setShowCourseColumns((show) => !show)}>{showCourseColumns ? t("details.hide") : t("details.show")} {t("details.courseColumns")}</button>
                     <button type="button" disabled={isActiveSheetLocked} onClick={startAddingLine}>{t("details.addLine")}</button>
                     <button type="button" disabled={isActiveSheetLocked} onClick={startAddingLineHereNow}>{t("details.addLineHereNow")}</button>

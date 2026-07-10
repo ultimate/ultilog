@@ -35,13 +35,18 @@ const defaultPreferences: ProfilePreferences = {
   showCourseConversionTable: true,
 };
 
+export type ProfileApiPreferences = Partial<ProfilePreferences> & {
+  theme?: ProfilePreferences["theme"];
+  isNavSlim?: boolean;
+};
+
 export type ProfilePayload = {
   name?: string;
   email?: string;
   groups?: string[];
   onboardingCompletedTasks?: OnboardingTaskId[];
-  preferences?: Partial<ProfilePreferences>;
-  theme?: "light" | "dark" | "auto";
+  preferences?: ProfileApiPreferences;
+  theme?: ProfilePreferences["theme"];
   isNavSlim?: boolean;
   hasReadCompliance?: boolean;
   error?: string;
@@ -59,13 +64,21 @@ type UseOnboardingProfileOptions = {
   t: (key: "profile.unableUpdateOnboarding" | "profile.unableUpdatePreferences" | "profile.preferencesUpdated") => string;
 };
 
-function mergePreferences(current: ProfilePreferences, next?: Partial<ProfilePreferences>): ProfilePreferences {
+function mergePreferences(current: ProfilePreferences, next?: ProfileApiPreferences): ProfilePreferences {
   return {
     ...current,
     ...next,
     language: next?.language ?? current.language,
     defaultCrewMemberIds: Array.isArray(next?.defaultCrewMemberIds) ? next.defaultCrewMemberIds : current.defaultCrewMemberIds,
   };
+}
+
+function preferencesFromPayload(payload: ProfilePayload, fallback: ProfilePreferences): ProfilePreferences {
+  return mergePreferences(fallback, {
+    ...payload.preferences,
+    theme: payload.theme ?? payload.preferences?.theme,
+    isNavSlim: payload.isNavSlim ?? payload.preferences?.isNavSlim,
+  });
 }
 
 export function useOnboardingProfile({ activeModule, initialEmail, initialName, logbook, onProfileError, onProfileMessage, onLocaleChange, onCourseConversionPreferenceChange, t }: UseOnboardingProfileOptions) {
@@ -98,7 +111,7 @@ export function useOnboardingProfile({ activeModule, initialEmail, initialName, 
       if (payload.name) setAccountName(payload.name);
       if (payload.email) setAccountEmail(payload.email);
       if (Array.isArray(payload.onboardingCompletedTasks)) setOnboardingCompletedTasks(payload.onboardingCompletedTasks);
-      const nextPreferences = mergePreferences(defaultPreferences, { ...payload.preferences, theme: payload.theme ?? payload.preferences?.theme, isNavSlim: payload.isNavSlim ?? payload.preferences?.isNavSlim });
+      const nextPreferences = preferencesFromPayload(payload, defaultPreferences);
       setPreferences(nextPreferences);
       onCourseConversionPreferenceChange?.(nextPreferences.showCourseConversionTable);
       if (payload.preferences?.language) onLocaleChange?.(payload.preferences.language);
@@ -129,7 +142,7 @@ export function useOnboardingProfile({ activeModule, initialEmail, initialName, 
     };
   }, [activeModule, hasReadCompliance]);
 
-  async function updateViewPreferences(nextPreferences: Partial<ProfilePreferences>) {
+  async function updatePreferences(nextPreferences: Partial<ProfilePreferences>) {
     const previousPreferences = preferences;
     const mergedPreferences = mergePreferences(preferences, nextPreferences);
     setPreferences(mergedPreferences);
@@ -137,7 +150,7 @@ export function useOnboardingProfile({ activeModule, initialEmail, initialName, 
     const response = await fetch("/api/profile", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "preferences", preferences: mergedPreferences }),
+      body: JSON.stringify({ action: "preferences", preferences: nextPreferences }),
     });
     const payload = await response.json().catch(() => ({})) as ProfilePayload;
     if (!response.ok) {
@@ -145,7 +158,7 @@ export function useOnboardingProfile({ activeModule, initialEmail, initialName, 
       onProfileError(payload.error ?? t("profile.unableUpdatePreferences"));
       return;
     }
-    const savedPreferences = mergePreferences(mergedPreferences, { ...payload.preferences, theme: payload.theme ?? payload.preferences?.theme, isNavSlim: payload.isNavSlim ?? payload.preferences?.isNavSlim });
+    const savedPreferences = preferencesFromPayload(payload, mergedPreferences);
     setPreferences(savedPreferences);
     onLocaleChange?.(savedPreferences.language);
     onCourseConversionPreferenceChange?.(savedPreferences.showCourseConversionTable);
@@ -185,6 +198,7 @@ export function useOnboardingProfile({ activeModule, initialEmail, initialName, 
     setAccountName,
     theme,
     updateOnboardingCompletedTasks,
-    updateViewPreferences,
+    updatePreferences,
+    updateViewPreferences: updatePreferences,
   };
 }
