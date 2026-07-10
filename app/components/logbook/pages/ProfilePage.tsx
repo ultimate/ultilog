@@ -214,88 +214,108 @@ export function ProfilePage(props: ProfilePageProps) {
           }}
         >
           <h3>{t("profile.preferences")}</h3>
-          <label>
-            {t("profile.countryCode")}
-            <input
-              value={profilePreferences.countryCode}
-              maxLength={2}
-              placeholder="US"
-              onChange={(event) => updateViewPreferences({ countryCode: event.target.value.toUpperCase() })}
-            />
-          </label>
-          <label>
-            {t("profile.language")}
-            <select value={profilePreferences.language} onChange={(event) => updateViewPreferences({ language: event.target.value as ProfilePreferences["language"] })}>
-              {locales.map((locale) => <option key={locale} value={locale}>{localeLabels[locale]}</option>)}
-            </select>
-          </label>
-          <label>
-            {t("profile.windUnit")}
-            <select value={profilePreferences.windUnit} onChange={(event) => updateViewPreferences({ windUnit: event.target.value as ProfilePreferences["windUnit"] })}>
-              {["bft", "kn", "km/h", "mp/h", "m/s"].map((unit) => <option key={unit} value={unit}>{unit}</option>)}
-            </select>
-          </label>
-          <label>
-            {t("profile.waveTideUnit")}
-            <select value={profilePreferences.waterHeightUnit} onChange={(event) => updateViewPreferences({ waterHeightUnit: event.target.value as ProfilePreferences["waterHeightUnit"] })}>
-              {["m", "ft"].map((unit) => <option key={unit} value={unit}>{unit}</option>)}
-            </select>
-          </label>
-          <label>
-            {t("profile.temperatureUnit")}
-            <select value={profilePreferences.temperatureUnit} onChange={(event) => updateViewPreferences({ temperatureUnit: event.target.value as ProfilePreferences["temperatureUnit"] })}>
-              {["°C", "°F"].map((unit) => <option key={unit} value={unit}>{unit}</option>)}
-            </select>
-          </label>
-          <label>
-            {t("profile.coordinateFormat")}
-            <select value={profilePreferences.coordinateFormat} onChange={(event) => updateViewPreferences({ coordinateFormat: event.target.value as ProfilePreferences["coordinateFormat"] })}>
-              <option value="decimal">{t("profile.coordinateDecimal")}</option>
-              <option value="dms">{t("profile.coordinateDms")}</option>
-            </select>
-          </label>
-          <label>
-            {t("profile.additionalDistanceDisplay")}
-            <select value={profilePreferences.distanceDisplayUnit} onChange={(event) => updateViewPreferences({ distanceDisplayUnit: event.target.value as ProfilePreferences["distanceDisplayUnit"] })}>
-              <option value="off">{t("profile.off")}</option>
-              <option value="m">m</option>
-              <option value="km">km</option>
-            </select>
-          </label>
-          <label>
-            {t("profile.defaultVessel")}
-            <select value={profilePreferences.defaultBoatId || activeBoat.id} onChange={(event) => updateViewPreferences({ defaultBoatId: event.target.value })}>
-              {logbook.boats.map((boat) => <option key={boat.id} value={boat.id}>{boat.name}</option>)}
-            </select>
-          </label>
-          <label className="wide-field">
-            {t("profile.defaultCrewMembers")}
-            <select multiple value={profilePreferences.defaultCrewMemberIds} onChange={(event) => updateViewPreferences({ defaultCrewMemberIds: Array.from(event.target.selectedOptions, (option) => option.value) })}>
-              {logbook.crewMembers.map((crew) => <option key={crew.id} value={crew.id}>{crew.name}</option>)}
-            </select>
-          </label>
-          <label>
-            {t("profile.theme")}
-            <select value={theme} onChange={(event) => updateViewPreferences({ theme: event.target.value as ProfilePreferences["theme"] })}>
-              <option value="light">{t("profile.lightMode")}</option>
-              <option value="dark">{t("profile.darkMode")}</option>
-              <option value="auto">{t("profile.autoMode")}</option>
-            </select>
-          </label>
-          <label>
-            {t("profile.sidebarMode")}
-            <select value={profilePreferences.isNavSlim ? "slim" : "wide"} onChange={(event) => updateViewPreferences({ isNavSlim: event.target.value === "slim" })}>
-              <option value="slim">{t("profile.sidebarSlim")}</option>
-              <option value="wide">{t("profile.sidebarWide")}</option>
-            </select>
-          </label>
-          <label>
-            {t("profile.showCourseConversionTable")}
-            <select value={profilePreferences.showCourseConversionTable ? "yes" : "no"} onChange={(event) => updateViewPreferences({ showCourseConversionTable: event.target.value === "yes" })}>
-              <option value="yes">{t("common.yes")}</option>
-              <option value="no">{t("common.no")}</option>
-            </select>
-          </label>
+          <fieldset className="preference-group wide-field">
+            <legend>{t("profile.regionSettings")}</legend>
+            <div className="preference-group-grid">
+              <label>
+                {t("profile.countryCode")}
+                <input
+                  value={profilePreferences.countryCode}
+                  maxLength={2}
+                  placeholder="US"
+                  onChange={(event) => updateViewPreferences({ countryCode: event.target.value.toUpperCase() })}
+                />
+              </label>
+              <label>
+                {t("profile.language")}
+                <select value={profilePreferences.language} onChange={(event) => updateViewPreferences({ language: event.target.value as ProfilePreferences["language"] })}>
+                  {locales.map((locale) => <option key={locale} value={locale}>{localeLabels[locale]}</option>)}
+                </select>
+              </label>
+            </div>
+          </fieldset>
+          <fieldset className="preference-group wide-field">
+            <legend>{t("profile.unitSettings")}</legend>
+            <div className="preference-group-grid">
+              <label>
+                {t("profile.windUnit")}
+                <select value={profilePreferences.windUnit} onChange={(event) => updateViewPreferences({ windUnit: event.target.value as ProfilePreferences["windUnit"] })}>
+                  {["bft", "kn", "km/h", "mp/h", "m/s"].map((unit) => <option key={unit} value={unit}>{unit}</option>)}
+                </select>
+              </label>
+              <label>
+                {t("profile.waveTideUnit")}
+                <select value={profilePreferences.waterHeightUnit} onChange={(event) => updateViewPreferences({ waterHeightUnit: event.target.value as ProfilePreferences["waterHeightUnit"] })}>
+                  {["m", "ft"].map((unit) => <option key={unit} value={unit}>{unit}</option>)}
+                </select>
+              </label>
+              <label>
+                {t("profile.temperatureUnit")}
+                <select value={profilePreferences.temperatureUnit} onChange={(event) => updateViewPreferences({ temperatureUnit: event.target.value as ProfilePreferences["temperatureUnit"] })}>
+                  {["°C", "°F"].map((unit) => <option key={unit} value={unit}>{unit}</option>)}
+                </select>
+              </label>
+              <label>
+                {t("profile.coordinateFormat")}
+                <select value={profilePreferences.coordinateFormat} onChange={(event) => updateViewPreferences({ coordinateFormat: event.target.value as ProfilePreferences["coordinateFormat"] })}>
+                  <option value="decimal">{t("profile.coordinateDecimal")}</option>
+                  <option value="dms">{t("profile.coordinateDms")}</option>
+                </select>
+              </label>
+              <label>
+                {t("profile.additionalDistanceDisplay")}
+                <select value={profilePreferences.distanceDisplayUnit} onChange={(event) => updateViewPreferences({ distanceDisplayUnit: event.target.value as ProfilePreferences["distanceDisplayUnit"] })}>
+                  <option value="off">{t("profile.off")}</option>
+                  <option value="m">m</option>
+                  <option value="km">km</option>
+                </select>
+              </label>
+            </div>
+          </fieldset>
+          <fieldset className="preference-group wide-field">
+            <legend>{t("profile.defaultSettings")}</legend>
+            <div className="preference-group-grid">
+              <label>
+                {t("profile.defaultVessel")}
+                <select value={profilePreferences.defaultBoatId || activeBoat.id} onChange={(event) => updateViewPreferences({ defaultBoatId: event.target.value })}>
+                  {logbook.boats.map((boat) => <option key={boat.id} value={boat.id}>{boat.name}</option>)}
+                </select>
+              </label>
+              <label>
+                {t("profile.defaultCrewMembers")}
+                <select multiple value={profilePreferences.defaultCrewMemberIds} onChange={(event) => updateViewPreferences({ defaultCrewMemberIds: Array.from(event.target.selectedOptions, (option) => option.value) })}>
+                  {logbook.crewMembers.map((crew) => <option key={crew.id} value={crew.id}>{crew.name}</option>)}
+                </select>
+              </label>
+            </div>
+          </fieldset>
+          <fieldset className="preference-group wide-field">
+            <legend>{t("profile.displaySettings")}</legend>
+            <div className="preference-group-grid">
+              <label>
+                {t("profile.theme")}
+                <select value={theme} onChange={(event) => updateViewPreferences({ theme: event.target.value as ProfilePreferences["theme"] })}>
+                  <option value="light">{t("profile.lightMode")}</option>
+                  <option value="dark">{t("profile.darkMode")}</option>
+                  <option value="auto">{t("profile.autoMode")}</option>
+                </select>
+              </label>
+              <label>
+                {t("profile.sidebarMode")}
+                <select value={profilePreferences.isNavSlim ? "slim" : "wide"} onChange={(event) => updateViewPreferences({ isNavSlim: event.target.value === "slim" })}>
+                  <option value="slim">{t("profile.sidebarSlim")}</option>
+                  <option value="wide">{t("profile.sidebarWide")}</option>
+                </select>
+              </label>
+              <label>
+                {t("profile.showCourseConversionTable")}
+                <select value={profilePreferences.showCourseConversionTable ? "yes" : "no"} onChange={(event) => updateViewPreferences({ showCourseConversionTable: event.target.value === "yes" })}>
+                  <option value="yes">{t("common.yes")}</option>
+                  <option value="no">{t("common.no")}</option>
+                </select>
+              </label>
+            </div>
+          </fieldset>
           <div className="inline-edit-actions">
             <button type="submit">{t("profile.savePreferences")}</button>
           </div>
