@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sampleLogSheets } from "../../../../resources/sample-data/logbook";
+import { sampleLogSheets } from "../../../fixtures/logbook";
 import type { LogLineRow } from "../../../../app/models/logbook";
 import type { QueryableDatabase, QueryResult } from "../../../../app/lib/db/logbook-database";
 import { LogLinesRepository } from "../../../../app/lib/repositories/log-lines-repository";

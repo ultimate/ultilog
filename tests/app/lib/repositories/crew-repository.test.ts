@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { sampleLogSheets } from "../../../../resources/sample-data/logbook";
+import { sampleLogSheets } from "../../../fixtures/logbook";
 import type { CrewMemberRow } from "../../../../app/models/logbook";
 import type { QueryableDatabase, QueryResult } from "../../../../app/lib/db/logbook-database";
 import { CrewRepository } from "../../../../app/lib/repositories/crew-repository";
