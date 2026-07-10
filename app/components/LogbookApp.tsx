@@ -299,10 +299,11 @@ export function LogbookApp({
   );
   const lineDefaults = useMemo(() => ({
     ...defaultLineForm,
-    windUnit: preferences.windUnit === "kn" ? "kn" : "bft",
+    windUnit: preferences.windUnit,
     seaUnit: preferences.waterHeightUnit,
     tideUnit: preferences.waterHeightUnit,
-  }), [preferences.waterHeightUnit, preferences.windUnit]);
+    temperatureUnit: preferences.temperatureUnit,
+  }), [preferences.temperatureUnit, preferences.waterHeightUnit, preferences.windUnit]);
 
   async function saveLogbookNow(nextLogbook: PersistedLogbook) {
     logbookRef.current = nextLogbook;

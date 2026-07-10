@@ -1,5 +1,6 @@
 export type DistanceUnit = "m" | "ft";
-export type WindUnit = "bft" | "kn";
+export type WindUnit = "bft" | "kn" | "km/h" | "mp/h" | "m/s";
+export type TemperatureUnit = "c" | "f" | "°C" | "°F";
 
 export type LogLine = {
   time: string;
@@ -9,6 +10,7 @@ export type LogLine = {
   weather: string;
   weatherRemark: string;
   temperature: number;
+  temperatureUnit: TemperatureUnit;
   barometer: number;
   windDirection: string;
   windStrength: number;
