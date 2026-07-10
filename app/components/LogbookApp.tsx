@@ -365,13 +365,13 @@ export function LogbookApp({
       setSheetForm(
         routedSheet
           ? sheetToForm(routedSheet)
-          : (current) => ({ ...current, boatId: preferences.defaultBoatId || fallbackBoat.id }),
+          : (current) => ({ ...current, boatId: fallbackBoat.id }),
       );
       setSelectedBoatId(nextBoat.id);
       setScannerBoatId(
         normalizedLogbook.boats.length === 1
           ? normalizedLogbook.boats[0].id
-          : preferences.defaultBoatId || nextBoat.id,
+          : nextBoat.id,
       );
       if (routedBoat) {
         setEditingBoatId(routedBoat.id);
@@ -405,7 +405,7 @@ export function LogbookApp({
     return () => {
       isMounted = false;
     };
-  }, [preferences.defaultBoatId]);
+  }, []);
 
   useEffect(() => {
     // Keep direct Next.js navigations and browser history changes in sync without
@@ -1510,6 +1510,7 @@ export function LogbookApp({
           {activeModule === "logbooks" && (
             <LogbookListPage
               activeBoat={activeBoat}
+              preferredBoatId={preferredBoatId}
               scannerBoatId={effectiveScannerBoatId}
               selectedScannerFiles={selectedScannerFiles}
               isScanning={isScanning}

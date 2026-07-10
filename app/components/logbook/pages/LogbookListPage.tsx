@@ -18,6 +18,7 @@ type SheetSummary = { motorMiles: number; sailMiles: number };
 export function LogbookListPage({
   activeBoat,
   scannerBoatId,
+  preferredBoatId,
   selectedScannerFiles,
   isScanning,
   scannerError,
@@ -37,6 +38,7 @@ export function LogbookListPage({
 }: {
   activeBoat?: Boat;
   scannerBoatId: string;
+  preferredBoatId: string;
   selectedScannerFiles: File[];
   isScanning: boolean;
   scannerError: string | null;
@@ -89,7 +91,7 @@ export function LogbookListPage({
           onClick={() => {
             setEditingSheetId(null);
             if (!activeBoat) return;
-            setSheetForm(defaultSheetForm(activeBoat.id));
+            setSheetForm(defaultSheetForm(preferredBoatId || activeBoat.id));
             setShowNewSheet(true);
             navigate("details");
           }}
