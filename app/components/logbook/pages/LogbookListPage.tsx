@@ -6,7 +6,7 @@ import type {
   PersistedLogbook,
   SheetForm,
 } from "../../../models/logbook";
-import { defaultSheetForm, sheetToForm } from "../forms";
+import { sheetToForm } from "../forms";
 import { LogSheetsMapView } from "../OpenSeaMapView";
 
 type Navigate = (
@@ -18,7 +18,6 @@ type SheetSummary = { motorMiles: number; sailMiles: number };
 export function LogbookListPage({
   activeBoat,
   scannerBoatId,
-  preferredBoatId,
   selectedScannerFiles,
   isScanning,
   scannerError,
@@ -35,10 +34,10 @@ export function LogbookListPage({
   setEditingSheetId,
   setSheetForm,
   setShowNewSheet,
+  createDefaultSheetForm,
 }: {
   activeBoat?: Boat;
   scannerBoatId: string;
-  preferredBoatId: string;
   selectedScannerFiles: File[];
   isScanning: boolean;
   scannerError: string | null;
@@ -55,6 +54,7 @@ export function LogbookListPage({
   setEditingSheetId: Dispatch<SetStateAction<string | null>>;
   setSheetForm: Dispatch<SetStateAction<SheetForm>>;
   setShowNewSheet: Dispatch<SetStateAction<boolean>>;
+  createDefaultSheetForm: () => SheetForm;
 }) {
   const { t } = useI18n();
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -91,7 +91,7 @@ export function LogbookListPage({
           onClick={() => {
             setEditingSheetId(null);
             if (!activeBoat) return;
-            setSheetForm(defaultSheetForm(preferredBoatId || activeBoat.id));
+            setSheetForm(createDefaultSheetForm());
             setShowNewSheet(true);
             navigate("details");
           }}

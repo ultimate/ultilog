@@ -59,6 +59,7 @@ import { ProfilePage } from "./logbook/pages/ProfilePage";
 import { OnboardingChecklist } from "./onboarding/OnboardingChecklist";
 import { useOnboardingProfile } from "./onboarding/useOnboardingProfile";
 import type { OnboardingTaskId } from "../lib/onboarding/tasks";
+import type { ProfilePreferences } from "./onboarding/useOnboardingProfile";
 
 type AdminUser = { id: string; name: string; email: string; groups: string[] };
 type SocialUser = {
@@ -75,6 +76,44 @@ type SheetInlineField =
   | "from"
   | "arrived"
   | "to";
+
+type SheetFormPreferences = Pick<ProfilePreferences, "defaultBoatId">;
+type LineFormPreferences = Pick<
+  ProfilePreferences,
+  "windUnit" | "waterHeightUnit" | "temperatureUnit"
+>;
+
+const fallbackLinePreferences: LineFormPreferences = {
+  windUnit: "bft",
+  waterHeightUnit: "m",
+  temperatureUnit: "°C",
+};
+
+function resolvePreferredBoatId(
+  logbook: PersistedLogbook,
+  preferences: SheetFormPreferences,
+) {
+  return logbook.boats.some((boat) => boat.id === preferences.defaultBoatId)
+    ? preferences.defaultBoatId
+    : (logbook.boats[0]?.id ?? seedBoats[0].id);
+}
+
+function createDefaultSheetForm(
+  logbook: PersistedLogbook,
+  preferences: SheetFormPreferences,
+) {
+  return defaultSheetForm(resolvePreferredBoatId(logbook, preferences));
+}
+
+function createDefaultLineForm(preferences: LineFormPreferences): LineForm {
+  return {
+    ...defaultLineForm,
+    windUnit: preferences.windUnit,
+    seaUnit: preferences.waterHeightUnit,
+    tideUnit: preferences.waterHeightUnit,
+    temperatureUnit: preferences.temperatureUnit,
+  };
+}
 
 const mockSocialUsers: SocialUser[] = [
   {
@@ -184,7 +223,7 @@ export function LogbookApp({
   const [isBackendReady, setIsBackendReady] = useState(false);
   const [routePath, setRoutePath] = useState(pathname);
   const [activeModule, setActiveModule] = useState<ActiveView>("dashboard");
-  const [showCourseColumns, setShowCourseColumns] = useState(false);
+  const [showCourseColumns, setShowCourseColumns] = useState(true);
   const [showNewSheet, setShowNewSheet] = useState(false);
   const [showBoatManager, setShowBoatManager] = useState(false);
   const [showAddLine, setShowAddLine] = useState(false);
@@ -192,7 +231,9 @@ export function LogbookApp({
     sheetToForm(defaultLogbook.sheets[0]),
   );
   const [boatForm, setBoatForm] = useState<BoatForm>(defaultBoatForm);
-  const [lineForm, setLineForm] = useState<LineForm>(defaultLineForm);
+  const [lineForm, setLineForm] = useState<LineForm>(() =>
+    createDefaultLineForm(fallbackLinePreferences),
+  );
   const [crewForm, setCrewForm] = useState<CrewForm>(defaultCrewForm);
   const [editingBoatId, setEditingBoatId] = useState<string | null>(null);
   const [editingSheetId, setEditingSheetId] = useState<string | null>(null);
@@ -291,19 +332,18 @@ export function LogbookApp({
     router.refresh();
   }
 
-  const preferredBoatId = logbook.boats.some((boat) => boat.id === preferences.defaultBoatId)
-    ? preferences.defaultBoatId
-    : (logbook.boats[0]?.id ?? seedBoats[0].id);
+  const preferredBoatId = resolvePreferredBoatId(logbook, preferences);
   const preferredCrewMemberIds = preferences.defaultCrewMemberIds.filter((crewId) =>
     logbook.crewMembers.some((crew) => crew.id === crewId),
   );
-  const lineDefaults = useMemo(() => ({
-    ...defaultLineForm,
-    windUnit: preferences.windUnit,
-    seaUnit: preferences.waterHeightUnit,
-    tideUnit: preferences.waterHeightUnit,
-    temperatureUnit: preferences.temperatureUnit,
-  }), [preferences.temperatureUnit, preferences.waterHeightUnit, preferences.windUnit]);
+  const sheetDefaults = useMemo(
+    () => createDefaultSheetForm(logbook, preferences),
+    [logbook, preferences],
+  );
+  const lineDefaults = useMemo(
+    () => createDefaultLineForm(preferences),
+    [preferences],
+  );
 
   async function saveLogbookNow(nextLogbook: PersistedLogbook) {
     logbookRef.current = nextLogbook;
@@ -1010,7 +1050,7 @@ export function LogbookApp({
 
   function cancelSheetEdit() {
     setEditingSheetId(null);
-    setSheetForm(defaultSheetForm(preferredBoatId));
+    setSheetForm(sheetDefaults);
     setShowNewSheet(false);
   }
 
@@ -1511,7 +1551,6 @@ export function LogbookApp({
           {activeModule === "logbooks" && (
             <LogbookListPage
               activeBoat={activeBoat}
-              preferredBoatId={preferredBoatId}
               scannerBoatId={effectiveScannerBoatId}
               selectedScannerFiles={selectedScannerFiles}
               isScanning={isScanning}
@@ -1534,6 +1573,7 @@ export function LogbookApp({
               setEditingSheetId={setEditingSheetId}
               setSheetForm={setSheetForm}
               setShowNewSheet={setShowNewSheet}
+              createDefaultSheetForm={() => sheetDefaults}
             />
           )}
 
