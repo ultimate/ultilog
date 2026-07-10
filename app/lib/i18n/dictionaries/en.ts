@@ -229,7 +229,7 @@ export const en = {
   "details.lon": "Lon",
   "details.weather": "Weather",
   "details.weatherRemark": "Weather remark",
-  "details.temperature": "Temp [°C]",
+  "details.temperature": "Temp",
   "details.baro": "Baro",
   "details.wind": "Wind",
   "details.sea": "Waves",
