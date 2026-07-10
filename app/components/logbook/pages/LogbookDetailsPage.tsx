@@ -91,12 +91,9 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const lineForm = props.lineForm as LineForm;
   const logbook = props.logbook as PersistedLogbook;
   const setLineForm = props.setLineForm as Dispatch<SetStateAction<LineForm>>;
-  const setShowCourseColumns = props.setShowCourseColumns as Dispatch<
-    SetStateAction<boolean>
-  >;
-  const preferredCoordinateFormat = props.coordinateFormat as CoordinateFormat | undefined;
-  const [coordinateFormatOverride, setCoordinateFormatOverride] = useState<CoordinateFormat | null>(null);
-  const coordinateFormat = coordinateFormatOverride ?? preferredCoordinateFormat ?? "decimal";
+  const coordinateFormat = props.coordinateFormat as CoordinateFormat;
+  const onCoordinateFormatChange = props.onCoordinateFormatChange as (format: CoordinateFormat) => void;
+  const onShowCourseColumnsChange = props.onShowCourseColumnsChange as (show: boolean) => void;
   const [isMapExpanded, setIsMapExpanded] = useState(false);
   const [openCourseTooltip, setOpenCourseTooltip] = useState<TranslationKey | null>(null);
   const [courseTooltipPosition, setCourseTooltipPosition] = useState({ left: 0, top: 0 });
@@ -570,8 +567,8 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                 <div className="table-header">
                   <div><h3>{t("details.logTitle")}</h3></div>
                   <div className="table-actions">
-                    <button type="button" onClick={() => setCoordinateFormatOverride(coordinateFormat === "decimal" ? "dms" : "decimal")}>{t("details.coordinates")}: {coordinateFormat === "decimal" ? t("details.decimal") : "DMS"}</button>
-                    <button type="button" onClick={() => setShowCourseColumns((show) => !show)}>{showCourseColumns ? t("details.hide") : t("details.show")} {t("details.courseColumns")}</button>
+                    <button type="button" onClick={() => onCoordinateFormatChange(coordinateFormat === "decimal" ? "dms" : "decimal")}>{t("details.coordinates")}: {coordinateFormat === "decimal" ? t("details.decimal") : "DMS"}</button>
+                    <button type="button" onClick={() => onShowCourseColumnsChange(!showCourseColumns)}>{showCourseColumns ? t("details.hide") : t("details.show")} {t("details.courseColumns")}</button>
                     <button type="button" disabled={isActiveSheetLocked} onClick={startAddingLine}>{t("details.addLine")}</button>
                     <button type="button" disabled={isActiveSheetLocked} onClick={startAddingLineHereNow}>{t("details.addLineHereNow")}</button>
                   </div>

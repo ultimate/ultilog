@@ -345,6 +345,21 @@ export function LogbookApp({
     [preferences],
   );
 
+  const updateCoordinateFormatPreference = useCallback(
+    (coordinateFormat: ProfilePreferences["coordinateFormat"]) => {
+      void updatePreferences({ coordinateFormat });
+    },
+    [updatePreferences],
+  );
+
+  const updateShowCourseColumnsPreference = useCallback(
+    (showCourseConversionTable: boolean) => {
+      setShowCourseColumns(showCourseConversionTable);
+      void updatePreferences({ showCourseConversionTable });
+    },
+    [updatePreferences],
+  );
+
   async function saveLogbookNow(nextLogbook: PersistedLogbook) {
     logbookRef.current = nextLogbook;
     setLogbook(nextLogbook);
@@ -1600,9 +1615,10 @@ export function LogbookApp({
               activeBoat={activeBoat}
               renderInlineDateField={renderInlineDateField}
               activeSheetSummary={activeSheetSummary}
-              setShowCourseColumns={setShowCourseColumns}
               showCourseColumns={showCourseColumns}
               coordinateFormat={preferences.coordinateFormat}
+              onCoordinateFormatChange={updateCoordinateFormatPreference}
+              onShowCourseColumnsChange={updateShowCourseColumnsPreference}
               startAddingLine={startAddingLine}
               startAddingLineHereNow={startAddingLineHereNow}
               showAddLine={showAddLine}
