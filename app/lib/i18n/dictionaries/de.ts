@@ -231,7 +231,7 @@ export const de: Dictionary = {
   "details.lon": "Länge",
   "details.weather": "Wetter",
   "details.weatherRemark": "Wetterbemerkung",
-  "details.temperature": "Temp [°C]",
+  "details.temperature": "Temp",
   "details.baro": "Baro",
   "details.wind": "Wind",
   "details.sea": "Wellen",
