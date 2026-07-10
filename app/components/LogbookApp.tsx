@@ -223,7 +223,10 @@ export function LogbookApp({
   const [isBackendReady, setIsBackendReady] = useState(false);
   const [routePath, setRoutePath] = useState(pathname);
   const [activeModule, setActiveModule] = useState<ActiveView>("dashboard");
-  const [showCourseColumns, setShowCourseColumns] = useState(true);
+  const [showCourseColumnsOverride, setShowCourseColumnsOverride] = useState<{
+    sheetId: string;
+    isVisible: boolean;
+  } | null>(null);
   const [showNewSheet, setShowNewSheet] = useState(false);
   const [showBoatManager, setShowBoatManager] = useState(false);
   const [showAddLine, setShowAddLine] = useState(false);
@@ -318,7 +321,6 @@ export function LogbookApp({
     onProfileError: setProfileError,
     onProfileMessage: setProfileMessage,
     onLocaleChange: setLocale,
-    onCourseConversionPreferenceChange: setShowCourseColumns,
     t,
   });
 
@@ -352,12 +354,11 @@ export function LogbookApp({
     [updatePreferences],
   );
 
-  const updateShowCourseColumnsPreference = useCallback(
-    (showCourseConversionTable: boolean) => {
-      setShowCourseColumns(showCourseConversionTable);
-      void updatePreferences({ showCourseConversionTable });
+  const updateShowCourseColumnsDisplay = useCallback(
+    (isVisible: boolean) => {
+      setShowCourseColumnsOverride({ sheetId: activeSheetId, isVisible });
     },
-    [updatePreferences],
+    [activeSheetId],
   );
 
   async function saveLogbookNow(nextLogbook: PersistedLogbook) {
@@ -682,6 +683,10 @@ export function LogbookApp({
     logbook.boats.find((boat) => boat.id === activeSheet.boatId) ??
     logbook.boats[0] ??
     seedBoats[0];
+  const showCourseColumns =
+    showCourseColumnsOverride?.sheetId === activeSheet.id
+      ? showCourseColumnsOverride.isVisible
+      : preferences.showCourseConversionTable;
   const selectedBoat =
     logbook.boats.find((boat) => boat.id === selectedBoatId) ??
     logbook.boats[0] ??
@@ -1618,7 +1623,7 @@ export function LogbookApp({
               showCourseColumns={showCourseColumns}
               coordinateFormat={preferences.coordinateFormat}
               onCoordinateFormatChange={updateCoordinateFormatPreference}
-              onShowCourseColumnsChange={updateShowCourseColumnsPreference}
+              onShowCourseColumnsChange={updateShowCourseColumnsDisplay}
               startAddingLine={startAddingLine}
               startAddingLineHereNow={startAddingLineHereNow}
               showAddLine={showAddLine}
