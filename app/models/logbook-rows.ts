@@ -38,13 +38,14 @@ export type CrewMemberRow = Omit<SheetCrewMember, "embarkationDateTime" | "embar
   is_primary?: number;
 };
 
-export type LogLineRow = Omit<LogLine, "position" | "weatherRemark" | "temperature" | "logNm" | "windDirection" | "windStrength" | "windUnit" | "waves" | "seaUnit" | "tideUnit" | "compassCourse" | "magneticCourse" | "trueCourse" | "windDrift" | "courseThroughWater" | "currentDrift" | "courseOverGround" | "speedKn" | "sailMiles" | "sailNote" | "motorMiles" | "motorHours" | "motorNote"> & {
+export type LogLineRow = Omit<LogLine, "position" | "weatherRemark" | "temperature" | "temperatureUnit" | "logNm" | "windDirection" | "windStrength" | "windUnit" | "waves" | "seaUnit" | "tideUnit" | "compassCourse" | "magneticCourse" | "trueCourse" | "windDrift" | "courseThroughWater" | "currentDrift" | "courseOverGround" | "speedKn" | "sailMiles" | "sailNote" | "motorMiles" | "motorHours" | "motorNote"> & {
   sheet_id: string;
   sort_order: number;
   position_name: string;
   log_nm: number;
   weather_remark: string;
   temperature: number;
+  temperature_unit: LogLine["temperatureUnit"];
   wind_direction: string;
   wind_strength: number;
   wind_unit: LogLine["windUnit"];

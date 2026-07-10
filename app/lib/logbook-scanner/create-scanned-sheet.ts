@@ -29,6 +29,7 @@ const defaultLineForm: LineForm = {
   weather: "",
   weatherRemark: "",
   temperature: "",
+  temperatureUnit: "°C",
   barometer: "",
   windDirection: "",
   windStrength: "",

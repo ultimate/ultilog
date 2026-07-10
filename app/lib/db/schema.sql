@@ -100,6 +100,7 @@ create table if not exists log_lines (
   weather text not null,
   weather_remark text not null default '',
   temperature real not null default 0,
+  temperature_unit text not null default '°C',
   sails text not null,
   engine text not null,
   wind_direction text not null default '',

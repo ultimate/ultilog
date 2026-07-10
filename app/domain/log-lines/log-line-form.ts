@@ -1,7 +1,17 @@
-import type { LineForm, LogLine } from "../../models/logbook";
+import type { LineForm, LogLine, TemperatureUnit, WindUnit } from "../../models/logbook";
 import { normalizeCoordinate, parseCoordinate } from "../nautical/coordinates";
 
 const numberOrZero = (value: string) => Number.parseFloat(value) || 0;
+const supportedWindUnits = new Set<WindUnit>(["bft", "kn", "km/h", "mp/h", "m/s"]);
+const supportedTemperatureUnits = new Set<TemperatureUnit>(["c", "f", "°C", "°F"]);
+
+function normalizeWindUnit(value: string): WindUnit {
+  return supportedWindUnits.has(value as WindUnit) ? value as WindUnit : "bft";
+}
+
+function normalizeTemperatureUnit(value: string): TemperatureUnit {
+  return supportedTemperatureUnits.has(value as TemperatureUnit) ? value as TemperatureUnit : "°C";
+}
 
 export function clampInt(value: string, min: number, max: number) {
   const parsed = Math.round(numberOrZero(value));
@@ -25,10 +35,11 @@ export function lineFormToLogLine(lineForm: LineForm): LogLine {
     weather: lineForm.weather,
     weatherRemark: lineForm.weatherRemark,
     temperature: numberOrZero(lineForm.temperature),
+    temperatureUnit: normalizeTemperatureUnit(lineForm.temperatureUnit),
     barometer: clampInt(lineForm.barometer, 800, 1200),
     windDirection: lineForm.windDirection,
     windStrength: numberOrZero(lineForm.windStrength),
-    windUnit: lineForm.windUnit === "kn" ? "kn" : "bft",
+    windUnit: normalizeWindUnit(lineForm.windUnit),
     waves: numberOrZero(lineForm.waves),
     seaUnit: lineForm.seaUnit === "ft" ? "ft" : "m",
     tide: numberOrZero(lineForm.tide),

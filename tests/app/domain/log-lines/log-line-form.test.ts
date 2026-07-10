@@ -10,6 +10,7 @@ const baseLineForm: LineForm = {
   weather: "☀️",
   weatherRemark: "Clear horizon",
   temperature: "18.5",
+  temperatureUnit: "°F",
   barometer: "1013.6",
   windDirection: "NW",
   windStrength: "12.5",
@@ -48,6 +49,7 @@ describe("lineFormToLogLine", () => {
       weather: "☀️",
       weatherRemark: "Clear horizon",
       temperature: 18.5,
+      temperatureUnit: "°F",
       barometer: 1014,
       windDirection: "NW",
       windStrength: 12.5,
@@ -78,9 +80,10 @@ describe("lineFormToLogLine", () => {
   });
 
   it("falls back to default units and zeroed numeric values for invalid optional values", () => {
-    expect(lineFormToLogLine({ ...baseLineForm, windUnit: "mph" as LineForm["windUnit"], seaUnit: "yd" as LineForm["seaUnit"], tideUnit: "yd" as LineForm["tideUnit"], speedKn: "", barometer: "" })).toMatchObject({
+    expect(lineFormToLogLine({ ...baseLineForm, windUnit: "mph" as LineForm["windUnit"], temperatureUnit: "kelvin" as LineForm["temperatureUnit"], seaUnit: "yd" as LineForm["seaUnit"], tideUnit: "yd" as LineForm["tideUnit"], speedKn: "", barometer: "" })).toMatchObject({
       barometer: 800,
       windUnit: "bft",
+      temperatureUnit: "°C",
       seaUnit: "m",
       tideUnit: "m",
       speedKn: 0,
