@@ -268,7 +268,7 @@ export function LogbookApp({
     setAccountName,
     theme,
     updateOnboardingCompletedTasks,
-    updateViewPreferences,
+    updatePreferences,
   } = useOnboardingProfile({
     activeModule,
     initialEmail: userEmail,
@@ -290,6 +290,19 @@ export function LogbookApp({
     router.push("/login");
     router.refresh();
   }
+
+  const preferredBoatId = logbook.boats.some((boat) => boat.id === preferences.defaultBoatId)
+    ? preferences.defaultBoatId
+    : (logbook.boats[0]?.id ?? seedBoats[0].id);
+  const preferredCrewMemberIds = preferences.defaultCrewMemberIds.filter((crewId) =>
+    logbook.crewMembers.some((crew) => crew.id === crewId),
+  );
+  const lineDefaults = useMemo(() => ({
+    ...defaultLineForm,
+    windUnit: preferences.windUnit === "kn" ? "kn" : "bft",
+    seaUnit: preferences.waterHeightUnit,
+    tideUnit: preferences.waterHeightUnit,
+  }), [preferences.waterHeightUnit, preferences.windUnit]);
 
   async function saveLogbookNow(nextLogbook: PersistedLogbook) {
     logbookRef.current = nextLogbook;
@@ -352,13 +365,13 @@ export function LogbookApp({
       setSheetForm(
         routedSheet
           ? sheetToForm(routedSheet)
-          : (current) => ({ ...current, boatId: fallbackBoat.id }),
+          : (current) => ({ ...current, boatId: preferences.defaultBoatId || fallbackBoat.id }),
       );
       setSelectedBoatId(nextBoat.id);
       setScannerBoatId(
         normalizedLogbook.boats.length === 1
           ? normalizedLogbook.boats[0].id
-          : nextBoat.id,
+          : preferences.defaultBoatId || nextBoat.id,
       );
       if (routedBoat) {
         setEditingBoatId(routedBoat.id);
@@ -392,7 +405,7 @@ export function LogbookApp({
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [preferences.defaultBoatId]);
 
   useEffect(() => {
     // Keep direct Next.js navigations and browser history changes in sync without
@@ -624,7 +637,7 @@ export function LogbookApp({
       ? logbook.boats[0].id
       : logbook.boats.some((boat) => boat.id === scannerBoatId)
         ? scannerBoatId
-        : (logbook.boats[0]?.id ?? "");
+        : preferredBoatId;
   const isAdmin = userGroups.includes("admin");
   const isActiveSheetLocked = activeSheet.status === "Locked";
   const activeSheetSummary = useMemo(
@@ -852,15 +865,17 @@ export function LogbookApp({
     )
       ? currentLogbook.crewMembers
       : [currentUserCrew, ...currentLogbook.crewMembers];
-    const initialCrew = [
-      {
-        ...currentUserCrew,
-        embarkationDateTime: dateTimeLocalFromStamp(route.departed),
-        embarkationPosition: route.from,
-        disembarkationDateTime: dateTimeLocalFromStamp(route.arrived),
-        disembarkationPosition: route.to,
-      },
-    ];
+    const defaultCrewMembers = preferredCrewMemberIds
+      .map((crewId) => crewMembers.find((crew) => crew.id === crewId))
+      .filter((crew): crew is typeof crewMembers[number] => Boolean(crew));
+    const initialCrewSource = defaultCrewMembers.length ? defaultCrewMembers : [currentUserCrew];
+    const initialCrew = initialCrewSource.map((crew) => ({
+      ...crew,
+      embarkationDateTime: dateTimeLocalFromStamp(route.departed),
+      embarkationPosition: route.from,
+      disembarkationDateTime: dateTimeLocalFromStamp(route.arrived),
+      disembarkationPosition: route.to,
+    }));
     const sheet: LogSheet = {
       ...base,
       id,
@@ -994,7 +1009,7 @@ export function LogbookApp({
 
   function cancelSheetEdit() {
     setEditingSheetId(null);
-    setSheetForm(defaultSheetForm(logbook.boats[0]?.id ?? seedBoats[0].id));
+    setSheetForm(defaultSheetForm(preferredBoatId));
     setShowNewSheet(false);
   }
 
@@ -1016,7 +1031,7 @@ export function LogbookApp({
       }),
     };
     if (!(await saveLogbookNow(nextLogbook))) return;
-    setLineForm(defaultLineForm);
+    setLineForm(lineDefaults);
     setEditingLineIndex(null);
     setShowAddLine(false);
   }
@@ -1036,7 +1051,7 @@ export function LogbookApp({
   function startAddingLine() {
     if (activeSheet.status === "Locked") return;
     setEditingLineIndex(null);
-    setLineForm(defaultLineForm);
+    setLineForm(lineDefaults);
     setShowAddLine((show) => !show);
   }
 
@@ -1045,7 +1060,7 @@ export function LogbookApp({
     const now = new Date();
     const time = dateTimeLocalFromDate(now);
     setEditingLineIndex(null);
-    setLineForm({ ...defaultLineForm, time });
+    setLineForm({ ...lineDefaults, time });
     setShowAddLine(true);
     navigator.geolocation?.getCurrentPosition((position) => {
       setLineForm((current) => ({
@@ -1071,7 +1086,7 @@ export function LogbookApp({
 
   function cancelLineEdit() {
     setEditingLineIndex(null);
-    setLineForm(defaultLineForm);
+    setLineForm(lineDefaults);
     setShowAddLine(false);
   }
 
@@ -1463,12 +1478,12 @@ export function LogbookApp({
         onSelectModule={(module) => navigate(module)}
         onOpenProfile={() => navigate("profile")}
         theme={theme}
-        onToggleTheme={() => updateViewPreferences({ theme: theme === "dark" ? "light" : "dark" })}
+        onToggleTheme={() => updatePreferences({ theme: theme === "dark" ? "light" : "dark" })}
         userEmail={accountEmail || userEmail}
         userName={accountName || userName}
         userGroups={userGroups}
         isNavSlim={isNavSlim}
-        onToggleNavSlim={() => updateViewPreferences({ isNavSlim: !isNavSlim })}
+        onToggleNavSlim={() => updatePreferences({ isNavSlim: !isNavSlim })}
         onLogout={logout}
         isLoggingOut={isLoggingOut}
       />
@@ -1545,6 +1560,7 @@ export function LogbookApp({
               activeSheetSummary={activeSheetSummary}
               setShowCourseColumns={setShowCourseColumns}
               showCourseColumns={showCourseColumns}
+              coordinateFormat={preferences.coordinateFormat}
               startAddingLine={startAddingLine}
               startAddingLineHereNow={startAddingLineHereNow}
               showAddLine={showAddLine}
@@ -1619,7 +1635,7 @@ export function LogbookApp({
               navigate={navigate}
               theme={theme}
               preferences={preferences}
-              updateViewPreferences={updateViewPreferences}
+              updateViewPreferences={updatePreferences}
               onboardingChecklist={
                 <OnboardingChecklist
                   completion={onboardingCompletion}
