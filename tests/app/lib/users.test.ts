@@ -33,6 +33,20 @@ describe("users preferences", () => {
     });
   });
 
+
+  it("creates only the primary crew profile for a newly registered user logbook", async () => {
+    const { registerUser } = await importUsersWithTempDatabase();
+    const { readLogbook } = await import("../../../app/lib/logbook-store");
+
+    const user = await registerUser({ name: "Fresh User", email: "fresh@example.test", password: "password123" });
+
+    await expect(readLogbook(user.id)).resolves.toEqual({
+      boats: [],
+      crewMembers: [{ id: "me", name: "Fresh User", nationality: "", role: "", address: "", certificate: "", isPrimary: true }],
+      sheets: [],
+    });
+  });
+
   it("validates and persists the full preference object", async () => {
     const { findUserById, registerUser, updateUserViewPreferences } = await importUsersWithTempDatabase();
     const user = await registerUser({ name: "Persist User", email: "persist@example.test", password: "password123" });

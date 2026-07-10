@@ -2,7 +2,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it } from "vitest";
-import { sampleBoats, sampleLogSheets } from "../../../../resources/sample-data/logbook";
+import { defaultDeviationTable } from "../../../../app/models/logbook";
 import { SqliteLogbookDatabase } from "../../../../app/lib/db/sqlite-logbook-database";
 
 const tempDirs: string[] = [];
@@ -12,10 +12,10 @@ afterEach(async () => {
 });
 
 describe("SqliteLogbookDatabase", () => {
-  it("creates an empty local database and seeds it from sample data", async () => {
+  it("creates an empty local database without sample data", async () => {
     const db = new SqliteLogbookDatabase(await tempDatabasePath());
 
-    await expect(db.readLogbook()).resolves.toMatchObject({ boats: sampleBoats, sheets: sampleLogSheets });
+    await expect(db.readLogbook()).resolves.toEqual({ boats: [], crewMembers: [{ id: "me", name: "Local demo user", nationality: "", role: "Owner", address: "", certificate: "", isPrimary: true }], sheets: [] });
   });
 
   it("does not replace an intentionally empty user logbook that already has a crew profile", async () => {
@@ -37,11 +37,10 @@ describe("SqliteLogbookDatabase", () => {
   it("persists replaced logbook data and can read it from a new database wrapper", async () => {
     const databasePath = await tempDatabasePath();
     const firstWrapper = new SqliteLogbookDatabase(databasePath);
-    const logbook = await firstWrapper.readLogbook();
     const updatedLogbook = {
-      crewMembers: logbook.crewMembers,
-      boats: [{ ...logbook.boats[0], name: "SY Repository Test" }],
-      sheets: [{ ...logbook.sheets[0], title: "Repository integration test", boatId: logbook.boats[0].id }],
+      crewMembers: [],
+      boats: [{ id: "boat-1", name: "SY Repository Test", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", yachtData: {}, deviationTable: defaultDeviationTable() }],
+      sheets: [{ id: "sheet-1", title: "Repository integration test", dateRange: "2026-07-10", status: "Draft" as const, boatId: "boat-1", route: { from: "", to: "", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] }],
     };
 
     await firstWrapper.writeLogbook(updatedLogbook);

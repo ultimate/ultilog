@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sampleBoats } from "../../../../resources/sample-data/logbook";
+import { sampleBoats } from "../../../fixtures/logbook";
 import type { BoatRow } from "../../../../app/models/logbook";
 import type { QueryableDatabase, QueryResult } from "../../../../app/lib/db/logbook-database";
 import { BoatsRepository } from "../../../../app/lib/repositories/boats-repository";

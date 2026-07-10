@@ -1,5 +1,4 @@
 import type { PersistedLogbook } from "../../models/logbook";
-import { sampleBoats, sampleLogSheets } from "../../../resources/sample-data/logbook";
 import { BoatsRepository } from "../repositories/boats-repository";
 import { CrewRepository } from "../repositories/crew-repository";
 import { LogLinesRepository } from "../repositories/log-lines-repository";
@@ -13,7 +12,7 @@ export interface QueryableDatabase {
   query<Row>(sql: string, values?: unknown[]): Promise<QueryResult<Row>>;
 }
 
-const defaultLogbook: PersistedLogbook = { boats: sampleBoats, crewMembers: sampleLogSheets.flatMap((sheet) => sheet.crew).filter((crew, index, crews) => crews.findIndex((candidate) => candidate.id === crew.id) === index).map(({ embarkationDateTime, embarkationPosition, disembarkationDateTime, disembarkationPosition, ...crew }) => crew), sheets: sampleLogSheets };
+const emptyLogbook: PersistedLogbook = { boats: [], crewMembers: [], sheets: [] };
 
 export abstract class LogbookDatabase implements QueryableDatabase {
   protected readonly boats = new BoatsRepository(this);
@@ -44,9 +43,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
   async readLogbook(): Promise<PersistedLogbook> {
     await this.ensureSchemaAndBackfill();
     const logbook = await this.readTables();
-    if (logbook.boats.length || logbook.sheets.length || (this.ownerId !== "legacy-user" && logbook.crewMembers.length)) return logbook;
-    await this.writeLogbook(defaultLogbook);
-    return defaultLogbook;
+    return logbook.boats.length || logbook.sheets.length || logbook.crewMembers.length ? logbook : emptyLogbook;
   }
 
   async writeLogbook(logbook: PersistedLogbook) {

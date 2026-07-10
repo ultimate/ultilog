@@ -23,9 +23,9 @@ import {
   defaultLineForm,
   defaultLogbook,
   defaultSheetForm,
+  emptyBoat,
+  emptySheet,
   lineToForm,
-  seedBoats,
-  seedSheets,
   sheetToForm,
 } from "./logbook/forms";
 import {
@@ -95,7 +95,7 @@ function resolvePreferredBoatId(
 ) {
   return logbook.boats.some((boat) => boat.id === preferences.defaultBoatId)
     ? preferences.defaultBoatId
-    : (logbook.boats[0]?.id ?? seedBoats[0].id);
+    : (logbook.boats[0]?.id ?? "");
 }
 
 function createDefaultSheetForm(
@@ -218,7 +218,7 @@ export function LogbookApp({
   const pathname = usePathname();
   const [logbook, setLogbook] = useState<PersistedLogbook>(defaultLogbook);
   const [activeSheetId, setActiveSheetId] = useState(
-    defaultLogbook.sheets[0].id,
+    defaultLogbook.sheets[0]?.id ?? "",
   );
   const [isBackendReady, setIsBackendReady] = useState(false);
   const [routePath, setRoutePath] = useState(pathname);
@@ -231,7 +231,7 @@ export function LogbookApp({
   const [showBoatManager, setShowBoatManager] = useState(false);
   const [showAddLine, setShowAddLine] = useState(false);
   const [sheetForm, setSheetForm] = useState<SheetForm>(
-    sheetToForm(defaultLogbook.sheets[0]),
+    defaultSheetForm(""),
   );
   const [boatForm, setBoatForm] = useState<BoatForm>(defaultBoatForm);
   const [lineForm, setLineForm] = useState<LineForm>(() =>
@@ -245,9 +245,9 @@ export function LogbookApp({
   const [sheetInlineDraft, setSheetInlineDraft] = useState("");
   const [editingLineIndex, setEditingLineIndex] = useState<number | null>(null);
   const [selectedBoatId, setSelectedBoatId] = useState(
-    defaultLogbook.boats[0].id,
+    defaultLogbook.boats[0]?.id ?? "",
   );
-  const [scannerBoatId, setScannerBoatId] = useState(defaultLogbook.boats[0].id);
+  const [scannerBoatId, setScannerBoatId] = useState(defaultLogbook.boats[0]?.id ?? "");
   const [selectedScannerFiles, setSelectedScannerFiles] = useState<File[]>([]);
   const [isScannerPrivacyConfirmed, setIsScannerPrivacyConfirmed] =
     useState(false);
@@ -411,8 +411,8 @@ export function LogbookApp({
           ? normalizedLogbook.boats.find((boat) => boat.id === nextRoute.itemId)
           : undefined;
       const fallbackSheet =
-        normalizedLogbook.sheets[0] ?? defaultLogbook.sheets[0];
-      const fallbackBoat = normalizedLogbook.boats[0] ?? seedBoats[0];
+        normalizedLogbook.sheets[0] ?? emptySheet;
+      const fallbackBoat = normalizedLogbook.boats[0] ?? emptyBoat;
       const nextSheet = routedSheet ?? fallbackSheet;
       const nextBoat = routedBoat ?? fallbackBoat;
 
@@ -678,11 +678,11 @@ export function LogbookApp({
   const activeSheet =
     logbook.sheets.find((sheet) => sheet.id === activeSheetId) ??
     logbook.sheets[0] ??
-    seedSheets[0];
+    emptySheet;
   const activeBoat =
     logbook.boats.find((boat) => boat.id === activeSheet.boatId) ??
     logbook.boats[0] ??
-    seedBoats[0];
+    emptyBoat;
   const showCourseColumns =
     showCourseColumnsOverride?.sheetId === activeSheet.id
       ? showCourseColumnsOverride.isVisible
@@ -690,7 +690,7 @@ export function LogbookApp({
   const selectedBoat =
     logbook.boats.find((boat) => boat.id === selectedBoatId) ??
     logbook.boats[0] ??
-    seedBoats[0];
+    emptyBoat;
   const selectedCrew =
     logbook.crewMembers[selectedCrewIndex] ?? logbook.crewMembers[0];
   const effectiveScannerBoatId =
@@ -901,7 +901,7 @@ export function LogbookApp({
     const existingSheet = editingSheetId
       ? currentLogbook.sheets.find((sheet) => sheet.id === editingSheetId)
       : undefined;
-    const base = existingSheet ?? seedSheets[0];
+    const base = existingSheet ?? emptySheet;
     const id = editingSheetId ?? createId();
     const route = {
       from: sheetForm.from,

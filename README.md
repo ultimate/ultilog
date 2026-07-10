@@ -41,7 +41,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-For local development, leave `POSTGRES_URL` empty. The app creates `.data/ultilog.sqlite` automatically and seeds it from `resources/sample-data/logbook.ts` on first use. Delete that file if you want to rebuild the local database from the sample data after a schema change. For Vercel/PostgreSQL deployments, set `POSTGRES_URL` (or `DATABASE_URL`) from your deployment secrets.
+For local development, leave `POSTGRES_URL` empty. The app creates `.data/ultilog.sqlite` automatically on first use. New accounts start with only their own primary crew profile so the onboarding checklist can guide them through creating their first boat and log sheet. For Vercel/PostgreSQL deployments, set `POSTGRES_URL` (or `DATABASE_URL`) from your deployment secrets.
 
 Open [http://localhost:3000](http://localhost:3000) to view the app.
 
@@ -85,7 +85,6 @@ Scanned sheets are always created with `Draft` status. Users must review and ver
 Keep the app organized by responsibility so feature work does not collect in a single component:
 
 - `app/models/` contains one TypeScript data model per file plus reusable form and database row shapes. Re-export shared domain types from `app/models/logbook.ts` when a caller needs the aggregate logbook shape.
-- `resources/sample-data/` contains seed data/fixtures outside the Next.js app route tree. The API storage layer seeds empty local databases from it, and tests reuse it as fixture input.
 - `app/api/` contains backend API routes used by the frontend instead of calling the database directly from client components.
 - `app/lib/db/` contains server-only database wrappers, SQL migrations under `app/lib/db/migrations/`, and migration helpers; `app/lib/repositories/` contains table repositories used by the persistence adapter.
 - `app/domain/nautical/` is reserved for nautical business rules, for example course conversion, deviation/variation handling, or mileage-calculation helpers. Keep these files framework-independent and covered by unit tests when rules become non-trivial.

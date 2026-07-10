@@ -1,9 +1,7 @@
 import { defaultDeviationTable, normalizeDeviationTable, type Boat, type BoatForm, type CrewForm, type LineForm, type LogLine, type LogSheet, type PersistedLogbook, type SheetForm } from "../../models/logbook";
-import { sampleBoats, sampleLogSheets } from "../../../resources/sample-data/logbook";
-
-export const seedBoats = sampleBoats;
-export const seedSheets = sampleLogSheets;
-export const defaultLogbook: PersistedLogbook = { boats: seedBoats, crewMembers: crewProfilesFromSheets(seedSheets), sheets: seedSheets };
+export const emptyBoat: Boat = { id: "", name: "", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", yachtData: { Manufacturer: "", MMSI: "", Engine: "", Safety: "" }, deviationTable: defaultDeviationTable() };
+export const emptySheet: LogSheet = { id: "", title: "", status: "Draft", dateRange: new Date().toISOString().slice(0, 10), boatId: "", route: { from: "", to: "", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] };
+export const defaultLogbook: PersistedLogbook = { boats: [], crewMembers: [], sheets: [] };
 
 export const defaultSheetForm = (boatId: string): SheetForm => ({ title: "", status: "Draft", dateRange: new Date().toISOString().slice(0, 10), boatId, from: "", to: "", fromTime: "", toTime: "" });
 export const defaultBoatForm: BoatForm = { name: "", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", manufacturer: "", mmsi: "", engine: "", safety: "", deviationTable: defaultDeviationTable() };
@@ -17,15 +15,4 @@ export const crewToForm = (crew: Partial<CrewForm>): CrewForm => ({ id: crew.id 
 
 function timeFromRouteStamp(value: string) {
   return value.match(/(\d{1,2}:\d{2})/)?.[1] ?? "";
-}
-
-function crewProfilesFromSheets(sheets: LogSheet[]) {
-  const profiles = new Map<string, PersistedLogbook["crewMembers"][number]>();
-  for (const sheet of sheets) {
-    for (const member of sheet.crew) {
-      const id = member.id || `${member.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${member.nationality.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
-      if (!profiles.has(id)) profiles.set(id, { id, name: member.name, nationality: member.nationality, role: member.role, address: member.address ?? "", certificate: member.certificate ?? "", isPrimary: member.isPrimary ?? false });
-    }
-  }
-  return [...profiles.values()];
 }
