@@ -1,5 +1,6 @@
+/* eslint-disable @next/next/no-img-element */
 import { useI18n } from "../../../lib/i18n";
-import type { Dispatch, SetStateAction } from "react";
+import { useRef, type Dispatch, type SetStateAction } from "react";
 import type {
   CrewForm,
   LogSheet,
@@ -33,6 +34,7 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
   const crewAssignments = props.crewAssignments as CrewAssignment[];
   const logbook = props.logbook as PersistedLogbook;
   const setCrewForm = props.setCrewForm as Dispatch<SetStateAction<CrewForm>>;
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   return (
     <section className="sheet-detail module-panel">
@@ -132,11 +134,23 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
               />
             </label>
 
-            <label className="wide-field">
-              Image
+            <div className="image-form-field wide-field">
+              <p className="eyebrow">Image</p>
+              <div className="image-preview-frame">
+                {crewForm.image ? (
+                  <img
+                    src={`data:${crewForm.image.mimeType};base64,${crewForm.image.data}`}
+                    alt={`${crewForm.name || t("crew.newProfile")} preview`}
+                  />
+                ) : (
+                  <span>No image selected</span>
+                )}
+              </div>
               <input
+                ref={imageInputRef}
                 type="file"
                 accept="image/*"
+                className="visually-hidden-file-input"
                 onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (!file) return;
@@ -145,12 +159,23 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
                     setCrewForm((current) => ({ ...current, image }));
                   } catch (error) {
                     alert(error instanceof Error ? error.message : "Image could not be processed.");
+                  } finally {
                     e.currentTarget.value = "";
                   }
                 }}
               />
+              <div className="image-actions">
+                <button type="button" className="ghost-button" onClick={() => imageInputRef.current?.click()}>
+                  {crewForm.image ? "Change image" : "Upload image"}
+                </button>
+                {crewForm.image ? (
+                  <button type="button" className="ghost-button" onClick={() => setCrewForm((current) => ({ ...current, image: undefined }))}>
+                    Remove image
+                  </button>
+                ) : null}
+              </div>
               {crewForm.image ? <small>{crewForm.image.width} × {crewForm.image.height} · {crewForm.image.mimeType}</small> : null}
-            </label>
+            </div>
             <article className="info-card wide-field">
               <h3>{t("crew.logSheets")}</h3>
               <ul className="stack-list">

@@ -1,6 +1,7 @@
+/* eslint-disable @next/next/no-img-element */
 import { flagGroups, flagOptionEmoji } from "../../../lib/flags";
 import { useI18n } from "../../../lib/i18n";
-import type { Dispatch, SetStateAction } from "react";
+import { useRef, type Dispatch, type SetStateAction } from "react";
 import type { Boat, BoatForm, PersistedLogbook } from "../../../models/logbook";
 import type { BoatType } from "../../../models/logbook";
 import { boatToForm, defaultBoatForm } from "../forms";
@@ -33,6 +34,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
   const setShowBoatManager = props.setShowBoatManager as Dispatch<
     SetStateAction<boolean>
   >;
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   return (
     <section className="sheet-detail module-panel">
@@ -196,11 +198,23 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
               />
             </label>
 
-            <label className="wide-field">
-              Image
+            <div className="image-form-field wide-field">
+              <p className="eyebrow">Image</p>
+              <div className="image-preview-frame">
+                {boatForm.image ? (
+                  <img
+                    src={`data:${boatForm.image.mimeType};base64,${boatForm.image.data}`}
+                    alt={`${boatForm.name || t("boats.new")} preview`}
+                  />
+                ) : (
+                  <span>No image selected</span>
+                )}
+              </div>
               <input
+                ref={imageInputRef}
                 type="file"
                 accept="image/*"
+                className="visually-hidden-file-input"
                 onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (!file) return;
@@ -209,12 +223,23 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                     setBoatForm((current) => ({ ...current, image }));
                   } catch (error) {
                     alert(error instanceof Error ? error.message : "Image could not be processed.");
+                  } finally {
                     e.currentTarget.value = "";
                   }
                 }}
               />
+              <div className="image-actions">
+                <button type="button" className="ghost-button" onClick={() => imageInputRef.current?.click()}>
+                  {boatForm.image ? "Change image" : "Upload image"}
+                </button>
+                {boatForm.image ? (
+                  <button type="button" className="ghost-button" onClick={() => setBoatForm((current) => ({ ...current, image: undefined }))}>
+                    Remove image
+                  </button>
+                ) : null}
+              </div>
               {boatForm.image ? <small>{boatForm.image.width} × {boatForm.image.height} · {boatForm.image.mimeType}</small> : null}
-            </label>
+            </div>
             <label className="wide-field">
               {t("boats.safety")}
               <textarea

@@ -1155,7 +1155,9 @@ export function LogbookApp({
 
   async function saveCrew() {
     const id = selectedCrewIndex === -1 ? createId() : crewForm.id;
+    const previousCrew = logbookRef.current.crewMembers.find((candidate) => candidate.id === id);
     const crew = {
+      ...previousCrew,
       id,
       name: crewForm.name,
       nationality: crewForm.nationality,
