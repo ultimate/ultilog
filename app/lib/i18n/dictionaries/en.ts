@@ -100,7 +100,6 @@ export const en = {
   "boats.noRegistration": "No registration",
   "boats.flagState": "Flag state",
   "boats.flagPlaceholder": "Choose a flag",
-  "boats.flagHelp": "Saved as an emoji only.",
   "boats.homePort": "Home port",
   "boats.dimensions": "Dimensions",
   "boats.manufacturer": "Manufacturer",
