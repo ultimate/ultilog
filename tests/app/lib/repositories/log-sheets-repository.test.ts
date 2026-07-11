@@ -96,8 +96,11 @@ describe("LogSheetsRepository", () => {
     const sheetRow = logSheetRow({ image_data: image.data, image_mime_type: image.mimeType, image_width: image.width, image_height: image.height });
     const crewRow: CrewMemberRow = { sheet_id: sheet.id, crew_member_id: "luca-frei-swiss", sort_order: 0, ...crew, embarkation_datetime: crew.embarkationDateTime, embarkation_position: crew.embarkationPosition, disembarkation_datetime: crew.disembarkationDateTime, disembarkation_position: crew.disembarkationPosition, image_data: "base64-crew", image_mime_type: "image/jpeg", image_width: 320, image_height: 240 };
 
-    expect(LogSheetsRepository.toLogbook([boatRow], [sheetRow], [crewRow], [])).toMatchObject({
+    const crewProfileRow: CrewMemberRow = { ...crewRow, id: "luca-frei-swiss", is_primary: 1 };
+
+    expect(LogSheetsRepository.toLogbook([boatRow], [sheetRow], [crewRow], [], [crewProfileRow])).toMatchObject({
       boats: [{ image: { data: "base64-boat", mimeType: "image/png", width: 640, height: 480 } }],
+      crewMembers: [{ image: { data: "base64-crew", mimeType: "image/jpeg", width: 320, height: 240 } }],
       sheets: [{ image, crew: [{ image: { data: "base64-crew", mimeType: "image/jpeg", width: 320, height: 240 } }] }],
     });
   });

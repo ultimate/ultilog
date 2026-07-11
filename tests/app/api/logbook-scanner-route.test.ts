@@ -232,6 +232,7 @@ describe("logbook scanner endpoint", () => {
     }), "user-1");
 
     const [[persistedLogbook]] = mockedWriteLogbook.mock.calls;
+    expect(persistedLogbook.sheets[0].image).toBeUndefined();
     expect(JSON.stringify(persistedLogbook)).not.toContain("sheet.png");
     expect(JSON.stringify(persistedLogbook)).not.toContain("buffer");
   });

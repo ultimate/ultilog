@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { sampleBoats } from "../../../fixtures/logbook";
 import type { BoatRow } from "../../../../app/models/logbook";
 import type { QueryableDatabase, QueryResult } from "../../../../app/lib/db/logbook-database";
-import { BoatsRepository } from "../../../../app/lib/repositories/boats-repository";
+import { BoatsRepository, imageFromRow } from "../../../../app/lib/repositories/boats-repository";
 
 type QueryCall = { sql: string; values?: unknown[] };
 
@@ -59,4 +59,12 @@ describe("BoatsRepository", () => {
 
     expect(db.calls[0].values?.slice(10, 14)).toEqual([image.data, image.mimeType, image.width, image.height]);
   });
+
+  it("maps loaded boat image metadata back to an image payload", () => {
+    const image = { data: "base64-boat", mimeType: "image/png", width: 640, height: 480 };
+    const row: BoatRow = { ...boat, flag_state: boat.flagState, home_port: boat.homePort, yacht_data: boat.yachtData, deviation_table: boat.deviationTable, image_data: image.data, image_mime_type: image.mimeType, image_width: image.width, image_height: image.height };
+
+    expect(imageFromRow(row)).toEqual(image);
+  });
+
 });

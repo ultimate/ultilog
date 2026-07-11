@@ -133,6 +133,20 @@ describe("CrewRepository", () => {
 
     expect(db.calls[0].values?.slice(7, 11)).toEqual([image.data, image.mimeType, image.width, image.height]);
   });
+
+  it("loads crew profile image metadata with profile rows", async () => {
+    const image = { data: "base64-crew", mimeType: "image/jpeg", width: 320, height: 240 };
+    const row = { ...profileRow("legacy-user:luca-frei-swiss", crew.name, 1), image_data: image.data, image_mime_type: image.mimeType, image_width: image.width, image_height: image.height };
+    const db = new MockDatabase({ crew_members: [row] });
+
+    await expect(new CrewRepository(db).findProfiles()).resolves.toEqual([expect.objectContaining({
+      image_data: image.data,
+      image_mime_type: image.mimeType,
+      image_width: image.width,
+      image_height: image.height,
+    })]);
+  });
+
 });
 
 function profileRow(id: string, name: string, isPrimary: number): CrewMemberRow {
