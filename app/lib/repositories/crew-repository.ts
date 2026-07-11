@@ -53,6 +53,36 @@ export class CrewRepository {
     );
   }
 
+
+  async ensurePrimaryProfile(ownerId = "legacy-user") {
+    const existingPrimary = await this.db.query<{ id: string }>(
+      `select id from crew_members where owner_id = ${this.db.placeholder(1)} and is_primary = 1 limit 1`,
+      [ownerId],
+    );
+    if (existingPrimary.rows.length) return;
+
+    const primaryId = scopedId(ownerId, "me");
+    const existingPersonalProfile = await this.db.query<{ id: string }>(
+      `select id from crew_members where id = ${this.db.placeholder(1)} limit 1`,
+      [primaryId],
+    );
+    if (existingPersonalProfile.rows.length) {
+      await this.db.query(`update crew_members set is_primary = 1 where id = ${this.db.placeholder(1)}`, [primaryId]);
+      return;
+    }
+
+    const user = await this.db.query<{ name: string }>(`select name from users where id = ${this.db.placeholder(1)} limit 1`, [ownerId]);
+    await this.insertProfile({
+      id: "me",
+      name: user.rows[0]?.name ?? "Me",
+      nationality: "",
+      role: "Owner",
+      address: "",
+      certificate: "",
+      isPrimary: true,
+    }, ownerId);
+  }
+
   async insert(sheetId: string, sortOrder: number, crew: SheetCrewMember, ownerId = "legacy-user") {
     const crewMemberId = scopedId(ownerId, crew.id);
     await this.insertProfile(crew, ownerId);
