@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type CSSProperties, type Dispatch, type Mo
 import type {
   Boat,
   LineForm,
+  SheetForm,
   LogLine,
   LogSheet,
   PersistedLogbook,
@@ -13,6 +14,7 @@ import { dateTimeLocalFromParts, splitDateTimeLocal } from "../date-utils";
 import { updateLogLineFormForInput } from "../../../domain/log-lines/log-line-editor";
 import { LogLinesMapView } from "../OpenSeaMapView";
 import type { TranslationKey } from "../../../lib/i18n";
+import { fileToStoredImage } from "../image-utils";
 
 type CourseColumn = {
   field: keyof Pick<
@@ -407,6 +409,26 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                   />
                 </div>
               </div>
+
+                <label className="wide-field">
+                  Image
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      try {
+                        const image = await fileToStoredImage(file);
+                        setSheetForm((current: SheetForm) => ({ ...current, image }));
+                      } catch (error) {
+                        alert(error instanceof Error ? error.message : "Image could not be processed.");
+                        e.currentTarget.value = "";
+                      }
+                    }}
+                  />
+                  {sheetForm.image ? <small>{sheetForm.image.width} × {sheetForm.image.height} · {sheetForm.image.mimeType}</small> : null}
+                </label>
               <div className="inline-edit-actions">
                 <button type="submit">{t("common.save")}</button>
                 {showNewSheet ? (

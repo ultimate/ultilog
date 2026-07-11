@@ -877,6 +877,7 @@ export function LogbookApp({
         Electronics: previousBoat?.yachtData.Electronics ?? "To be completed",
         Safety: boatForm.safety || "To be completed",
       },
+      image: boatForm.image,
     };
     const nextLogbook = {
       ...currentLogbook,
@@ -949,6 +950,7 @@ export function LogbookApp({
       watchPlan: existingSheet?.watchPlan ?? [],
       technicalChecks: existingSheet?.technicalChecks ?? [],
       lines: existingSheet?.lines ?? [],
+      image: sheetForm.image,
     };
     const nextLogbook = {
       ...currentLogbook,
@@ -1161,6 +1163,7 @@ export function LogbookApp({
       address: crewForm.address,
       certificate: crewForm.certificate,
       isPrimary: crewForm.isPrimary,
+      image: crewForm.image,
     };
     const currentLogbook = logbookRef.current;
     const nextLogbook = {
