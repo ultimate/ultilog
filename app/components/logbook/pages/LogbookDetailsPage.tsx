@@ -789,10 +789,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                 <article className="info-card logbook-section">
                   <h3>{t("details.technicalLog")}</h3>
                   <ul className="check-list">
-                    {[
-                      ...activeSheet.watchPlan,
-                      ...activeSheet.technicalChecks,
-                    ].map((item) => (
+                    {activeSheet.technicalChecks.map((item) => (
                       <li key={item}>{item}</li>
                     ))}
                   </ul>
