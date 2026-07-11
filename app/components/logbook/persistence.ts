@@ -35,8 +35,9 @@ function normalizeSheetCrew(logbook: PersistedLogbook) {
   return logbook.sheets.map((sheet) => ({ ...sheet, crew: sheet.crew.map(normalizeSheetCrewMember) }));
 }
 
-export function normalizeLogbookIds(logbook: PersistedLogbook): { logbook: PersistedLogbook; changed: boolean; boatIds: Map<string, string>; sheetIds: Map<string, string> } {
+export function normalizeLogbookIds(logbook: PersistedLogbook): { logbook: PersistedLogbook; changed: boolean; boatIds: Map<string, string>; crewIds: Map<string, string>; sheetIds: Map<string, string> } {
   const boatIds = new Map<string, string>();
+  const crewIds = new Map<string, string>();
   const sheetIds = new Map<string, string>();
   let changed = false;
 
@@ -46,27 +47,40 @@ export function normalizeLogbookIds(logbook: PersistedLogbook): { logbook: Persi
       changed = true;
     }
   }
+  const sourceCrew = logbook.crewMembers ?? [];
+  for (const crew of sourceCrew) {
+    if (!isOpaqueId(crew.id)) {
+      crewIds.set(crew.id, createId());
+      changed = true;
+    }
+  }
   for (const sheet of logbook.sheets) {
     if (!isOpaqueId(sheet.id)) {
       sheetIds.set(sheet.id, createId());
       changed = true;
     }
     if (boatIds.has(sheet.boatId)) changed = true;
+    if (sheet.crew.some((crew) => crewIds.has(crew.id))) changed = true;
   }
 
-  const sourceCrew = logbook.crewMembers ?? [];
   const normalizedSheets = normalizeSheetCrew(logbook);
   if (!("crewMembers" in logbook)) changed = true;
   if (normalizedSheets.some((sheet, index) => sheet !== logbook.sheets[index])) changed = true;
-  if (!changed) return { logbook: { ...logbook, crewMembers: sourceCrew, sheets: normalizedSheets }, changed, boatIds, sheetIds };
+  if (!changed) return { logbook: { ...logbook, crewMembers: sourceCrew, sheets: normalizedSheets }, changed, boatIds, crewIds, sheetIds };
   return {
     changed,
     boatIds,
+    crewIds,
     sheetIds,
     logbook: {
       boats: logbook.boats.map((boat) => ({ ...boat, id: boatIds.get(boat.id) ?? boat.id })),
-      crewMembers: sourceCrew,
-      sheets: normalizedSheets.map((sheet) => ({ ...sheet, id: sheetIds.get(sheet.id) ?? sheet.id, boatId: boatIds.get(sheet.boatId) ?? sheet.boatId })),
+      crewMembers: sourceCrew.map((crew) => ({ ...crew, id: crewIds.get(crew.id) ?? crew.id })),
+      sheets: normalizedSheets.map((sheet) => ({
+        ...sheet,
+        id: sheetIds.get(sheet.id) ?? sheet.id,
+        boatId: boatIds.get(sheet.boatId) ?? sheet.boatId,
+        crew: sheet.crew.map((crew) => ({ ...crew, id: crewIds.get(crew.id) ?? crew.id })),
+      })),
     },
   };
 }
