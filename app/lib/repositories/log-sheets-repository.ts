@@ -1,6 +1,6 @@
 import { normalizeDeviationTable, type Boat, type BoatRow, type CrewMemberRow, type LogLineRow, type LogSheet, type LogSheetRow, type PersistedLogbook, type StoredLogSheet } from "../../models/logbook";
 import type { QueryableDatabase } from "../db/logbook-database";
-import { scopedId, unscopedId } from "./boats-repository";
+import { imageFromRow, imageValues, scopedId, unscopedId } from "./boats-repository";
 
 export class LogSheetsRepository {
   constructor(private db: QueryableDatabase) {}
@@ -15,8 +15,8 @@ export class LogSheetsRepository {
 
   async insert(sheet: LogSheet, ownerId = "legacy-user") {
     await this.db.query(
-      `insert into log_sheets (id, title, date_range, status, source, verification_note, scanner_warnings, boat_id, skipper, route, weather_briefing, day_summary, remarks, watch_plan, technical_checks, owner_id) values (${this.values(16)})`,
-      [scopedId(ownerId, sheet.id), sheet.title, sheet.dateRange, sheet.status, sheet.source ?? null, sheet.verificationNote ?? null, sheet.scannerWarnings ? JSON.stringify(sheet.scannerWarnings) : null, scopedId(ownerId, sheet.boatId), JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), ownerId],
+      `insert into log_sheets (id, title, date_range, status, source, verification_note, scanner_warnings, boat_id, skipper, route, weather_briefing, day_summary, remarks, watch_plan, technical_checks, image_data, image_mime_type, image_width, image_height, owner_id) values (${this.values(20)})`,
+      [scopedId(ownerId, sheet.id), sheet.title, sheet.dateRange, sheet.status, sheet.source ?? null, sheet.verificationNote ?? null, sheet.scannerWarnings ? JSON.stringify(sheet.scannerWarnings) : null, scopedId(ownerId, sheet.boatId), JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), ...imageValues(sheet.image), ownerId],
     );
   }
 
@@ -34,11 +34,12 @@ export class LogSheetsRepository {
       dimensions: boat.dimensions,
       yachtData: parseJson<Record<string, string>>(boat.yacht_data),
       deviationTable: normalizeDeviationTable(parseJson<Boat["deviationTable"]>(boat.deviation_table ?? [])),
+      ...(imageFromRow(boat) ? { image: imageFromRow(boat) } : {}),
     }));
-    const crewMembers = crewProfileRows.map((crew) => ({ id: unscopedId(crew.crew_member_id ?? crew.id), name: crew.name, nationality: crew.nationality, role: crew.role, address: crew.address ?? "", certificate: crew.certificate ?? "", isPrimary: Boolean(crew.is_primary) }));
+    const crewMembers = crewProfileRows.map((crew) => ({ id: unscopedId(crew.crew_member_id ?? crew.id), name: crew.name, nationality: crew.nationality, role: crew.role, address: crew.address ?? "", certificate: crew.certificate ?? "", isPrimary: Boolean(crew.is_primary), ...(imageFromRow(crew) ? { image: imageFromRow(crew) } : {}) }));
     const sheets: LogSheet[] = sheetRows.map((sheet) => ({
       ...mapStoredSheet(sheet),
-      crew: (crewBySheet.get(sheet.id) ?? []).map(({ sheet_id, crew_member_id, sort_order, is_primary, embarkation_datetime, embarkation_position, disembarkation_datetime, disembarkation_position, ...crew }) => ({ ...crew, id: unscopedId(crew_member_id), isPrimary: Boolean(is_primary), embarkationDateTime: embarkation_datetime, embarkationPosition: embarkation_position, disembarkationDateTime: disembarkation_datetime, disembarkationPosition: disembarkation_position })),
+      crew: (crewBySheet.get(sheet.id) ?? []).map(({ sheet_id, crew_member_id, sort_order, is_primary, embarkation_datetime, embarkation_position, disembarkation_datetime, disembarkation_position, image_data, image_mime_type, image_width, image_height, ...crew }) => ({ ...crew, id: unscopedId(crew_member_id), isPrimary: Boolean(is_primary), embarkationDateTime: embarkation_datetime, embarkationPosition: embarkation_position, disembarkationDateTime: disembarkation_datetime, disembarkationPosition: disembarkation_position, ...(imageFromRow({ image_data, image_mime_type, image_width, image_height }) ? { image: imageFromRow({ image_data, image_mime_type, image_width, image_height }) } : {}) })),
       lines: (linesBySheet.get(sheet.id) ?? []).map(({ sheet_id, sort_order, position_name, weather_remark, log_nm, wind_direction, wind_strength, wind_unit, temperature_unit, waves, sea_unit, tide_unit, compass_course, magnetic_course, true_course, wind_drift, course_through_water, current_drift, course_over_ground, speed_kn, sail_miles, sail_note, motor_miles, motor_hours, motor_note, ...line }) => ({
         ...line,
         barometer: Number(line.barometer) || 0,
@@ -101,5 +102,6 @@ function mapStoredSheet(sheet: LogSheetRow): StoredLogSheet {
     route: parseJson<LogSheet["route"]>(sheet.route),
     watchPlan: parseJson<string[]>(sheet.watch_plan),
     technicalChecks: parseJson<string[]>(sheet.technical_checks),
+    ...(imageFromRow(sheet) ? { image: imageFromRow(sheet) } : {}),
   };
 }
