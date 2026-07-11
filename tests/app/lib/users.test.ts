@@ -131,4 +131,19 @@ describe("email verification", () => {
 
     await expect(db.query<{ count: number }>("select count(*) as count from password_reset_tokens where user_id = ?", [user.id])).resolves.toMatchObject({ rows: [{ count: 1 }] });
   });
+
+  it("resends verification on login only when no active verification token remains", async () => {
+    const { registerUser, validateUser } = await importUsersWithTempDatabase();
+    const { getDatabase } = await import("../../../app/lib/logbook-store");
+    const user = await registerUser({ name: "Login Verify User", email: "login-verify@example.test", password: "password123" });
+    const db = getDatabase();
+
+    await expect(validateUser(user.email, "password123")).resolves.toMatchObject({ id: user.id });
+    await expect(db.query<{ count: number }>("select count(*) as count from email_verification_tokens where user_id = ?", [user.id])).resolves.toMatchObject({ rows: [{ count: 1 }] });
+
+    await db.query("update email_verification_tokens set expires_at = ? where user_id = ?", [new Date(Date.now() - 60_000).toISOString(), user.id]);
+    await expect(validateUser(user.email, "password123")).resolves.toMatchObject({ id: user.id });
+
+    await expect(db.query<{ count: number }>("select count(*) as count from email_verification_tokens where user_id = ?", [user.id])).resolves.toMatchObject({ rows: [{ count: 2 }] });
+  });
 });

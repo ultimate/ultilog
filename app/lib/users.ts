@@ -218,7 +218,9 @@ export async function validateUser(email: string, password: string): Promise<App
   const user = await findUserRowByEmail(email);
   if (!user?.password_hash) return null;
   const isValid = await bcrypt.compare(password, user.password_hash);
-  return isValid ? toAppUser(user, await groupsForUser(user.id)) : null;
+  if (!isValid) return null;
+  if (!user.email_verified_at) await sendEmailVerificationIfNeeded(user);
+  return toAppUser(user, await groupsForUser(user.id));
 }
 
 export async function validateDemoUser(): Promise<AppUser | null> {
@@ -296,6 +298,18 @@ export async function requestPasswordReset(emailInput: string): Promise<void> {
     [randomUUID(), current.id, tokenHash, expiresAt],
   );
   await sendPasswordResetEmail({ to: current.email, resetUrl: buildPasswordResetUrl(token), locale: current.language });
+}
+
+async function sendEmailVerificationIfNeeded(user: UserRow): Promise<void> {
+  if (user.email_verified_at) return;
+  const db = getDatabase();
+  await db.migrate();
+  const activeToken = (await db.query<EmailVerificationTokenRow>(
+    `select id, user_id, token_hash, expires_at, used_at from email_verification_tokens where user_id = ${db.placeholder(1)} and used_at is null and expires_at > ${db.placeholder(2)} order by expires_at desc`,
+    [user.id, new Date().toISOString()],
+  )).rows[0];
+  if (activeToken) return;
+  await sendEmailVerification(user.id);
 }
 
 async function sendEmailVerification(userId: string): Promise<void> {
