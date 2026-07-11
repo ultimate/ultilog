@@ -1312,7 +1312,8 @@ export function LogbookApp({
   }
 
   function openOnboardingTask(taskId: OnboardingTaskId) {
-    if (taskId === "read_compliance") navigate("compliance");
+    if (taskId === "verify_email") navigate("profile");
+    else if (taskId === "read_compliance") navigate("compliance");
     else if (taskId === "complete_primary_crew") {
       const meIndex = Math.max(logbookRef.current.crewMembers.findIndex((crew) => crew.isPrimary), 0);
       selectCrew(meIndex);

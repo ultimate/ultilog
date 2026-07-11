@@ -39,19 +39,21 @@ export function OnboardingChecklist({ completion, manualCompletedTasks, onManual
         {onboardingTasks.map((task) => {
           const state = completion[task.id];
           const isManuallyChecked = manualCompletedTasks.includes(task.id);
+          const canToggleManually = !("manualAllowed" in task) || task.manualAllowed !== false;
           return (
             <li key={task.id} className={state.completed ? "complete" : ""}>
               <label>
                 <input
                   type="checkbox"
                   checked={state.automaticallyCompleted || isManuallyChecked}
-                  disabled={isSaving || state.automaticallyCompleted}
+                  disabled={isSaving || state.automaticallyCompleted || !canToggleManually}
                   onChange={(event) => toggleManualTask(task.id, event.target.checked)}
                 />
                 <span>
                   <strong>{t(task.titleKey)}</strong>
                   <small>{t(task.descriptionKey)}</small>
                   {state.automaticallyCompleted && <em>{t("onboarding.detectedAutomatically")}</em>}
+                  {!state.completed && !canToggleManually && <em>{t("onboarding.actionRequired")}</em>}
                 </span>
               </label>
               {onOpenTask && (

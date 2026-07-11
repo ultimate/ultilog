@@ -68,6 +68,12 @@ export function AuthForm({ mode, footer }: Props) {
       setError(t("auth.invalidCredentials"));
       return;
     }
+    const profileResponse = await fetch("/api/profile").catch(() => undefined);
+    const profile = (await profileResponse?.json().catch(() => ({})) ?? {}) as { email?: string; emailVerified?: boolean };
+    if (profileResponse?.ok && profile.email && profile.emailVerified === false) {
+      window.location.assign(`/check-email?email=${encodeURIComponent(profile.email)}`);
+      return;
+    }
     window.location.assign("/");
   }
 

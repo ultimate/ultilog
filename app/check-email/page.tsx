@@ -31,6 +31,7 @@ function CheckEmailCard({ email = "" }: { email?: string }) {
           <p>{t("auth.checkEmailSubtitle")}</p>
           {email ? <p className="auth-success">{t("auth.checkEmailSentTo")} {email}</p> : null}
         </div>
+        <button type="button" onClick={() => window.location.assign("/")}>{t("auth.continueToApp")}</button>
         <div className="auth-footer"><p><Link href="/login">{t("auth.backToLogin")}</Link></p></div>
       </section>
     </main>
