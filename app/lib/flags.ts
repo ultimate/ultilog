@@ -1,4 +1,4 @@
-export type FlagOption = { code: string; name: string };
+export type FlagOption = { code: string; name: string; emoji?: string };
 export type FlagGroup = { continent: string; flags: FlagOption[] };
 
 export const flagGroups: FlagGroup[] = [
@@ -18,8 +18,13 @@ export const flagGroups: FlagGroup[] = [
     ["AS","American Samoa"],["AU","Australia"],["CK","Cook Islands"],["FJ","Fiji"],["PF","French Polynesia"],["GU","Guam"],["KI","Kiribati"],["MH","Marshall Islands"],["FM","Micronesia"],["NR","Nauru"],["NC","New Caledonia"],["NZ","New Zealand"],["NU","Niue"],["NF","Norfolk Island"],["MP","Northern Mariana Islands"],["PW","Palau"],["PG","Papua New Guinea"],["PN","Pitcairn Islands"],["WS","Samoa"],["SB","Solomon Islands"],["TK","Tokelau"],["TO","Tonga"],["TV","Tuvalu"],["UM","U.S. Outlying Islands"],["VU","Vanuatu"],["WF","Wallis and Futuna"],
   ].map(([code, name]) => ({ code, name })) },
   { continent: "Antarctica", flags: [["AQ","Antarctica"],["BV","Bouvet Island"],["TF","French Southern Territories"],["HM","Heard Island and McDonald Islands"]].map(([code, name]) => ({ code, name })) },
+  { continent: "Other", flags: [{ code: "pirate", name: "Pirate", emoji: "🏴‍☠️" }] },
 ];
 
 export function flagEmoji(code: string) {
   return code.toUpperCase().replace(/./g, (letter) => String.fromCodePoint(127397 + letter.charCodeAt(0)));
+}
+
+export function flagOptionEmoji(flag: FlagOption) {
+  return flag.emoji ?? flagEmoji(flag.code);
 }

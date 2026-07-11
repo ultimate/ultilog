@@ -1,4 +1,4 @@
-import { flagEmoji, flagGroups } from "../../../lib/flags";
+import { flagGroups, flagOptionEmoji } from "../../../lib/flags";
 import { useI18n } from "../../../lib/i18n";
 import type { Dispatch, SetStateAction } from "react";
 import type { Boat, BoatForm, PersistedLogbook } from "../../../models/logbook";
@@ -106,9 +106,10 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                 }
               />
             </label>
-            <label className="flag-chooser-field">
-              {t("boats.flagState")}
+            <div className="flag-chooser-field">
+              <label htmlFor="boat-flag-state">{t("boats.flagState")}</label>
               <select
+                id="boat-flag-state"
                 className="flag-chooser"
                 value={boatForm.flagState}
                 onChange={(e) =>
@@ -118,7 +119,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                 <option value="">{t("boats.flagPlaceholder")}</option>
                 {boatForm.flagState &&
                   !flagGroups.some((group) =>
-                    group.flags.some((flag) => flagEmoji(flag.code) === boatForm.flagState),
+                    group.flags.some((flag) => flagOptionEmoji(flag) === boatForm.flagState),
                   ) ? (
                   <option value={boatForm.flagState} disabled>
                     {boatForm.flagState}
@@ -127,7 +128,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                 {flagGroups.map((group) => (
                   <optgroup key={group.continent} label={group.continent}>
                     {group.flags.map((flag) => {
-                      const emoji = flagEmoji(flag.code);
+                      const emoji = flagOptionEmoji(flag);
 
                       return (
                         <option key={flag.code} value={emoji}>
@@ -138,7 +139,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                   </optgroup>
                 ))}
               </select>
-            </label>
+            </div>
             <label>
               {t("boats.homePort")}
               <input
