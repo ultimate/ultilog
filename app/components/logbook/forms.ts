@@ -1,6 +1,6 @@
 import { defaultDeviationTable, normalizeDeviationTable, type Boat, type BoatForm, type CrewForm, type LineForm, type LogLine, type LogSheet, type PersistedLogbook, type SheetForm } from "../../models/logbook";
 export const emptyBoat: Boat = { id: "", name: "", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", yachtData: { Manufacturer: "", MMSI: "", Engine: "", Safety: "" }, deviationTable: defaultDeviationTable(), image: undefined };
-export const emptySheet: LogSheet = { id: "", title: "", status: "Draft", dateRange: new Date().toISOString().slice(0, 10), boatId: "", route: { from: "", to: "", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] };
+export const emptySheet: LogSheet = { id: "", title: "", status: "Draft", dateRange: new Date().toISOString().slice(0, 10), boatId: "", route: { from: "", to: "", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], image: undefined, lines: [] };
 export const defaultLogbook: PersistedLogbook = { boats: [], crewMembers: [], sheets: [] };
 
 export const defaultSheetForm = (boatId: string): SheetForm => ({ title: "", status: "Draft", dateRange: new Date().toISOString().slice(0, 10), boatId, from: "", to: "", fromTime: "", toTime: "", image: undefined });

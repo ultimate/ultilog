@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import { useI18n } from "../../../lib/i18n";
 import { useEffect, useRef, useState, type CSSProperties, type Dispatch, type MouseEvent, type SetStateAction } from "react";
 import type {
@@ -103,6 +104,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const showScannerDraftNotice =
     activeSheet.source === "scanner" && activeSheet.status === "Draft";
   const courseConversionSequence = useRef(0);
+  const sheetImageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!isMapExpanded) return;
@@ -410,11 +412,23 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                 </div>
               </div>
 
-                <label className="wide-field">
-                  Image
+                <div className="image-form-field wide-field">
+                  <p className="eyebrow">Image</p>
+                  <div className="image-preview-frame">
+                    {sheetForm.image ? (
+                      <img
+                        src={`data:${sheetForm.image.mimeType};base64,${sheetForm.image.data}`}
+                        alt={`${sheetForm.title || t("details.newSheet")} preview`}
+                      />
+                    ) : (
+                      <span>No image selected</span>
+                    )}
+                  </div>
                   <input
+                    ref={sheetImageInputRef}
                     type="file"
                     accept="image/*"
+                    className="visually-hidden-file-input"
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
@@ -423,12 +437,23 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                         setSheetForm((current: SheetForm) => ({ ...current, image }));
                       } catch (error) {
                         alert(error instanceof Error ? error.message : "Image could not be processed.");
+                      } finally {
                         e.currentTarget.value = "";
                       }
                     }}
                   />
+                  <div className="image-actions">
+                    <button type="button" className="ghost-button" onClick={() => sheetImageInputRef.current?.click()}>
+                      {sheetForm.image ? "Change image" : "Upload image"}
+                    </button>
+                    {sheetForm.image ? (
+                      <button type="button" className="ghost-button" onClick={() => setSheetForm((current: SheetForm) => ({ ...current, image: undefined }))}>
+                        Remove image
+                      </button>
+                    ) : null}
+                  </div>
                   {sheetForm.image ? <small>{sheetForm.image.width} × {sheetForm.image.height} · {sheetForm.image.mimeType}</small> : null}
-                </label>
+                </div>
               <div className="inline-edit-actions">
                 <button type="submit">{t("common.save")}</button>
                 {showNewSheet ? (
