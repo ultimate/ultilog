@@ -53,7 +53,17 @@ export class CrewRepository {
     const crewMemberId = scopedId(ownerId, crew.id);
     await this.db.query(
       `insert into crew_members (id, name, nationality, role, address, certificate, is_primary, image_data, image_mime_type, image_width, image_height, owner_id) values (${this.values(12)}) on conflict(id) do update set name = excluded.name, nationality = excluded.nationality, role = excluded.role, address = excluded.address, certificate = excluded.certificate, is_primary = excluded.is_primary, image_data = excluded.image_data, image_mime_type = excluded.image_mime_type, image_width = excluded.image_width, image_height = excluded.image_height`,
-      [crewMemberId, encryptCrewField(ownerId, crewMemberId, "name", this.plainCrewField(ownerId, crewMemberId, "name", crew.name)), encryptCrewField(ownerId, crewMemberId, "nationality", this.plainCrewField(ownerId, crewMemberId, "nationality", crew.nationality)), encryptCrewField(ownerId, crewMemberId, "role", this.plainCrewField(ownerId, crewMemberId, "role", crew.role)), encryptCrewField(ownerId, crewMemberId, "address", this.plainCrewField(ownerId, crewMemberId, "address", crew.address ?? "")), encryptCrewField(ownerId, crewMemberId, "certificate", this.plainCrewField(ownerId, crewMemberId, "certificate", crew.certificate ?? "")), crew.isPrimary ? 1 : 0, ...imageValues(crew.image), ownerId],
+      [
+        crewMemberId,
+        encryptCrewField(ownerId, crewMemberId, "name", this.plainCrewField(ownerId, crewMemberId, "name", crew.name)),
+        encryptCrewField(ownerId, crewMemberId, "nationality", this.plainCrewField(ownerId, crewMemberId, "nationality", crew.nationality)),
+        encryptCrewField(ownerId, crewMemberId, "role", this.plainCrewField(ownerId, crewMemberId, "role", crew.role)),
+        encryptCrewField(ownerId, crewMemberId, "address", this.plainCrewField(ownerId, crewMemberId, "address", crew.address ?? "")),
+        encryptCrewField(ownerId, crewMemberId, "certificate", this.plainCrewField(ownerId, crewMemberId, "certificate", crew.certificate ?? "")),
+        crew.isPrimary ? 1 : 0,
+        ...this.encryptedImageValues(ownerId, crewMemberId, crew.image),
+        ownerId,
+      ],
     );
   }
 
@@ -96,7 +106,7 @@ export class CrewRepository {
     );
   }
 
-  private decryptCrewRow<Row extends Pick<CrewMemberRow, "crew_member_id" | "name" | "nationality" | "role" | "address" | "certificate">>(row: Row, ownerId: string): Row {
+  private decryptCrewRow<Row extends Pick<CrewMemberRow, "crew_member_id" | "name" | "nationality" | "role" | "address" | "certificate" | "image_data">>(row: Row, ownerId: string): Row {
     return {
       ...row,
       name: decryptCrewField(ownerId, row.crew_member_id, "name", row.name),
@@ -104,7 +114,17 @@ export class CrewRepository {
       role: decryptCrewField(ownerId, row.crew_member_id, "role", row.role),
       address: decryptCrewField(ownerId, row.crew_member_id, "address", row.address ?? ""),
       certificate: decryptCrewField(ownerId, row.crew_member_id, "certificate", row.certificate ?? ""),
+      image_data: this.decryptImageData(ownerId, row.crew_member_id, row.image_data),
     };
+  }
+
+  private encryptedImageValues(ownerId: string, crewMemberId: string, image: CrewMember["image"]): [string | null, string | null, number | null, number | null] {
+    const [data, mimeType, width, height] = imageValues(image);
+    return [data ? encryptCrewField(ownerId, crewMemberId, "image_data", this.plainCrewField(ownerId, crewMemberId, "image_data", data)) : null, mimeType, width, height];
+  }
+
+  private decryptImageData(ownerId: string, crewMemberId: string, value?: string | null) {
+    return value ? decryptCrewField(ownerId, crewMemberId, "image_data", value) : value;
   }
 
   private plainCrewField(ownerId: string, crewMemberId: string, fieldName: string, value: string) {
