@@ -1127,3 +1127,15 @@ td { color: #28384b; line-height: 1.45; }
 @media (max-width: 720px) {
   .onboarding-heading, .onboarding-task-list li { align-items: stretch; flex-direction: column; }
 }
+
+.flag-chooser-field {
+  align-self: start;
+}
+
+.inline-edit-grid .flag-chooser {
+  min-height: 2.65rem;
+  padding-inline: 0.75rem 2rem;
+  font-size: 1.25rem;
+  line-height: 1.1;
+}
+

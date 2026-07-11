@@ -99,6 +99,7 @@ export const en = {
   "boats.form": "Boat form",
   "boats.noRegistration": "No registration",
   "boats.flagState": "Flag state",
+  "boats.flagPlaceholder": "Choose a flag",
   "boats.homePort": "Home port",
   "boats.dimensions": "Dimensions",
   "boats.manufacturer": "Manufacturer",

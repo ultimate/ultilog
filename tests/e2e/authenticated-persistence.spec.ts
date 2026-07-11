@@ -40,7 +40,7 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   const boatForm = page.locator("form").filter({ hasText: "New boat" });
   await boatForm.getByLabel("Name").fill(boatName);
   await boatForm.getByLabel("Registration").fill(`REG-${unique}`);
-  await boatForm.getByLabel("Flag state").fill("CH");
+  await boatForm.getByLabel("Flag state").selectOption("🇨🇭");
   await boatForm.getByLabel("Home port").fill("Basel");
   await boatForm.getByLabel("Owner").fill("E2E Owner");
   await clickButton(page, "Create boat");

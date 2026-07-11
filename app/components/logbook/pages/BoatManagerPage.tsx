@@ -1,3 +1,4 @@
+import { flagGroups, flagOptionEmoji } from "../../../lib/flags";
 import { useI18n } from "../../../lib/i18n";
 import type { Dispatch, SetStateAction } from "react";
 import type { Boat, BoatForm, PersistedLogbook } from "../../../models/logbook";
@@ -105,15 +106,40 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                 }
               />
             </label>
-            <label>
-              {t("boats.flagState")}
-              <input
+            <div className="flag-chooser-field">
+              <label htmlFor="boat-flag-state">{t("boats.flagState")}</label>
+              <select
+                id="boat-flag-state"
+                className="flag-chooser"
                 value={boatForm.flagState}
                 onChange={(e) =>
                   setBoatForm({ ...boatForm, flagState: e.target.value })
                 }
-              />
-            </label>
+              >
+                <option value="">{t("boats.flagPlaceholder")}</option>
+                {boatForm.flagState &&
+                  !flagGroups.some((group) =>
+                    group.flags.some((flag) => flagOptionEmoji(flag) === boatForm.flagState),
+                  ) ? (
+                  <option value={boatForm.flagState} disabled>
+                    {boatForm.flagState}
+                  </option>
+                ) : null}
+                {flagGroups.map((group) => (
+                  <optgroup key={group.continent} label={group.continent}>
+                    {group.flags.map((flag) => {
+                      const emoji = flagOptionEmoji(flag);
+
+                      return (
+                        <option key={flag.code} value={emoji}>
+                          {emoji} {flag.name}
+                        </option>
+                      );
+                    })}
+                  </optgroup>
+                ))}
+              </select>
+            </div>
             <label>
               {t("boats.homePort")}
               <input

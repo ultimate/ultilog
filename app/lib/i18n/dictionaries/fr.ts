@@ -101,6 +101,7 @@ export const fr: Dictionary = {
   "boats.form": "Formulaire bateau",
   "boats.noRegistration": "Aucune immatriculation",
   "boats.flagState": "État du pavillon",
+  "boats.flagPlaceholder": "Choisir un pavillon",
   "boats.homePort": "Port d’attache",
   "boats.dimensions": "Dimensions",
   "boats.manufacturer": "Fabricant",
