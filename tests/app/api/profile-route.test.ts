@@ -46,7 +46,7 @@ const defaultPreferences = {
 };
 
 function appUser(overrides = {}) {
-  return { id: "user-1", name: "User", email: "user@example.test", groups: [], onboardingCompletedTasks: [], hasReadCompliance: false, ...defaultPreferences, ...overrides };
+  return { id: "user-1", name: "User", email: "user@example.test", emailVerified: true, groups: [], onboardingCompletedTasks: [], hasReadCompliance: false, ...defaultPreferences, ...overrides };
 }
 
 describe("profile endpoint", () => {
@@ -73,7 +73,7 @@ describe("profile endpoint", () => {
     const response = await GET();
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ id: "user-1", name: "User", email: "user@example.test", groups: [], onboardingCompletedTasks: ["create_first_boat"], preferences: { ...defaultPreferences, theme: "dark", isNavSlim: true }, theme: "dark", isNavSlim: true, hasReadCompliance: true });
+    await expect(response.json()).resolves.toEqual({ id: "user-1", name: "User", email: "user@example.test", emailVerified: true, groups: [], onboardingCompletedTasks: ["create_first_boat"], preferences: { ...defaultPreferences, theme: "dark", isNavSlim: true }, theme: "dark", isNavSlim: true, hasReadCompliance: true });
     expect(mockedFindUserById).toHaveBeenCalledWith("user-1");
   });
 
@@ -93,7 +93,7 @@ describe("profile endpoint", () => {
 
   it("updates the signed-in user's email", async () => {
     mockedAuth.mockResolvedValueOnce(session);
-    mockedUpdateUserEmail.mockResolvedValueOnce(appUser({ email: "updated@example.test" }));
+    mockedUpdateUserEmail.mockResolvedValueOnce(appUser({ email: "updated@example.test", emailVerified: false }));
 
     const response = await PATCH(new Request("https://ultilog.test/api/profile", {
       method: "PATCH",
@@ -101,7 +101,7 @@ describe("profile endpoint", () => {
     }));
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ email: "updated@example.test" });
+    await expect(response.json()).resolves.toEqual({ email: "updated@example.test", emailVerified: false });
     expect(mockedUpdateUserEmail).toHaveBeenCalledWith("user-1", { email: "updated@example.test", currentPassword: "password123" });
   });
 

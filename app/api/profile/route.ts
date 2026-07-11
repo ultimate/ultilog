@@ -11,6 +11,7 @@ export async function GET() {
     id: user.id,
     name: user.name,
     email: user.email,
+    emailVerified: user.emailVerified,
     groups: user.groups,
     onboardingCompletedTasks: user.onboardingCompletedTasks,
     preferences: {
@@ -44,7 +45,7 @@ export async function PATCH(request: Request) {
     }
     if (body.action === "email") {
       const user = await updateUserEmail(session.user.id, { email: body.email ?? "", currentPassword: body.currentPassword ?? "" });
-      return NextResponse.json({ email: user.email });
+      return NextResponse.json({ email: user.email, emailVerified: user.emailVerified });
     }
     if (body.action === "password") {
       await updateUserPassword(session.user.id, { currentPassword: body.currentPassword ?? "", newPassword: body.newPassword ?? "" });

@@ -13,6 +13,7 @@ export function ProfilePage(props: ProfilePageProps) {
     isLoggingOut,
     accountName,
     accountEmail,
+    isAccountEmailVerified,
     profileMessage,
     profileError,
     updateName,
@@ -79,6 +80,11 @@ export function ProfilePage(props: ProfilePageProps) {
                 t("profile.myProfile")}
             </h2>
             <p>{accountEmail || t("profile.noEmail")}</p>
+            {accountEmail ? (
+              <p className={isAccountEmailVerified ? "save-success" : "save-warning"}>
+                {isAccountEmailVerified ? t("profile.emailVerified") : t("profile.emailUnverified")}
+              </p>
+            ) : null}
             <p className="group-tags">
               {userGroups.length ? (
                 userGroups.map((group) => <span key={group}>{group}</span>)
@@ -141,6 +147,9 @@ export function ProfilePage(props: ProfilePageProps) {
         </form>
         <form className="info-card inline-edit-grid" onSubmit={updateEmail}>
           <h3>{t("profile.changeEmail")}</h3>
+          <p className={isAccountEmailVerified ? "save-success wide-field" : "save-warning wide-field"}>
+            {isAccountEmailVerified ? t("profile.emailVerifiedHelp") : t("profile.emailUnverifiedHelp")}
+          </p>
           <label className="wide-field">
             {t("profile.newEmail")}
             <input

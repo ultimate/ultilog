@@ -19,10 +19,10 @@ export type UserPreferences = {
   isNavSlim: boolean;
   showCourseConversionTable: boolean;
 };
-export type AppUser = { id: string; name: string; email: string; groups: string[]; onboardingCompletedTasks: OnboardingTaskId[]; hasReadCompliance: boolean } & UserPreferences;
+export type AppUser = { id: string; name: string; email: string; emailVerified?: boolean; groups: string[]; onboardingCompletedTasks: OnboardingTaskId[]; hasReadCompliance: boolean } & UserPreferences;
 export type AdminUserListItem = AppUser;
 
-type UserRow = Omit<AppUser, "groups" | "onboardingCompletedTasks" | "hasReadCompliance" | "isNavSlim" | "countryCode" | "windUnit" | "waterHeightUnit" | "temperatureUnit" | "coordinateFormat" | "distanceDisplayUnit" | "defaultBoatId" | "defaultCrewMemberIds" | "showCourseConversionTable"> & { password_hash: string; onboarding_completed_tasks: string; country_code: string; wind_unit: string; water_height_unit: string; temperature_unit: string; coordinate_format: string; distance_display_unit: string; default_boat_id: string; default_crew_member_ids: string; nav_slim: number | boolean; has_read_compliance: number | boolean; show_course_conversion_table: number | boolean; email_verified_at: string | null };
+type UserRow = Omit<AppUser, "groups" | "onboardingCompletedTasks" | "hasReadCompliance" | "isNavSlim" | "countryCode" | "windUnit" | "waterHeightUnit" | "temperatureUnit" | "coordinateFormat" | "distanceDisplayUnit" | "defaultBoatId" | "defaultCrewMemberIds" | "showCourseConversionTable" | "emailVerified"> & { password_hash: string; onboarding_completed_tasks: string; country_code: string; wind_unit: string; water_height_unit: string; temperature_unit: string; coordinate_format: string; distance_display_unit: string; default_boat_id: string; default_crew_member_ids: string; nav_slim: number | boolean; has_read_compliance: number | boolean; show_course_conversion_table: number | boolean; email_verified_at: string | null };
 type GroupRow = { user_id?: string; name: string };
 type PasswordResetTokenRow = { id: string; user_id: string; token_hash: string; expires_at: string; used_at: string | null };
 type EmailVerificationTokenRow = PasswordResetTokenRow;
@@ -141,6 +141,7 @@ function toAppUser(user: UserRow, groups: string[]): AppUser {
     id: user.id,
     name: user.name,
     email: user.email,
+    emailVerified: Boolean(user.email_verified_at),
     groups,
     onboardingCompletedTasks: parseOnboardingCompletedTasks(user.onboarding_completed_tasks),
     theme: normalizeTheme(user.theme),
@@ -242,7 +243,7 @@ export async function registerUser(input: { name: string; email: string; passwor
   if (await findUserByEmail(email)) throw new Error("An account with this email already exists.");
   if (await findUserByName(name)) throw new Error("An account with this name already exists.");
 
-  const user: AppUser = { id: randomUUID(), name, email, groups: [], onboardingCompletedTasks: [], hasReadCompliance: false, ...normalizeUserPreferences({}) };
+  const user: AppUser = { id: randomUUID(), name, email, emailVerified: false, groups: [], onboardingCompletedTasks: [], hasReadCompliance: false, ...normalizeUserPreferences({}) };
   const passwordHash = await bcrypt.hash(input.password, 10);
   const db = getDatabase();
   await db.query(

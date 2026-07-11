@@ -37,6 +37,7 @@ body { background: var(--app-bg); color: var(--text); font-family: Inter, ui-san
 .primary-action, .secondary-action, .edit-chip, .ghost-button, .sidebar button, .table-header button, .sidebar-header button, .optional-card button { border:1px solid var(--line)!important; border-radius:10px!important; min-height:2.25rem!important; padding:.55rem .85rem!important; font-weight:850!important; box-shadow:var(--design-shadow); }
 .primary-action { background:var(--blue)!important; color:white!important; }.secondary-action, .ghost-button, .edit-chip { background:var(--surface-strong)!important; color:var(--text)!important; }
 .save-error { margin:0 auto 0 0; padding:.7rem 1rem; border-radius:12px; background:#fee2e2; color:#991b1b; font-weight:800; }
+.save-warning { margin:0 auto 0 0; padding:.7rem 1rem; border-radius:12px; background:#fef3c7; color:#92400e; font-weight:800; }
 .page-heading, .table-header, .sidebar-header { display:flex; justify-content:space-between; gap:1rem; align-items:flex-start; }.page-heading { margin-bottom:1.5rem; }
 h1 { margin:0 0 .45rem; font-size:1.8rem; line-height:1.1; letter-spacing:-.04em; } h2 { font-size:1.25rem; letter-spacing:-.03em; } h3 { color:var(--text); } p, small, dd { color:var(--subtle); }
 .sync-pill, .status-pill { border-radius:999px; padding:.5rem .8rem; background:rgba(21,166,106,.1); color:var(--green); font-size:.8rem; font-weight:900; }

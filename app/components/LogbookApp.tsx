@@ -303,12 +303,14 @@ export function LogbookApp({
     accountEmail,
     accountName,
     isNavSlim,
+    isAccountEmailVerified,
     isOnboardingComplete,
     isSavingOnboarding,
     onboardingCompletedTasks,
     onboardingCompletion,
     preferences,
     setAccountEmail,
+    setIsAccountEmailVerified,
     setAccountName,
     theme,
     updateOnboardingCompletedTasks,
@@ -1353,6 +1355,7 @@ export function LogbookApp({
     });
     const payload = (await response.json().catch(() => ({}))) as {
       email?: string;
+      emailVerified?: boolean;
       error?: string;
     };
     if (!response.ok) {
@@ -1360,6 +1363,7 @@ export function LogbookApp({
       return;
     }
     setAccountEmail(payload.email ?? emailForm.email);
+    setIsAccountEmailVerified(payload.emailVerified ?? false);
     setEmailForm({
       email: payload.email ?? emailForm.email,
       currentPassword: "",
@@ -1692,6 +1696,7 @@ export function LogbookApp({
               isLoggingOut={isLoggingOut}
               accountName={accountName}
               accountEmail={accountEmail}
+              isAccountEmailVerified={isAccountEmailVerified}
               userGroups={userGroups}
               profileMessage={profileMessage}
               profileError={profileError}
