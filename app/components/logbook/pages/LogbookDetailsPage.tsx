@@ -96,6 +96,8 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const activeSheet = props.activeSheet as LogSheet;
   const lineForm = props.lineForm as LineForm;
   const logbook = props.logbook as PersistedLogbook;
+  const technicalCheckSuggestions = props.technicalCheckSuggestions as string[];
+  const technicalCheckSuggestionsId = "technical-log-suggestions";
   const setLineForm = props.setLineForm as Dispatch<SetStateAction<LineForm>>;
   const coordinateFormat = props.coordinateFormat as CoordinateFormat;
   const onCoordinateFormatChange = props.onCoordinateFormatChange as (format: CoordinateFormat) => void;
@@ -807,6 +809,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                           <input
                             aria-label={`Technical log entry ${index + 1}`}
                             disabled={isActiveSheetLocked}
+                            list={technicalCheckSuggestionsId}
                             defaultValue={item}
                             onBlur={(event) => updateTechnicalCheck(index, event.target.value)}
                           />
@@ -824,10 +827,18 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                   ) : (
                     <p>No technical log entries yet.</p>
                   )}
+                  {technicalCheckSuggestions.length ? (
+                    <datalist id={technicalCheckSuggestionsId}>
+                      {technicalCheckSuggestions.map((suggestion) => (
+                        <option key={suggestion} value={suggestion} />
+                      ))}
+                    </datalist>
+                  ) : null}
                   <form className="inline-edit-actions" onSubmit={submitTechnicalCheck}>
                     <input
                       aria-label="New technical log entry"
                       disabled={isActiveSheetLocked}
+                      list={technicalCheckSuggestionsId}
                       value={newTechnicalCheck}
                       onChange={(event) => setNewTechnicalCheck(event.target.value)}
                       placeholder="Add technical log entry"
