@@ -43,6 +43,7 @@ export type ProfileApiPreferences = Partial<ProfilePreferences> & {
 export type ProfilePayload = {
   name?: string;
   email?: string;
+  emailVerified?: boolean;
   groups?: string[];
   onboardingCompletedTasks?: OnboardingTaskId[];
   preferences?: ProfileApiPreferences;
@@ -84,6 +85,7 @@ function preferencesFromPayload(payload: ProfilePayload, fallback: ProfilePrefer
 export function useOnboardingProfile({ activeModule, initialEmail, initialName, logbook, onProfileError, onProfileMessage, onLocaleChange, onCourseConversionPreferenceChange, t }: UseOnboardingProfileOptions) {
   const [accountName, setAccountName] = useState(initialName ?? "");
   const [accountEmail, setAccountEmail] = useState(initialEmail ?? "");
+  const [isAccountEmailVerified, setIsAccountEmailVerified] = useState(false);
   const [preferences, setPreferences] = useState<ProfilePreferences>(defaultPreferences);
   const [onboardingCompletedTasks, setOnboardingCompletedTasks] = useState<OnboardingTaskId[]>([]);
   const [isSavingOnboarding, setIsSavingOnboarding] = useState(false);
@@ -110,6 +112,7 @@ export function useOnboardingProfile({ activeModule, initialEmail, initialName, 
       if (!isMounted) return;
       if (payload.name) setAccountName(payload.name);
       if (payload.email) setAccountEmail(payload.email);
+      if (typeof payload.emailVerified === "boolean") setIsAccountEmailVerified(payload.emailVerified);
       if (Array.isArray(payload.onboardingCompletedTasks)) setOnboardingCompletedTasks(payload.onboardingCompletedTasks);
       const nextPreferences = preferencesFromPayload(payload, defaultPreferences);
       setPreferences(nextPreferences);
@@ -189,12 +192,14 @@ export function useOnboardingProfile({ activeModule, initialEmail, initialName, 
     accountEmail,
     accountName,
     isNavSlim,
+    isAccountEmailVerified,
     isOnboardingComplete,
     isSavingOnboarding,
     onboardingCompletedTasks,
     onboardingCompletion,
     preferences,
     setAccountEmail,
+    setIsAccountEmailVerified,
     setAccountName,
     theme,
     updateOnboardingCompletedTasks,

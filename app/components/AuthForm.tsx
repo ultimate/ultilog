@@ -57,6 +57,9 @@ export function AuthForm({ mode, footer }: Props) {
         setIsSubmitting(false);
         return;
       }
+      setIsSubmitting(false);
+      window.location.assign(`/check-email?email=${encodeURIComponent(email)}`);
+      return;
     }
 
     const result = await signIn("credentials", { email, password, redirect: false });
