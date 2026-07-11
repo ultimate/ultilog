@@ -125,18 +125,29 @@ describe("CrewRepository", () => {
     expect(db.calls[1].values).toEqual([`legacy-user:${sheet.id}`, "legacy-user:luca-frei-swiss", 0, crew.embarkationPosition, crew.disembarkationPosition, crew.embarkationDateTime, crew.embarkationPosition, crew.disembarkationDateTime, crew.disembarkationPosition]);
   });
 
-  it("inserts crew image metadata when present", async () => {
+  it("encrypts crew image payloads while leaving display metadata available", async () => {
     const db = new MockDatabase();
-    const image = { data: "base64-crew", mimeType: "image/jpeg", width: 320, height: 240 };
+    const image = { data: "base64-crew-private-face", mimeType: "image/jpeg", width: 320, height: 240 };
 
     await new CrewRepository(db).insertProfile({ ...crew, image });
 
-    expect(db.calls[0].values?.slice(7, 11)).toEqual([image.data, image.mimeType, image.width, image.height]);
+    const storedImageData = db.calls[0].values?.[7] as string;
+    expect(storedImageData).not.toBe(image.data);
+    expect(storedImageData).not.toContain(image.data);
+    expect(storedImageData).toEqual(expect.stringMatching(/^\{"v":1,"alg":"AES-256-GCM","kid":"crew-pii-v1",/));
+    expect(decryptCrewField("legacy-user", "legacy-user:luca-frei-swiss", "image_data", storedImageData)).toBe(image.data);
+    expect(db.calls[0].values?.slice(8, 11)).toEqual([image.mimeType, image.width, image.height]);
   });
 
-  it("loads crew profile image metadata with profile rows", async () => {
-    const image = { data: "base64-crew", mimeType: "image/jpeg", width: 320, height: 240 };
-    const row = { ...profileRow("legacy-user:luca-frei-swiss", crew.name, 1), image_data: image.data, image_mime_type: image.mimeType, image_width: image.width, image_height: image.height };
+  it("decrypts crew profile image payloads with profile rows", async () => {
+    const image = { data: "base64-crew-private-face", mimeType: "image/jpeg", width: 320, height: 240 };
+    const row = {
+      ...profileRow("legacy-user:luca-frei-swiss", crew.name, 1),
+      image_data: encryptCrewField("legacy-user", "legacy-user:luca-frei-swiss", "image_data", image.data),
+      image_mime_type: image.mimeType,
+      image_width: image.width,
+      image_height: image.height,
+    };
     const db = new MockDatabase({ crew_members: [row] });
 
     await expect(new CrewRepository(db).findProfiles()).resolves.toEqual([expect.objectContaining({
