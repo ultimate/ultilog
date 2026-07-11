@@ -1139,10 +1139,3 @@ td { color: #28384b; line-height: 1.45; }
   line-height: 1.1;
 }
 
-.field-help {
-  color: var(--muted);
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: normal;
-  text-transform: none;
-}

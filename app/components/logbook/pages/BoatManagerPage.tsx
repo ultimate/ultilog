@@ -110,7 +110,6 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
               {t("boats.flagState")}
               <select
                 className="flag-chooser"
-                aria-describedby="boat-flag-help"
                 value={boatForm.flagState}
                 onChange={(e) =>
                   setBoatForm({ ...boatForm, flagState: e.target.value })
@@ -139,9 +138,6 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                   </optgroup>
                 ))}
               </select>
-              <small id="boat-flag-help" className="field-help">
-                {t("boats.flagHelp")}
-              </small>
             </label>
             <label>
               {t("boats.homePort")}
