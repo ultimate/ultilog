@@ -2,14 +2,21 @@ import type { Boat, CrewMember, LogLine, LogSheet, SheetCrewMember } from "./log
 
 export type StoredLogSheet = Omit<LogSheet, "crew" | "lines">;
 
-export type BoatRow = Omit<Boat, "flagState" | "homePort" | "yachtData" | "deviationTable"> & {
+export type ImageRowFields = {
+  image_data?: string | null;
+  image_mime_type?: string | null;
+  image_width?: number | null;
+  image_height?: number | null;
+};
+
+export type BoatRow = Omit<Boat, "flagState" | "homePort" | "yachtData" | "deviationTable" | "image"> & ImageRowFields & {
   flag_state: string;
   home_port: string;
   yacht_data: unknown;
   deviation_table: unknown;
 };
 
-export type LogSheetRow = {
+export type LogSheetRow = ImageRowFields & {
   id: string;
   title: string;
   date_range: string;
@@ -27,7 +34,7 @@ export type LogSheetRow = {
   technical_checks: unknown;
 };
 
-export type CrewMemberRow = Omit<SheetCrewMember, "embarkationDateTime" | "embarkationPosition" | "disembarkationDateTime" | "disembarkationPosition"> & {
+export type CrewMemberRow = Omit<SheetCrewMember, "embarkationDateTime" | "embarkationPosition" | "disembarkationDateTime" | "disembarkationPosition" | "image"> & ImageRowFields & {
   embarkation_datetime: string;
   embarkation_position: string;
   disembarkation_datetime: string;

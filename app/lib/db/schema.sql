@@ -40,7 +40,11 @@ create table if not exists boats (
   dimensions text not null,
   yacht_data text not null,
   owner_id text not null default 'legacy-user' references users(id) on delete cascade,
-  deviation_table text not null default '[]'
+  deviation_table text not null default '[]',
+  image_data text,
+  image_mime_type text,
+  image_width integer,
+  image_height integer
 );
 
 create table if not exists log_sheets (
@@ -59,7 +63,11 @@ create table if not exists log_sheets (
   owner_id text not null default 'legacy-user' references users(id) on delete cascade,
   source text,
   verification_note text,
-  scanner_warnings text
+  scanner_warnings text,
+  image_data text,
+  image_mime_type text,
+  image_width integer,
+  image_height integer
 );
 
 create table if not exists crew_members (
@@ -70,7 +78,11 @@ create table if not exists crew_members (
   owner_id text not null default 'legacy-user' references users(id) on delete cascade,
   address text not null default '',
   certificate text not null default '',
-  is_primary integer not null default 0
+  is_primary integer not null default 0,
+  image_data text,
+  image_mime_type text,
+  image_width integer,
+  image_height integer
 );
 
 create table if not exists sheet_crew_members (

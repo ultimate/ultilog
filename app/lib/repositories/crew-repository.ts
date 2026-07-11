@@ -1,14 +1,14 @@
 import type { CrewMember, CrewMemberRow, SheetCrewMember } from "../../models/logbook";
 import type { QueryableDatabase } from "../db/logbook-database";
 import { decryptCrewField, encryptCrewField, isEncryptedCrewFieldValue } from "../crypto/crew-encryption";
-import { scopedId } from "./boats-repository";
+import { imageValues, scopedId } from "./boats-repository";
 
 export class CrewRepository {
   constructor(private db: QueryableDatabase) {}
 
   async findProfiles(ownerId = "legacy-user") {
     return (await this.db.query<CrewMemberRow>(`
-      select id as crew_member_id, name, nationality, role, address, certificate, is_primary
+      select id as crew_member_id, name, nationality, role, address, certificate, is_primary, image_data, image_mime_type, image_width, image_height
       from crew_members
       where owner_id = ${this.db.placeholder(1)}
       order by is_primary desc
@@ -28,6 +28,10 @@ export class CrewRepository {
         crew_members.address,
         crew_members.certificate,
         crew_members.is_primary,
+        crew_members.image_data,
+        crew_members.image_mime_type,
+        crew_members.image_width,
+        crew_members.image_height,
         sheet_crew_members.embarkation_datetime,
         sheet_crew_members.embarkation_position,
         sheet_crew_members.disembarkation_datetime,
@@ -48,8 +52,8 @@ export class CrewRepository {
   async insertProfile(crew: CrewMember, ownerId = "legacy-user") {
     const crewMemberId = scopedId(ownerId, crew.id);
     await this.db.query(
-      `insert into crew_members (id, name, nationality, role, address, certificate, is_primary, owner_id) values (${this.values(8)}) on conflict(id) do update set name = excluded.name, nationality = excluded.nationality, role = excluded.role, address = excluded.address, certificate = excluded.certificate, is_primary = excluded.is_primary`,
-      [crewMemberId, encryptCrewField(ownerId, crewMemberId, "name", this.plainCrewField(ownerId, crewMemberId, "name", crew.name)), encryptCrewField(ownerId, crewMemberId, "nationality", this.plainCrewField(ownerId, crewMemberId, "nationality", crew.nationality)), encryptCrewField(ownerId, crewMemberId, "role", this.plainCrewField(ownerId, crewMemberId, "role", crew.role)), encryptCrewField(ownerId, crewMemberId, "address", this.plainCrewField(ownerId, crewMemberId, "address", crew.address ?? "")), encryptCrewField(ownerId, crewMemberId, "certificate", this.plainCrewField(ownerId, crewMemberId, "certificate", crew.certificate ?? "")), crew.isPrimary ? 1 : 0, ownerId],
+      `insert into crew_members (id, name, nationality, role, address, certificate, is_primary, image_data, image_mime_type, image_width, image_height, owner_id) values (${this.values(12)}) on conflict(id) do update set name = excluded.name, nationality = excluded.nationality, role = excluded.role, address = excluded.address, certificate = excluded.certificate, is_primary = excluded.is_primary, image_data = excluded.image_data, image_mime_type = excluded.image_mime_type, image_width = excluded.image_width, image_height = excluded.image_height`,
+      [crewMemberId, encryptCrewField(ownerId, crewMemberId, "name", this.plainCrewField(ownerId, crewMemberId, "name", crew.name)), encryptCrewField(ownerId, crewMemberId, "nationality", this.plainCrewField(ownerId, crewMemberId, "nationality", crew.nationality)), encryptCrewField(ownerId, crewMemberId, "role", this.plainCrewField(ownerId, crewMemberId, "role", crew.role)), encryptCrewField(ownerId, crewMemberId, "address", this.plainCrewField(ownerId, crewMemberId, "address", crew.address ?? "")), encryptCrewField(ownerId, crewMemberId, "certificate", this.plainCrewField(ownerId, crewMemberId, "certificate", crew.certificate ?? "")), crew.isPrimary ? 1 : 0, ...imageValues(crew.image), ownerId],
     );
   }
 
