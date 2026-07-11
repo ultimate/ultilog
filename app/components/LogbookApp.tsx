@@ -802,6 +802,21 @@ export function LogbookApp({
         {stamp || activeSheet.dateRange}
       </button>
     );
+  const technicalCheckSuggestions = useMemo(() => {
+    const seen = new Set<string>();
+    const suggestions: string[] = [];
+    for (const sheet of logbook.sheets) {
+      for (const item of sheet.technicalChecks) {
+        const suggestion = item.trim();
+        const key = suggestion.toLocaleLowerCase();
+        if (!suggestion || seen.has(key)) continue;
+        seen.add(key);
+        suggestions.push(suggestion);
+      }
+    }
+    return suggestions;
+  }, [logbook.sheets]);
+
   const crewAssignments = useMemo(
     () =>
       logbook.crewMembers.map((member) => ({
@@ -1692,6 +1707,7 @@ export function LogbookApp({
               addTechnicalCheck={addTechnicalCheck}
               updateTechnicalCheck={updateTechnicalCheck}
               deleteTechnicalCheck={deleteTechnicalCheck}
+              technicalCheckSuggestions={technicalCheckSuggestions}
             />
           )}
 
