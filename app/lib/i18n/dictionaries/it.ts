@@ -101,6 +101,8 @@ export const it: Dictionary = {
   "boats.form": "Modulo barca",
   "boats.noRegistration": "Nessuna registrazione",
   "boats.flagState": "Stato di bandiera",
+  "boats.flagPlaceholder": "Scegli una bandiera",
+  "boats.flagHelp": "Salvato solo come emoji.",
   "boats.homePort": "Porto di base",
   "boats.dimensions": "Dimensioni",
   "boats.manufacturer": "Costruttore",
