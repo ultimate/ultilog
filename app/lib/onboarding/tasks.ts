@@ -1,6 +1,7 @@
 import type { TranslationKey } from "../i18n/translations";
 
 export const onboardingTaskIds = [
+  "verify_email",
   "read_compliance",
   "complete_primary_crew",
   "personalize_view",
@@ -20,9 +21,16 @@ export type OnboardingTask = {
   id: OnboardingTaskId;
   titleKey: TranslationKey;
   descriptionKey: TranslationKey;
+  manualAllowed?: boolean;
 };
 
 export const onboardingTasks = [
+  {
+    id: "verify_email",
+    titleKey: "onboarding.verifyEmail.title",
+    descriptionKey: "onboarding.verifyEmail.description",
+    manualAllowed: false,
+  },
   {
     id: "read_compliance",
     titleKey: "onboarding.readCompliance.title",

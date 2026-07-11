@@ -33,9 +33,11 @@ describe("detectOnboardingCompletion", () => {
       },
       hasPersonalizedView: true,
       hasReadCompliance: true,
+      hasVerifiedEmail: true,
     });
 
     expect(completedOnboardingTaskIds(state)).toEqual([
+      "verify_email",
       "read_compliance",
       "complete_primary_crew",
       "personalize_view",

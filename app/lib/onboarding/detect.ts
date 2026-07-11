@@ -14,6 +14,7 @@ export type OnboardingDetectionInput = {
   manualCompletedTasks?: unknown;
   hasPersonalizedView?: boolean;
   hasReadCompliance?: boolean;
+  hasVerifiedEmail?: boolean;
 };
 
 export function detectOnboardingCompletion(input: OnboardingDetectionInput): OnboardingCompletionState {
@@ -36,6 +37,7 @@ export function completedOnboardingTaskIds(state: OnboardingCompletionState): On
 
 function detectAutomaticOnboardingTaskIds(input: OnboardingDetectionInput): OnboardingTaskId[] {
   const completed: OnboardingTaskId[] = [];
+  if (input.hasVerifiedEmail) completed.push("verify_email");
   if (input.hasReadCompliance) completed.push("read_compliance");
   if (hasCompletedPrimaryCrew(input.logbook)) completed.push("complete_primary_crew");
   if (input.hasPersonalizedView) completed.push("personalize_view");

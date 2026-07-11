@@ -99,7 +99,8 @@ export function useOnboardingProfile({ activeModule, initialEmail, initialName, 
     manualCompletedTasks: onboardingCompletedTasks,
     hasPersonalizedView: theme !== "light" || isNavSlim,
     hasReadCompliance,
-  }), [hasReadCompliance, isNavSlim, logbook, onboardingCompletedTasks, theme]);
+    hasVerifiedEmail: isAccountEmailVerified,
+  }), [hasReadCompliance, isAccountEmailVerified, isNavSlim, logbook, onboardingCompletedTasks, theme]);
 
   const isOnboardingComplete = Object.values(onboardingCompletion).every((task) => task.completed);
 
