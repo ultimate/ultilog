@@ -1,4 +1,4 @@
-/* eslint-disable @next/next/no-img-element */
+import { EntityImage } from "../EntityImage";
 import { useI18n } from "../../../lib/i18n";
 import { useRef, type Dispatch, type SetStateAction } from "react";
 import type {
@@ -60,6 +60,12 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
                     pushAppPath(modulePath("crew", index));
                   }}
                 >
+                  <EntityImage
+                    image={person.image}
+                    entityType="crew"
+                    alt={`${person.name} avatar`}
+                    variant="list"
+                  />
                   <span>
                     <strong>
                       {person.isPrimary ? "⭐ " : ""}
@@ -137,14 +143,12 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
             <div className="image-form-field wide-field">
               <p className="eyebrow">Image</p>
               <div className="image-preview-frame">
-                {crewForm.image ? (
-                  <img
-                    src={`data:${crewForm.image.mimeType};base64,${crewForm.image.data}`}
-                    alt={`${crewForm.name || t("crew.newProfile")} preview`}
-                  />
-                ) : (
-                  <span>No image selected</span>
-                )}
+                <EntityImage
+                  image={crewForm.image}
+                  entityType="crew"
+                  alt={`${crewForm.name || t("crew.newProfile")} preview`}
+                  variant="preview"
+                />
               </div>
               <input
                 ref={imageInputRef}
