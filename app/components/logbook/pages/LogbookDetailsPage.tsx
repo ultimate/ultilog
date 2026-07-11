@@ -104,8 +104,10 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const onShowCourseColumnsChange = props.onShowCourseColumnsChange as (show: boolean) => void;
   const [isMapExpanded, setIsMapExpanded] = useState(false);
   const [newTechnicalCheck, setNewTechnicalCheck] = useState("");
+  const [technicalCheckDraftState, setTechnicalCheckDraftState] = useState<{ sheetId: string; drafts: Record<number, string> }>({ sheetId: "", drafts: {} });
   const [openCourseTooltip, setOpenCourseTooltip] = useState<TranslationKey | null>(null);
   const [courseTooltipPosition, setCourseTooltipPosition] = useState({ left: 0, top: 0 });
+  const technicalCheckDrafts = technicalCheckDraftState.sheetId === activeSheet.id ? technicalCheckDraftState.drafts : {};
   const scannerWarnings = activeSheet.scannerWarnings ?? [];
   const showScannerDraftNotice =
     activeSheet.source === "scanner" && activeSheet.status === "Draft";
@@ -118,6 +120,28 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     if (!value) return;
     await addTechnicalCheck(value);
     setNewTechnicalCheck("");
+  }
+
+  function updateTechnicalCheckDraft(index: number, value: string) {
+    setTechnicalCheckDraftState((current) => ({
+      sheetId: activeSheet.id,
+      drafts: { ...(current.sheetId === activeSheet.id ? current.drafts : {}), [index]: value },
+    }));
+  }
+
+  async function saveTechnicalCheckDraft(index: number) {
+    await updateTechnicalCheck(index, technicalCheckDrafts[index] ?? activeSheet.technicalChecks[index] ?? "");
+    setTechnicalCheckDraftState((current) => {
+      const { [index]: _discarded, ...next } = current.sheetId === activeSheet.id ? current.drafts : {};
+      return { sheetId: activeSheet.id, drafts: next };
+    });
+  }
+
+  function cancelTechnicalCheckDraft(index: number) {
+    setTechnicalCheckDraftState((current) => {
+      const { [index]: _discarded, ...next } = current.sheetId === activeSheet.id ? current.drafts : {};
+      return { sheetId: activeSheet.id, drafts: next };
+    });
   }
 
   useEffect(() => {
@@ -804,28 +828,49 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                   <h3>{t("details.technicalLog")}</h3>
                   {activeSheet.technicalChecks.length ? (
                     <ul className="stack-list">
-                      {activeSheet.technicalChecks.map((item, index) => (
-                        <li key={`${item}-${index}`}>
-                          <input
-                            aria-label={`Technical log entry ${index + 1}`}
-                            disabled={isActiveSheetLocked}
-                            list={technicalCheckSuggestionsId}
-                            defaultValue={item}
-                            onBlur={(event) => updateTechnicalCheck(index, event.target.value)}
-                          />
-                          <button
-                            type="button"
-                            className="edit-chip"
-                            disabled={isActiveSheetLocked}
-                            onClick={() => deleteTechnicalCheck(index)}
-                          >
-                            🗑️
-                          </button>
-                        </li>
-                      ))}
+                      {activeSheet.technicalChecks.map((item, index) => {
+                        const draft = technicalCheckDrafts[index] ?? item;
+                        return (
+                          <li key={`${item}-${index}`}>
+                            <input
+                              aria-label={`${t("details.technicalLogEntry")} ${index + 1}`}
+                              disabled={isActiveSheetLocked}
+                              list={technicalCheckSuggestionsId}
+                              value={draft}
+                              onChange={(event) => updateTechnicalCheckDraft(index, event.target.value)}
+                            />
+                            <span className="inline-value-actions">
+                              <button
+                                type="button"
+                                aria-label={`${t("common.save")} ${t("details.technicalLogEntry")} ${index + 1}`}
+                                disabled={isActiveSheetLocked || draft === item}
+                                onClick={() => saveTechnicalCheckDraft(index)}
+                              >
+                                💾
+                              </button>
+                              <button
+                                type="button"
+                                aria-label={`${t("common.cancel")} ${t("details.technicalLogEntry")} ${index + 1}`}
+                                disabled={isActiveSheetLocked || draft === item}
+                                onClick={() => cancelTechnicalCheckDraft(index)}
+                              >
+                                ❎
+                              </button>
+                              <button
+                                type="button"
+                                aria-label={`${t("details.deleteTechnicalLogEntry")} ${index + 1}`}
+                                disabled={isActiveSheetLocked}
+                                onClick={() => deleteTechnicalCheck(index)}
+                              >
+                                🗑️
+                              </button>
+                            </span>
+                          </li>
+                        );
+                      })}
                     </ul>
                   ) : (
-                    <p>No technical log entries yet.</p>
+                    <p>{t("details.noTechnicalLogEntries")}</p>
                   )}
                   {technicalCheckSuggestions.length ? (
                     <datalist id={technicalCheckSuggestionsId}>
@@ -836,15 +881,15 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                   ) : null}
                   <form className="inline-edit-actions" onSubmit={submitTechnicalCheck}>
                     <input
-                      aria-label="New technical log entry"
+                      aria-label={t("details.newTechnicalLogEntry")}
                       disabled={isActiveSheetLocked}
                       list={technicalCheckSuggestionsId}
                       value={newTechnicalCheck}
                       onChange={(event) => setNewTechnicalCheck(event.target.value)}
-                      placeholder="Add technical log entry"
+                      placeholder={t("details.addTechnicalLogEntry")}
                     />
                     <button type="submit" disabled={isActiveSheetLocked || !newTechnicalCheck.trim()}>
-                      Add entry
+                      {t("details.addTechnicalLogEntry")}
                     </button>
                   </form>
                 </article>

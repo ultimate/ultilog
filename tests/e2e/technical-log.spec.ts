@@ -9,19 +9,24 @@ test("edits technical log entries and suggests previous checks", async ({ page }
 
   await expect(page.getByRole("heading", { name: targetSheet.title })).toBeVisible();
   await expect(page.getByText("08-12: Luca / Jonas")).toHaveCount(0);
-  await expect(page.getByLabel("Technical log entry 1")).toHaveValue("Engine oil checked");
+  await expect(page.getByRole("combobox", { name: "Technical log entry 1" })).toHaveValue("Engine oil checked");
   await expect(page.locator('datalist#technical-log-suggestions option[value="Fuel valves open"]')).toHaveCount(1);
 
-  await page.getByLabel("New technical log entry").fill("✅ Generator belt inspected");
-  await page.getByRole("button", { name: "Add entry" }).click();
-  await expect(page.getByLabel("Technical log entry 6")).toHaveValue("✅ Generator belt inspected");
+  await page.getByRole("combobox", { name: "New technical log entry" }).fill("✅ Generator belt inspected");
+  await page.getByRole("button", { name: "Add technical log entry" }).click();
+  await expect(page.getByRole("combobox", { name: "Technical log entry 6" })).toHaveValue("✅ Generator belt inspected");
 
-  await page.getByLabel("Technical log entry 6").fill("⚠️ Generator belt recheck tomorrow");
-  await page.getByLabel("Technical log entry 6").blur();
-  await expect(page.getByLabel("Technical log entry 6")).toHaveValue("⚠️ Generator belt recheck tomorrow");
+  await page.getByRole("combobox", { name: "Technical log entry 6" }).fill("⚠️ Generator belt recheck tomorrow");
+  await page.getByRole("button", { name: "Save Technical log entry 6" }).click();
+  await expect(page.getByRole("combobox", { name: "Technical log entry 6" })).toHaveValue("⚠️ Generator belt recheck tomorrow");
 
-  await page.getByLabel("Technical log entry 6").locator("xpath=..").getByRole("button", { name: "🗑️" }).click();
-  await expect(page.getByLabel("Technical log entry 6")).toHaveCount(0);
+  await page.getByRole("button", { name: "Delete technical log entry 6" }).click();
+  await expect(page.getByRole("combobox", { name: "Technical log entry 6" })).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Lock" }).click();
+  await expect(page.getByRole("combobox", { name: "Technical log entry 1" })).toBeDisabled();
+  await expect(page.getByRole("combobox", { name: "New technical log entry" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Delete technical log entry 1" })).toBeDisabled();
 });
 
 async function loginWithSeededDemoData(page: Page) {
