@@ -58,7 +58,7 @@ Create `.env.local` from `.env.example` for development. The app uses these envi
 | `LOGBOOK_SCANNER_MODEL` | Optional. | Selects the OpenAI model used by the scanner provider. Defaults to `gpt-4.1-mini`. |
 | `AUTH_SECRET` / platform-provided NextAuth secret | Required for secure production authentication. | Used by NextAuth to sign/encrypt authentication state. Development may rely on framework defaults, but production should set a stable secret. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | Required for password reset emails in production. | Configures the SMTP server used to send password reset links. `SMTP_FROM` is the sender address. `SMTP_USER` and `SMTP_PASSWORD` are optional for SMTP relays that do not require authentication. |
-| `NEXT_PUBLIC_APP_URL` / `AUTH_URL` / `NEXTAUTH_URL` | Required for deployed password reset links. | Sets the public base URL used in password reset emails. `NEXT_PUBLIC_APP_URL` takes precedence; local development falls back to `http://localhost:3000`. |
+| `NEXT_PUBLIC_APP_URL` / `VERCEL_BRANCH_URL` / `AUTH_URL` / `NEXTAUTH_URL` | Required for deployed password reset links. | Sets the public base URL used in password reset emails. `NEXT_PUBLIC_APP_URL` takes precedence; Vercel deployments fall back to `VERCEL_BRANCH_URL`; local development falls back to `http://localhost:3000`. |
 
 ## Logbook scanner
 
