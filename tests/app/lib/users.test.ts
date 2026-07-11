@@ -99,3 +99,36 @@ async function importUsersWithTempDatabase() {
   process.env.LOCAL_DATABASE_PATH = join(directory, "ultilog.sqlite");
   return import("../../../app/lib/users");
 }
+
+describe("email verification", () => {
+  it("verifies a registered user's email with a valid token", async () => {
+    const { createHash } = await import("node:crypto");
+    const { registerUser, verifyEmailWithToken } = await importUsersWithTempDatabase();
+    const { getDatabase } = await import("../../../app/lib/logbook-store");
+    const user = await registerUser({ name: "Verify User", email: "verify@example.test", password: "password123" });
+    const db = getDatabase();
+    const token = "raw-verification-token";
+    const tokenHash = createHash("sha256").update(token).digest("hex");
+    await db.query("insert into email_verification_tokens (id, user_id, token_hash, expires_at) values (?, ?, ?, ?)", ["known-token", user.id, tokenHash, new Date(Date.now() + 60_000).toISOString()]);
+
+    await verifyEmailWithToken(token);
+
+    const rows = (await db.query<{ email_verified_at: string | null }>("select email_verified_at from users where id = ?", [user.id])).rows;
+    expect(rows[0]?.email_verified_at).toEqual(expect.any(String));
+  });
+
+  it("only creates password reset tokens for verified email addresses", async () => {
+    const { registerUser, requestPasswordReset } = await importUsersWithTempDatabase();
+    const { getDatabase } = await import("../../../app/lib/logbook-store");
+    const user = await registerUser({ name: "Reset Verify User", email: "reset-verify@example.test", password: "password123" });
+    const db = getDatabase();
+
+    await requestPasswordReset(user.email);
+    await expect(db.query<{ count: number }>("select count(*) as count from password_reset_tokens where user_id = ?", [user.id])).resolves.toMatchObject({ rows: [{ count: 0 }] });
+
+    await db.query("update users set email_verified_at = ? where id = ?", [new Date().toISOString(), user.id]);
+    await requestPasswordReset(user.email);
+
+    await expect(db.query<{ count: number }>("select count(*) as count from password_reset_tokens where user_id = ?", [user.id])).resolves.toMatchObject({ rows: [{ count: 1 }] });
+  });
+});

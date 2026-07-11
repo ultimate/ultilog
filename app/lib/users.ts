@@ -2,7 +2,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { isOnboardingTaskId, type OnboardingTaskId } from "./onboarding/tasks";
 import { getDatabase, writeLogbook } from "./logbook-store";
-import { sendPasswordResetEmail } from "./mailer";
+import { sendEmailVerificationEmail, sendPasswordResetEmail } from "./mailer";
 
 export type UserTheme = "light" | "dark" | "auto";
 export type UserPreferences = {
@@ -22,27 +22,37 @@ export type UserPreferences = {
 export type AppUser = { id: string; name: string; email: string; groups: string[]; onboardingCompletedTasks: OnboardingTaskId[]; hasReadCompliance: boolean } & UserPreferences;
 export type AdminUserListItem = AppUser;
 
-type UserRow = Omit<AppUser, "groups" | "onboardingCompletedTasks" | "hasReadCompliance" | "isNavSlim" | "countryCode" | "windUnit" | "waterHeightUnit" | "temperatureUnit" | "coordinateFormat" | "distanceDisplayUnit" | "defaultBoatId" | "defaultCrewMemberIds" | "showCourseConversionTable"> & { password_hash: string; onboarding_completed_tasks: string; country_code: string; wind_unit: string; water_height_unit: string; temperature_unit: string; coordinate_format: string; distance_display_unit: string; default_boat_id: string; default_crew_member_ids: string; nav_slim: number | boolean; has_read_compliance: number | boolean; show_course_conversion_table: number | boolean };
+type UserRow = Omit<AppUser, "groups" | "onboardingCompletedTasks" | "hasReadCompliance" | "isNavSlim" | "countryCode" | "windUnit" | "waterHeightUnit" | "temperatureUnit" | "coordinateFormat" | "distanceDisplayUnit" | "defaultBoatId" | "defaultCrewMemberIds" | "showCourseConversionTable"> & { password_hash: string; onboarding_completed_tasks: string; country_code: string; wind_unit: string; water_height_unit: string; temperature_unit: string; coordinate_format: string; distance_display_unit: string; default_boat_id: string; default_crew_member_ids: string; nav_slim: number | boolean; has_read_compliance: number | boolean; show_course_conversion_table: number | boolean; email_verified_at: string | null };
 type GroupRow = { user_id?: string; name: string };
 type PasswordResetTokenRow = { id: string; user_id: string; token_hash: string; expires_at: string; used_at: string | null };
+type EmailVerificationTokenRow = PasswordResetTokenRow;
 
-const USER_COLUMNS = "id, name, email, password_hash, onboarding_completed_tasks, theme, nav_slim, has_read_compliance, country_code, language, wind_unit, water_height_unit, temperature_unit, coordinate_format, distance_display_unit, default_boat_id, default_crew_member_ids, show_course_conversion_table";
+const USER_COLUMNS = "id, name, email, password_hash, onboarding_completed_tasks, theme, nav_slim, has_read_compliance, country_code, language, wind_unit, water_height_unit, temperature_unit, coordinate_format, distance_display_unit, default_boat_id, default_crew_member_ids, show_course_conversion_table, email_verified_at";
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
 const passwordResetTokenHours = 1;
+const emailVerificationTokenHours = 24;
 const blockedNameTerms = ["admin", "ultilog", "support", "moderator", "fuck", "shit", "bitch", "asshole", "cunt", "nigger", "nazi"];
 
 function normalizeName(name: string) {
   return name.trim().replace(/\s+/g, " ");
 }
 
-function hashPasswordResetToken(token: string) {
+function hashToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
 function buildPasswordResetUrl(token: string) {
+  return new URL(`/reset-password?token=${encodeURIComponent(token)}`, appBaseUrl()).toString();
+}
+
+function buildEmailVerificationUrl(token: string) {
+  return new URL(`/verify-email?token=${encodeURIComponent(token)}`, appBaseUrl()).toString();
+}
+
+function appBaseUrl() {
   const configuredBaseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_BRANCH_URL || process.env.AUTH_URL || process.env.NEXTAUTH_URL || "http://localhost:3000";
-  return new URL(`/reset-password?token=${encodeURIComponent(token)}`, withProtocol(configuredBaseUrl)).toString();
+  return withProtocol(configuredBaseUrl);
 }
 
 function withProtocol(url: string) {
@@ -239,6 +249,7 @@ export async function registerUser(input: { name: string; email: string; passwor
     `insert into users (id, name, email, password_hash) values (${db.placeholder(1)}, ${db.placeholder(2)}, ${db.placeholder(3)}, ${db.placeholder(4)})`,
     [user.id, user.name, user.email, passwordHash],
   );
+  await sendEmailVerification(user.id);
   await writeLogbook({ boats: [], crewMembers: [{ id: "me", name: user.name, nationality: "", role: "", address: "", certificate: "", isPrimary: true }], sheets: [] }, user.id);
   return user;
 }
@@ -253,8 +264,9 @@ export async function updateUserEmail(userId: string, input: { email: string; cu
   if (!await bcrypt.compare(input.currentPassword, current.password_hash)) throw new Error("Current password is incorrect.");
   const existing = await findUserByEmail(email);
   if (existing && existing.id !== userId) throw new Error("An account with this email already exists.");
-  await db.query(`update users set email = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [email, userId]);
-  return toAppUser({ ...current, email }, await groupsForUser(userId));
+  await db.query(`update users set email = ${db.placeholder(1)}, email_verified_at = null where id = ${db.placeholder(2)}`, [email, userId]);
+  await sendEmailVerification(userId);
+  return toAppUser({ ...current, email, email_verified_at: null }, await groupsForUser(userId));
 }
 
 export async function updateUserPassword(userId: string, input: { currentPassword: string; newPassword: string }): Promise<void> {
@@ -273,10 +285,10 @@ export async function requestPasswordReset(emailInput: string): Promise<void> {
   const db = getDatabase();
   await db.migrate();
   const current = (await db.query<UserRow>(`select ${USER_COLUMNS} from users where email = ${db.placeholder(1)}`, [email])).rows[0];
-  if (!current) return;
+  if (!current?.email_verified_at) return;
 
   const token = randomBytes(32).toString("base64url");
-  const tokenHash = hashPasswordResetToken(token);
+  const tokenHash = hashToken(token);
   const expiresAt = new Date(Date.now() + passwordResetTokenHours * 60 * 60 * 1000).toISOString();
   await db.query(
     `insert into password_reset_tokens (id, user_id, token_hash, expires_at) values (${db.placeholder(1)}, ${db.placeholder(2)}, ${db.placeholder(3)}, ${db.placeholder(4)})`,
@@ -285,11 +297,43 @@ export async function requestPasswordReset(emailInput: string): Promise<void> {
   await sendPasswordResetEmail({ to: current.email, resetUrl: buildPasswordResetUrl(token), locale: current.language });
 }
 
+async function sendEmailVerification(userId: string): Promise<void> {
+  const db = getDatabase();
+  await db.migrate();
+  const current = (await db.query<UserRow>(`select ${USER_COLUMNS} from users where id = ${db.placeholder(1)}`, [userId])).rows[0];
+  if (!current) throw new Error("User not found.");
+
+  const token = randomBytes(32).toString("base64url");
+  const tokenHash = hashToken(token);
+  const expiresAt = new Date(Date.now() + emailVerificationTokenHours * 60 * 60 * 1000).toISOString();
+  await db.query(
+    `insert into email_verification_tokens (id, user_id, token_hash, expires_at) values (${db.placeholder(1)}, ${db.placeholder(2)}, ${db.placeholder(3)}, ${db.placeholder(4)})`,
+    [randomUUID(), current.id, tokenHash, expiresAt],
+  );
+  await sendEmailVerificationEmail({ to: current.email, verificationUrl: buildEmailVerificationUrl(token), locale: current.language });
+}
+
+export async function verifyEmailWithToken(token: string): Promise<void> {
+  const db = getDatabase();
+  await db.migrate();
+  const tokenHash = hashToken(token.trim());
+  const verificationToken = (await db.query<EmailVerificationTokenRow>(
+    `select id, user_id, token_hash, expires_at, used_at from email_verification_tokens where token_hash = ${db.placeholder(1)}`,
+    [tokenHash],
+  )).rows[0];
+  if (!verificationToken || verificationToken.used_at) throw new Error("This email verification link is invalid or has already been used.");
+  if (new Date(verificationToken.expires_at).getTime() <= Date.now()) throw new Error("This email verification link has expired.");
+
+  const verifiedAt = new Date().toISOString();
+  await db.query(`update users set email_verified_at = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [verifiedAt, verificationToken.user_id]);
+  await db.query(`update email_verification_tokens set used_at = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [verifiedAt, verificationToken.id]);
+}
+
 export async function resetPasswordWithToken(token: string, newPassword: string): Promise<void> {
   if (newPassword.length < 8) throw new Error("Password must be at least 8 characters.");
   const db = getDatabase();
   await db.migrate();
-  const tokenHash = hashPasswordResetToken(token.trim());
+  const tokenHash = hashToken(token.trim());
   const resetToken = (await db.query<PasswordResetTokenRow>(
     `select id, user_id, token_hash, expires_at, used_at from password_reset_tokens where token_hash = ${db.placeholder(1)}`,
     [tokenHash],

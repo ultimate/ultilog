@@ -8,7 +8,7 @@ vi.mock("nodemailer", () => ({
 }));
 
 const originalEnv = { ...process.env };
-const { sendPasswordResetEmail } = await import("../../../app/lib/mailer");
+const { sendEmailVerificationEmail, sendPasswordResetEmail } = await import("../../../app/lib/mailer");
 
 afterEach(() => {
   process.env = { ...originalEnv };
@@ -71,5 +71,23 @@ describe("password reset mailer", () => {
     delete process.env.SMTP_FROM;
 
     await expect(sendPasswordResetEmail({ to: "sailor@example.test", resetUrl: "https://ultilog.test/reset-password?token=abc" })).rejects.toThrow("Password reset email is not configured.");
+  });
+});
+
+
+describe("email verification mailer", () => {
+  it("sends verification emails through configured SMTP", async () => {
+    process.env.SMTP_HOST = "smtp.example.test";
+    process.env.SMTP_FROM = "Ultilog <noreply@example.test>";
+
+    await sendEmailVerificationEmail({ to: "sailor@example.test", verificationUrl: "https://ultilog.test/verify-email?token=abc" });
+
+    expect(sendMail).toHaveBeenCalledWith(expect.objectContaining({
+      from: "Ultilog <noreply@example.test>",
+      to: "sailor@example.test",
+      subject: "Verify your Ultilog email",
+      text: expect.stringContaining("verify your Ultilog email address"),
+      html: expect.stringContaining("Verify email"),
+    }));
   });
 });
