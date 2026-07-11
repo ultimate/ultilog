@@ -4,5 +4,5 @@ export const legalRequirements = [
   "Crew identities, nationalities, roles, embarkation and disembarkation ports/dates",
   "Port departures and arrivals with place and date",
   "Passage reports: weather, courses, log readings, sail plan, engine operation, and positions",
-  "Watch plan plus important events, observations, accidents, and damage",
+  "Technical log entries plus important events, observations, accidents, and damage",
 ];

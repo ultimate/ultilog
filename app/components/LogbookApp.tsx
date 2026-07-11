@@ -802,6 +802,21 @@ export function LogbookApp({
         {stamp || activeSheet.dateRange}
       </button>
     );
+  const technicalCheckSuggestions = useMemo(() => {
+    const seen = new Set<string>();
+    const suggestions: string[] = [];
+    for (const sheet of logbook.sheets) {
+      for (const item of sheet.technicalChecks) {
+        const suggestion = item.trim();
+        const key = suggestion.toLocaleLowerCase();
+        if (!suggestion || seen.has(key)) continue;
+        seen.add(key);
+        suggestions.push(suggestion);
+      }
+    }
+    return suggestions;
+  }, [logbook.sheets]);
+
   const crewAssignments = useMemo(
     () =>
       logbook.crewMembers.map((member) => ({
@@ -1151,6 +1166,52 @@ export function LogbookApp({
     setEditingLineIndex(null);
     setLineForm(lineDefaults);
     setShowAddLine(false);
+  }
+
+  async function addTechnicalCheck(value: string) {
+    if (activeSheet.status === "Locked") return;
+    const technicalCheck = value.trim();
+    if (!technicalCheck) return;
+    const currentLogbook = logbookRef.current;
+    await saveLogbookNow({
+      ...currentLogbook,
+      sheets: currentLogbook.sheets.map((sheet) =>
+        sheet.id === activeSheet.id
+          ? { ...sheet, technicalChecks: [...sheet.technicalChecks, technicalCheck] }
+          : sheet,
+      ),
+    });
+  }
+
+  async function updateTechnicalCheck(indexToUpdate: number, value: string) {
+    if (activeSheet.status === "Locked") return;
+    const technicalCheck = value.trim();
+    const currentLogbook = logbookRef.current;
+    await saveLogbookNow({
+      ...currentLogbook,
+      sheets: currentLogbook.sheets.map((sheet) => {
+        if (sheet.id !== activeSheet.id) return sheet;
+        return {
+          ...sheet,
+          technicalChecks: sheet.technicalChecks
+            .map((item, index) => (index === indexToUpdate ? technicalCheck : item))
+            .filter(Boolean),
+        };
+      }),
+    });
+  }
+
+  async function deleteTechnicalCheck(indexToDelete: number) {
+    if (activeSheet.status === "Locked") return;
+    const currentLogbook = logbookRef.current;
+    await saveLogbookNow({
+      ...currentLogbook,
+      sheets: currentLogbook.sheets.map((sheet) =>
+        sheet.id === activeSheet.id
+          ? { ...sheet, technicalChecks: sheet.technicalChecks.filter((_, index) => index !== indexToDelete) }
+          : sheet,
+      ),
+    });
   }
 
   async function saveCrew() {
@@ -1643,6 +1704,10 @@ export function LogbookApp({
               moveCrewOnActiveSheet={moveCrewOnActiveSheet}
               deleteCrewFromActiveSheet={deleteCrewFromActiveSheet}
               addCrewToActiveSheet={addCrewToActiveSheet}
+              addTechnicalCheck={addTechnicalCheck}
+              updateTechnicalCheck={updateTechnicalCheck}
+              deleteTechnicalCheck={deleteTechnicalCheck}
+              technicalCheckSuggestions={technicalCheckSuggestions}
             />
           )}
 
