@@ -1,8 +1,10 @@
 import nodemailer from "nodemailer";
+import { isLocale, t, type Locale } from "./i18n/translations";
 
 export type PasswordResetEmail = {
   to: string;
   resetUrl: string;
+  locale?: Locale | string;
 };
 
 type MailConfig = {
@@ -29,12 +31,14 @@ export async function sendPasswordResetEmail(message: PasswordResetEmail) {
     auth: config.user && config.password ? { user: config.user, pass: config.password } : undefined,
   });
 
+  const content = passwordResetEmailContent(message);
+
   await transporter.sendMail({
     from: config.from,
     to: message.to,
-    subject: "Reset your Ultilog password",
-    text: `Use this link to reset your Ultilog password: ${message.resetUrl}\n\nThis link expires in 1 hour. If you did not request a password reset, you can ignore this email.`,
-    html: `<p>Use this link to reset your Ultilog password:</p><p><a href="${escapeHtml(message.resetUrl)}">Reset password</a></p><p>This link expires in 1 hour. If you did not request a password reset, you can ignore this email.</p>`,
+    subject: content.subject,
+    text: content.text,
+    html: content.html,
   });
 }
 
@@ -53,6 +57,19 @@ function getMailConfig(): MailConfig | null {
     user: process.env.SMTP_USER?.trim() || undefined,
     password: process.env.SMTP_PASSWORD || undefined,
     from,
+  };
+}
+
+function passwordResetEmailContent(message: PasswordResetEmail) {
+  const locale = isLocale(message.locale) ? message.locale : "en";
+  const intro = t(locale, "email.passwordResetIntro");
+  const expiry = t(locale, "email.passwordResetExpiry");
+  const ignore = t(locale, "email.passwordResetIgnore");
+  const cta = t(locale, "email.passwordResetCta");
+  return {
+    subject: t(locale, "email.passwordResetSubject"),
+    text: `${intro} ${message.resetUrl}\n\n${expiry} ${ignore}`,
+    html: `<p>${escapeHtml(intro)}</p><p><a href="${escapeHtml(message.resetUrl)}">${escapeHtml(cta)}</a></p><p>${escapeHtml(expiry)} ${escapeHtml(ignore)}</p>`,
   };
 }
 

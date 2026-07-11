@@ -39,6 +39,19 @@ describe("password reset mailer", () => {
     }));
   });
 
+  it("uses translated reset email content when a locale is provided", async () => {
+    process.env.SMTP_HOST = "smtp.example.test";
+    process.env.SMTP_FROM = "Ultilog <noreply@example.test>";
+
+    await sendPasswordResetEmail({ to: "sailor@example.test", resetUrl: "https://ultilog.test/reset-password?token=abc", locale: "de" });
+
+    expect(sendMail).toHaveBeenCalledWith(expect.objectContaining({
+      subject: "Setze dein Ultilog-Passwort zurück",
+      text: expect.stringContaining("Verwende diesen Link"),
+      html: expect.stringContaining("Passwort zurücksetzen"),
+    }));
+  });
+
   it("logs reset links locally when SMTP is not configured", async () => {
     vi.stubEnv("NODE_ENV", "development");
     delete process.env.SMTP_HOST;

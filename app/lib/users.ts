@@ -282,7 +282,7 @@ export async function requestPasswordReset(emailInput: string): Promise<void> {
     `insert into password_reset_tokens (id, user_id, token_hash, expires_at) values (${db.placeholder(1)}, ${db.placeholder(2)}, ${db.placeholder(3)}, ${db.placeholder(4)})`,
     [randomUUID(), current.id, tokenHash, expiresAt],
   );
-  await sendPasswordResetEmail({ to: current.email, resetUrl: buildPasswordResetUrl(token) });
+  await sendPasswordResetEmail({ to: current.email, resetUrl: buildPasswordResetUrl(token), locale: current.language });
 }
 
 export async function resetPasswordWithToken(token: string, newPassword: string): Promise<void> {
