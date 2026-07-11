@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
+import { sampleBoats, sampleLogSheets } from "../fixtures/logbook";
 
 const demoSheet = {
   id: "7d3a7602-5f3a-4b3d-81f3-4e973a8bb3a8",
@@ -6,7 +7,7 @@ const demoSheet = {
 };
 
 test("opens a seeded logsheet detail page from the overview log sheet list", async ({ page }) => {
-  await loginWithDemoData(page);
+  await loginWithSeededDemoData(page);
   await openModule(page, "Logbook list", "+ New sheet");
 
   const overviewMap = page.getByLabel("Overview map of all log sheets");
@@ -23,13 +24,23 @@ test("opens a seeded logsheet detail page from the overview log sheet list", asy
   await expect(page.getByLabel("Logbook sheet header")).toContainText("Fiskardo");
 });
 
-async function loginWithDemoData(page: Page) {
+async function loginWithSeededDemoData(page: Page) {
   await page.goto("/login");
   const demoLogin = page.getByRole("button", { name: "Try the demo" });
   await expect(demoLogin).toBeVisible();
   await expect(demoLogin).toBeEnabled();
   await demoLogin.click();
   await expect(page.getByRole("button", { name: "Logout" })).toBeVisible({ timeout: 30_000 });
+  const seedResponse = await page.request.put("/api/logbook", {
+    data: { boats: sampleBoats, crewMembers: crewProfilesFromSheets(sampleLogSheets), sheets: sampleLogSheets },
+  });
+  expect(seedResponse.ok()).toBeTruthy();
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Logout" })).toBeVisible({ timeout: 30_000 });
+}
+
+function crewProfilesFromSheets(sheets: typeof sampleLogSheets) {
+  return sheets.flatMap((sheet) => sheet.crew).filter((crew, index, crews) => crews.findIndex((candidate) => candidate.id === crew.id) === index).map(({ embarkationDateTime, embarkationPosition, disembarkationDateTime, disembarkationPosition, ...crew }) => crew);
 }
 
 async function openModule(page: Page, moduleName: string, expectedActionName: string | RegExp) {
