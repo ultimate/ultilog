@@ -282,6 +282,7 @@ export function LogbookApp({
   const [adminError, setAdminError] = useState<string | null>(null);
   const [groupDrafts, setGroupDrafts] = useState<Record<string, string>>({});
   const logbookRef = useRef(logbook);
+  const hasUnsavedLogbookChangesRef = useRef(false);
 
   function pushAppPath(path: string) {
     if (path === routePath) return;
@@ -365,11 +366,15 @@ export function LogbookApp({
 
   async function saveLogbookNow(nextLogbook: PersistedLogbook) {
     logbookRef.current = nextLogbook;
+    hasUnsavedLogbookChangesRef.current = true;
     setLogbook(nextLogbook);
     setSaveError(null);
     if (!isBackendReady) return true;
     const response = await persistLogbook(nextLogbook).catch(() => undefined);
-    if (response?.ok) return true;
+    if (response?.ok) {
+      hasUnsavedLogbookChangesRef.current = false;
+      return true;
+    }
     setSaveError(t("logbook.saveError"));
     return false;
   }
@@ -419,6 +424,7 @@ export function LogbookApp({
       const nextBoat = routedBoat ?? fallbackBoat;
 
       logbookRef.current = normalizedLogbook;
+      hasUnsavedLogbookChangesRef.current = false;
       setLogbook(normalizedLogbook);
       setActiveSheetId(nextSheet.id);
       setSheetForm(
@@ -572,7 +578,9 @@ export function LogbookApp({
     const timeout = window.setTimeout(() => {
       persistLogbook(logbook, { signal: controller.signal }).catch(
         () => undefined,
-      );
+      ).then((response) => {
+        if (response?.ok) hasUnsavedLogbookChangesRef.current = false;
+      });
     }, 300);
     return () => {
       window.clearTimeout(timeout);
@@ -583,6 +591,7 @@ export function LogbookApp({
   useEffect(() => {
     if (!isBackendReady) return;
     const saveBeforeLeaving = () => {
+      if (!hasUnsavedLogbookChangesRef.current) return;
       persistLogbook(logbookRef.current, { keepalive: true }).catch(
         () => undefined,
       );

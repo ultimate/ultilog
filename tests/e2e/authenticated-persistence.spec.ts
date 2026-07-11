@@ -110,5 +110,9 @@ async function clickButton(page: Page, name: string | RegExp) {
 }
 
 async function expectLoggedIn(page: Page) {
-  await expect(page.getByRole("button", { name: "Logout" })).toBeVisible({ timeout: 30_000 });
+  await expect(async () => {
+    const continueToApp = page.getByRole("button", { name: "Continue to app" });
+    if (await continueToApp.isVisible({ timeout: 500 }).catch(() => false)) await continueToApp.click();
+    await expect(page.getByRole("button", { name: "Logout" })).toBeVisible({ timeout: 1_000 });
+  }).toPass({ timeout: 30_000 });
 }
