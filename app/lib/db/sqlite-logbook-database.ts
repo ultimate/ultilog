@@ -35,6 +35,7 @@ export class SqliteLogbookDatabase extends LogbookDatabase {
       db.run("begin");
       await this.deleteTables();
       await this.insertSqliteLogbook(logbook);
+      await this.crew.ensurePrimaryProfile(this.ownerId);
       db.run("commit");
       await this.persist();
       return logbook;

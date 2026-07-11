@@ -42,6 +42,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
 
   async readLogbook(): Promise<PersistedLogbook> {
     await this.ensureSchemaAndBackfill();
+    await this.crew.ensurePrimaryProfile(this.ownerId);
     const logbook = await this.readTables();
     return logbook.boats.length || logbook.sheets.length || logbook.crewMembers.length ? logbook : emptyLogbook;
   }
@@ -73,5 +74,6 @@ export abstract class LogbookDatabase implements QueryableDatabase {
   private async replaceTables(logbook: PersistedLogbook) {
     await this.deleteTables();
     await this.insertLogbook(logbook);
+    await this.crew.ensurePrimaryProfile(this.ownerId);
   }
 }

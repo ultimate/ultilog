@@ -18,6 +18,21 @@ describe("SqliteLogbookDatabase", () => {
     await expect(db.readLogbook()).resolves.toEqual({ boats: [], crewMembers: [{ id: "me", name: "Local demo user", nationality: "", role: "Owner", address: "", certificate: "", isPrimary: true }], sheets: [] });
   });
 
+  it("restores a missing primary crew profile when replacing a user logbook", async () => {
+    const databasePath = await tempDatabasePath();
+    const db = new SqliteLogbookDatabase(databasePath).forUser("new-user");
+    await db.migrate();
+    await db.query("insert into users (id, name, email, password_hash) values (?, ?, ?, ?)", ["new-user", "New User", "new@example.test", ""]);
+
+    await db.writeLogbook({ boats: [], crewMembers: [], sheets: [] });
+
+    await expect(new SqliteLogbookDatabase(databasePath).forUser("new-user").readLogbook()).resolves.toEqual({
+      boats: [],
+      crewMembers: [{ id: "me", name: "New User", nationality: "", role: "Owner", address: "", certificate: "", isPrimary: true }],
+      sheets: [],
+    });
+  });
+
   it("does not replace an intentionally empty user logbook that already has a crew profile", async () => {
     const databasePath = await tempDatabasePath();
     const db = new SqliteLogbookDatabase(databasePath).forUser("new-user");
