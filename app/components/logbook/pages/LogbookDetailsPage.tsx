@@ -1,6 +1,6 @@
 import { EntityImage } from "../EntityImage";
 import { useI18n } from "../../../lib/i18n";
-import { useEffect, useRef, useState, type CSSProperties, type Dispatch, type MouseEvent, type SetStateAction } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type Dispatch, type FormEvent, type MouseEvent, type SetStateAction } from "react";
 import type {
   Boat,
   LineForm,
@@ -88,6 +88,9 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     moveCrewOnActiveSheet,
     deleteCrewFromActiveSheet,
     addCrewToActiveSheet,
+    addTechnicalCheck,
+    updateTechnicalCheck,
+    deleteTechnicalCheck,
   } = props;
   const activeBoat = props.activeBoat as Boat;
   const activeSheet = props.activeSheet as LogSheet;
@@ -98,6 +101,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const onCoordinateFormatChange = props.onCoordinateFormatChange as (format: CoordinateFormat) => void;
   const onShowCourseColumnsChange = props.onShowCourseColumnsChange as (show: boolean) => void;
   const [isMapExpanded, setIsMapExpanded] = useState(false);
+  const [newTechnicalCheck, setNewTechnicalCheck] = useState("");
   const [openCourseTooltip, setOpenCourseTooltip] = useState<TranslationKey | null>(null);
   const [courseTooltipPosition, setCourseTooltipPosition] = useState({ left: 0, top: 0 });
   const scannerWarnings = activeSheet.scannerWarnings ?? [];
@@ -105,6 +109,14 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     activeSheet.source === "scanner" && activeSheet.status === "Draft";
   const courseConversionSequence = useRef(0);
   const sheetImageInputRef = useRef<HTMLInputElement>(null);
+
+  async function submitTechnicalCheck(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const value = newTechnicalCheck.trim();
+    if (!value) return;
+    await addTechnicalCheck(value);
+    setNewTechnicalCheck("");
+  }
 
   useEffect(() => {
     if (!isMapExpanded) return;
@@ -788,11 +800,42 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                 </article>
                 <article className="info-card logbook-section">
                   <h3>{t("details.technicalLog")}</h3>
-                  <ul className="check-list">
-                    {activeSheet.technicalChecks.map((item) => (
-                      <li key={item}>{item}</li>
-                    ))}
-                  </ul>
+                  {activeSheet.technicalChecks.length ? (
+                    <ul className="stack-list">
+                      {activeSheet.technicalChecks.map((item, index) => (
+                        <li key={`${item}-${index}`}>
+                          <input
+                            aria-label={`Technical log entry ${index + 1}`}
+                            disabled={isActiveSheetLocked}
+                            defaultValue={item}
+                            onBlur={(event) => updateTechnicalCheck(index, event.target.value)}
+                          />
+                          <button
+                            type="button"
+                            className="edit-chip"
+                            disabled={isActiveSheetLocked}
+                            onClick={() => deleteTechnicalCheck(index)}
+                          >
+                            🗑️
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>No technical log entries yet.</p>
+                  )}
+                  <form className="inline-edit-actions" onSubmit={submitTechnicalCheck}>
+                    <input
+                      aria-label="New technical log entry"
+                      disabled={isActiveSheetLocked}
+                      value={newTechnicalCheck}
+                      onChange={(event) => setNewTechnicalCheck(event.target.value)}
+                      placeholder="Add technical log entry"
+                    />
+                    <button type="submit" disabled={isActiveSheetLocked || !newTechnicalCheck.trim()}>
+                      Add entry
+                    </button>
+                  </form>
                 </article>
                 <article className="map-card logbook-section logbook-sheet-map-section">
                   <div className="logbook-map-heading">

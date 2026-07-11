@@ -1153,6 +1153,52 @@ export function LogbookApp({
     setShowAddLine(false);
   }
 
+  async function addTechnicalCheck(value: string) {
+    if (activeSheet.status === "Locked") return;
+    const technicalCheck = value.trim();
+    if (!technicalCheck) return;
+    const currentLogbook = logbookRef.current;
+    await saveLogbookNow({
+      ...currentLogbook,
+      sheets: currentLogbook.sheets.map((sheet) =>
+        sheet.id === activeSheet.id
+          ? { ...sheet, technicalChecks: [...sheet.technicalChecks, technicalCheck] }
+          : sheet,
+      ),
+    });
+  }
+
+  async function updateTechnicalCheck(indexToUpdate: number, value: string) {
+    if (activeSheet.status === "Locked") return;
+    const technicalCheck = value.trim();
+    const currentLogbook = logbookRef.current;
+    await saveLogbookNow({
+      ...currentLogbook,
+      sheets: currentLogbook.sheets.map((sheet) => {
+        if (sheet.id !== activeSheet.id) return sheet;
+        return {
+          ...sheet,
+          technicalChecks: sheet.technicalChecks
+            .map((item, index) => (index === indexToUpdate ? technicalCheck : item))
+            .filter(Boolean),
+        };
+      }),
+    });
+  }
+
+  async function deleteTechnicalCheck(indexToDelete: number) {
+    if (activeSheet.status === "Locked") return;
+    const currentLogbook = logbookRef.current;
+    await saveLogbookNow({
+      ...currentLogbook,
+      sheets: currentLogbook.sheets.map((sheet) =>
+        sheet.id === activeSheet.id
+          ? { ...sheet, technicalChecks: sheet.technicalChecks.filter((_, index) => index !== indexToDelete) }
+          : sheet,
+      ),
+    });
+  }
+
   async function saveCrew() {
     const id = selectedCrewIndex === -1 ? createId() : crewForm.id;
     const previousCrew = logbookRef.current.crewMembers.find((candidate) => candidate.id === id);
@@ -1643,6 +1689,9 @@ export function LogbookApp({
               moveCrewOnActiveSheet={moveCrewOnActiveSheet}
               deleteCrewFromActiveSheet={deleteCrewFromActiveSheet}
               addCrewToActiveSheet={addCrewToActiveSheet}
+              addTechnicalCheck={addTechnicalCheck}
+              updateTechnicalCheck={updateTechnicalCheck}
+              deleteTechnicalCheck={deleteTechnicalCheck}
             />
           )}
 
