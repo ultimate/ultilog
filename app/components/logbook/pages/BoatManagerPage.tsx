@@ -1,4 +1,4 @@
-/* eslint-disable @next/next/no-img-element */
+import { EntityImage } from "../EntityImage";
 import { flagGroups, flagOptionEmoji } from "../../../lib/flags";
 import { useI18n } from "../../../lib/i18n";
 import { useRef, type Dispatch, type SetStateAction } from "react";
@@ -61,6 +61,12 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                     pushAppPath(modulePath("boats", boat.id));
                   }}
                 >
+                  <EntityImage
+                    image={boat.image}
+                    entityType="boat"
+                    alt={`${boat.name} thumbnail`}
+                    variant="list"
+                  />
                   <span>
                     <strong>{boat.name}</strong>
                     <small>
@@ -201,14 +207,12 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
             <div className="image-form-field wide-field">
               <p className="eyebrow">Image</p>
               <div className="image-preview-frame">
-                {boatForm.image ? (
-                  <img
-                    src={`data:${boatForm.image.mimeType};base64,${boatForm.image.data}`}
-                    alt={`${boatForm.name || t("boats.new")} preview`}
-                  />
-                ) : (
-                  <span>No image selected</span>
-                )}
+                <EntityImage
+                  image={boatForm.image}
+                  entityType="boat"
+                  alt={`${boatForm.name || t("boats.new")} preview`}
+                  variant="preview"
+                />
               </div>
               <input
                 ref={imageInputRef}
