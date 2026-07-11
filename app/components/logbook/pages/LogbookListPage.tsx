@@ -1,3 +1,4 @@
+import { EntityImage } from "../EntityImage";
 import { useI18n } from "../../../lib/i18n";
 import { useRef, type Dispatch, type SetStateAction } from "react";
 import type {
@@ -296,7 +297,12 @@ export function LogbookListPage({
                       </td>
                       <td>
                         <span className="table-vessel">
-                          <span className="picture-thumb" aria-hidden="true" />
+                          <EntityImage
+                            image={boat?.image}
+                            entityType="boat"
+                            alt={boat ? `${boat.name} thumbnail` : t("common.boat")}
+                            variant="thumb"
+                          />
                           {boat?.name}
                         </span>
                       </td>

@@ -797,3 +797,13 @@ h3 { margin-block:.25rem .55rem; }
   font-size: 0.78rem;
   font-weight: 700;
 }
+
+.entity-image {
+  border-color: color-mix(in srgb, var(--blue) 22%, var(--line));
+  background: linear-gradient(135deg, color-mix(in srgb, var(--blue) 14%, transparent), color-mix(in srgb, var(--green) 10%, transparent));
+  color: var(--blue);
+}
+.manager-list button { grid-template-columns:auto minmax(0, 1fr)!important; align-content:center; }
+.manager-list .entity-image--list { width:3.5rem; height:3.5rem; }
+.table-vessel .entity-image--thumb { width:2.35rem; height:2.35rem; border-radius:.45rem; }
+.sheet-master-header { grid-template-columns:auto minmax(0, 1fr) auto; }

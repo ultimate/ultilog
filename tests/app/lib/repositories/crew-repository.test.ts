@@ -116,13 +116,22 @@ describe("CrewRepository", () => {
 
     expect(db.calls[0].sql).toContain("insert into crew_members");
     expect(db.calls[0].values?.[0]).toBe("legacy-user:luca-frei-swiss");
-    expect(db.calls[0].values?.slice(6)).toEqual([crew.isPrimary ? 1 : 0, "legacy-user"]);
+    expect(db.calls[0].values?.slice(6)).toEqual([crew.isPrimary ? 1 : 0, null, null, null, null, "legacy-user"]);
     for (const [index, plaintext] of [crew.name, crew.nationality, crew.role, crew.address ?? "", crew.certificate ?? ""].entries()) {
       expect(db.calls[0].values?.[index + 1]).not.toBe(plaintext);
       expect(db.calls[0].values?.[index + 1]).toEqual(expect.stringMatching(/^\{"v":1,"alg":"AES-256-GCM","kid":"crew-pii-v1",/));
     }
     expect(db.calls[1].sql).toContain("insert into sheet_crew_members");
     expect(db.calls[1].values).toEqual([`legacy-user:${sheet.id}`, "legacy-user:luca-frei-swiss", 0, crew.embarkationPosition, crew.disembarkationPosition, crew.embarkationDateTime, crew.embarkationPosition, crew.disembarkationDateTime, crew.disembarkationPosition]);
+  });
+
+  it("inserts crew image metadata when present", async () => {
+    const db = new MockDatabase();
+    const image = { data: "base64-crew", mimeType: "image/jpeg", width: 320, height: 240 };
+
+    await new CrewRepository(db).insertProfile({ ...crew, image });
+
+    expect(db.calls[0].values?.slice(7, 11)).toEqual([image.data, image.mimeType, image.width, image.height]);
   });
 });
 

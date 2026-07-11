@@ -1,5 +1,6 @@
+import { EntityImage } from "../EntityImage";
 import { useI18n } from "../../../lib/i18n";
-import type { Dispatch, SetStateAction } from "react";
+import { useRef, type Dispatch, type SetStateAction } from "react";
 import type {
   CrewForm,
   LogSheet,
@@ -8,6 +9,7 @@ import type {
 import { defaultCrewForm } from "../forms";
 import { modulePath } from "../persistence";
 import { ManagerShell } from "../../managers/ManagerShell";
+import { fileToStoredImage } from "../image-utils";
 
 type CrewAssignment = {
   member: PersistedLogbook["crewMembers"][number];
@@ -32,6 +34,7 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
   const crewAssignments = props.crewAssignments as CrewAssignment[];
   const logbook = props.logbook as PersistedLogbook;
   const setCrewForm = props.setCrewForm as Dispatch<SetStateAction<CrewForm>>;
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   return (
     <section className="sheet-detail module-panel">
@@ -57,6 +60,12 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
                     pushAppPath(modulePath("crew", index));
                   }}
                 >
+                  <EntityImage
+                    image={person.image}
+                    entityType="crew"
+                    alt={`${person.name} avatar`}
+                    variant="list"
+                  />
                   <span>
                     <strong>
                       {person.isPrimary ? "⭐ " : ""}
@@ -130,6 +139,47 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
                 }
               />
             </label>
+
+            <div className="image-form-field wide-field">
+              <p className="eyebrow">Image</p>
+              <div className="image-preview-frame">
+                <EntityImage
+                  image={crewForm.image}
+                  entityType="crew"
+                  alt={`${crewForm.name || t("crew.newProfile")} preview`}
+                  variant="preview"
+                />
+              </div>
+              <input
+                ref={imageInputRef}
+                type="file"
+                accept="image/*"
+                className="visually-hidden-file-input"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  try {
+                    const image = await fileToStoredImage(file);
+                    setCrewForm((current) => ({ ...current, image }));
+                  } catch (error) {
+                    alert(error instanceof Error ? error.message : "Image could not be processed.");
+                  } finally {
+                    e.currentTarget.value = "";
+                  }
+                }}
+              />
+              <div className="image-actions">
+                <button type="button" className="ghost-button" onClick={() => imageInputRef.current?.click()}>
+                  {crewForm.image ? "Change image" : "Upload image"}
+                </button>
+                {crewForm.image ? (
+                  <button type="button" className="ghost-button" onClick={() => setCrewForm((current) => ({ ...current, image: undefined }))}>
+                    Remove image
+                  </button>
+                ) : null}
+              </div>
+              {crewForm.image ? <small>{crewForm.image.width} × {crewForm.image.height} · {crewForm.image.mimeType}</small> : null}
+            </div>
             <article className="info-card wide-field">
               <h3>{t("crew.logSheets")}</h3>
               <ul className="stack-list">

@@ -1,8 +1,10 @@
+import { EntityImage } from "../EntityImage";
 import { useI18n } from "../../../lib/i18n";
 import { useEffect, useRef, useState, type CSSProperties, type Dispatch, type MouseEvent, type SetStateAction } from "react";
 import type {
   Boat,
   LineForm,
+  SheetForm,
   LogLine,
   LogSheet,
   PersistedLogbook,
@@ -13,6 +15,7 @@ import { dateTimeLocalFromParts, splitDateTimeLocal } from "../date-utils";
 import { updateLogLineFormForInput } from "../../../domain/log-lines/log-line-editor";
 import { LogLinesMapView } from "../OpenSeaMapView";
 import type { TranslationKey } from "../../../lib/i18n";
+import { fileToStoredImage } from "../image-utils";
 
 type CourseColumn = {
   field: keyof Pick<
@@ -101,6 +104,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const showScannerDraftNotice =
     activeSheet.source === "scanner" && activeSheet.status === "Draft";
   const courseConversionSequence = useRef(0);
+  const sheetImageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!isMapExpanded) return;
@@ -407,6 +411,47 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                   />
                 </div>
               </div>
+
+                <div className="image-form-field wide-field">
+                  <p className="eyebrow">Image</p>
+                  <div className="image-preview-frame">
+                    <EntityImage
+                      image={sheetForm.image}
+                      entityType="sheet"
+                      alt={`${sheetForm.title || t("details.newSheet")} preview`}
+                      variant="preview"
+                    />
+                  </div>
+                  <input
+                    ref={sheetImageInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="visually-hidden-file-input"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      try {
+                        const image = await fileToStoredImage(file);
+                        setSheetForm((current: SheetForm) => ({ ...current, image }));
+                      } catch (error) {
+                        alert(error instanceof Error ? error.message : "Image could not be processed.");
+                      } finally {
+                        e.currentTarget.value = "";
+                      }
+                    }}
+                  />
+                  <div className="image-actions">
+                    <button type="button" className="ghost-button" onClick={() => sheetImageInputRef.current?.click()}>
+                      {sheetForm.image ? "Change image" : "Upload image"}
+                    </button>
+                    {sheetForm.image ? (
+                      <button type="button" className="ghost-button" onClick={() => setSheetForm((current: SheetForm) => ({ ...current, image: undefined }))}>
+                        Remove image
+                      </button>
+                    ) : null}
+                  </div>
+                  {sheetForm.image ? <small>{sheetForm.image.width} × {sheetForm.image.height} · {sheetForm.image.mimeType}</small> : null}
+                </div>
               <div className="inline-edit-actions">
                 <button type="submit">{t("common.save")}</button>
                 {showNewSheet ? (
@@ -437,6 +482,12 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                 className="sheet-title-row logbook-section sheet-master-header"
                 aria-label={t("details.headerAria")}
               >
+                <EntityImage
+                  image={activeSheet.image}
+                  entityType="sheet"
+                  alt={`${activeSheet.title || t("details.untitled")} thumbnail`}
+                  variant="header"
+                />
                 <div className="sheet-master-title">
                   <h2 id="sheet-title">
                     {renderInlineTextField(

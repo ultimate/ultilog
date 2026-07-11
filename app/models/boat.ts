@@ -1,3 +1,5 @@
+import type { StoredImage } from "./stored-image";
+
 export type BoatType = "Sail" | "Motor";
 
 export type DeviationTableRow = {
@@ -27,4 +29,5 @@ export type Boat = {
   dimensions: string;
   yachtData: Record<string, string>;
   deviationTable: DeviationTableRow[];
+  image?: StoredImage;
 };

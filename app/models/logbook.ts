@@ -9,6 +9,7 @@ export type PersistedLogbook = {
 
 export { defaultDeviationTable, deviationTableHeadings, normalizeDeviationTable } from "./boat";
 export type { Boat, BoatType, DeviationTableRow } from "./boat";
+export type { StoredImage } from "./stored-image";
 export type { CrewMember, SheetCrewMember } from "./crew-member";
 export type { LogLine, TemperatureUnit, WindUnit } from "./log-line";
 export type { LogSheet } from "./log-sheet";

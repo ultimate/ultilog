@@ -1,3 +1,5 @@
+import type { StoredImage } from "./stored-image";
+
 export type CrewMember = {
   id: string;
   name: string;
@@ -6,6 +8,7 @@ export type CrewMember = {
   address?: string;
   certificate?: string;
   isPrimary?: boolean;
+  image?: StoredImage;
 };
 
 export type SheetCrewMember = CrewMember & {

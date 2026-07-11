@@ -1,4 +1,5 @@
 import type { SheetCrewMember } from "./crew-member";
+import type { StoredImage } from "./stored-image";
 import type { LogLine } from "./log-line";
 
 export type LogSheet = {
@@ -19,5 +20,6 @@ export type LogSheet = {
   crew: SheetCrewMember[];
   watchPlan: string[];
   technicalChecks: string[];
+  image?: StoredImage;
   lines: LogLine[];
 };
