@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, ReactNode, useState } from "react";
+import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { LocaleSelect, useI18n } from "../lib/i18n";
 import { PasswordField } from "./PasswordField";
@@ -85,6 +86,7 @@ export function AuthForm({ mode, footer }: Props) {
         {error && <p className="auth-error">{error}</p>}
         <button disabled={isSubmitting} type="submit">{isSubmitting ? t("auth.pleaseWait") : mode === "login" ? t("auth.login") : t("auth.register")}</button>
         {mode === "login" && <button className="demo-login-button" disabled={isSubmitting} type="button" onClick={demoLogin}>{t("auth.tryDemo")}</button>}
+        {mode === "login" && <p><Link href="/forgot-password">{t("auth.forgotPassword")}</Link></p>}
         <div className="auth-footer">{footer}</div>
       </form>
     </main>
