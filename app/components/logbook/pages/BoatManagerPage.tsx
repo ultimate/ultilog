@@ -1,3 +1,4 @@
+import { flagEmoji, flagGroups } from "../../../lib/flags";
 import { useI18n } from "../../../lib/i18n";
 import type { Dispatch, SetStateAction } from "react";
 import type { Boat, BoatForm, PersistedLogbook } from "../../../models/logbook";
@@ -105,14 +106,42 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                 }
               />
             </label>
-            <label>
+            <label className="flag-chooser-field">
               {t("boats.flagState")}
-              <input
+              <select
+                className="flag-chooser"
+                aria-describedby="boat-flag-help"
                 value={boatForm.flagState}
                 onChange={(e) =>
                   setBoatForm({ ...boatForm, flagState: e.target.value })
                 }
-              />
+              >
+                <option value="">{t("boats.flagPlaceholder")}</option>
+                {boatForm.flagState &&
+                  !flagGroups.some((group) =>
+                    group.flags.some((flag) => flagEmoji(flag.code) === boatForm.flagState),
+                  ) ? (
+                  <option value={boatForm.flagState} disabled>
+                    {boatForm.flagState}
+                  </option>
+                ) : null}
+                {flagGroups.map((group) => (
+                  <optgroup key={group.continent} label={group.continent}>
+                    {group.flags.map((flag) => {
+                      const emoji = flagEmoji(flag.code);
+
+                      return (
+                        <option key={flag.code} value={emoji}>
+                          {emoji} {flag.name}
+                        </option>
+                      );
+                    })}
+                  </optgroup>
+                ))}
+              </select>
+              <small id="boat-flag-help" className="field-help">
+                {t("boats.flagHelp")}
+              </small>
             </label>
             <label>
               {t("boats.homePort")}

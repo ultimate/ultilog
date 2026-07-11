@@ -101,6 +101,8 @@ export const de: Dictionary = {
   "boats.form": "Bootsformular",
   "boats.noRegistration": "Keine Registrierung",
   "boats.flagState": "Flaggenstaat",
+  "boats.flagPlaceholder": "Flagge wählen",
+  "boats.flagHelp": "Wird nur als Emoji gespeichert.",
   "boats.homePort": "Heimathafen",
   "boats.dimensions": "Abmessungen",
   "boats.manufacturer": "Hersteller",
