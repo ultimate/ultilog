@@ -1,7 +1,7 @@
 import type { StoredImage } from "../../models/logbook";
 
 export const DEFAULT_MAX_IMAGE_BYTES = 10 * 1024 * 1024;
-export const DEFAULT_MAX_IMAGE_DIMENSION = 1600;
+export const DEFAULT_MAX_IMAGE_DIMENSION = 1024;
 export const DEFAULT_IMAGE_QUALITY = 0.72;
 
 export type StoredImageOptions = {
