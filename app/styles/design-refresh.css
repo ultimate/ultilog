@@ -237,7 +237,7 @@ h1 { margin:0 0 .45rem; font-size:1.8rem; line-height:1.1; letter-spacing:-.04em
 .deviation-table input { min-width: 8rem; }
 .group-tags { display:flex; flex-wrap:wrap; gap:.35rem; margin:.5rem 0; }
 .group-tags span { display:inline-flex; align-items:center; border:1px solid var(--line); border-radius:999px; padding:.2rem .55rem; background:var(--surface-strong); color:var(--text); font-size:.8rem; font-weight:850; }
-.demo-login-button { background:transparent !important; color:var(--blue) !important; border:1px solid var(--blue) !important; }
+.demo-login-button,.secondary-auth-button { background:transparent !important; color:var(--blue) !important; border:1px solid var(--blue) !important; }
 .logbook-table input { width:100%; min-width:14rem; border:1px solid var(--line); border-radius:10px; padding:.55rem .7rem; background:var(--surface); color:var(--text); }
 /* Keep mobile bottom navigation in one row when the admin/user-management tab is present. */
 @media (max-width: 1000px) {
