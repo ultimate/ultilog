@@ -1,7 +1,8 @@
-import { randomUUID } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { isOnboardingTaskId, type OnboardingTaskId } from "./onboarding/tasks";
 import { getDatabase, writeLogbook } from "./logbook-store";
+import { sendPasswordResetEmail } from "./mailer";
 
 export type UserTheme = "light" | "dark" | "auto";
 export type UserPreferences = {
@@ -23,14 +24,29 @@ export type AdminUserListItem = AppUser;
 
 type UserRow = Omit<AppUser, "groups" | "onboardingCompletedTasks" | "hasReadCompliance" | "isNavSlim" | "countryCode" | "windUnit" | "waterHeightUnit" | "temperatureUnit" | "coordinateFormat" | "distanceDisplayUnit" | "defaultBoatId" | "defaultCrewMemberIds" | "showCourseConversionTable"> & { password_hash: string; onboarding_completed_tasks: string; country_code: string; wind_unit: string; water_height_unit: string; temperature_unit: string; coordinate_format: string; distance_display_unit: string; default_boat_id: string; default_crew_member_ids: string; nav_slim: number | boolean; has_read_compliance: number | boolean; show_course_conversion_table: number | boolean };
 type GroupRow = { user_id?: string; name: string };
+type PasswordResetTokenRow = { id: string; user_id: string; token_hash: string; expires_at: string; used_at: string | null };
 
 const USER_COLUMNS = "id, name, email, password_hash, onboarding_completed_tasks, theme, nav_slim, has_read_compliance, country_code, language, wind_unit, water_height_unit, temperature_unit, coordinate_format, distance_display_unit, default_boat_id, default_crew_member_ids, show_course_conversion_table";
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
+const passwordResetTokenHours = 1;
 const blockedNameTerms = ["admin", "ultilog", "support", "moderator", "fuck", "shit", "bitch", "asshole", "cunt", "nigger", "nazi"];
 
 function normalizeName(name: string) {
   return name.trim().replace(/\s+/g, " ");
+}
+
+function hashPasswordResetToken(token: string) {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+function buildPasswordResetUrl(token: string) {
+  const configuredBaseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_BRANCH_URL || process.env.AUTH_URL || process.env.NEXTAUTH_URL || "http://localhost:3000";
+  return new URL(`/reset-password?token=${encodeURIComponent(token)}`, withProtocol(configuredBaseUrl)).toString();
+}
+
+function withProtocol(url: string) {
+  return /^https?:\/\//i.test(url) ? url : `https://${url}`;
 }
 
 function normalizeGroupName(name: string) {
@@ -250,6 +266,40 @@ export async function updateUserPassword(userId: string, input: { currentPasswor
   if (!await bcrypt.compare(input.currentPassword, current.password_hash)) throw new Error("Current password is incorrect.");
   const passwordHash = await bcrypt.hash(input.newPassword, 10);
   await db.query(`update users set password_hash = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [passwordHash, userId]);
+}
+
+export async function requestPasswordReset(emailInput: string): Promise<void> {
+  const email = normalizeEmail(emailInput);
+  const db = getDatabase();
+  await db.migrate();
+  const current = (await db.query<UserRow>(`select ${USER_COLUMNS} from users where email = ${db.placeholder(1)}`, [email])).rows[0];
+  if (!current) return;
+
+  const token = randomBytes(32).toString("base64url");
+  const tokenHash = hashPasswordResetToken(token);
+  const expiresAt = new Date(Date.now() + passwordResetTokenHours * 60 * 60 * 1000).toISOString();
+  await db.query(
+    `insert into password_reset_tokens (id, user_id, token_hash, expires_at) values (${db.placeholder(1)}, ${db.placeholder(2)}, ${db.placeholder(3)}, ${db.placeholder(4)})`,
+    [randomUUID(), current.id, tokenHash, expiresAt],
+  );
+  await sendPasswordResetEmail({ to: current.email, resetUrl: buildPasswordResetUrl(token), locale: current.language });
+}
+
+export async function resetPasswordWithToken(token: string, newPassword: string): Promise<void> {
+  if (newPassword.length < 8) throw new Error("Password must be at least 8 characters.");
+  const db = getDatabase();
+  await db.migrate();
+  const tokenHash = hashPasswordResetToken(token.trim());
+  const resetToken = (await db.query<PasswordResetTokenRow>(
+    `select id, user_id, token_hash, expires_at, used_at from password_reset_tokens where token_hash = ${db.placeholder(1)}`,
+    [tokenHash],
+  )).rows[0];
+  if (!resetToken || resetToken.used_at) throw new Error("This password reset link is invalid or has already been used.");
+  if (new Date(resetToken.expires_at).getTime() <= Date.now()) throw new Error("This password reset link has expired.");
+
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  await db.query(`update users set password_hash = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [passwordHash, resetToken.user_id]);
+  await db.query(`update password_reset_tokens set used_at = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [new Date().toISOString(), resetToken.id]);
 }
 
 export async function updateUserName(userId: string, input: { name: string; currentPassword: string }): Promise<AppUser> {

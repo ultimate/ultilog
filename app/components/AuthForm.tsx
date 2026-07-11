@@ -85,6 +85,7 @@ export function AuthForm({ mode, footer }: Props) {
         {error && <p className="auth-error">{error}</p>}
         <button disabled={isSubmitting} type="submit">{isSubmitting ? t("auth.pleaseWait") : mode === "login" ? t("auth.login") : t("auth.register")}</button>
         {mode === "login" && <button className="demo-login-button" disabled={isSubmitting} type="button" onClick={demoLogin}>{t("auth.tryDemo")}</button>}
+        {mode === "login" && <button className="secondary-auth-button" disabled={isSubmitting} type="button" onClick={() => window.location.assign("/forgot-password")}>{t("auth.forgotPassword")}</button>}
         <div className="auth-footer">{footer}</div>
       </form>
     </main>
