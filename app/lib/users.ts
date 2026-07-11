@@ -41,8 +41,12 @@ function hashPasswordResetToken(token: string) {
 }
 
 function buildPasswordResetUrl(token: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? process.env.AUTH_URL ?? process.env.NEXTAUTH_URL ?? "http://localhost:3000";
-  return new URL(`/reset-password?token=${encodeURIComponent(token)}`, baseUrl).toString();
+  const configuredBaseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_BRANCH_URL || process.env.AUTH_URL || process.env.NEXTAUTH_URL || "http://localhost:3000";
+  return new URL(`/reset-password?token=${encodeURIComponent(token)}`, withProtocol(configuredBaseUrl)).toString();
+}
+
+function withProtocol(url: string) {
+  return /^https?:\/\//i.test(url) ? url : `https://${url}`;
 }
 
 function normalizeGroupName(name: string) {
