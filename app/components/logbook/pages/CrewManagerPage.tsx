@@ -8,6 +8,7 @@ import type {
 import { defaultCrewForm } from "../forms";
 import { modulePath } from "../persistence";
 import { ManagerShell } from "../../managers/ManagerShell";
+import { fileToStoredImage } from "../image-utils";
 
 type CrewAssignment = {
   member: PersistedLogbook["crewMembers"][number];
@@ -129,6 +130,26 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
                   setCrewForm({ ...crewForm, certificate: e.target.value })
                 }
               />
+            </label>
+
+            <label className="wide-field">
+              Image
+              <input
+                type="file"
+                accept="image/*"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  try {
+                    const image = await fileToStoredImage(file);
+                    setCrewForm((current) => ({ ...current, image }));
+                  } catch (error) {
+                    alert(error instanceof Error ? error.message : "Image could not be processed.");
+                    e.currentTarget.value = "";
+                  }
+                }}
+              />
+              {crewForm.image ? <small>{crewForm.image.width} × {crewForm.image.height} · {crewForm.image.mimeType}</small> : null}
             </label>
             <article className="info-card wide-field">
               <h3>{t("crew.logSheets")}</h3>
