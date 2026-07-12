@@ -10,6 +10,7 @@ import { defaultCrewForm } from "../forms";
 import { modulePath } from "../persistence";
 import { ManagerShell } from "../../managers/ManagerShell";
 import { fileToStoredImage } from "../image-utils";
+import { PaginationControls, usePagination } from "../PaginationControls";
 
 type CrewAssignment = {
   member: PersistedLogbook["crewMembers"][number];
@@ -35,6 +36,7 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
   const logbook = props.logbook as PersistedLogbook;
   const setCrewForm = props.setCrewForm as Dispatch<SetStateAction<CrewForm>>;
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const listPagination = usePagination(logbook.crewMembers, props.defaultPageSize as number);
 
   return (
     <section className="sheet-detail module-panel">
@@ -49,8 +51,11 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
           setCrewForm(defaultCrewForm);
         }}
         list={
+          <>
           <ul className="manager-list">
-            {logbook.crewMembers.map((person, index) => (
+            {listPagination.pageItems.map((person) => {
+              const index = logbook.crewMembers.findIndex((candidate) => candidate.id === person.id);
+              return (
               <li key={person.id}>
                 <button
                   type="button"
@@ -75,8 +80,18 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
                   </span>
                 </button>
               </li>
-            ))}
+            );
+            })}
           </ul>
+          <PaginationControls
+            page={listPagination.page}
+            pageCount={listPagination.pageCount}
+            pageSize={listPagination.pageSize}
+            totalItems={logbook.crewMembers.length}
+            onPageChange={listPagination.setPage}
+            onPageSizeChange={listPagination.setPageSize}
+          />
+          </>
         }
         form={
           selectedCrewIndex >= -1 ? (

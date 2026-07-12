@@ -1674,6 +1674,7 @@ export function LogbookApp({
               setSheetForm={setSheetForm}
               setShowNewSheet={setShowNewSheet}
               createDefaultSheetForm={() => sheetDefaults}
+              defaultPageSize={preferences.defaultPageSize}
             />
           )}
 
@@ -1740,6 +1741,7 @@ export function LogbookApp({
               deleteSelectedBoat={deleteSelectedBoat}
               setSelectedBoatId={setSelectedBoatId}
               pushAppPath={pushAppPath}
+              defaultPageSize={preferences.defaultPageSize}
             />
           )}
 
@@ -1758,6 +1760,7 @@ export function LogbookApp({
               setCrewForm={setCrewForm}
               crewAssignments={crewAssignments}
               logbook={logbook}
+              defaultPageSize={preferences.defaultPageSize}
             />
           )}
 

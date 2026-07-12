@@ -3,6 +3,7 @@ import type { FormEvent, Dispatch, ReactNode, SetStateAction } from "react";
 import type { Boat, PersistedLogbook } from "../../../models/logbook";
 import { PasswordField } from "../../PasswordField";
 import type { ProfilePreferences } from "../../onboarding/useOnboardingProfile";
+import { pageSizeOptions, normalizePageSize } from "../PaginationControls";
 
 type ProfilePageProps = Record<string, any>;
 
@@ -314,6 +315,15 @@ export function ProfilePage(props: ProfilePageProps) {
                 <select value={profilePreferences.isNavSlim ? "slim" : "wide"} onChange={(event) => updateViewPreferences({ isNavSlim: event.target.value === "slim" })}>
                   <option value="slim">{t("profile.sidebarSlim")}</option>
                   <option value="wide">{t("profile.sidebarWide")}</option>
+                </select>
+              </label>
+
+              <label>
+                {t("profile.defaultPageSize")}
+                <select value={profilePreferences.defaultPageSize} onChange={(event) => updateViewPreferences({ defaultPageSize: normalizePageSize(Number(event.target.value), profilePreferences.defaultPageSize) })}>
+                  {pageSizeOptions.map((option) => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
                 </select>
               </label>
               <label>

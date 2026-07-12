@@ -9,6 +9,7 @@ import type {
 } from "../../../models/logbook";
 import { sheetToForm } from "../forms";
 import { LogSheetsMapView } from "../OpenSeaMapView";
+import { PaginationControls, usePagination } from "../PaginationControls";
 
 type Navigate = (
   module: "details" | "logbooks",
@@ -36,6 +37,7 @@ export function LogbookListPage({
   setSheetForm,
   setShowNewSheet,
   createDefaultSheetForm,
+  defaultPageSize,
 }: {
   activeBoat?: Boat;
   scannerBoatId: string;
@@ -56,12 +58,14 @@ export function LogbookListPage({
   setSheetForm: Dispatch<SetStateAction<SheetForm>>;
   setShowNewSheet: Dispatch<SetStateAction<boolean>>;
   createDefaultSheetForm: () => SheetForm;
+  defaultPageSize: number;
 }) {
   const { t } = useI18n();
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
   const hasBoats = logbook.boats.length > 0;
   const hasMultipleBoats = logbook.boats.length > 1;
+  const sheetsPagination = usePagination(logbook.sheets, defaultPageSize);
 
   function handleScannerFilesSelected(files: FileList | null) {
     if (!files?.length) return;
@@ -272,7 +276,7 @@ export function LogbookListPage({
                 </tr>
               </thead>
               <tbody>
-                {logbook.sheets.map((sheet) => {
+                {sheetsPagination.pageItems.map((sheet) => {
                   const boat = logbook.boats.find(
                     (candidate) => candidate.id === sheet.boatId,
                   );
@@ -329,14 +333,14 @@ export function LogbookListPage({
               </tbody>
             </table>
           </div>
-          <div className="pagination-mock" aria-hidden="true">
-            <span className="active">1</span>
-            <span>2</span>
-            <span>3</span>
-            <span>…</span>
-            <span>8</span>
-            <span>›</span>
-          </div>
+          <PaginationControls
+            page={sheetsPagination.page}
+            pageCount={sheetsPagination.pageCount}
+            pageSize={sheetsPagination.pageSize}
+            totalItems={logbook.sheets.length}
+            onPageChange={sheetsPagination.setPage}
+            onPageSizeChange={sheetsPagination.setPageSize}
+          />
         </article>
         <article className="map-card logbook-overview-map-card">
           <div className="logbook-overview-map-heading">
