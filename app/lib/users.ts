@@ -344,6 +344,13 @@ export async function verifyEmailWithToken(token: string): Promise<void> {
   await db.query(`update email_verification_tokens set used_at = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [verifiedAt, verificationToken.id]);
 }
 
+export async function requestEmailVerification(emailInput: string): Promise<void> {
+  const email = normalizeEmail(emailInput);
+  const current = await findUserRowByEmail(email);
+  if (!current || current.email_verified_at) return;
+  await sendEmailVerification(current.id);
+}
+
 export async function resetPasswordWithToken(token: string, newPassword: string): Promise<void> {
   if (newPassword.length < 8) throw new Error("Password must be at least 8 characters.");
   const db = getDatabase();

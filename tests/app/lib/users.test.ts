@@ -132,6 +132,18 @@ describe("email verification", () => {
     await expect(db.query<{ count: number }>("select count(*) as count from password_reset_tokens where user_id = ?", [user.id])).resolves.toMatchObject({ rows: [{ count: 1 }] });
   });
 
+
+  it("allows users to request another verification email immediately", async () => {
+    const { registerUser, requestEmailVerification } = await importUsersWithTempDatabase();
+    const { getDatabase } = await import("../../../app/lib/logbook-store");
+    const user = await registerUser({ name: "Resend Verify User", email: "resend-verify@example.test", password: "password123" });
+    const db = getDatabase();
+
+    await requestEmailVerification(user.email);
+
+    await expect(db.query<{ count: number }>("select count(*) as count from email_verification_tokens where user_id = ?", [user.id])).resolves.toMatchObject({ rows: [{ count: 2 }] });
+  });
+
   it("resends verification on login only when no active verification token remains", async () => {
     const { registerUser, validateUser } = await importUsersWithTempDatabase();
     const { getDatabase } = await import("../../../app/lib/logbook-store");
