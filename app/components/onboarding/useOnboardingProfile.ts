@@ -18,6 +18,7 @@ export type ProfilePreferences = {
   theme: "light" | "dark" | "auto";
   isNavSlim: boolean;
   showCourseConversionTable: boolean;
+  defaultPageSize: 5 | 10 | 25 | 50 | 100;
 };
 
 const defaultPreferences: ProfilePreferences = {
@@ -33,6 +34,7 @@ const defaultPreferences: ProfilePreferences = {
   theme: "light",
   isNavSlim: false,
   showCourseConversionTable: true,
+  defaultPageSize: 10,
 };
 
 export type ProfileApiPreferences = Partial<ProfilePreferences> & {
@@ -71,6 +73,7 @@ function mergePreferences(current: ProfilePreferences, next?: ProfileApiPreferen
     ...next,
     language: next?.language ?? current.language,
     defaultCrewMemberIds: Array.isArray(next?.defaultCrewMemberIds) ? next.defaultCrewMemberIds : current.defaultCrewMemberIds,
+    defaultPageSize: [5, 10, 25, 50, 100].includes(next?.defaultPageSize ?? current.defaultPageSize) ? (next?.defaultPageSize ?? current.defaultPageSize) : current.defaultPageSize,
   };
 }
 

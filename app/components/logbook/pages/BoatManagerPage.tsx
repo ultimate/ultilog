@@ -8,6 +8,7 @@ import { boatToForm, defaultBoatForm } from "../forms";
 import { modulePath } from "../persistence";
 import { ManagerShell } from "../../managers/ManagerShell";
 import { fileToStoredImage } from "../image-utils";
+import { PaginationControls, usePagination } from "../PaginationControls";
 
 type BoatManagerPageProps = Record<string, any>;
 
@@ -35,6 +36,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
     SetStateAction<boolean>
   >;
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const listPagination = usePagination(logbook.boats, props.defaultPageSize as number);
 
   return (
     <section className="sheet-detail module-panel">
@@ -47,8 +49,9 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
           setShowBoatManager(true);
         }}
         list={
+          <>
           <ul className="manager-list">
-            {logbook.boats.map((boat) => (
+            {listPagination.pageItems.map((boat) => (
               <li key={boat.id}>
                 <button
                   type="button"
@@ -77,6 +80,15 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
               </li>
             ))}
           </ul>
+          <PaginationControls
+            page={listPagination.page}
+            pageCount={listPagination.pageCount}
+            pageSize={listPagination.pageSize}
+            totalItems={logbook.boats.length}
+            onPageChange={listPagination.setPage}
+            onPageSizeChange={listPagination.setPageSize}
+          />
+          </>
         }
         form={
           showBoatManager || editingBoatId ? (
