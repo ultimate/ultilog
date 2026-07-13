@@ -189,6 +189,19 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
               />
             </label>
             <label>
+              {t("boats.logfactor")}
+              <input
+                required
+                type="number"
+                min="0.000001"
+                step="0.000001"
+                value={boatForm.logfactor}
+                onChange={(e) =>
+                  setBoatForm({ ...boatForm, logfactor: Number(e.target.value) })
+                }
+              />
+            </label>
+            <label>
               {t("boats.manufacturer")}
               <input
                 value={boatForm.manufacturer}

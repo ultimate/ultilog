@@ -9,9 +9,10 @@ export type ImageRowFields = {
   image_height?: number | null;
 };
 
-export type BoatRow = Omit<Boat, "flagState" | "homePort" | "yachtData" | "deviationTable" | "image"> & ImageRowFields & {
+export type BoatRow = Omit<Boat, "flagState" | "homePort" | "yachtData" | "deviationTable" | "image" | "logfactor"> & ImageRowFields & {
   flag_state: string;
   home_port: string;
+  logfactor?: number | null;
   yacht_data: unknown;
   deviation_table: unknown;
 };

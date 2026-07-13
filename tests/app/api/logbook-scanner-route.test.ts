@@ -30,7 +30,7 @@ const mockedScanner = vi.mocked(openAiScannerProvider.extractLogbookDraft);
 const mockedScannerConfigured = vi.mocked(openAiScannerProvider.isConfigured);
 const mockedFindUserById = vi.mocked(findUserById);
 const session = { user: { id: "user-1", name: "User", email: "user@example.test", groups: [] }, expires: "2099-01-01T00:00:00.000Z" };
-const boat = { id: "boat-1", name: "Aurora", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", yachtData: {}, deviationTable: [] };
+const boat = { id: "boat-1", name: "Aurora", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [] };
 const logbook = { boats: [boat], crewMembers: [], sheets: [] };
 const partialScannerResult = {
   draft: {

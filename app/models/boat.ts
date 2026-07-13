@@ -27,6 +27,7 @@ export type Boat = {
   homePort: string;
   owner: string;
   dimensions: string;
+  logfactor: number;
   yachtData: Record<string, string>;
   deviationTable: DeviationTableRow[];
   image?: StoredImage;

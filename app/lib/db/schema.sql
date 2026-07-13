@@ -64,6 +64,7 @@ create table if not exists boats (
   home_port text not null,
   owner text not null,
   dimensions text not null,
+  logfactor real not null default 1,
   yacht_data text not null,
   owner_id text not null default 'legacy-user' references users(id) on delete cascade,
   deviation_table text not null default '[]',

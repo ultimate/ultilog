@@ -149,6 +149,7 @@ export const en = {
   "boats.flagPlaceholder": "Choose a flag",
   "boats.homePort": "Home port",
   "boats.dimensions": "Dimensions",
+  "boats.logfactor": "Log factor",
   "boats.manufacturer": "Manufacturer",
   "boats.engine": "Engine",
   "boats.safety": "Safety",
