@@ -10,6 +10,7 @@ export const sampleBoats: Boat[] = [
     homePort: "Basel",
     owner: "M. Keller",
     dimensions: "12.4 m · 7.8 t · CE A",
+    logfactor: 1.05,
     yachtData: {
       "Class / type": "Cruising yacht · sloop",
       MMSI: "269123456",
@@ -35,6 +36,7 @@ export const sampleBoats: Boat[] = [
     homePort: "Split",
     owner: "Adriatic Charter d.o.o.",
     dimensions: "10.8 m · twin diesel · CE B",
+    logfactor: 0.98,
     yachtData: {
       "Class / type": "Motor yacht",
       MMSI: "238987650",

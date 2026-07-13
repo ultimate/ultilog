@@ -887,6 +887,7 @@ export function LogbookApp({
       homePort: boatForm.homePort,
       owner: boatForm.owner,
       dimensions: boatForm.dimensions,
+      logfactor: boatForm.logfactor,
       deviationTable: normalizeDeviationTable(boatForm.deviationTable),
       yachtData: {
         "Class / type":

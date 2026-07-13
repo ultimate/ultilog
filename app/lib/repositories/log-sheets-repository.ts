@@ -32,6 +32,7 @@ export class LogSheetsRepository {
       homePort: boat.home_port,
       owner: boat.owner,
       dimensions: boat.dimensions,
+      logfactor: Number(boat.logfactor) > 0 ? Number(boat.logfactor) : 1,
       yachtData: parseJson<Record<string, string>>(boat.yacht_data),
       deviationTable: normalizeDeviationTable(parseJson<Boat["deviationTable"]>(boat.deviation_table ?? [])),
       ...(imageFromRow(boat) ? { image: imageFromRow(boat) } : {}),

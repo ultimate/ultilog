@@ -27,7 +27,7 @@ describe("detectOnboardingCompletion", () => {
   it("auto-detects boats, logsheets, primary crew details, and optional tracked profile flags", () => {
     const state = detectOnboardingCompletion({
       logbook: {
-        boats: [{ id: "boat-1", name: "Aurora", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", yachtData: {}, deviationTable: [] }],
+        boats: [{ id: "boat-1", name: "Aurora", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [] }],
         crewMembers: [{ id: "me", name: "Skipper", nationality: "CH", role: "Skipper", address: "Harbor 1", certificate: "ICC", isPrimary: true }],
         sheets: [{ id: "sheet-1", title: "First trip", dateRange: "", status: "Draft", boatId: "boat-1", route: { from: "A", to: "B", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] }],
       },

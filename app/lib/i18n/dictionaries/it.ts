@@ -151,6 +151,7 @@ export const it: Dictionary = {
   "boats.flagPlaceholder": "Scegli una bandiera",
   "boats.homePort": "Porto di base",
   "boats.dimensions": "Dimensioni",
+  "boats.logfactor": "Fattore log",
   "boats.manufacturer": "Costruttore",
   "boats.engine": "Motore",
   "boats.safety": "Sicurezza",

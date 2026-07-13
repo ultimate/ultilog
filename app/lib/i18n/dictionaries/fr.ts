@@ -151,6 +151,7 @@ export const fr: Dictionary = {
   "boats.flagPlaceholder": "Choisir un pavillon",
   "boats.homePort": "Port d’attache",
   "boats.dimensions": "Dimensions",
+  "boats.logfactor": "Facteur de loch",
   "boats.manufacturer": "Fabricant",
   "boats.engine": "Moteur",
   "boats.safety": "Sécurité",
