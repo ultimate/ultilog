@@ -12,6 +12,7 @@ import {
   type LineForm,
   type LogLine,
   type LogSheet,
+  type LogSheetShareSettings,
   type PersistedLogbook,
   type SheetForm,
 } from "../models/logbook";
@@ -1032,6 +1033,16 @@ export function LogbookApp({
     setSheetForm(sheetToForm(sheet));
   }
 
+  async function updateActiveSheetShare(share: LogSheetShareSettings) {
+    const nextLogbook = {
+      ...logbookRef.current,
+      sheets: logbookRef.current.sheets.map((sheet) =>
+        sheet.id === activeSheet.id ? { ...sheet, share } : sheet,
+      ),
+    };
+    await saveLogbookNow(nextLogbook);
+  }
+
   async function updateActiveSheetStatus(status: LogSheet["status"]) {
     if (status === "Locked") cancelSheetInlineEdit();
     const nextLogbook = {
@@ -1697,6 +1708,7 @@ export function LogbookApp({
               renderInlineTextField={renderInlineTextField}
               isActiveSheetLocked={isActiveSheetLocked}
               updateActiveSheetStatus={updateActiveSheetStatus}
+              updateActiveSheetShare={updateActiveSheetShare}
               renderInlineBoatField={renderInlineBoatField}
               activeBoat={activeBoat}
               renderInlineDateField={renderInlineDateField}
