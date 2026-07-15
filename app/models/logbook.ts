@@ -12,7 +12,8 @@ export type { Boat, BoatType, DeviationTableRow } from "./boat";
 export type { StoredImage } from "./stored-image";
 export type { CrewMember, SheetCrewMember } from "./crew-member";
 export type { LogLine, TemperatureUnit, WindUnit } from "./log-line";
-export type { LogSheet } from "./log-sheet";
+export type { LogSheet, LogSheetSharePrivacy, LogSheetShareSettings } from "./log-sheet";
+export { defaultLogSheetShareSettings } from "./log-sheet";
 
 export type { BoatForm, CrewForm, LineForm, SheetForm } from "./logbook-forms";
 export type { ScannerResult, ScannedLogLine, ScannedLogSheetDraft } from "./logbook-scanner";

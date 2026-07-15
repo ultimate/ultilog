@@ -25,3 +25,9 @@ export async function writeLogbook(logbook: PersistedLogbook, userId = "legacy-u
   writeQueue = operation.then(() => undefined, () => undefined);
   return operation;
 }
+
+export async function readSharedLogSheet(sheetId: string, isAuthenticated: boolean) {
+  const operation = writeQueue.then(() => getDatabase().readSharedSheet(sheetId, isAuthenticated));
+  writeQueue = operation.then(() => undefined, () => undefined);
+  return operation;
+}

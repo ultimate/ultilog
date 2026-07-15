@@ -7,6 +7,7 @@ import type {
   SheetForm,
   LogLine,
   LogSheet,
+  LogSheetShareSettings,
   PersistedLogbook,
 } from "../../../models/logbook";
 import { coordinateToInput, decimalToDmsParts, dmsPartsToDecimal, parseCoordinate, type CoordinateFormat, type DmsParts } from "../../../domain/nautical/coordinates";
@@ -16,6 +17,7 @@ import { updateLogLineFormForInput } from "../../../domain/log-lines/log-line-ed
 import { LogLinesMapView } from "../OpenSeaMapView";
 import type { TranslationKey } from "../../../lib/i18n";
 import { fileToStoredImage } from "../image-utils";
+import { defaultLogSheetShareSettings } from "../../../models/logbook";
 
 type CourseColumn = {
   field: keyof Pick<
@@ -72,6 +74,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     renderInlineTextField,
     isActiveSheetLocked,
     updateActiveSheetStatus,
+    updateActiveSheetShare,
     renderInlineBoatField,
     renderInlineDateField,
     activeSheetSummary,
@@ -95,6 +98,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     deleteTechnicalCheck,
   } = props;
   const activeBoat = props.activeBoat as Boat;
+  const updateShare = updateActiveSheetShare as (share: LogSheetShareSettings) => Promise<void>;
   const activeSheet = props.activeSheet as LogSheet;
   const lineForm = props.lineForm as LineForm;
   const logbook = props.logbook as PersistedLogbook;
@@ -111,6 +115,11 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const [courseTooltipPosition, setCourseTooltipPosition] = useState({ left: 0, top: 0 });
   const technicalCheckDrafts = technicalCheckDraftState.sheetId === activeSheet.id ? technicalCheckDraftState.drafts : {};
   const scannerWarnings = activeSheet.scannerWarnings ?? [];
+  const share = activeSheet.share ?? defaultLogSheetShareSettings;
+  const shareUrl = typeof window === "undefined" ? `/share/${activeSheet.id}` : `${window.location.origin}/share/${activeSheet.id}`;
+  const setShare = (patch: Partial<LogSheetShareSettings>) => {
+    void updateShare({ ...share, ...patch });
+  };
   const showScannerDraftNotice =
     activeSheet.source === "scanner" && activeSheet.status === "Draft";
   const courseConversionSequence = useRef(0);
@@ -631,6 +640,41 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                   </div>
                 </aside>
               )}
+
+
+              <section className="logbook-section info-card" aria-label="Sharing settings">
+                <h3>Sharing</h3>
+                <label>
+                  Privacy
+                  <select value={share.privacy} onChange={(event) => setShare({ privacy: event.target.value as LogSheetShareSettings["privacy"] })}>
+                    <option value="private">Private</option>
+                    <option value="registered">Registered users only</option>
+                    <option value="public">Public to everyone</option>
+                  </select>
+                </label>
+                {share.privacy !== "private" ? (
+                  <p>Public URL: <a href={shareUrl} target="_blank" rel="noreferrer">{shareUrl}</a></p>
+                ) : <p>Set privacy to public or registered users to enable a share URL.</p>}
+                <div className="sharing-options">
+                  {[
+                    ["includeMasterData", "Master data (from/to/boat)"],
+                    ["includePicture", "Picture"],
+                    ["includeLogLines", "Loglines"],
+                    ["includeTechnicalLog", "Technical log"],
+                    ["includeSkipper", "Skipper"],
+                    ["includeCrew", "Crew information"],
+                  ].map(([field, label]) => (
+                    <label key={field}>
+                      <input
+                        type="checkbox"
+                        checked={Boolean(share[field as keyof LogSheetShareSettings])}
+                        onChange={(event) => setShare({ [field]: event.target.checked } as Partial<LogSheetShareSettings>)}
+                      />
+                      {label}
+                    </label>
+                  ))}
+                </div>
+              </section>
 
               <section
                 className="entry-metrics logbook-section"

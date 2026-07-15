@@ -50,7 +50,7 @@ describe("LogSheetsRepository", () => {
     await new LogSheetsRepository(db).insert(sheet);
 
     expect(db.calls[0].sql).toContain("insert into log_sheets");
-    expect(db.calls[0].values).toEqual([`legacy-user:${sheet.id}`, sheet.title, sheet.dateRange, sheet.status, null, null, null, `legacy-user:${sheet.boatId}`, JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), null, null, null, null, "legacy-user"]);
+    expect(db.calls[0].values).toEqual([`legacy-user:${sheet.id}`, sheet.title, sheet.dateRange, sheet.status, null, null, null, `legacy-user:${sheet.boatId}`, JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), null, null, null, null, "legacy-user", "private", 1, 1, 1, 1, 1, 1]);
   });
 
   it("maps relational rows back to a persisted logbook", () => {
@@ -62,7 +62,7 @@ describe("LogSheetsRepository", () => {
     expect(LogSheetsRepository.toLogbook([boatRow], [sheetRow], [crewRow], [lineRow])).toEqual({
       boats: [boat],
       crewMembers: [],
-      sheets: [{ ...sheet, crew: [{ ...crew, isPrimary: false }], lines: [line] }],
+      sheets: [{ ...sheet, share: { privacy: "private", includeMasterData: true, includePicture: true, includeLogLines: true, includeTechnicalLog: true, includeSkipper: true, includeCrew: true }, crew: [{ ...crew, isPrimary: false }], lines: [line] }],
     });
   });
 

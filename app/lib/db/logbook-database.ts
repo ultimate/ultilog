@@ -1,4 +1,4 @@
-import type { PersistedLogbook } from "../../models/logbook";
+import { defaultLogSheetShareSettings, type LogSheet, type PersistedLogbook } from "../../models/logbook";
 import { BoatsRepository } from "../repositories/boats-repository";
 import { CrewRepository } from "../repositories/crew-repository";
 import { LogLinesRepository } from "../repositories/log-lines-repository";
@@ -53,6 +53,26 @@ export abstract class LogbookDatabase implements QueryableDatabase {
     return logbook;
   }
 
+  async readSharedSheet(sheetId: string, isAuthenticated: boolean): Promise<{ sheet: LogSheet; boatName: string } | undefined> {
+    await this.ensureSchemaAndBackfill();
+    const sharedRow = await this.sheets.findSharedByUnscopedId(sheetId);
+    if (!sharedRow?.owner_id) return undefined;
+    const originalOwnerId = this.ownerId;
+    try {
+      this.ownerId = sharedRow.owner_id;
+      const logbook = await this.readTables();
+      const sheet = logbook.sheets.find((candidate) => candidate.id === sheetId);
+      if (!sheet) return undefined;
+      const share = sheet.share ?? defaultLogSheetShareSettings;
+      if (share.privacy === "private") return undefined;
+      if (share.privacy === "registered" && !isAuthenticated) return undefined;
+      const boat = logbook.boats.find((candidate) => candidate.id === sheet.boatId);
+      return { sheet: filterSharedSheet(sheet), boatName: share.includeMasterData ? boat?.name ?? "" : "" };
+    } finally {
+      this.ownerId = originalOwnerId;
+    }
+  }
+
   protected async readTables(): Promise<PersistedLogbook> {
     const [boats, sheets, crewProfiles, crew, lines] = await Promise.all([
       this.boats.findAll(this.ownerId),
@@ -76,4 +96,22 @@ export abstract class LogbookDatabase implements QueryableDatabase {
     await this.insertLogbook(logbook);
     await this.crew.ensurePrimaryProfile(this.ownerId);
   }
+}
+
+function filterSharedSheet(sheet: LogSheet): LogSheet {
+  const share = sheet.share ?? defaultLogSheetShareSettings;
+  const crew = share.includeCrew
+    ? sheet.crew.filter((_, index) => share.includeSkipper || index !== 0)
+    : share.includeSkipper && sheet.crew[0]
+      ? [sheet.crew[0]]
+      : [];
+  return {
+    ...sheet,
+    boatId: share.includeMasterData ? sheet.boatId : "",
+    route: share.includeMasterData ? sheet.route : { from: "", to: "", departed: "", arrived: "" },
+    image: share.includePicture ? sheet.image : undefined,
+    lines: share.includeLogLines ? sheet.lines : [],
+    technicalChecks: share.includeTechnicalLog ? sheet.technicalChecks : [],
+    crew,
+  };
 }

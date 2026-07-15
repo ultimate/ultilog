@@ -1,4 +1,4 @@
-import type { Boat, CrewMember, LogLine, LogSheet, SheetCrewMember } from "./logbook";
+import type { Boat, CrewMember, LogLine, LogSheet, LogSheetSharePrivacy, SheetCrewMember } from "./logbook";
 
 export type StoredLogSheet = Omit<LogSheet, "crew" | "lines">;
 
@@ -33,6 +33,14 @@ export type LogSheetRow = ImageRowFields & {
   remarks: unknown;
   watch_plan: unknown;
   technical_checks: unknown;
+  share_privacy?: LogSheetSharePrivacy | null;
+  share_master_data?: number | null;
+  share_picture?: number | null;
+  share_loglines?: number | null;
+  share_technical_log?: number | null;
+  share_skipper?: number | null;
+  share_crew?: number | null;
+  owner_id?: string;
 };
 
 export type CrewMemberRow = Omit<SheetCrewMember, "embarkationDateTime" | "embarkationPosition" | "disembarkationDateTime" | "disembarkationPosition" | "image"> & ImageRowFields & {
