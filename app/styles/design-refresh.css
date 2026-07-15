@@ -234,6 +234,9 @@ h1 { margin:0 0 .45rem; font-size:1.8rem; line-height:1.1; letter-spacing:-.04em
   .nav-slim-toggle { display:grid; }
 }
 .deviation-table-field { display: grid; gap: 0.75rem; }
+.deviation-table-field summary { cursor: pointer; }
+.deviation-table-field summary span { display: block; }
+.deviation-table-field summary span + span { margin-top: .25rem; }
 .deviation-table { min-width: 320px; }
 .deviation-table input { min-width: 8rem; }
 .group-tags { display:flex; flex-wrap:wrap; gap:.35rem; margin:.5rem 0; }
