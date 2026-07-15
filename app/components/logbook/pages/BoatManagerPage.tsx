@@ -189,19 +189,6 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
               />
             </label>
             <label>
-              {t("boats.logfactor")}
-              <input
-                required
-                type="number"
-                min="0.000001"
-                step="0.000001"
-                value={boatForm.logfactor}
-                onChange={(e) =>
-                  setBoatForm({ ...boatForm, logfactor: Number(e.target.value) })
-                }
-              />
-            </label>
-            <label>
               {t("boats.manufacturer")}
               <input
                 value={boatForm.manufacturer}
@@ -278,13 +265,24 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                 }
               />
             </label>
-            <div className="wide-field deviation-table-field">
-              <div>
-                <p className="eyebrow">{t("boats.deviationTable")}</p>
-                <p>
-                  {t("boats.deviationHelp")}
-                </p>
-              </div>
+            <label>
+              {t("boats.logfactor")}
+              <input
+                required
+                type="number"
+                min="0.000001"
+                step="0.000001"
+                value={boatForm.logfactor}
+                onChange={(e) =>
+                  setBoatForm({ ...boatForm, logfactor: Number(e.target.value) })
+                }
+              />
+            </label>
+            <details className="wide-field deviation-table-field">
+              <summary>
+                <span className="eyebrow">{t("boats.deviationTable")}</span>
+                <span>{t("boats.deviationHelp")}</span>
+              </summary>
               <div className="table-scroll">
                 <table className="deviation-table">
                   <thead>
@@ -322,7 +320,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                   </tbody>
                 </table>
               </div>
-            </div>
+            </details>
             <article className="info-card wide-field">
               <h3>{t("boats.logSheets")}</h3>
               <ul className="stack-list">
