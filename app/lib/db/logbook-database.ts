@@ -2,6 +2,7 @@ import { defaultLogSheetShareSettings, type LogSheet, type PersistedLogbook } fr
 import { BoatsRepository } from "../repositories/boats-repository";
 import { CrewRepository } from "../repositories/crew-repository";
 import { LogLinesRepository } from "../repositories/log-lines-repository";
+import { scopedId } from "../repositories/boats-repository";
 import { LogSheetsRepository } from "../repositories/log-sheets-repository";
 import { backfillCrewMemberEncryption } from "./encryption-backfill";
 
@@ -53,24 +54,27 @@ export abstract class LogbookDatabase implements QueryableDatabase {
     return logbook;
   }
 
-  async readSharedSheet(sheetId: string, isAuthenticated: boolean): Promise<{ sheet: LogSheet; boatName: string } | undefined> {
+  async readSharedSheet(sheetId: string, isAuthenticated: boolean, ownerId?: string): Promise<{ sheet: LogSheet; boatName: string } | undefined> {
     await this.ensureSchemaAndBackfill();
-    const sharedRow = await this.sheets.findSharedByUnscopedId(sheetId);
+    const sharedRow = ownerId
+      ? await this.sheets.findSharedByScopedId(scopedId(ownerId, sheetId))
+      : await this.sheets.findSharedByUnscopedId(sheetId);
     if (!sharedRow?.owner_id) return undefined;
-    const originalOwnerId = this.ownerId;
-    try {
-      this.ownerId = sharedRow.owner_id;
-      const logbook = await this.readTables();
-      const sheet = logbook.sheets.find((candidate) => candidate.id === sheetId);
-      if (!sheet) return undefined;
-      const share = sheet.share ?? defaultLogSheetShareSettings;
-      if (share.privacy === "private") return undefined;
-      if (share.privacy === "registered" && !isAuthenticated) return undefined;
-      const boat = logbook.boats.find((candidate) => candidate.id === sheet.boatId);
-      return { sheet: filterSharedSheet(sheet), boatName: share.includeMasterData ? boat?.name ?? "" : "" };
-    } finally {
-      this.ownerId = originalOwnerId;
-    }
+
+    const share = LogSheetsRepository.toLogbook([], [sharedRow], [], []).sheets[0]?.share ?? defaultLogSheetShareSettings;
+    if (share.privacy === "private") return undefined;
+    if (share.privacy === "registered" && !isAuthenticated) return undefined;
+
+    const [boatRow, crewRows, lineRows] = await Promise.all([
+      share.includeMasterData ? this.boats.findByScopedId(sharedRow.boat_id) : undefined,
+      (share.includeSkipper || share.includeCrew) ? this.crew.findForSheet(sharedRow.id, sharedRow.owner_id) : [],
+      share.includeLogLines ? this.lines.findForSheet(sharedRow.id) : [],
+    ]);
+    const logbook = LogSheetsRepository.toLogbook(boatRow ? [boatRow] : [], [sharedRow], crewRows, lineRows);
+    const sheet = logbook.sheets[0];
+    if (!sheet) return undefined;
+    const boat = logbook.boats.find((candidate) => candidate.id === sheet.boatId);
+    return { sheet: filterSharedSheet(sheet), boatName: share.includeMasterData ? boat?.name ?? "" : "" };
   }
 
   protected async readTables(): Promise<PersistedLogbook> {

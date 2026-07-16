@@ -98,6 +98,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     deleteTechnicalCheck,
   } = props;
   const activeBoat = props.activeBoat as Boat;
+  const sharingOwnerId = props.userId as string | undefined;
   const updateShare = updateActiveSheetShare as (share: LogSheetShareSettings) => Promise<void>;
   const activeSheet = props.activeSheet as LogSheet;
   const lineForm = props.lineForm as LineForm;
@@ -116,7 +117,8 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const technicalCheckDrafts = technicalCheckDraftState.sheetId === activeSheet.id ? technicalCheckDraftState.drafts : {};
   const scannerWarnings = activeSheet.scannerWarnings ?? [];
   const share = activeSheet.share ?? defaultLogSheetShareSettings;
-  const shareUrl = typeof window === "undefined" ? `/share/${activeSheet.id}` : `${window.location.origin}/share/${activeSheet.id}`;
+  const sharePath = sharingOwnerId ? `/share/${encodeURIComponent(sharingOwnerId)}/${encodeURIComponent(activeSheet.id)}` : `/share/${encodeURIComponent(activeSheet.id)}`;
+  const shareUrl = typeof window === "undefined" ? sharePath : `${window.location.origin}${sharePath}`;
   const setShare = (patch: Partial<LogSheetShareSettings>) => {
     void updateShare({ ...share, ...patch });
   };

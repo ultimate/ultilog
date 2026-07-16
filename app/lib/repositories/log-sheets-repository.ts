@@ -9,6 +9,10 @@ export class LogSheetsRepository {
     return (await this.db.query<LogSheetRow>(`select * from log_sheets where owner_id = ${this.db.placeholder(1)} order by date_range desc, title`, [ownerId])).rows;
   }
 
+  async findSharedByScopedId(scopedSheetId: string) {
+    return (await this.db.query<LogSheetRow>(`select * from log_sheets where id = ${this.db.placeholder(1)} and share_privacy <> 'private' limit 1`, [scopedSheetId])).rows[0];
+  }
+
   async findSharedByUnscopedId(sheetId: string) {
     return (await this.db.query<LogSheetRow>(`select * from log_sheets where (id = ${this.db.placeholder(1)} or id like ${this.db.placeholder(2)}) and share_privacy <> 'private' limit 1`, [sheetId, `%:${sheetId}`])).rows[0];
   }
