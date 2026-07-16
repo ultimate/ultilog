@@ -1,3 +1,5 @@
+export { createMeteoProvider, createMeteoService } from "./provider";
+
 export type {
   MeteoAstronomy,
   MeteoProviderName,
@@ -18,3 +20,13 @@ export type {
   MeteoWeather,
   MeteoWind,
 } from "./types";
+
+export type {
+  MeteoCapability,
+  MeteoProvider,
+  MeteoProviderCapabilities,
+  MeteoProviderContext,
+  MeteoProviderSnapshot,
+  MeteoProviderStation,
+  MeteoServiceOptions,
+} from "./provider";
