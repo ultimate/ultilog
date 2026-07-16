@@ -1,3 +1,4 @@
+export { calculateMoonPhase, createLocalAstronomyProvider } from "./local-astronomy";
 export { createMeteoProvider, createMeteoService } from "./provider";
 
 export type {
@@ -30,3 +31,5 @@ export type {
   MeteoProviderStation,
   MeteoServiceOptions,
 } from "./provider";
+
+export type { MoonPhase, MoonPhaseDetails } from "./local-astronomy";
