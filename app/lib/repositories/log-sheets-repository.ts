@@ -124,7 +124,9 @@ function mapStoredSheet(sheet: LogSheetRow): StoredLogSheet {
 }
 
 function privacyFor(value: NonNullable<LogSheet["share"]>[keyof NonNullable<LogSheet["share"]>] | undefined) {
-  return value ?? "private";
+  if (value === "public") return 1;
+  if (value === "registered") return 2;
+  return 0;
 }
 
 function overallPrivacy(share: LogSheet["share"]) {
@@ -136,6 +138,7 @@ function overallPrivacy(share: LogSheet["share"]) {
 
 function privacyFromRow(value: unknown, legacyPrivacy: NonNullable<LogSheet["share"]>[keyof NonNullable<LogSheet["share"]>] | null | undefined) {
   if (value === "public" || value === "registered" || value === "private") return value;
-  if (value === 1 || value === true) return legacyPrivacy === "registered" ? "registered" : "public";
+  if (value === 2 || value === "2") return "registered";
+  if (value === 1 || value === "1" || value === true) return legacyPrivacy === "registered" ? "registered" : "public";
   return "private";
 }
