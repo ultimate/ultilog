@@ -27,20 +27,44 @@ export type MeteoUnit =
   | "s"
   | "text";
 
-export type MeteoSource = Position & {
+export type MeteoProviderReference = {
   provider: MeteoProviderName;
+  providerLabel?: string;
   sourceType: MeteoSourceType;
+  sourceUrl?: string;
+};
+
+export type MeteoStationReference = Position & {
+  id: string;
+  name?: string;
+  distanceNm?: number;
+};
+
+export type MeteoValueProvenance = MeteoProviderReference & {
+  station?: MeteoStationReference;
+  observedAt?: Date;
+  calculatedAt?: Date;
+  validAt?: Date;
+  quality?: MeteoQuality;
+  qualityNote?: string;
+  raw?: unknown;
+};
+
+export type MeteoSource = Position & MeteoProviderReference & {
   id?: string;
   name?: string;
   observedAt?: Date;
+  calculatedAt?: Date;
+  validAt?: Date;
   distanceNm?: number;
   quality?: MeteoQuality;
+  qualityNote?: string;
 };
 
 export type MeteoValue<TValue, TUnit extends MeteoUnit = MeteoUnit> = {
   value: TValue;
   unit?: TUnit;
-  source: MeteoSource;
+  provenance: MeteoValueProvenance;
 };
 
 export type MeteoSnapshotRequest = Position & {
@@ -97,7 +121,7 @@ export type MeteoAstronomy = {
 
 export type MeteoSnapshot = {
   requestedAt: Date;
-  forecastFor: Date;
+  validAt: Date;
   position: Position;
   mode: MeteoSnapshotMode;
   weather?: MeteoWeather;

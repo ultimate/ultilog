@@ -1,6 +1,7 @@
 export type {
   MeteoAstronomy,
   MeteoProviderName,
+  MeteoProviderReference,
   MeteoQuality,
   MeteoSea,
   MeteoService,
@@ -9,9 +10,11 @@ export type {
   MeteoSnapshotRequest,
   MeteoSource,
   MeteoSourceType,
+  MeteoStationReference,
   MeteoTide,
   MeteoUnit,
   MeteoValue,
+  MeteoValueProvenance,
   MeteoWeather,
   MeteoWind,
 } from "./types";
