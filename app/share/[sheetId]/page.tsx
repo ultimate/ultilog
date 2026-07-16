@@ -2,10 +2,10 @@ import { auth } from "../../../auth";
 import { readSharedLogSheet } from "../../lib/logbook-store";
 import { EntityImage } from "../../components/logbook/EntityImage";
 
-export default async function SharedLogbookPage({ params }: { params: Promise<{ sheetId: string }> }) {
-  const { sheetId } = await params;
+export default async function SharedLogbookPage({ params }: { params: Promise<{ sheetId: string; ownerId?: string }> }) {
+  const { sheetId, ownerId } = await params;
   const session = await auth();
-  const shared = await readSharedLogSheet(sheetId, Boolean(session?.user?.id));
+  const shared = await readSharedLogSheet(sheetId, Boolean(session?.user?.id), ownerId);
 
   if (!shared) {
     return (

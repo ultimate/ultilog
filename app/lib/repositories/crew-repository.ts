@@ -44,6 +44,34 @@ export class CrewRepository {
     `, [ownerId])).rows.map((row) => this.decryptCrewRow(row, ownerId));
   }
 
+  async findForSheet(sheetScopedId: string, ownerId = "legacy-user") {
+    return (await this.db.query<CrewMemberRow>(`
+      select
+        sheet_crew_members.sheet_id,
+        sheet_crew_members.crew_member_id,
+        sheet_crew_members.sort_order,
+        crew_members.id,
+        crew_members.name,
+        crew_members.nationality,
+        crew_members.role,
+        crew_members.address,
+        crew_members.certificate,
+        crew_members.is_primary,
+        crew_members.image_data,
+        crew_members.image_mime_type,
+        crew_members.image_width,
+        crew_members.image_height,
+        sheet_crew_members.embarkation_datetime,
+        sheet_crew_members.embarkation_position,
+        sheet_crew_members.disembarkation_datetime,
+        sheet_crew_members.disembarkation_position
+      from sheet_crew_members
+      join crew_members on crew_members.id = sheet_crew_members.crew_member_id
+      where sheet_crew_members.sheet_id = ${this.db.placeholder(1)}
+      order by sheet_crew_members.sort_order
+    `, [sheetScopedId])).rows.map((row) => this.decryptCrewRow(row, ownerId));
+  }
+
   async deleteAll(ownerId = "legacy-user") {
     await this.db.query(`delete from sheet_crew_members where sheet_id in (select id from log_sheets where owner_id = ${this.db.placeholder(1)})`, [ownerId]);
     await this.db.query(`delete from crew_members where owner_id = ${this.db.placeholder(1)}`, [ownerId]);

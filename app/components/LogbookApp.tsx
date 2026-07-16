@@ -1705,6 +1705,7 @@ export function LogbookApp({
               navigate={navigate}
               cancelSheetEdit={cancelSheetEdit}
               activeSheet={activeSheet}
+              userId={userId}
               renderInlineTextField={renderInlineTextField}
               isActiveSheetLocked={isActiveSheetLocked}
               updateActiveSheetStatus={updateActiveSheetStatus}

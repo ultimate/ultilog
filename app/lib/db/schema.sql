@@ -70,14 +70,7 @@ create table if not exists boats (
   image_data text,
   image_mime_type text,
   image_width integer,
-  image_height integer,
-  share_privacy text not null default 'private',
-  share_master_data integer not null default 1,
-  share_picture integer not null default 1,
-  share_loglines integer not null default 1,
-  share_technical_log integer not null default 1,
-  share_skipper integer not null default 1,
-  share_crew integer not null default 1
+  image_height integer
 );
 
 create table if not exists log_sheets (
@@ -100,8 +93,17 @@ create table if not exists log_sheets (
   image_data text,
   image_mime_type text,
   image_width integer,
-  image_height integer
+  image_height integer,
+  share_privacy text not null default 'private',
+  share_master_data integer not null default 1,
+  share_picture integer not null default 1,
+  share_loglines integer not null default 1,
+  share_technical_log integer not null default 1,
+  share_skipper integer not null default 1,
+  share_crew integer not null default 1
 );
+
+create index if not exists log_sheets_share_privacy_idx on log_sheets (share_privacy);
 
 create table if not exists crew_members (
   id text primary key,

@@ -8,6 +8,10 @@ export class BoatsRepository {
     return (await this.db.query<BoatRow>(`select * from boats where owner_id = ${this.db.placeholder(1)} order by name`, [ownerId])).rows;
   }
 
+  async findByScopedId(id: string) {
+    return (await this.db.query<BoatRow>(`select * from boats where id = ${this.db.placeholder(1)} limit 1`, [id])).rows[0];
+  }
+
   async deleteAll(ownerId = "legacy-user") {
     await this.db.query(`delete from boats where owner_id = ${this.db.placeholder(1)}`, [ownerId]);
   }
