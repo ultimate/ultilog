@@ -2,10 +2,11 @@ import { auth } from "../../../auth";
 import { readSharedLogSheet } from "../../lib/logbook-store";
 import { EntityImage } from "../../components/logbook/EntityImage";
 
-export default async function SharedLogbookPage({ params }: { params: Promise<{ sheetId: string; ownerId?: string }> }) {
-  const { sheetId, ownerId } = await params;
+export default async function SharedLogbookPage({ params }: { params: Promise<{ segments?: string[] }> }) {
+  const { segments = [] } = await params;
+  const { ownerId, sheetId } = parseShareSegments(segments);
   const session = await auth();
-  const shared = await readSharedLogSheet(sheetId, Boolean(session?.user?.id), ownerId);
+  const shared = sheetId ? await readSharedLogSheet(sheetId, Boolean(session?.user?.id), ownerId) : undefined;
 
   if (!shared) {
     return (
@@ -68,4 +69,10 @@ export default async function SharedLogbookPage({ params }: { params: Promise<{ 
       </section>
     </main>
   );
+}
+
+function parseShareSegments(segments: string[]) {
+  if (segments.length === 1) return { sheetId: segments[0] };
+  if (segments.length === 2) return { ownerId: segments[0], sheetId: segments[1] };
+  return {};
 }
