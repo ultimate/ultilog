@@ -1,4 +1,5 @@
 export { calculateMoonPhase, createLocalAstronomyProvider } from "./local-astronomy";
+export { createNoaaCoopsProvider, fetchNoaaCoopsStations, parseNoaaCoopsStations } from "./noaa-coops";
 export { createNoaaNdbcProvider, fetchLatestNoaaNdbcObservations, parseNoaaNdbcLatestObservations } from "./noaa-ndbc";
 export { createMeteoProvider, createMeteoService } from "./provider";
 
@@ -36,3 +37,5 @@ export type {
 export type { MoonPhase, MoonPhaseDetails } from "./local-astronomy";
 
 export type { NoaaNdbcObservation, NoaaNdbcProviderOptions } from "./noaa-ndbc";
+
+export type { NoaaCoopsProviderOptions, NoaaCoopsStation } from "./noaa-coops";
