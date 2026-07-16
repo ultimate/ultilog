@@ -110,6 +110,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const onCoordinateFormatChange = props.onCoordinateFormatChange as (format: CoordinateFormat) => void;
   const onShowCourseColumnsChange = props.onShowCourseColumnsChange as (show: boolean) => void;
   const [isMapExpanded, setIsMapExpanded] = useState(false);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [newTechnicalCheck, setNewTechnicalCheck] = useState("");
   const [technicalCheckDraftState, setTechnicalCheckDraftState] = useState<{ sheetId: string; drafts: Record<number, string> }>({ sheetId: "", drafts: {} });
   const [openCourseTooltip, setOpenCourseTooltip] = useState<TranslationKey | null>(null);
@@ -122,6 +123,15 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const setShare = (patch: Partial<LogSheetShareSettings>) => {
     void updateShare({ ...share, ...patch });
   };
+  const isSharingEnabled = Object.values(share).some((privacy) => privacy !== "private");
+  const shareOptions = [
+    ["masterData", "Master data (from/to/boat)"],
+    ["picture", "Picture"],
+    ["logLines", "Loglines"],
+    ["technicalLog", "Technical log"],
+    ["skipper", "Skipper"],
+    ["crew", "Crew information"],
+  ] as const;
   const showScannerDraftNotice =
     activeSheet.source === "scanner" && activeSheet.status === "Draft";
   const courseConversionSequence = useRef(0);
@@ -550,6 +560,15 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                 </div>
                 <div className="inline-edit-actions sheet-master-actions">
                   <span className="status-pill">{activeSheet.status}</span>
+                  <button
+                    type="button"
+                    className="edit-chip compact-chip"
+                    aria-label="Share logsheet"
+                    title="Share"
+                    onClick={() => setIsShareDialogOpen(true)}
+                  >
+                    <span aria-hidden="true">↗</span> Share
+                  </button>
                   {isActiveSheetLocked ? (
                     <button
                       type="button"
@@ -644,39 +663,36 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
               )}
 
 
-              <section className="logbook-section info-card" aria-label="Sharing settings">
-                <h3>Sharing</h3>
-                <label>
-                  Privacy
-                  <select value={share.privacy} onChange={(event) => setShare({ privacy: event.target.value as LogSheetShareSettings["privacy"] })}>
-                    <option value="private">Private</option>
-                    <option value="registered">Registered users only</option>
-                    <option value="public">Public to everyone</option>
-                  </select>
-                </label>
-                {share.privacy !== "private" ? (
-                  <p>Public URL: <a href={shareUrl} target="_blank" rel="noreferrer">{shareUrl}</a></p>
-                ) : <p>Set privacy to public or registered users to enable a share URL.</p>}
-                <div className="sharing-options">
-                  {[
-                    ["includeMasterData", "Master data (from/to/boat)"],
-                    ["includePicture", "Picture"],
-                    ["includeLogLines", "Loglines"],
-                    ["includeTechnicalLog", "Technical log"],
-                    ["includeSkipper", "Skipper"],
-                    ["includeCrew", "Crew information"],
-                  ].map(([field, label]) => (
-                    <label key={field}>
-                      <input
-                        type="checkbox"
-                        checked={Boolean(share[field as keyof LogSheetShareSettings])}
-                        onChange={(event) => setShare({ [field]: event.target.checked } as Partial<LogSheetShareSettings>)}
-                      />
-                      {label}
-                    </label>
-                  ))}
+              {isShareDialogOpen && (
+                <div className="logbook-map-modal" role="dialog" aria-modal="true" aria-labelledby="share-logsheet-title">
+                  <div className="logbook-map-modal-panel">
+                    <div className="logbook-map-modal-heading">
+                      <h2 id="share-logsheet-title">Share logsheet</h2>
+                      <button className="edit-chip" type="button" onClick={() => setIsShareDialogOpen(false)}>Close</button>
+                    </div>
+                    {isSharingEnabled ? (
+                      <p>Share URL: <a href={shareUrl} target="_blank" rel="noreferrer">{shareUrl}</a></p>
+                    ) : (
+                      <p>Set at least one part to public or registered users to enable this share link.</p>
+                    )}
+                    <div className="sharing-options">
+                      {shareOptions.map(([field, label]) => (
+                        <label key={field}>
+                          {label}
+                          <select
+                            value={share[field]}
+                            onChange={(event) => setShare({ [field]: event.target.value } as Partial<LogSheetShareSettings>)}
+                          >
+                            <option value="private">Private</option>
+                            <option value="registered">Registered users only</option>
+                            <option value="public">Public to everyone</option>
+                          </select>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </section>
+              )}
 
               <section
                 className="entry-metrics logbook-section"

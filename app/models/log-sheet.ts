@@ -5,23 +5,21 @@ import type { LogLine } from "./log-line";
 export type LogSheetSharePrivacy = "private" | "registered" | "public";
 
 export type LogSheetShareSettings = {
-  privacy: LogSheetSharePrivacy;
-  includeMasterData: boolean;
-  includePicture: boolean;
-  includeLogLines: boolean;
-  includeTechnicalLog: boolean;
-  includeSkipper: boolean;
-  includeCrew: boolean;
+  masterData: LogSheetSharePrivacy;
+  picture: LogSheetSharePrivacy;
+  logLines: LogSheetSharePrivacy;
+  technicalLog: LogSheetSharePrivacy;
+  skipper: LogSheetSharePrivacy;
+  crew: LogSheetSharePrivacy;
 };
 
 export const defaultLogSheetShareSettings: LogSheetShareSettings = {
-  privacy: "private",
-  includeMasterData: true,
-  includePicture: true,
-  includeLogLines: true,
-  includeTechnicalLog: true,
-  includeSkipper: true,
-  includeCrew: true,
+  masterData: "private",
+  picture: "private",
+  logLines: "private",
+  technicalLog: "private",
+  skipper: "private",
+  crew: "private",
 };
 
 export type LogSheet = {

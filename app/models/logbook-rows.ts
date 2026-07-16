@@ -34,12 +34,12 @@ export type LogSheetRow = ImageRowFields & {
   watch_plan: unknown;
   technical_checks: unknown;
   share_privacy?: LogSheetSharePrivacy | null;
-  share_master_data?: number | null;
-  share_picture?: number | null;
-  share_loglines?: number | null;
-  share_technical_log?: number | null;
-  share_skipper?: number | null;
-  share_crew?: number | null;
+  share_master_data?: LogSheetSharePrivacy | number | boolean | null;
+  share_picture?: LogSheetSharePrivacy | number | boolean | null;
+  share_loglines?: LogSheetSharePrivacy | number | boolean | null;
+  share_technical_log?: LogSheetSharePrivacy | number | boolean | null;
+  share_skipper?: LogSheetSharePrivacy | number | boolean | null;
+  share_crew?: LogSheetSharePrivacy | number | boolean | null;
   owner_id?: string;
 };
 

@@ -62,19 +62,19 @@ export abstract class LogbookDatabase implements QueryableDatabase {
     if (!sharedRow?.owner_id) return undefined;
 
     const share = LogSheetsRepository.toLogbook([], [sharedRow], [], []).sheets[0]?.share ?? defaultLogSheetShareSettings;
-    if (share.privacy === "private") return undefined;
-    if (share.privacy === "registered" && !isAuthenticated) return undefined;
+    const visibility = sectionVisibility(share, isAuthenticated);
+    if (!Object.values(visibility).some(Boolean)) return undefined;
 
     const [boatRow, crewRows, lineRows] = await Promise.all([
-      share.includeMasterData ? this.boats.findByScopedId(sharedRow.boat_id) : undefined,
-      (share.includeSkipper || share.includeCrew) ? this.crew.findForSheet(sharedRow.id, sharedRow.owner_id) : [],
-      share.includeLogLines ? this.lines.findForSheet(sharedRow.id) : [],
+      visibility.masterData ? this.boats.findByScopedId(sharedRow.boat_id) : undefined,
+      (visibility.skipper || visibility.crew) ? this.crew.findForSheet(sharedRow.id, sharedRow.owner_id) : [],
+      visibility.logLines ? this.lines.findForSheet(sharedRow.id) : [],
     ]);
     const logbook = LogSheetsRepository.toLogbook(boatRow ? [boatRow] : [], [sharedRow], crewRows, lineRows);
     const sheet = logbook.sheets[0];
     if (!sheet) return undefined;
     const boat = logbook.boats.find((candidate) => candidate.id === sheet.boatId);
-    return { sheet: filterSharedSheet(sheet), boatName: share.includeMasterData ? boat?.name ?? "" : "" };
+    return { sheet: filterSharedSheet(sheet, visibility), boatName: visibility.masterData ? boat?.name ?? "" : "" };
   }
 
   protected async readTables(): Promise<PersistedLogbook> {
@@ -102,20 +102,36 @@ export abstract class LogbookDatabase implements QueryableDatabase {
   }
 }
 
-function filterSharedSheet(sheet: LogSheet): LogSheet {
-  const share = sheet.share ?? defaultLogSheetShareSettings;
-  const crew = share.includeCrew
-    ? sheet.crew.filter((_, index) => share.includeSkipper || index !== 0)
-    : share.includeSkipper && sheet.crew[0]
+type SectionVisibility = Record<keyof NonNullable<LogSheet["share"]>, boolean>;
+
+function sectionVisibility(share: NonNullable<LogSheet["share"]>, isAuthenticated: boolean): SectionVisibility {
+  return {
+    masterData: canViewSection(share.masterData, isAuthenticated),
+    picture: canViewSection(share.picture, isAuthenticated),
+    logLines: canViewSection(share.logLines, isAuthenticated),
+    technicalLog: canViewSection(share.technicalLog, isAuthenticated),
+    skipper: canViewSection(share.skipper, isAuthenticated),
+    crew: canViewSection(share.crew, isAuthenticated),
+  };
+}
+
+function canViewSection(privacy: LogSheet["share"] extends infer Share ? Share extends undefined ? never : Share[keyof Share] : never, isAuthenticated: boolean) {
+  return privacy === "public" || (privacy === "registered" && isAuthenticated);
+}
+
+function filterSharedSheet(sheet: LogSheet, visibility: SectionVisibility): LogSheet {
+  const crew = visibility.crew
+    ? sheet.crew.filter((_, index) => visibility.skipper || index !== 0)
+    : visibility.skipper && sheet.crew[0]
       ? [sheet.crew[0]]
       : [];
   return {
     ...sheet,
-    boatId: share.includeMasterData ? sheet.boatId : "",
-    route: share.includeMasterData ? sheet.route : { from: "", to: "", departed: "", arrived: "" },
-    image: share.includePicture ? sheet.image : undefined,
-    lines: share.includeLogLines ? sheet.lines : [],
-    technicalChecks: share.includeTechnicalLog ? sheet.technicalChecks : [],
+    boatId: visibility.masterData ? sheet.boatId : "",
+    route: visibility.masterData ? sheet.route : { from: "", to: "", departed: "", arrived: "" },
+    image: visibility.picture ? sheet.image : undefined,
+    lines: visibility.logLines ? sheet.lines : [],
+    technicalChecks: visibility.technicalLog ? sheet.technicalChecks : [],
     crew,
   };
 }
