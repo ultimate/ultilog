@@ -24,7 +24,7 @@ export class LogSheetsRepository {
   async insert(sheet: LogSheet, ownerId = "legacy-user") {
     await this.db.query(
       `insert into log_sheets (id, title, date_range, status, source, verification_note, scanner_warnings, boat_id, skipper, route, weather_briefing, day_summary, remarks, watch_plan, technical_checks, image_data, image_mime_type, image_width, image_height, owner_id, share_privacy, share_master_data, share_picture, share_loglines, share_technical_log, share_skipper, share_crew) values (${this.values(27)})`,
-      [scopedId(ownerId, sheet.id), sheet.title, sheet.dateRange, sheet.status, sheet.source ?? null, sheet.verificationNote ?? null, sheet.scannerWarnings ? JSON.stringify(sheet.scannerWarnings) : null, scopedId(ownerId, sheet.boatId), JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), ...imageValues(sheet.image), ownerId, sheet.share?.privacy ?? defaultLogSheetShareSettings.privacy, boolValue(sheet.share?.includeMasterData ?? defaultLogSheetShareSettings.includeMasterData), boolValue(sheet.share?.includePicture ?? defaultLogSheetShareSettings.includePicture), boolValue(sheet.share?.includeLogLines ?? defaultLogSheetShareSettings.includeLogLines), boolValue(sheet.share?.includeTechnicalLog ?? defaultLogSheetShareSettings.includeTechnicalLog), boolValue(sheet.share?.includeSkipper ?? defaultLogSheetShareSettings.includeSkipper), boolValue(sheet.share?.includeCrew ?? defaultLogSheetShareSettings.includeCrew)],
+      [scopedId(ownerId, sheet.id), sheet.title, sheet.dateRange, sheet.status, sheet.source ?? null, sheet.verificationNote ?? null, sheet.scannerWarnings ? JSON.stringify(sheet.scannerWarnings) : null, scopedId(ownerId, sheet.boatId), JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), ...imageValues(sheet.image), ownerId, overallPrivacy(sheet.share), privacyFor(sheet.share?.masterData), privacyFor(sheet.share?.picture), privacyFor(sheet.share?.logLines), privacyFor(sheet.share?.technicalLog), privacyFor(sheet.share?.skipper), privacyFor(sheet.share?.crew)],
     );
   }
 
@@ -112,21 +112,29 @@ function mapStoredSheet(sheet: LogSheetRow): StoredLogSheet {
     technicalChecks: parseJson<string[]>(sheet.technical_checks),
     ...(imageFromRow(sheet) ? { image: imageFromRow(sheet) } : {}),
     share: {
-      privacy: sheet.share_privacy ?? defaultLogSheetShareSettings.privacy,
-      includeMasterData: boolFromRow(sheet.share_master_data, defaultLogSheetShareSettings.includeMasterData),
-      includePicture: boolFromRow(sheet.share_picture, defaultLogSheetShareSettings.includePicture),
-      includeLogLines: boolFromRow(sheet.share_loglines, defaultLogSheetShareSettings.includeLogLines),
-      includeTechnicalLog: boolFromRow(sheet.share_technical_log, defaultLogSheetShareSettings.includeTechnicalLog),
-      includeSkipper: boolFromRow(sheet.share_skipper, defaultLogSheetShareSettings.includeSkipper),
-      includeCrew: boolFromRow(sheet.share_crew, defaultLogSheetShareSettings.includeCrew),
+      masterData: privacyFromRow(sheet.share_master_data, sheet.share_privacy),
+      picture: privacyFromRow(sheet.share_picture, sheet.share_privacy),
+      logLines: privacyFromRow(sheet.share_loglines, sheet.share_privacy),
+      technicalLog: privacyFromRow(sheet.share_technical_log, sheet.share_privacy),
+      skipper: privacyFromRow(sheet.share_skipper, sheet.share_privacy),
+      crew: privacyFromRow(sheet.share_crew, sheet.share_privacy),
     },
   };
 }
 
-function boolValue(value: boolean) {
-  return value ? 1 : 0;
+function privacyFor(value: NonNullable<LogSheet["share"]>[keyof NonNullable<LogSheet["share"]>] | undefined) {
+  return value ?? "private";
 }
 
-function boolFromRow(value: number | null | undefined, fallback: boolean) {
-  return value == null ? fallback : Boolean(value);
+function overallPrivacy(share: LogSheet["share"]) {
+  const settings = share ?? defaultLogSheetShareSettings;
+  if (Object.values(settings).includes("public")) return "public";
+  if (Object.values(settings).includes("registered")) return "registered";
+  return "private";
+}
+
+function privacyFromRow(value: unknown, legacyPrivacy: NonNullable<LogSheet["share"]>[keyof NonNullable<LogSheet["share"]>] | null | undefined) {
+  if (value === "public" || value === "registered" || value === "private") return value;
+  if (value === 1 || value === true) return legacyPrivacy === "registered" ? "registered" : "public";
+  return "private";
 }
