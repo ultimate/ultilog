@@ -95,12 +95,12 @@ create table if not exists log_sheets (
   image_width integer,
   image_height integer,
   share_privacy text not null default 'private',
-  share_master_data text not null default 'private',
-  share_picture text not null default 'private',
-  share_loglines text not null default 'private',
-  share_technical_log text not null default 'private',
-  share_skipper text not null default 'private',
-  share_crew text not null default 'private'
+  share_master_data integer not null default 0,
+  share_picture integer not null default 0,
+  share_loglines integer not null default 0,
+  share_technical_log integer not null default 0,
+  share_skipper integer not null default 0,
+  share_crew integer not null default 0
 );
 
 create index if not exists log_sheets_share_privacy_idx on log_sheets (share_privacy);
