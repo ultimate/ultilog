@@ -1,3 +1,4 @@
+export { createFreeMeteoProviders, createFreeMeteoService, defaultFreeMeteoProviderOrder, defaultFreeMeteoRequestOptions } from "./default-service";
 export { calculateMoonPhase, createLocalAstronomyProvider } from "./local-astronomy";
 export { createMetarProvider, fetchMetarObservations, parseMetarObservations } from "./metar";
 export { createNoaaCoopsProvider, fetchNoaaCoopsStations, parseNoaaCoopsStations } from "./noaa-coops";
@@ -45,3 +46,5 @@ export type { NoaaCoopsProviderOptions, NoaaCoopsStation } from "./noaa-coops";
 export type { MetarObservation, MetarProviderOptions } from "./metar";
 
 export type { OpenMeteoProviderOptions } from "./open-meteo";
+
+export type { FreeMeteoProviderName, FreeMeteoServiceOptions } from "./default-service";
