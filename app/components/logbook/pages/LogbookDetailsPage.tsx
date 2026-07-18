@@ -662,24 +662,30 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
 
 
               {isShareDialogOpen && (
-                <div className="logbook-map-modal" role="dialog" aria-modal="true" aria-labelledby="share-logsheet-title">
-                  <div className="logbook-map-modal-panel">
-                    <div className="logbook-map-modal-heading">
+                <div className="share-logsheet-modal" role="dialog" aria-modal="true" aria-labelledby="share-logsheet-title">
+                  <div className="share-logsheet-panel">
+                    <div className="share-logsheet-heading">
                       <h2 id="share-logsheet-title">Share logsheet</h2>
                       <button className="edit-chip" type="button" onClick={() => setIsShareDialogOpen(false)}>Close</button>
                     </div>
-                    {isSharingEnabled ? (
-                      <p>Share URL: <a href={shareUrl} target="_blank" rel="noreferrer">{shareUrl}</a></p>
-                    ) : (
-                      <p>Set at least one part to public or registered users to enable this share link.</p>
-                    )}
-                    <div className="sharing-options">
+                    <div className="share-logsheet-url">
+                      {isSharingEnabled ? (
+                        <>
+                          <span>Share URL</span>
+                          <a href={shareUrl} target="_blank" rel="noreferrer">{shareUrl}</a>
+                        </>
+                      ) : (
+                        <p>Set at least one part to public or registered users to enable this share link.</p>
+                      )}
+                    </div>
+                    <fieldset className="share-logsheet-options">
+                      <legend>Privacy by logsheet part</legend>
                       {shareOptions.map(([field, label]) => (
-                        <label key={field}>
-                          {label}
+                        <label key={field} className="share-logsheet-option">
+                          <span>{label}</span>
                           <select
                             value={share[field]}
-                            onChange={(event) => setShare({ [field]: event.target.value } as Partial<LogSheetShareSettings>)}
+                            onChange={(event) => setShare({ [field]: event.currentTarget.value } as Partial<LogSheetShareSettings>)}
                           >
                             <option value="private">Private</option>
                             <option value="registered">Registered users only</option>
@@ -687,7 +693,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                           </select>
                         </label>
                       ))}
-                    </div>
+                    </fieldset>
                   </div>
                 </div>
               )}

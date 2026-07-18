@@ -1226,3 +1226,82 @@ img.entity-image--preview {
 .pagination-buttons button { min-height: auto; border: 1px solid var(--border); border-radius: 0.65rem; padding: 0.4rem 0.65rem; background: white; color: var(--foreground); font-weight: 800; }
 .pagination-buttons button.active { border-color: var(--primary); background: rgba(15, 107, 143, 0.12); color: var(--primary); }
 .pagination-buttons button:disabled { cursor: not-allowed; opacity: 0.45; }
+
+.share-logsheet-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  overflow: auto;
+  background: rgba(12, 24, 38, 0.72);
+}
+
+.share-logsheet-panel {
+  display: grid;
+  gap: 1.1rem;
+  width: min(100%, 38rem);
+  max-height: calc(100dvh - 2rem);
+  border-radius: 1.5rem;
+  padding: clamp(1rem, 2vw, 1.5rem);
+  overflow: auto;
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+
+.share-logsheet-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.share-logsheet-heading h2,
+.share-logsheet-url p {
+  margin: 0;
+}
+
+.share-logsheet-url {
+  display: grid;
+  gap: 0.35rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+
+.share-logsheet-url span,
+.share-logsheet-options legend {
+  font-weight: 900;
+}
+
+.share-logsheet-options {
+  display: grid;
+  gap: 0.9rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.share-logsheet-options legend {
+  padding-bottom: 0.25rem;
+}
+
+.share-logsheet-option {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.35rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.share-logsheet-option:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.share-logsheet-option select {
+  width: 100%;
+  min-height: 2.75rem;
+}
