@@ -1,3 +1,4 @@
+import { createCachedMeteoProvider } from "./cache";
 import { createLocalAstronomyProvider } from "./local-astronomy";
 import { createMetarProvider } from "./metar";
 import { createNoaaCoopsProvider } from "./noaa-coops";
@@ -15,6 +16,7 @@ export type FreeMeteoServiceOptions = {
   maxObservationAgeMinutes?: number;
   maxStationDistanceNm?: number;
   allowFallbackEstimate?: boolean;
+  cacheTtlMs?: number;
 };
 
 export const defaultFreeMeteoProviderOrder: FreeMeteoProviderName[] = [
@@ -47,9 +49,12 @@ export function createFreeMeteoProviders(options: FreeMeteoServiceOptions = {}):
     "open-meteo": () => createOpenMeteoProvider({ fetcher: options.fetcher }),
   };
 
-  return defaultFreeMeteoProviderOrder
+  const providers = defaultFreeMeteoProviderOrder
     .filter((providerName) => enabled.has(providerName))
     .map((providerName) => providerFactories[providerName]());
+
+  if (!options.cacheTtlMs) return providers;
+  return providers.map((provider) => createCachedMeteoProvider(provider, { ttlMs: options.cacheTtlMs ?? 0 }));
 }
 
 function withDefaultRequestOptions(service: MeteoService, options: FreeMeteoServiceOptions): MeteoService {
