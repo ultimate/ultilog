@@ -32,7 +32,7 @@ export function createOpenMeteoProvider(options: OpenMeteoProviderOptions = {}):
     capabilities: { weather: true, wind: true, sea: true },
     async getSnapshot(context) {
       if (!context.allowFallbackEstimate) {
-        return { warnings: ["Open-Meteo fallback was skipped because estimated data is not allowed."] };
+        return { warnings: [{ code: "meteo.reason.openMeteoFallbackSkipped" }] };
       }
 
       const [weather, marine] = await Promise.all([
@@ -70,7 +70,7 @@ export function createOpenMeteoProvider(options: OpenMeteoProviderOptions = {}):
           swellPeriodS: value(numberField(marine.current.swell_wave_period), "s", marineProvenance),
         },
         sources,
-        warnings: ["Open-Meteo values are fallback estimates and should be replaced by fresh observations when available."],
+        warnings: [{ code: "meteo.reason.openMeteoFallbackEstimate" }],
       };
     },
   });
@@ -145,7 +145,7 @@ function openMeteoProvenance(context: MeteoProviderContext, sourceUrl: string, v
       distanceNm: 0,
     },
     quality: "low",
-    qualityNote: "Fallback estimate from Open-Meteo model data, not a direct observation.",
+    qualityReason: { code: "meteo.reason.openMeteoFallbackEstimate" },
   };
 }
 
@@ -161,7 +161,7 @@ function openMeteoSource(context: MeteoProviderContext, sourceUrl: string, valid
     validAt,
     distanceNm: 0,
     quality: "low",
-    qualityNote: "Fallback estimate from Open-Meteo model data, not a direct observation.",
+    qualityReason: { code: "meteo.reason.openMeteoFallbackEstimate" },
   };
 }
 

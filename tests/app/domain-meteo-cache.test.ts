@@ -19,15 +19,15 @@ describe("meteo provider cache", () => {
       capabilities: { astronomy: true },
       async getSnapshot() {
         calls += 1;
-        return { warnings: [`call ${calls}`] };
+        return { warnings: [{ code: "meteo.reason.noFreshMetarObservation", values: { call: calls } }] };
       },
     }), { ttlMs: 1_000, now: () => now });
 
-    await expect(provider.getSnapshot(request)).resolves.toMatchObject({ warnings: ["call 1"] });
-    await expect(provider.getSnapshot({ ...request, latitude: 54.12349 })).resolves.toMatchObject({ warnings: ["call 1"] });
+    await expect(provider.getSnapshot(request)).resolves.toMatchObject({ warnings: [{ code: "meteo.reason.noFreshMetarObservation", values: { call: 1 } }] });
+    await expect(provider.getSnapshot({ ...request, latitude: 54.12349 })).resolves.toMatchObject({ warnings: [{ code: "meteo.reason.noFreshMetarObservation", values: { call: 1 } }] });
 
     now = 2_001;
-    await expect(provider.getSnapshot(request)).resolves.toMatchObject({ warnings: ["call 2"] });
+    await expect(provider.getSnapshot(request)).resolves.toMatchObject({ warnings: [{ code: "meteo.reason.noFreshMetarObservation", values: { call: 2 } }] });
     expect(calls).toBe(2);
   });
 
@@ -44,14 +44,14 @@ describe("meteo provider cache", () => {
       },
       async getSnapshot() {
         snapshotCalls += 1;
-        return { warnings: [`snapshot ${snapshotCalls}`] };
+        return { warnings: [{ code: "meteo.reason.noFreshMetarObservation", values: { snapshot: snapshotCalls } }] };
       },
     }), { ttlMs: 1_000, now: () => 1_000 });
 
     await expect(provider.findStations?.(request)).resolves.toHaveLength(1);
     await expect(provider.findStations?.(request)).resolves.toHaveLength(1);
-    await expect(provider.getSnapshot(request)).resolves.toMatchObject({ warnings: ["snapshot 1"] });
-    await expect(provider.getSnapshot(request)).resolves.toMatchObject({ warnings: ["snapshot 1"] });
+    await expect(provider.getSnapshot(request)).resolves.toMatchObject({ warnings: [{ code: "meteo.reason.noFreshMetarObservation", values: { snapshot: 1 } }] });
+    await expect(provider.getSnapshot(request)).resolves.toMatchObject({ warnings: [{ code: "meteo.reason.noFreshMetarObservation", values: { snapshot: 1 } }] });
 
     expect(stationCalls).toBe(1);
     expect(snapshotCalls).toBe(1);

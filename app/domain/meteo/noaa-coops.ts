@@ -52,13 +52,13 @@ export function createNoaaCoopsProvider(options: NoaaCoopsProviderOptions = {}):
       const nearest = nearbyStations(stations, context)[0];
 
       if (!nearest) {
-        return { warnings: ["No NOAA CO-OPS water-level station was found within the configured station distance."] };
+        return { warnings: [{ code: "meteo.reason.noCoopsStationNearby" }] };
       }
 
       const { station, distanceNm } = nearest;
       const waterLevel = await fetchNoaaCoopsWaterLevel(station.id, context, fetcher, dataSource);
       if (!waterLevel) {
-        return { warnings: [`NOAA CO-OPS station ${station.id} did not return a current water-level observation.`] };
+        return { warnings: [{ code: "meteo.reason.noCoopsWaterLevel", values: { stationId: station.id } }] };
       }
 
       const provenance = noaaCoopsProvenance(station, distanceNm, waterLevel.observedAt);

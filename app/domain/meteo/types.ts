@@ -15,6 +15,22 @@ export type MeteoSourceType = "observed" | "calculated" | "predicted" | "estimat
 
 export type MeteoQuality = "high" | "medium" | "low" | "unknown";
 
+export type MeteoReasonCode =
+  | "meteo.reason.noFreshNdbcObservation"
+  | "meteo.reason.noCoopsStationNearby"
+  | "meteo.reason.noCoopsWaterLevel"
+  | "meteo.reason.metarStationIdsRequired"
+  | "meteo.reason.noFreshMetarObservation"
+  | "meteo.reason.openMeteoFallbackSkipped"
+  | "meteo.reason.openMeteoFallbackEstimate"
+  | "meteo.reason.localAstronomyCalculated"
+  | "meteo.reason.metarAirportBased";
+
+export type MeteoReason = {
+  code: MeteoReasonCode;
+  values?: Record<string, string | number>;
+};
+
 export type MeteoUnit =
   | "%"
   | "bft"
@@ -46,7 +62,7 @@ export type MeteoValueProvenance = MeteoProviderReference & {
   calculatedAt?: Date;
   validAt?: Date;
   quality?: MeteoQuality;
-  qualityNote?: string;
+  qualityReason?: MeteoReason;
   raw?: unknown;
 };
 
@@ -58,7 +74,7 @@ export type MeteoSource = Position & MeteoProviderReference & {
   validAt?: Date;
   distanceNm?: number;
   quality?: MeteoQuality;
-  qualityNote?: string;
+  qualityReason?: MeteoReason;
 };
 
 export type MeteoValue<TValue, TUnit extends MeteoUnit = MeteoUnit> = {
@@ -130,7 +146,7 @@ export type MeteoSnapshot = {
   tide?: MeteoTide;
   astronomy?: MeteoAstronomy;
   sources: MeteoSource[];
-  warnings: string[];
+  warnings: MeteoReason[];
 };
 
 export type MeteoService = {

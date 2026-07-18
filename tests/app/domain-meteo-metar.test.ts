@@ -88,7 +88,7 @@ describe("METAR meteo provider", () => {
       longitude: -122.38,
       timestamp: new Date("2026-07-16T13:00:00Z"),
     })).resolves.toMatchObject({
-      warnings: ["METAR provider requires configured station IDs before it can fetch observations."],
+      warnings: [{ code: "meteo.reason.metarStationIdsRequired" }],
       sources: [],
     });
   });
