@@ -11,6 +11,7 @@ import type {
   MeteoWeather,
   MeteoWind,
   MeteoAstronomy,
+  MeteoValue,
 } from "./types";
 
 export type MeteoCapability = "weather" | "wind" | "sea" | "tide" | "astronomy";
@@ -115,5 +116,29 @@ function mergeSection<TSection extends MeteoWeather | MeteoWind | MeteoSea | Met
   incoming: TSection | undefined,
 ) {
   if (!incoming) return current;
-  return { ...incoming, ...current };
+  if (!current) return incoming;
+
+  const merged = { ...current } as Record<string, MeteoValue<unknown> | undefined>;
+  for (const [key, incomingValue] of Object.entries(incoming) as Array<[string, MeteoValue<unknown> | undefined]>) {
+    merged[key] = selectBestValue(merged[key], incomingValue);
+  }
+
+  return merged as TSection;
+}
+
+const sourceTypeRank: Record<MeteoSourceType, number> = {
+  observed: 5,
+  calculated: 4,
+  predicted: 3,
+  estimated: 2,
+  fallback: 1,
+};
+
+function selectBestValue<TValue extends MeteoValue<unknown> | undefined>(current: TValue, incoming: TValue) {
+  if (!incoming) return current;
+  if (!current) return incoming;
+
+  const currentRank = sourceTypeRank[current.provenance.sourceType];
+  const incomingRank = sourceTypeRank[incoming.provenance.sourceType];
+  return incomingRank > currentRank ? incoming : current;
 }

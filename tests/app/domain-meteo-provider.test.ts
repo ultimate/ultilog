@@ -109,3 +109,93 @@ describe("meteo provider orchestration", () => {
       .resolves.toMatchObject({ astronomy: { moonPhase: { value: "new moon" } } });
   });
 });
+
+describe("meteo provider merge priority", () => {
+  it("prefers higher-quality source types even when they run later", async () => {
+    const fallbackProvider = createMeteoProvider({
+      name: "fallback-first",
+      sourceType: "fallback",
+      capabilities: { wind: true },
+      async getSnapshot() {
+        return {
+          wind: {
+            speedKnots: {
+              value: 9,
+              unit: "kn",
+              provenance: { provider: "fallback-first", sourceType: "fallback" },
+            },
+          },
+        };
+      },
+    });
+    const observedProvider = createMeteoProvider({
+      name: "observed-second",
+      sourceType: "observed",
+      capabilities: { wind: true },
+      async getSnapshot() {
+        return {
+          wind: {
+            speedKnots: {
+              value: 14,
+              unit: "kn",
+              provenance: { provider: "observed-second", sourceType: "observed" },
+            },
+          },
+        };
+      },
+    });
+    const service = createMeteoService({ providers: [fallbackProvider, observedProvider] });
+
+    await expect(service.getSnapshot(request)).resolves.toMatchObject({
+      wind: {
+        speedKnots: {
+          value: 14,
+          provenance: { provider: "observed-second", sourceType: "observed" },
+        },
+      },
+    });
+  });
+
+  it("keeps the earlier value when source types have equal rank", async () => {
+    const firstObservedProvider = createMeteoProvider({
+      name: "first-observed",
+      sourceType: "observed",
+      async getSnapshot() {
+        return {
+          weather: {
+            pressureHpa: {
+              value: 1012,
+              unit: "hPa",
+              provenance: { provider: "first-observed", sourceType: "observed" },
+            },
+          },
+        };
+      },
+    });
+    const secondObservedProvider = createMeteoProvider({
+      name: "second-observed",
+      sourceType: "observed",
+      async getSnapshot() {
+        return {
+          weather: {
+            pressureHpa: {
+              value: 1015,
+              unit: "hPa",
+              provenance: { provider: "second-observed", sourceType: "observed" },
+            },
+          },
+        };
+      },
+    });
+    const service = createMeteoService({ providers: [firstObservedProvider, secondObservedProvider] });
+
+    await expect(service.getSnapshot(request)).resolves.toMatchObject({
+      weather: {
+        pressureHpa: {
+          value: 1012,
+          provenance: { provider: "first-observed", sourceType: "observed" },
+        },
+      },
+    });
+  });
+});
