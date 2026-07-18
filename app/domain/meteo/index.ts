@@ -6,6 +6,7 @@ export { createNoaaCoopsProvider, fetchNoaaCoopsStations, parseNoaaCoopsStations
 export { createOpenMeteoProvider } from "./open-meteo";
 export { createNoaaNdbcProvider, fetchLatestNoaaNdbcObservations, parseNoaaNdbcLatestObservations } from "./noaa-ndbc";
 export { createMeteoProvider, createMeteoService } from "./provider";
+export { createMeteoSourceRemark } from "./remarks";
 
 export type {
   MeteoAstronomy,
