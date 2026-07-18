@@ -1,6 +1,7 @@
 export { createCachedMeteoProvider } from "./cache";
 export { createFreeMeteoProviders, createFreeMeteoService, defaultFreeMeteoProviderOrder, defaultFreeMeteoRequestOptions } from "./default-service";
 export { calculateMoonPhase, createLocalAstronomyProvider } from "./local-astronomy";
+export { meteoSnapshotToLogLineAutofill } from "./log-line-autofill";
 export { createMetarProvider, fetchMetarObservations, parseMetarObservations } from "./metar";
 export { createNoaaCoopsProvider, fetchNoaaCoopsStations, parseNoaaCoopsStations } from "./noaa-coops";
 export { createOpenMeteoProvider } from "./open-meteo";
@@ -56,3 +57,5 @@ export type { FreeMeteoProviderName, FreeMeteoServiceOptions } from "./default-s
 export type { MeteoProviderCacheOptions } from "./cache";
 
 export type { MeteoRemarkFieldKey, MeteoSourceRemarkPart } from "./remarks";
+
+export type { MeteoLogLineAutofill, MeteoLogLineAutofillOptions } from "./log-line-autofill";
