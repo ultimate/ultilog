@@ -111,6 +111,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const onShowCourseColumnsChange = props.onShowCourseColumnsChange as (show: boolean) => void;
   const [isMapExpanded, setIsMapExpanded] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [shareDraftState, setShareDraftState] = useState<{ sheetId: string; share: LogSheetShareSettings }>({ sheetId: "", share: defaultLogSheetShareSettings });
   const [newTechnicalCheck, setNewTechnicalCheck] = useState("");
   const [technicalCheckDraftState, setTechnicalCheckDraftState] = useState<{ sheetId: string; drafts: Record<number, string> }>({ sheetId: "", drafts: {} });
   const [openCourseTooltip, setOpenCourseTooltip] = useState<TranslationKey | null>(null);
@@ -118,12 +119,15 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const technicalCheckDrafts = technicalCheckDraftState.sheetId === activeSheet.id ? technicalCheckDraftState.drafts : {};
   const scannerWarnings = activeSheet.scannerWarnings ?? [];
   const share = activeSheet.share ?? defaultLogSheetShareSettings;
+  const shareDraft = shareDraftState.sheetId === activeSheet.id ? shareDraftState.share : share;
   const sharePath = sharingOwnerId ? `/share/${encodeURIComponent(sharingOwnerId)}/${encodeURIComponent(activeSheet.id)}` : `/share/${encodeURIComponent(activeSheet.id)}`;
   const shareUrl = typeof window === "undefined" ? sharePath : `${window.location.origin}${sharePath}`;
   const setShare = (patch: Partial<LogSheetShareSettings>) => {
-    void updateShare({ ...share, ...patch });
+    const nextShare = { ...shareDraft, ...patch };
+    setShareDraftState({ sheetId: activeSheet.id, share: nextShare });
+    void updateShare(nextShare);
   };
-  const isSharingEnabled = Object.values(share).some((privacy) => privacy !== "private");
+  const isSharingEnabled = Object.values(shareDraft).some((privacy) => privacy !== "private");
   const shareOptions = [
     ["masterData", "Master data (from/to/boat)"],
     ["picture", "Picture"],
@@ -686,7 +690,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                         <label key={field} className="share-logsheet-option">
                           <span>{label}</span>
                           <select
-                            value={share[field]}
+                            value={shareDraft[field]}
                             onChange={(event) => setShare({ [field]: event.currentTarget.value } as Partial<LogSheetShareSettings>)}
                           >
                             <option value="private">Private</option>
