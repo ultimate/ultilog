@@ -56,7 +56,7 @@ describe("meteo provider orchestration", () => {
               provenance: { provider: "fallback-test", sourceType: "fallback" },
             },
           },
-          warnings: ["wind speed is a fallback value"],
+          warnings: [{ code: "meteo.reason.noFreshMetarObservation" }],
         };
       },
     });
@@ -70,7 +70,7 @@ describe("meteo provider orchestration", () => {
       position: { latitude: request.latitude, longitude: request.longitude },
       wind: { speedKnots: { value: 12 } },
       weather: { condition: { value: "partly cloudy" } },
-      warnings: ["wind speed is a fallback value"],
+      warnings: [{ code: "meteo.reason.noFreshMetarObservation" }],
     });
     expect(snapshot.validAt).toEqual(request.timestamp);
     expect(snapshot.sources).toHaveLength(1);

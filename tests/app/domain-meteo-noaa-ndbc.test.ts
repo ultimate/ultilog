@@ -70,7 +70,7 @@ describe("NOAA NDBC meteo provider", () => {
       timestamp: new Date("2026-07-16T12:30:00Z"),
       maxStationDistanceNm: 5,
     })).resolves.toMatchObject({
-      warnings: ["No fresh NOAA NDBC observation was found within the configured station distance."],
+      warnings: [{ code: "meteo.reason.noFreshNdbcObservation" }],
       sources: [],
     });
   });

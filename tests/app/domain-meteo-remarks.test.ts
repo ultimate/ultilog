@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createMeteoSourceRemark, type MeteoSnapshot, type MeteoValueProvenance } from "../../app/domain/meteo";
+import { createMeteoSourceRemark, createMeteoSourceRemarkParts, type MeteoSnapshot, type MeteoValueProvenance } from "../../app/domain/meteo";
 
 const ndbcProvenance: MeteoValueProvenance = {
   provider: "noaa-ndbc",
@@ -68,6 +68,24 @@ describe("meteo source remarks", () => {
     expect(createMeteoSourceRemark(snapshot)).toBe(
       "cloud cover from Open-Meteo (fallback estimate 2026-07-18T12:00:00Z).",
     );
+  });
+
+  it("exposes structured field keys for later translation", () => {
+    const snapshot: MeteoSnapshot = {
+      requestedAt: new Date("2026-07-18T12:30:00Z"),
+      validAt: new Date("2026-07-18T12:10:00Z"),
+      position: { latitude: 42.35, longitude: -70.65 },
+      mode: "auto",
+      weather: { pressureHpa: { value: 1013.2, unit: "hPa", provenance: ndbcProvenance } },
+      wind: { speedKnots: { value: 12, unit: "kn", provenance: ndbcProvenance } },
+      sources: [],
+      warnings: [],
+    };
+
+    expect(createMeteoSourceRemarkParts(snapshot)).toMatchObject([{
+      fields: ["barometer", "windSpeed"],
+      provenance: { provider: "noaa-ndbc", sourceType: "observed" },
+    }]);
   });
 
   it("returns a clear message when no source metadata exists", () => {

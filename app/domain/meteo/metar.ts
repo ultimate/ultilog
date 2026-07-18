@@ -56,13 +56,13 @@ export function createMetarProvider(options: MetarProviderOptions = {}): MeteoPr
     capabilities: { weather: true, wind: true },
     async getSnapshot(context) {
       if (stationIds.length === 0) {
-        return { warnings: ["METAR provider requires configured station IDs before it can fetch observations."] };
+        return { warnings: [{ code: "meteo.reason.metarStationIdsRequired" }] };
       }
 
       const observations = await fetchMetarObservations(stationIds, fetcher, endpoint);
       const nearest = nearbyFreshObservations(observations, context)[0];
       if (!nearest) {
-        return { warnings: ["No fresh METAR observation was found within the configured station distance."] };
+        return { warnings: [{ code: "meteo.reason.noFreshMetarObservation" }] };
       }
 
       const { observation, distanceNm } = nearest;
@@ -158,7 +158,7 @@ function metarProvenance(observation: MetarObservation, distanceNm: number): Met
     observedAt: observation.observedAt,
     validAt: observation.observedAt,
     quality: "medium",
-    qualityNote: "METAR data is airport-based and may not represent offshore vessel conditions.",
+    qualityReason: { code: "meteo.reason.metarAirportBased" },
     raw: observation.rawText,
   };
 }
@@ -176,7 +176,7 @@ function metarSource(observation: MetarObservation, distanceNm: number): MeteoSo
     validAt: observation.observedAt,
     distanceNm,
     quality: "medium",
-    qualityNote: "METAR data is airport-based and may not represent offshore vessel conditions.",
+    qualityReason: { code: "meteo.reason.metarAirportBased" },
   };
 }
 

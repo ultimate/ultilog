@@ -12,6 +12,7 @@ import type {
   MeteoWind,
   MeteoAstronomy,
   MeteoValue,
+  MeteoReason,
 } from "./types";
 
 export type MeteoCapability = "weather" | "wind" | "sea" | "tide" | "astronomy";
@@ -27,7 +28,7 @@ export type MeteoProviderStation = Position & {
 export type MeteoProviderSnapshot = Partial<Pick<MeteoSnapshot, "weather" | "wind" | "sea" | "tide" | "astronomy">> & {
   validAt?: Date;
   sources?: MeteoSource[];
-  warnings?: string[];
+  warnings?: MeteoReason[];
 };
 
 export type MeteoProviderContext = Required<Pick<MeteoSnapshotRequest, "mode" | "timestamp" | "allowFallbackEstimate">> & MeteoSnapshotRequest;

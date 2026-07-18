@@ -51,7 +51,7 @@ export function createNoaaNdbcProvider(options: NoaaNdbcProviderOptions = {}): M
       const nearest = nearbyFreshObservations(observations, context)[0];
 
       if (!nearest) {
-        return { warnings: ["No fresh NOAA NDBC observation was found within the configured station distance."] };
+        return { warnings: [{ code: "meteo.reason.noFreshNdbcObservation" }] };
       }
 
       const { observation, distanceNm } = nearest;

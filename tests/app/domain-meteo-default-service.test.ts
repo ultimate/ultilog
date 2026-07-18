@@ -55,7 +55,7 @@ describe("free meteo service configuration", () => {
       timestamp: new Date("2026-07-16T12:00:00Z"),
       mode: "observed-only",
     })).resolves.toMatchObject({
-      warnings: ["Open-Meteo fallback was skipped because estimated data is not allowed."],
+      warnings: [{ code: "meteo.reason.openMeteoFallbackSkipped" }],
     });
   });
 });

@@ -6,12 +6,14 @@ export { createNoaaCoopsProvider, fetchNoaaCoopsStations, parseNoaaCoopsStations
 export { createOpenMeteoProvider } from "./open-meteo";
 export { createNoaaNdbcProvider, fetchLatestNoaaNdbcObservations, parseNoaaNdbcLatestObservations } from "./noaa-ndbc";
 export { createMeteoProvider, createMeteoService } from "./provider";
-export { createMeteoSourceRemark } from "./remarks";
+export { createMeteoSourceRemark, createMeteoSourceRemarkParts } from "./remarks";
 
 export type {
   MeteoAstronomy,
   MeteoProviderName,
   MeteoProviderReference,
+  MeteoReason,
+  MeteoReasonCode,
   MeteoQuality,
   MeteoSea,
   MeteoService,
@@ -52,3 +54,5 @@ export type { OpenMeteoProviderOptions } from "./open-meteo";
 export type { FreeMeteoProviderName, FreeMeteoServiceOptions } from "./default-service";
 
 export type { MeteoProviderCacheOptions } from "./cache";
+
+export type { MeteoRemarkFieldKey, MeteoSourceRemarkPart } from "./remarks";

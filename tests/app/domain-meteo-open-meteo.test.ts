@@ -60,7 +60,7 @@ describe("Open-Meteo fallback provider", () => {
     expect(snapshot.sea?.waveHeightM?.value).toBe(1.2);
     expect(snapshot.sources).toHaveLength(2);
     expect(snapshot.warnings).toEqual([
-      "Open-Meteo values are fallback estimates and should be replaced by fresh observations when available.",
+      { code: "meteo.reason.openMeteoFallbackEstimate" },
     ]);
   });
 
@@ -73,7 +73,7 @@ describe("Open-Meteo fallback provider", () => {
       timestamp: new Date("2026-07-16T12:30:00Z"),
       mode: "observed-only",
     })).resolves.toMatchObject({
-      warnings: ["Open-Meteo fallback was skipped because estimated data is not allowed."],
+      warnings: [{ code: "meteo.reason.openMeteoFallbackSkipped" }],
       sources: [],
     });
   });

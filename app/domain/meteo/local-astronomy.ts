@@ -62,7 +62,7 @@ export function createLocalAstronomyProvider(): MeteoProvider {
           calculatedAt: new Date(),
           validAt: context.timestamp,
           quality: "medium",
-          qualityNote: "Moon phase is calculated locally from the snapshot timestamp.",
+          qualityReason: { code: "meteo.reason.localAstronomyCalculated" },
         }],
       };
     },
@@ -77,7 +77,7 @@ function createLocalAstronomyProvenance(context: MeteoProviderContext) {
     calculatedAt: new Date(),
     validAt: context.timestamp,
     quality: "medium",
-    qualityNote: "Moon phase is calculated locally from the snapshot timestamp.",
+    qualityReason: { code: "meteo.reason.localAstronomyCalculated" },
   } as const;
 }
 

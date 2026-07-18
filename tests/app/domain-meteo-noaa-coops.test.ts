@@ -64,7 +64,7 @@ describe("NOAA CO-OPS meteo provider", () => {
       timestamp: new Date("2026-07-16T12:30:00Z"),
       maxStationDistanceNm: 5,
     })).resolves.toMatchObject({
-      warnings: ["No NOAA CO-OPS water-level station was found within the configured station distance."],
+      warnings: [{ code: "meteo.reason.noCoopsStationNearby" }],
       sources: [],
     });
   });

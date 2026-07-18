@@ -1,24 +1,63 @@
 import type { MeteoSnapshot, MeteoValue, MeteoValueProvenance } from "./types";
 
+export type MeteoRemarkFieldKey =
+  | "cloudCover"
+  | "weatherCondition"
+  | "barometer"
+  | "temperature"
+  | "humidity"
+  | "precipitation"
+  | "visibility"
+  | "windDirection"
+  | "windSpeed"
+  | "windGusts"
+  | "windForce"
+  | "waveHeight"
+  | "waveDirection"
+  | "wavePeriod"
+  | "swellHeight"
+  | "swellDirection"
+  | "swellPeriod"
+  | "seaTemperature"
+  | "currentSpeed"
+  | "currentDirection"
+  | "tideHeight"
+  | "tidePhase"
+  | "moonPhase"
+  | "moonIllumination"
+  | "sunrise"
+  | "sunset"
+  | "moonrise"
+  | "moonset";
+
+export type MeteoSourceRemarkPart = {
+  fields: MeteoRemarkFieldKey[];
+  provenance: MeteoValueProvenance;
+};
+
 type FieldSource = {
-  field: string;
+  field: MeteoRemarkFieldKey;
   provenance: MeteoValueProvenance;
 };
 
 export function createMeteoSourceRemark(snapshot: MeteoSnapshot) {
-  const fieldSources = collectFieldSources(snapshot);
-  if (fieldSources.length === 0) return "No meteo source metadata available.";
+  const parts = createMeteoSourceRemarkParts(snapshot);
+  if (parts.length === 0) return "No meteo source metadata available.";
 
-  return groupFieldSources(fieldSources)
-    .map((group) => `${humanList(group.fields)} from ${describeProvenance(group.provenance)}.`)
+  return parts
+    .map((group) => `${humanList(group.fields.map(fieldLabel))} from ${describeProvenance(group.provenance)}.`)
     .join(" ");
+}
+
+export function createMeteoSourceRemarkParts(snapshot: MeteoSnapshot): MeteoSourceRemarkPart[] {
+  return groupFieldSources(collectFieldSources(snapshot));
 }
 
 function collectFieldSources(snapshot: MeteoSnapshot): FieldSource[] {
   return [
     ...fieldsFromSection("weather", snapshot.weather, {
-      cloudCoverPercent: "cloud cover",
-      condition: "weather condition",
+      cloudCoverPercent: "cloudCover",
+      condition: "weatherCondition",
       pressureHpa: "barometer",
       temperatureC: "temperature",
       humidityPercent: "humidity",
@@ -26,29 +65,29 @@ function collectFieldSources(snapshot: MeteoSnapshot): FieldSource[] {
       visibilityM: "visibility",
     }),
     ...fieldsFromSection("wind", snapshot.wind, {
-      directionDeg: "wind direction",
-      speedKnots: "wind speed",
-      gustKnots: "wind gusts",
-      beaufort: "wind force",
+      directionDeg: "windDirection",
+      speedKnots: "windSpeed",
+      gustKnots: "windGusts",
+      beaufort: "windForce",
     }),
     ...fieldsFromSection("sea", snapshot.sea, {
-      waveHeightM: "wave height",
-      waveDirectionDeg: "wave direction",
-      wavePeriodS: "wave period",
-      swellHeightM: "swell height",
-      swellDirectionDeg: "swell direction",
-      swellPeriodS: "swell period",
-      seaSurfaceTemperatureC: "sea temperature",
-      currentSpeedKnots: "current speed",
-      currentDirectionDeg: "current direction",
+      waveHeightM: "waveHeight",
+      waveDirectionDeg: "waveDirection",
+      wavePeriodS: "wavePeriod",
+      swellHeightM: "swellHeight",
+      swellDirectionDeg: "swellDirection",
+      swellPeriodS: "swellPeriod",
+      seaSurfaceTemperatureC: "seaTemperature",
+      currentSpeedKnots: "currentSpeed",
+      currentDirectionDeg: "currentDirection",
     }),
     ...fieldsFromSection("tide", snapshot.tide, {
-      heightM: "tide height",
-      phase: "tide phase",
+      heightM: "tideHeight",
+      phase: "tidePhase",
     }),
     ...fieldsFromSection("astronomy", snapshot.astronomy, {
-      moonPhase: "moon phase",
-      moonIlluminationPercent: "moon illumination",
+      moonPhase: "moonPhase",
+      moonIlluminationPercent: "moonIllumination",
       sunrise: "sunrise",
       sunset: "sunset",
       moonrise: "moonrise",
@@ -60,7 +99,7 @@ function collectFieldSources(snapshot: MeteoSnapshot): FieldSource[] {
 function fieldsFromSection(
   _sectionName: string,
   section: Record<string, MeteoValue<unknown> | undefined> | undefined,
-  labels: Record<string, string>,
+  labels: Record<string, MeteoRemarkFieldKey>,
 ): FieldSource[] {
   if (!section) return [];
 
@@ -72,7 +111,7 @@ function fieldsFromSection(
 }
 
 function groupFieldSources(fieldSources: FieldSource[]) {
-  const groups = new Map<string, { fields: string[]; provenance: MeteoValueProvenance }>();
+  const groups = new Map<string, MeteoSourceRemarkPart>();
 
   for (const fieldSource of fieldSources) {
     const key = provenanceKey(fieldSource.provenance);
@@ -119,4 +158,38 @@ function formatUtc(date: Date) {
 function humanList(items: string[]) {
   if (items.length <= 2) return items.join(" and ");
   return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
+}
+
+function fieldLabel(field: MeteoRemarkFieldKey) {
+  const labels: Record<MeteoRemarkFieldKey, string> = {
+    cloudCover: "cloud cover",
+    weatherCondition: "weather condition",
+    barometer: "barometer",
+    temperature: "temperature",
+    humidity: "humidity",
+    precipitation: "precipitation",
+    visibility: "visibility",
+    windDirection: "wind direction",
+    windSpeed: "wind speed",
+    windGusts: "wind gusts",
+    windForce: "wind force",
+    waveHeight: "wave height",
+    waveDirection: "wave direction",
+    wavePeriod: "wave period",
+    swellHeight: "swell height",
+    swellDirection: "swell direction",
+    swellPeriod: "swell period",
+    seaTemperature: "sea temperature",
+    currentSpeed: "current speed",
+    currentDirection: "current direction",
+    tideHeight: "tide height",
+    tidePhase: "tide phase",
+    moonPhase: "moon phase",
+    moonIllumination: "moon illumination",
+    sunrise: "sunrise",
+    sunset: "sunset",
+    moonrise: "moonrise",
+    moonset: "moonset",
+  };
+  return labels[field];
 }
