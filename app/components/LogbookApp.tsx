@@ -45,8 +45,9 @@ import {
 import { ManagerShell } from "./managers/ManagerShell";
 import { courseConversionColumns } from "../domain/nautical/course-conversion";
 import { lineFormToLogLine } from "../domain/log-lines/log-line-form";
+import type { MeteoLogLineAutofill, MeteoSourceRemarkPart } from "../domain/meteo";
 import { ModuleTabs, type ActiveView } from "../templates/ModuleTabs";
-import { useI18n } from "../lib/i18n";
+import { useI18n, type TranslationKey } from "../lib/i18n";
 import { PasswordField } from "./PasswordField";
 import { CompliancePage } from "./logbook/pages/CompliancePage";
 import { LogbookListPage } from "./logbook/pages/LogbookListPage";
@@ -257,6 +258,7 @@ export function LogbookApp({
   const [lastCrewIndex, setLastCrewIndex] = useState(0);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [smartLineStatus, setSmartLineStatus] = useState<"idle" | "loading" | "error">("idle");
   const [nameForm, setNameForm] = useState({
     name: userName ?? "",
     currentPassword: "",
@@ -1161,6 +1163,53 @@ export function LogbookApp({
     });
   }
 
+  async function startAddingSmartLine() {
+    if (activeSheet.status === "Locked" || smartLineStatus === "loading") return;
+    const now = new Date();
+    const time = dateTimeLocalFromDate(now);
+    setEditingLineIndex(null);
+    setLineForm({ ...lineDefaults, time });
+    setShowAddLine(true);
+    setSmartLineStatus("loading");
+    setSaveError(null);
+
+    try {
+      const position = await getCurrentPosition();
+      const latitude = position.coords.latitude;
+      const longitude = position.coords.longitude;
+      setLineForm((current) => ({ ...current, latitude: String(latitude), longitude: String(longitude) }));
+
+      const response = await fetch("/api/meteo/log-line-autofill", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          latitude,
+          longitude,
+          timestamp: now.toISOString(),
+          temperatureUnit: preferences.temperatureUnit,
+          windUnit: preferences.windUnit,
+          seaUnit: preferences.waterHeightUnit,
+          tideUnit: preferences.waterHeightUnit,
+        }),
+      });
+      const payload = await response.json() as Partial<MeteoLogLineAutofill> & { error?: string };
+      if (!response.ok) throw new Error(payload.error ?? "Unable to fetch meteo data.");
+
+      setLineForm((current) => ({
+        ...current,
+        ...(payload.fields ?? {}),
+        latitude: String(latitude),
+        longitude: String(longitude),
+        time,
+        weatherRemark: formatMeteoWeatherRemark(payload.remarkParts ?? [], t),
+      }));
+      setSmartLineStatus("idle");
+    } catch {
+      setSmartLineStatus("error");
+      setSaveError(t("details.addSmartLineError"));
+    }
+  }
+
   async function deleteLine(indexToDelete: number) {
     if (activeSheet.status === "Locked") return;
     const currentLogbook = logbookRef.current;
@@ -1708,6 +1757,8 @@ export function LogbookApp({
               onShowCourseColumnsChange={updateShowCourseColumnsDisplay}
               startAddingLine={startAddingLine}
               startAddingLineHereNow={startAddingLineHereNow}
+              startAddingSmartLine={startAddingSmartLine}
+              smartLineStatus={smartLineStatus}
               showAddLine={showAddLine}
               lineForm={lineForm}
               setLineForm={setLineForm}
@@ -1993,4 +2044,30 @@ function dateTimeLocalFromDate(date: Date) {
   const hours = String(date.getHours()).padStart(2, "0");
   const minutes = String(date.getMinutes()).padStart(2, "0");
   return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+function getCurrentPosition() {
+  return new Promise<GeolocationPosition>((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error("Geolocation is not available."));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(resolve, reject);
+  });
+}
+
+function formatMeteoWeatherRemark(parts: MeteoSourceRemarkPart[], translate: (key: TranslationKey) => string) {
+  return parts.map((part) => {
+    const fields = humanList(part.fields.map((field) => translate(`meteo.field.${field}` as TranslationKey)));
+    const provider = part.provenance.providerLabel ?? part.provenance.provider;
+    const sourceType = translate(`meteo.sourceType.${part.provenance.sourceType}` as TranslationKey);
+    const station = part.provenance.station?.id ? ` · ${part.provenance.station.id}` : "";
+    const distance = typeof part.provenance.station?.distanceNm === "number" ? ` · ${part.provenance.station.distanceNm.toFixed(1)} NM` : "";
+    return `${fields}: ${provider}${station}${distance} · ${sourceType}`;
+  }).join("; ");
+}
+
+function humanList(items: string[]) {
+  if (items.length <= 2) return items.join(", ");
+  return `${items.slice(0, -1).join(", ")}, ${items[items.length - 1]}`;
 }

@@ -78,6 +78,8 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     showCourseColumns,
     startAddingLine,
     startAddingLineHereNow,
+    startAddingSmartLine,
+    smartLineStatus,
     showAddLine,
     saveLineFromFields,
     editingLineIndex,
@@ -660,6 +662,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                     <button type="button" onClick={() => onShowCourseColumnsChange(!showCourseColumns)}>{showCourseColumns ? t("details.hide") : t("details.show")} {t("details.courseColumns")}</button>
                     <button type="button" disabled={isActiveSheetLocked} onClick={startAddingLine}>{t("details.addLine")}</button>
                     <button type="button" disabled={isActiveSheetLocked} onClick={startAddingLineHereNow}>{t("details.addLineHereNow")}</button>
+                    <button type="button" disabled={isActiveSheetLocked || smartLineStatus === "loading"} onClick={startAddingSmartLine}>{smartLineStatus === "loading" ? t("details.addSmartLineLoading") : t("details.addSmartLine")}</button>
                   </div>
                 </div>
                 <div className="table-scroll">
