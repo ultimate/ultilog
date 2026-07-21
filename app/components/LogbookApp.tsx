@@ -156,6 +156,10 @@ const mockSocialUsers: SocialUser[] = [
   },
 ];
 
+function withCalculatedSheetMetrics(sheet: LogSheet): LogSheet {
+  return { ...sheet, metrics: calculateLogSheetMetrics(sheet.lines) };
+}
+
 function calculateSheetSummary(sheet: LogSheet) {
   const metrics = sheet.metrics ?? calculateLogSheetMetrics(sheet.lines);
   return {
@@ -814,26 +818,30 @@ export function LogbookApp({
   );
 
   const stats = useMemo(() => {
-    const totalNm = logbook.sheets.reduce(
-      (sum, sheet) =>
-        sum + Math.max(0, ...sheet.lines.map((line) => line.logNm)),
-      0,
-    );
-    const sailNm = logbook.sheets
-      .filter(
-        (sheet) =>
-          logbook.boats.find((boat) => boat.id === sheet.boatId)?.type ===
-          "Sail",
-      )
-      .reduce(
-        (sum, sheet) =>
-          sum + Math.max(0, ...sheet.lines.map((line) => line.logNm)),
-        0,
-      );
+    const sheetsWithMetrics = logbook.sheets.map((sheet) => ({
+      sheet,
+      metrics: sheet.metrics ?? calculateLogSheetMetrics(sheet.lines),
+    }));
+    const totalNm = sheetsWithMetrics.reduce((sum, item) => sum + item.metrics.totalMiles, 0);
+    const sailNm = sheetsWithMetrics.reduce((sum, item) => sum + item.metrics.sailMiles, 0);
+    const motorNm = sheetsWithMetrics.reduce((sum, item) => sum + item.metrics.motorMiles, 0);
+    const durationMinutes = sheetsWithMetrics.reduce((sum, item) => sum + (item.metrics.durationMinutes ?? 0), 0);
+    const timeline = sheetsWithMetrics
+      .slice().sort((a, b) => a.sheet.dateRange.localeCompare(b.sheet.dateRange))
+      .map((item) => ({ label: item.sheet.dateRange, totalNm: item.metrics.totalMiles, sailNm: item.metrics.sailMiles, motorNm: item.metrics.motorMiles }));
+    const boatDistribution = logbook.boats.map((boat) => ({
+      boatName: boat.name,
+      totalNm: sheetsWithMetrics
+        .filter((item) => item.sheet.boatId === boat.id)
+        .reduce((sum, item) => sum + item.metrics.totalMiles, 0),
+    })).filter((item) => item.totalNm > 0);
     return {
       totalNm,
       sailNm,
-      motorNm: totalNm - sailNm,
+      motorNm,
+      durationMinutes,
+      timeline,
+      boatDistribution,
       sheets: logbook.sheets.length,
       boats: logbook.boats.length,
     };
@@ -1093,7 +1101,7 @@ export function LogbookApp({
             : sheet.lines.map((candidate, index) =>
                 index === editingLineIndex ? line : candidate,
               );
-        return { ...sheet, lines: sortLogLines(lines) };
+        return withCalculatedSheetMetrics({ ...sheet, lines: sortLogLines(lines) });
       }),
     };
     if (!(await saveLogbookNow(nextLogbook))) return;
@@ -1191,7 +1199,7 @@ export function LogbookApp({
       ...currentLogbook,
       sheets: currentLogbook.sheets.map((sheet) =>
         sheet.id === activeSheet.id
-          ? { ...sheet, lines: sheet.lines.filter((_, index) => index !== indexToDelete) }
+          ? withCalculatedSheetMetrics({ ...sheet, lines: sheet.lines.filter((_, index) => index !== indexToDelete) })
           : sheet,
       ),
     });

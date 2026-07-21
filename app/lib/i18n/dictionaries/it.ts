@@ -111,6 +111,8 @@ export const it: Dictionary = {
   "dashboard.allTime": "Da sempre",
   "dashboard.sailMiles": "Miglia a vela",
   "dashboard.ofTotal": "del totale",
+  "dashboard.duration": "Durata",
+  "dashboard.distribution": "Distribuzione miglia",
   "dashboard.motorMiles": "Miglia a motore",
   "dashboard.boats": "Barche",
   "dashboard.activeVessels": "Imbarcazioni attive",

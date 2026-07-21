@@ -75,6 +75,7 @@ export class SqliteLogbookDatabase extends LogbookDatabase {
       await this.sheets.insert(sheet, ownerId);
       for (const [index, crew] of sheet.crew.entries()) await this.crew.insert(sheet.id, index, crew, ownerId);
       for (const [index, line] of sheet.lines.entries()) await this.lines.insert(sheet.id, index, line, ownerId);
+      await this.sheets.updateMetrics(sheet.id, sheet.lines, ownerId);
     }
   }
 }

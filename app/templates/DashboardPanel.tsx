@@ -1,9 +1,10 @@
 "use client";
 
+import type React from "react";
 import type { ReactNode } from "react";
 import { useI18n } from "../lib/i18n";
 
-type DashboardStats = { totalNm: number; sailNm: number; motorNm: number; sheets: number; boats: number; };
+export type DashboardStats = { totalNm: number; sailNm: number; motorNm: number; durationMinutes: number; sheets: number; boats: number; timeline: { label: string; totalNm: number; sailNm: number; motorNm: number }[]; boatDistribution: { boatName: string; totalNm: number }[]; };
 type DashboardPanelProps = { stats: DashboardStats; onboardingChecklist?: ReactNode; };
 
 export function DashboardPanel({ stats, onboardingChecklist }: DashboardPanelProps) {
@@ -11,6 +12,15 @@ export function DashboardPanel({ stats, onboardingChecklist }: DashboardPanelPro
   const total = Math.max(stats.totalNm, 1);
   const sailPct = Math.round((stats.sailNm / total) * 100);
   const motorPct = Math.max(0, 100 - sailPct);
+  const maxTimelineNm = Math.max(1, ...stats.timeline.map((item) => item.totalNm));
+  const timelinePoints = stats.timeline.length > 1 ? stats.timeline.map((item, index) => `${20 + (index / (stats.timeline.length - 1)) * 560},${200 - (item.totalNm / maxTimelineNm) * 170}`).join(" ") : "20,200 580,200";
+  const totalBoatNm = Math.max(1, stats.boatDistribution.reduce((sum, item) => sum + item.totalNm, 0));
+  const boatPieSegments = stats.boatDistribution.reduce<{ boatName: string; totalNm: number; percent: number; offset: number; color: string }[]>((segments, item, index) => {
+    const percent = (item.totalNm / totalBoatNm) * 100;
+    const previousOffset = segments.at(-1)?.offset ?? 25;
+    const previousPercent = segments.at(-1)?.percent ?? 0;
+    return [...segments, { ...item, percent, offset: previousOffset - previousPercent, color: pieColors[index % pieColors.length] }];
+  }, []);
 
   return (
     <section className="dashboard-page">
@@ -26,29 +36,31 @@ export function DashboardPanel({ stats, onboardingChecklist }: DashboardPanelPro
         <article><i>⛵</i><span>{t("dashboard.totalMiles")}</span><strong>{stats.totalNm.toLocaleString()} nm</strong><small>{t("dashboard.allTime")}</small></article>
         <article><i>△</i><span>{t("dashboard.sailMiles")}</span><strong>{stats.sailNm.toLocaleString()} nm</strong><small>{sailPct}% {t("dashboard.ofTotal")}</small></article>
         <article><i>✚</i><span>{t("dashboard.motorMiles")}</span><strong>{stats.motorNm.toLocaleString()} nm</strong><small>{motorPct}% {t("dashboard.ofTotal")}</small></article>
+        <article><i>⏱</i><span>{t("dashboard.duration")}</span><strong>{formatDuration(stats.durationMinutes)}</strong><small>{t("dashboard.allTime")}</small></article>
         <article><i>⚓</i><span>{t("dashboard.boats")}</span><strong>{stats.boats}</strong><small>{t("dashboard.activeVessels")}</small></article>
-        <article><i>♙</i><span>{t("dashboard.crew")}</span><strong>12</strong><small>{t("dashboard.peopleSailedWith")}</small></article>
       </div>
       <div className="dashboard-grid">
         <article className="chart-card">
           <h3>{t("dashboard.mileageOverTime")}</h3>
-          <div className="chart-legend"><span>{t("dashboard.sailMiles")}</span><span>{t("dashboard.motorMiles")}</span></div>
-          <div className="line-chart" aria-hidden="true"><svg viewBox="0 0 600 220" role="img"><path className="grid-line" d="M0 40H600M0 90H600M0 140H600M0 190H600"/><path className="sail-line" d="M20 182 C90 165 110 142 170 126 S260 98 320 88 390 72 450 52 510 34 580 25"/><path className="motor-line" d="M20 204 C90 192 118 172 180 174 S270 155 330 140 400 133 460 120 530 114 580 108"/></svg></div>
+          <div className="chart-legend"><span>{t("dashboard.totalMiles")}</span></div>
+          <div className="line-chart" aria-hidden="true"><svg viewBox="0 0 600 220" role="img"><path className="grid-line" d="M0 40H600M0 90H600M0 140H600M0 190H600"/><polyline className="sail-line" points={timelinePoints}/></svg></div>
         </article>
         <article className="compliance-summary">
-          <h3>{t("dashboard.complianceProgress")}</h3>
-          <small>{t("dashboard.complianceLicense")}</small>
-          <div className="progress-layout">
-            <div className="progress-ring"><strong>72%</strong><span>{t("dashboard.complete")}</span></div>
-            <dl>
-              <div><dt>{t("dashboard.requiredTotal")}</dt><dd>3,000 nm</dd></div>
-              <div><dt>{t("dashboard.youHave")}</dt><dd>2,173 nm</dd></div>
-              <div><dt>{t("dashboard.remaining")}</dt><dd>827 nm</dd></div>
-            </dl>
+          <h3>{t("dashboard.distribution")}</h3>
+          <div className="dashboard-pies">
+            <div className="dashboard-pie" style={{ "--first": `${sailPct}%` } as React.CSSProperties}><strong>{sailPct}%</strong><span>{t("dashboard.sailMiles")}</span></div>
+            <div className="dashboard-boat-pie" aria-hidden="true"><svg viewBox="0 0 180 180">{boatPieSegments.map((item) => <circle key={item.boatName} cx="90" cy="90" r="70" pathLength="100" style={{ stroke: item.color, strokeDasharray: `${item.percent} ${100 - item.percent}`, strokeDashoffset: item.offset }} />)}</svg></div>
+            <dl>{boatPieSegments.map((item) => <div key={item.boatName}><dt><span style={{ background: item.color }} />{item.boatName}</dt><dd>{Math.round(item.percent)}% · {item.totalNm.toLocaleString()} nm</dd></div>)}</dl>
           </div>
-          <a>{t("dashboard.viewComplianceDetails")} →</a>
         </article>
       </div>
     </section>
   );
 }
+
+function formatDuration(minutes: number) {
+  const hours = Math.floor(Math.max(0, minutes) / 60);
+  return `${hours.toLocaleString()}h`;
+}
+
+const pieColors = ["var(--blue)", "#58b7ff", "#7cc6a4", "#f2b84b", "#d987ff", "#ff8c8c"];

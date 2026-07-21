@@ -111,6 +111,8 @@ export const fr: Dictionary = {
   "dashboard.allTime": "Depuis le début",
   "dashboard.sailMiles": "Milles à la voile",
   "dashboard.ofTotal": "du total",
+  "dashboard.duration": "Durée",
+  "dashboard.distribution": "Répartition des milles",
   "dashboard.motorMiles": "Milles au moteur",
   "dashboard.boats": "Bateaux",
   "dashboard.activeVessels": "Navires actifs",

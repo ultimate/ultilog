@@ -15,7 +15,7 @@ type Navigate = (
   module: "details" | "logbooks",
   itemId?: string | number,
 ) => void;
-type SheetSummary = { motorMiles: number; sailMiles: number };
+type SheetSummary = { motorMiles: number; sailMiles: number; totalMiles: number; duration: string };
 
 export function LogbookListPage({
   activeBoat,
@@ -272,6 +272,7 @@ export function LogbookListPage({
                   <th>{t("compliance.sailMiles")}</th>
                   <th>{t("compliance.motorMiles")}</th>
                   <th>{t("logbooks.totalMiles")}</th>
+                  <th>{t("dashboard.duration")}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -279,10 +280,6 @@ export function LogbookListPage({
                 {sheetsPagination.pageItems.map((sheet) => {
                   const boat = logbook.boats.find(
                     (candidate) => candidate.id === sheet.boatId,
-                  );
-                  const totalMiles = Math.max(
-                    0,
-                    ...sheet.lines.map((line) => line.logNm),
                   );
                   const sheetSummary = calculateSheetSummary(sheet);
                   return (
@@ -315,7 +312,8 @@ export function LogbookListPage({
                       </td>
                       <td>{sheetSummary.sailMiles} nm</td>
                       <td>{sheetSummary.motorMiles} nm</td>
-                      <td>{totalMiles} nm</td>
+                      <td>{sheetSummary.totalMiles} nm</td>
+                      <td>{sheetSummary.duration}</td>
                       <td>
                         <button
                           className="edit-chip"

@@ -109,6 +109,8 @@ export const en = {
   "dashboard.allTime": "All time",
   "dashboard.sailMiles": "Sail miles",
   "dashboard.ofTotal": "of total",
+  "dashboard.duration": "Duration",
+  "dashboard.distribution": "Mileage distribution",
   "dashboard.motorMiles": "Motor miles",
   "dashboard.boats": "Boats",
   "dashboard.activeVessels": "Active vessels",
