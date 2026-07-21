@@ -109,6 +109,7 @@ function sectionVisibility(share: NonNullable<LogSheet["share"]>, isAuthenticate
     masterData: canViewSection(share.masterData, isAuthenticated),
     picture: canViewSection(share.picture, isAuthenticated),
     logLines: canViewSection(share.logLines, isAuthenticated),
+    metrics: canViewSection(share.metrics, isAuthenticated),
     technicalLog: canViewSection(share.technicalLog, isAuthenticated),
     skipper: canViewSection(share.skipper, isAuthenticated),
     crew: canViewSection(share.crew, isAuthenticated),
@@ -131,6 +132,7 @@ function filterSharedSheet(sheet: LogSheet, visibility: SectionVisibility): LogS
     route: visibility.masterData ? sheet.route : { from: "", to: "", departed: "", arrived: "" },
     image: visibility.picture ? sheet.image : undefined,
     lines: visibility.logLines ? sheet.lines : [],
+    metrics: visibility.metrics ? sheet.metrics : undefined,
     technicalChecks: visibility.technicalLog ? sheet.technicalChecks : [],
     crew,
   };
