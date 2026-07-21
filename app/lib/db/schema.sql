@@ -95,16 +95,23 @@ create table if not exists log_sheets (
   image_mime_type text,
   image_width integer,
   image_height integer,
+  motor_miles real not null default 0,
+  sail_miles real not null default 0,
+  total_miles real not null default 0,
+  duration_minutes integer,
   share_privacy text not null default 'private',
   share_master_data integer not null default 0,
   share_picture integer not null default 0,
   share_loglines integer not null default 0,
+  share_metrics integer not null default 0,
   share_technical_log integer not null default 0,
   share_skipper integer not null default 0,
   share_crew integer not null default 0
 );
 
 create index if not exists log_sheets_share_privacy_idx on log_sheets (share_privacy);
+create index if not exists log_sheets_total_miles_idx on log_sheets (total_miles);
+create index if not exists log_sheets_duration_minutes_idx on log_sheets (duration_minutes);
 
 create table if not exists crew_members (
   id text primary key,

@@ -132,6 +132,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     ["masterData", "Master data (from/to/boat)"],
     ["picture", "Picture"],
     ["logLines", "Loglines"],
+    ["metrics", "Metrics (time and miles)"],
     ["technicalLog", "Technical log"],
     ["skipper", "Skipper"],
     ["crew", "Crew information"],

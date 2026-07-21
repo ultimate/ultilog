@@ -2,7 +2,7 @@ import { auth } from "../../../auth";
 import { readSharedLogSheet } from "../../lib/logbook-store";
 import { EntityImage } from "../../components/logbook/EntityImage";
 import { LogLinesMapView } from "../../components/logbook/OpenSeaMapView";
-import type { LogLine, LogSheet } from "../../models/logbook";
+import { formatLogSheetDuration } from "../../domain/logbook/sheet-metrics";
 
 export default async function SharedLogbookPage({ params }: { params: Promise<{ segments?: string[] }> }) {
   const { segments = [] } = await params;
@@ -25,10 +25,11 @@ export default async function SharedLogbookPage({ params }: { params: Promise<{ 
   }
 
   const { sheet, boatName } = shared;
-  const summary = calculateSheetSummary(sheet);
+  const metrics = sheet.metrics;
   const hasCrew = sheet.crew.length > 0;
   const hasTechnicalLog = sheet.technicalChecks.length > 0;
   const hasLogLines = sheet.lines.length > 0;
+  const hasMetrics = Boolean(metrics);
   const hasSupportContent = hasCrew || hasTechnicalLog || hasLogLines;
 
   return (
@@ -50,12 +51,12 @@ export default async function SharedLogbookPage({ params }: { params: Promise<{ 
           )}
         </article>
 
-        {hasLogLines ? (
+        {hasMetrics ? (
           <section className="entry-metrics logbook-section" aria-label="Shared logbook summary">
-            <article><span>Motor miles</span><strong>{summary.motorMiles} nm</strong></article>
-            <article><span>Sail miles</span><strong>{summary.sailMiles} nm</strong></article>
-            <article><span>Total miles</span><strong>{summary.totalMiles} nm</strong></article>
-            <article><span>Duration</span><strong>{summary.duration}</strong></article>
+            <article><span>Motor miles</span><strong>{metrics?.motorMiles ?? 0} nm</strong></article>
+            <article><span>Sail miles</span><strong>{metrics?.sailMiles ?? 0} nm</strong></article>
+            <article><span>Total miles</span><strong>{metrics?.totalMiles ?? 0} nm</strong></article>
+            <article><span>Duration</span><strong>{formatLogSheetDuration(metrics?.durationMinutes)}</strong></article>
           </section>
         ) : null}
 
@@ -113,41 +114,4 @@ function parseShareSegments(segments: string[]) {
   if (segments.length === 1) return { sheetId: segments[0] };
   if (segments.length === 2) return { ownerId: segments[0], sheetId: segments[1] };
   return {};
-}
-
-function parseLogTimeMinutes(time: string) {
-  const match = time.match(/^(\d{1,2}):(\d{2})/);
-  if (!match) return undefined;
-  const hours = Number.parseInt(match[1], 10);
-  const minutes = Number.parseInt(match[2], 10);
-  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return undefined;
-  return hours * 60 + minutes;
-}
-
-function formatDuration(minutes: number) {
-  const safeMinutes = Math.max(0, Math.round(minutes));
-  const hours = Math.floor(safeMinutes / 60);
-  const remainingMinutes = safeMinutes % 60;
-  return `${hours}h ${remainingMinutes.toString().padStart(2, "0")}m`;
-}
-
-function logLineDistanceDeltas(lines: LogLine[]) {
-  return lines.map((line, index) => Math.max(0, line.logNm - (lines[index - 1]?.logNm ?? 0)));
-}
-
-function calculateSheetSummary(sheet: LogSheet) {
-  const deltas = logLineDistanceDeltas(sheet.lines);
-  const motorMiles = deltas.reduce((sum, delta, index) => sum + ((sheet.lines[index]?.motorHours ?? 0) > 0 || (sheet.lines[index]?.motorMiles ?? 0) > 0 ? delta : 0), 0);
-  const totalMiles = deltas.reduce((sum, delta) => sum + delta, 0);
-  const sailMiles = Math.max(0, totalMiles - motorMiles);
-  const firstTime = parseLogTimeMinutes(sheet.lines[0]?.time ?? "");
-  const lastTime = parseLogTimeMinutes(sheet.lines.at(-1)?.time ?? "");
-  const durationMinutes = firstTime === undefined || lastTime === undefined ? undefined : lastTime >= firstTime ? lastTime - firstTime : lastTime + 24 * 60 - firstTime;
-
-  return {
-    motorMiles,
-    sailMiles,
-    totalMiles,
-    duration: durationMinutes === undefined ? "—" : formatDuration(durationMinutes),
-  };
 }

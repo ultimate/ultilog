@@ -33,10 +33,15 @@ export type LogSheetRow = ImageRowFields & {
   remarks: unknown;
   watch_plan: unknown;
   technical_checks: unknown;
+  motor_miles?: number | null;
+  sail_miles?: number | null;
+  total_miles?: number | null;
+  duration_minutes?: number | null;
   share_privacy?: LogSheetSharePrivacy | null;
   share_master_data?: LogSheetSharePrivacy | number | boolean | null;
   share_picture?: LogSheetSharePrivacy | number | boolean | null;
   share_loglines?: LogSheetSharePrivacy | number | boolean | null;
+  share_metrics?: LogSheetSharePrivacy | number | boolean | null;
   share_technical_log?: LogSheetSharePrivacy | number | boolean | null;
   share_skipper?: LogSheetSharePrivacy | number | boolean | null;
   share_crew?: LogSheetSharePrivacy | number | boolean | null;
