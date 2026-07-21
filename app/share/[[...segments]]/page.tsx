@@ -1,6 +1,8 @@
 import { auth } from "../../../auth";
 import { readSharedLogSheet } from "../../lib/logbook-store";
 import { EntityImage } from "../../components/logbook/EntityImage";
+import { LogLinesMapView } from "../../components/logbook/OpenSeaMapView";
+import type { LogLine, LogSheet } from "../../models/logbook";
 
 export default async function SharedLogbookPage({ params }: { params: Promise<{ segments?: string[] }> }) {
   const { segments = [] } = await params;
@@ -23,7 +25,11 @@ export default async function SharedLogbookPage({ params }: { params: Promise<{ 
   }
 
   const { sheet, boatName } = shared;
-  const skipper = sheet.crew[0];
+  const summary = calculateSheetSummary(sheet);
+  const hasCrew = sheet.crew.length > 0;
+  const hasTechnicalLog = sheet.technicalChecks.length > 0;
+  const hasLogLines = sheet.lines.length > 0;
+  const hasSupportContent = hasCrew || hasTechnicalLog || hasLogLines;
 
   return (
     <main className="app-shell shared-logbook-page">
@@ -44,16 +50,16 @@ export default async function SharedLogbookPage({ params }: { params: Promise<{ 
           )}
         </article>
 
-        {skipper ? <article className="logbook-section info-card"><h2>Skipper</h2><p>{skipper.name}</p></article> : null}
-
-        {sheet.crew.length > (skipper ? 1 : 0) ? (
-          <article className="logbook-section info-card">
-            <h2>Crew</h2>
-            <ul className="stack-list">{sheet.crew.slice(skipper ? 1 : 0).map((crew, index) => <li key={`${crew.id}-${index}`}>{crew.name} · {crew.role}</li>)}</ul>
-          </article>
+        {hasLogLines ? (
+          <section className="entry-metrics logbook-section" aria-label="Shared logbook summary">
+            <article><span>Motor miles</span><strong>{summary.motorMiles} nm</strong></article>
+            <article><span>Sail miles</span><strong>{summary.sailMiles} nm</strong></article>
+            <article><span>Total miles</span><strong>{summary.totalMiles} nm</strong></article>
+            <article><span>Duration</span><strong>{summary.duration}</strong></article>
+          </section>
         ) : null}
 
-        {sheet.lines.length ? (
+        {hasLogLines ? (
           <article className="table-card">
             <div className="table-header"><h2>Log lines</h2></div>
             <div className="table-scroll">
@@ -65,7 +71,39 @@ export default async function SharedLogbookPage({ params }: { params: Promise<{ 
           </article>
         ) : null}
 
-        {sheet.technicalChecks.length ? <article className="logbook-section info-card"><h2>Technical log</h2><ul className="stack-list">{sheet.technicalChecks.map((item, index) => <li key={`${item}-${index}`}>{item}</li>)}</ul></article> : null}
+        {hasSupportContent ? (
+          <section className="sheet-support-grid logbook-section" aria-label="Shared logbook support information">
+            {hasCrew ? (
+              <article className="info-card logbook-section">
+                <h2>Crew</h2>
+                <ul className="stack-list crew-assignment-list">
+                  {sheet.crew.map((person, index) => (
+                    <li key={`${person.id}-${index}`}>
+                      <div className="crew-assignment-main">
+                        <strong>{index + 1}. {index === 0 ? "⭐ Skipper · " : ""}{person.name}</strong>
+                        <span>{[person.nationality, person.role].filter(Boolean).join(" · ")}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            ) : null}
+
+            {hasTechnicalLog ? (
+              <article className="info-card logbook-section">
+                <h2>Technical log</h2>
+                <ul className="stack-list">{sheet.technicalChecks.map((item, index) => <li key={`${item}-${index}`}>{item}</li>)}</ul>
+              </article>
+            ) : null}
+
+            {hasLogLines ? (
+              <article className="map-card logbook-section logbook-sheet-map-section">
+                <div className="logbook-map-heading"><h2>Positions</h2></div>
+                <LogLinesMapView logLines={sheet.lines} />
+              </article>
+            ) : null}
+          </section>
+        ) : null}
       </section>
     </main>
   );
@@ -75,4 +113,41 @@ function parseShareSegments(segments: string[]) {
   if (segments.length === 1) return { sheetId: segments[0] };
   if (segments.length === 2) return { ownerId: segments[0], sheetId: segments[1] };
   return {};
+}
+
+function parseLogTimeMinutes(time: string) {
+  const match = time.match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return undefined;
+  const hours = Number.parseInt(match[1], 10);
+  const minutes = Number.parseInt(match[2], 10);
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return undefined;
+  return hours * 60 + minutes;
+}
+
+function formatDuration(minutes: number) {
+  const safeMinutes = Math.max(0, Math.round(minutes));
+  const hours = Math.floor(safeMinutes / 60);
+  const remainingMinutes = safeMinutes % 60;
+  return `${hours}h ${remainingMinutes.toString().padStart(2, "0")}m`;
+}
+
+function logLineDistanceDeltas(lines: LogLine[]) {
+  return lines.map((line, index) => Math.max(0, line.logNm - (lines[index - 1]?.logNm ?? 0)));
+}
+
+function calculateSheetSummary(sheet: LogSheet) {
+  const deltas = logLineDistanceDeltas(sheet.lines);
+  const motorMiles = deltas.reduce((sum, delta, index) => sum + ((sheet.lines[index]?.motorHours ?? 0) > 0 || (sheet.lines[index]?.motorMiles ?? 0) > 0 ? delta : 0), 0);
+  const totalMiles = deltas.reduce((sum, delta) => sum + delta, 0);
+  const sailMiles = Math.max(0, totalMiles - motorMiles);
+  const firstTime = parseLogTimeMinutes(sheet.lines[0]?.time ?? "");
+  const lastTime = parseLogTimeMinutes(sheet.lines.at(-1)?.time ?? "");
+  const durationMinutes = firstTime === undefined || lastTime === undefined ? undefined : lastTime >= firstTime ? lastTime - firstTime : lastTime + 24 * 60 - firstTime;
+
+  return {
+    motorMiles,
+    sailMiles,
+    totalMiles,
+    duration: durationMinutes === undefined ? "—" : formatDuration(durationMinutes),
+  };
 }
