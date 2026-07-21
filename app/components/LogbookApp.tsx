@@ -39,9 +39,11 @@ import {
 import {
   dateTimeLocalFromParts,
   dateTimeLocalFromStamp,
+  isoDateTimeWithTimezone,
   routeStamp,
   routeStampFromDateTimeLocal,
   splitDateTimeLocal,
+  timezoneOffsetFromStamp,
 } from "./logbook/date-utils";
 import { ManagerShell } from "./managers/ManagerShell";
 import { courseConversionColumns } from "../domain/nautical/course-conversion";
@@ -900,8 +902,8 @@ export function LogbookApp({
     const route = {
       from: sheetForm.from,
       to: sheetForm.to,
-      departed: routeStamp(sheetForm.dateRange, sheetForm.fromTime),
-      arrived: routeStamp(sheetForm.dateRange, sheetForm.toTime),
+      departed: routeStamp(sheetForm.dateRange, sheetForm.fromTime, sheetForm.fromTimezone),
+      arrived: routeStamp(sheetForm.dateRange, sheetForm.toTime, sheetForm.toTimezone),
     };
     const currentUserCrew = currentLogbook.crewMembers.find(
       (crew) => crew.isPrimary,
@@ -1048,7 +1050,7 @@ export function LogbookApp({
             route: {
               ...sheet.route,
               departed:
-                routeStampFromDateTimeLocal(value) || sheet.route.departed,
+                routeStampFromDateTimeLocal(value, timezoneOffsetFromStamp(sheet.route.departed)) || sheet.route.departed,
             },
           };
         }
@@ -1058,7 +1060,7 @@ export function LogbookApp({
           dateRange: sheet.dateRange || date,
           route: {
             ...sheet.route,
-            arrived: routeStampFromDateTimeLocal(value) || sheet.route.arrived,
+            arrived: routeStampFromDateTimeLocal(value, timezoneOffsetFromStamp(sheet.route.arrived)) || sheet.route.arrived,
           },
         };
       }),
@@ -1081,7 +1083,7 @@ export function LogbookApp({
 
   async function saveLineFromFields() {
     if (activeSheet.status === "Locked") return;
-    const line = lineFormToLogLine(lineForm);
+    const line = lineFormToLogLine({ ...lineForm, time: isoDateTimeWithTimezone(dateTimeLocalFromStamp(lineForm.time), timezoneOffsetFromStamp(lineForm.time)) });
     const currentLogbook = logbookRef.current;
     const nextLogbook = {
       ...currentLogbook,
