@@ -12,7 +12,7 @@ import type {
 } from "../../../models/logbook";
 import { coordinateToInput, decimalToDmsParts, dmsPartsToDecimal, parseCoordinate, type CoordinateFormat, type DmsParts } from "../../../domain/nautical/coordinates";
 import { boatToForm, sheetToForm } from "../forms";
-import { dateTimeLocalFromParts, splitDateTimeLocal } from "../date-utils";
+import { dateTimeLocalFromParts, isoDateTimeWithTimezone, splitDateTimeLocal, timeZoneOffsetOptions, timezoneOffsetFromStamp, dateTimeLocalFromStamp } from "../date-utils";
 import { updateLogLineFormForInput } from "../../../domain/log-lines/log-line-editor";
 import { LogLinesMapView } from "../OpenSeaMapView";
 import type { TranslationKey } from "../../../lib/i18n";
@@ -302,7 +302,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
 
   const renderLineEditor = (key: string) => (
     <tr key={key} className="inline-line-row">
-      <td><input type="datetime-local" value={lineForm.time} onChange={(e) => updateLineFormField("time", e.target.value)} /></td><td>{renderCoordinateInput("latitude", t("details.lat"))}</td><td>{renderCoordinateInput("longitude", t("details.lon"))}</td>
+      <td><div className="compound-inputs"><input type="datetime-local" value={dateTimeLocalFromStamp(lineForm.time)} onChange={(e) => updateLineFormField("time", isoDateTimeWithTimezone(e.target.value, timezoneOffsetFromStamp(lineForm.time)))} /><select aria-label="Line time zone" value={timezoneOffsetFromStamp(lineForm.time)} onChange={(e) => updateLineFormField("time", isoDateTimeWithTimezone(dateTimeLocalFromStamp(lineForm.time), e.target.value))}>{timeZoneOffsetOptions.map((offset) => <option key={offset} value={offset}>UTC{offset}</option>)}</select></div></td><td>{renderCoordinateInput("latitude", t("details.lat"))}</td><td>{renderCoordinateInput("longitude", t("details.lon"))}</td>
       <td><select value={lineForm.weather} onChange={(e) => setLineForm({ ...lineForm, weather: e.target.value })}><option value="">—</option>{weatherEmojis.map((emoji) => <option key={emoji} value={emoji}>{emoji}</option>)}</select></td>
       <td>{renderTextInput("weatherRemark", t("details.weatherRemark"))}</td>
       <td><div className="compound-inputs">{renderNumberInput("temperature", { step: "0.1" })}<select value={lineForm.temperatureUnit} onChange={(e) => setLineForm({ ...lineForm, temperatureUnit: e.target.value })}><option value="°C">°C</option><option value="°F">°F</option></select></div></td>
@@ -439,9 +439,13 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                         ...sheetForm,
                         dateRange: date || sheetForm.dateRange,
                         fromTime: time,
+                        fromTimezone: sheetForm.fromTimezone,
                       });
                     }}
                   />
+                  <select aria-label="From time zone" value={sheetForm.fromTimezone} onChange={(e) => setSheetForm({ ...sheetForm, fromTimezone: e.target.value })}>
+                    {timeZoneOffsetOptions.map((offset) => <option key={offset} value={offset}>UTC{offset}</option>)}
+                  </select>
                   <input
                     aria-label={t("details.fromPosition")}
                     value={sheetForm.from}
@@ -465,9 +469,13 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                         ...sheetForm,
                         dateRange: date || sheetForm.dateRange,
                         toTime: time,
+                        toTimezone: sheetForm.toTimezone,
                       });
                     }}
                   />
+                  <select aria-label="To time zone" value={sheetForm.toTimezone} onChange={(e) => setSheetForm({ ...sheetForm, toTimezone: e.target.value })}>
+                    {timeZoneOffsetOptions.map((offset) => <option key={offset} value={offset}>UTC{offset}</option>)}
+                  </select>
                   <input
                     aria-label={t("details.toPosition")}
                     value={sheetForm.to}
