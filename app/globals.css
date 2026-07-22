@@ -1431,3 +1431,12 @@ img.entity-image--preview {
     border: 0.2mm solid #000 !important;
   }
 }
+
+.page-heading-actions,
+.table-row-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: flex-end;
+}

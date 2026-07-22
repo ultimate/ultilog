@@ -57,6 +57,7 @@ import { CompliancePage } from "./logbook/pages/CompliancePage";
 import { LogbookListPage } from "./logbook/pages/LogbookListPage";
 import { UserListPage } from "./logbook/pages/UserListPage";
 import { LogbookDetailsPage } from "./logbook/pages/LogbookDetailsPage";
+import { LogSheetPrintView } from "./logbook/LogSheetPrintView";
 import { BoatManagerPage } from "./logbook/pages/BoatManagerPage";
 import { DashboardPage } from "./logbook/pages/DashboardPage";
 import { CrewManagerPage } from "./logbook/pages/CrewManagerPage";
@@ -74,6 +75,8 @@ type SocialUser = {
   logbookSheets: number;
   boats: number;
 };
+type PrintTarget = { mode: "filled"; sheetId: string } | { mode: "empty" } | null;
+
 type SheetInlineField =
   | "title"
   | "boatId"
@@ -195,6 +198,7 @@ export function LogbookApp({
     isVisible: boolean;
   } | null>(null);
   const [showNewSheet, setShowNewSheet] = useState(false);
+  const [printTarget, setPrintTarget] = useState<PrintTarget>(null);
   const [showBoatManager, setShowBoatManager] = useState(false);
   const [showAddLine, setShowAddLine] = useState(false);
   const [sheetForm, setSheetForm] = useState<SheetForm>(
@@ -684,6 +688,37 @@ export function LogbookApp({
     () => calculateSheetSummary(activeSheet),
     [activeSheet],
   );
+  const printSheet = printTarget?.mode === "filled"
+    ? logbook.sheets.find((sheet) => sheet.id === printTarget.sheetId)
+    : undefined;
+  const printBoat = printSheet
+    ? logbook.boats.find((boat) => boat.id === printSheet.boatId)
+    : activeBoat;
+  const printSummary = printSheet ? calculateSheetSummary(printSheet) : undefined;
+
+  useEffect(() => {
+    if (!printTarget) return;
+
+    let clearPrintTargetTimer: number | undefined;
+    let printFrame = 0;
+    let nestedPrintFrame = 0;
+    const clearPrintTarget = () => setPrintTarget(null);
+
+    window.addEventListener("afterprint", clearPrintTarget);
+    printFrame = window.requestAnimationFrame(() => {
+      nestedPrintFrame = window.requestAnimationFrame(() => {
+        window.print();
+        clearPrintTargetTimer = window.setTimeout(clearPrintTarget, 500);
+      });
+    });
+
+    return () => {
+      window.removeEventListener("afterprint", clearPrintTarget);
+      window.cancelAnimationFrame(printFrame);
+      window.cancelAnimationFrame(nestedPrintFrame);
+      if (clearPrintTargetTimer) window.clearTimeout(clearPrintTargetTimer);
+    };
+  }, [printTarget]);
   const canEditActiveSheetMasterData = activeSheet.status === "Draft";
   const sheetInlineActions = editingSheetField ? (
     <span className="inline-value-actions">
@@ -1701,6 +1736,8 @@ export function LogbookApp({
               setShowNewSheet={setShowNewSheet}
               createDefaultSheetForm={() => sheetDefaults}
               defaultPageSize={preferences.defaultPageSize}
+              onPrintSheet={(sheetId) => setPrintTarget({ mode: "filled", sheetId })}
+              onPrintEmptySheet={() => setPrintTarget({ mode: "empty" })}
             />
           )}
 
@@ -1753,6 +1790,7 @@ export function LogbookApp({
               updateTechnicalCheck={updateTechnicalCheck}
               deleteTechnicalCheck={deleteTechnicalCheck}
               technicalCheckSuggestions={technicalCheckSuggestions}
+              onPrintSheet={() => setPrintTarget({ mode: "filled", sheetId: activeSheet.id })}
             />
           )}
 
@@ -1998,6 +2036,13 @@ export function LogbookApp({
           {activeModule === "compliance" && <CompliancePage />}
         </section>
       </section>
+      <div className="print-only" aria-hidden={!printTarget}>
+        {printTarget?.mode === "empty" ? (
+          <LogSheetPrintView mode="empty" boat={printBoat} />
+        ) : printSheet ? (
+          <LogSheetPrintView mode="filled" sheet={printSheet} boat={printBoat} summary={printSummary} />
+        ) : null}
+      </div>
     </main>
   );
 }
