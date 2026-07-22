@@ -238,14 +238,14 @@ const printStyles = `
 .print-field strong { display: block; min-height: 11pt; overflow: hidden; font-size: 8pt; line-height: 1.15; text-overflow: ellipsis; white-space: nowrap; }
 .print-log-table { width: 100%; height: 100%; border-collapse: collapse; table-layout: fixed; font-size: 6.6pt; line-height: 1.05; }
 .print-log-table col.print-col-time { width: 4%; }
-.print-log-table col.print-col-position { width: 11%; }
+.print-log-table col.print-col-position { width: 10%; }
 .print-log-table col.print-col-weather, .print-log-table col.print-col-wind { width: 7%; }
-.print-log-table col.print-col-temp, .print-log-table col.print-col-baro, .print-log-table col.print-col-tide { width: 4%; }
-.print-log-table col.print-col-sea { width: 6%; }
-.print-log-table col.print-col-course { width: 3%; }
-.print-log-table col.print-col-speed, .print-log-table col.print-col-log, .print-log-table col.print-col-sail { width: 3.5%; }
-.print-log-table col.print-col-motor { width: 4.5%; }
-.print-log-table col.print-col-remarks { width: 17%; }
+.print-log-table col.print-col-temp, .print-log-table col.print-col-baro, .print-log-table col.print-col-tide { width: 3.5%; }
+.print-log-table col.print-col-sea { width: 5%; }
+.print-log-table col.print-col-course { width: 2.5%; }
+.print-log-table col.print-col-speed, .print-log-table col.print-col-log, .print-log-table col.print-col-sail { width: 3%; }
+.print-log-table col.print-col-motor { width: 4%; }
+.print-log-table col.print-col-remarks { width: 26%; }
 .print-log-table tr { height: 7mm; max-height: 7mm; }
 .print-log-table th, .print-log-table td { box-sizing: border-box; height: 7mm; max-height: 7mm; overflow: hidden; border: 1px solid #000; padding: .8mm; text-align: left; vertical-align: top; }
 .print-log-table th { font-size: 6.4pt; font-weight: 700; text-transform: uppercase; white-space: nowrap; }
