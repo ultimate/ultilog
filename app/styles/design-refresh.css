@@ -811,3 +811,26 @@ h3 { margin-block:.25rem .55rem; }
 .manager-list .entity-image--list { width:3.5rem; height:3.5rem; }
 .table-vessel .entity-image--thumb { width:2.35rem; height:2.35rem; border-radius:.45rem; }
 .sheet-master-header { grid-template-columns:auto minmax(0, 1fr) auto; }
+
+/* Keep the admin user table's horizontal overflow inside the content area so the mobile bottom bar stays viewport-sized. */
+.admin-users-table-card {
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+.admin-users-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.admin-users-table {
+  min-width: 860px;
+}
+@media (max-width: 1000px) and (orientation: portrait) {
+  .mobile-bottom-nav {
+    width: 100dvw;
+    max-width: 100dvw;
+  }
+}
