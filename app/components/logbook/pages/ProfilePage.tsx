@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useI18n } from "../../../lib/i18n";
 import type { FormEvent, Dispatch, ReactNode, SetStateAction } from "react";
 import type { Boat, PersistedLogbook } from "../../../models/logbook";
@@ -31,6 +32,15 @@ export function ProfilePage(props: ProfilePageProps) {
   const logbook = props.logbook as PersistedLogbook;
   const activeBoat = props.activeBoat as Boat;
   const profilePreferences = preferences as ProfilePreferences;
+  const [motionThresholdDraft, setMotionThresholdDraft] = useState<string | null>(null);
+  const motionThresholdValue = motionThresholdDraft ?? formatDecimalPreference(profilePreferences.motionStationaryThresholdNm);
+
+  function commitMotionThresholdDraft() {
+    if (motionThresholdDraft === null) return;
+    const nextThreshold = parseDecimalPreference(motionThresholdDraft, profilePreferences.motionStationaryThresholdNm);
+    setMotionThresholdDraft(null);
+    updateViewPreferences({ motionStationaryThresholdNm: nextThreshold });
+  }
   const onboardingChecklist = props.onboardingChecklist as ReactNode;
   const nameForm = props.nameForm as { name: string; currentPassword: string };
   const emailForm = props.emailForm as {
@@ -303,8 +313,15 @@ export function ProfilePage(props: ProfilePageProps) {
                   type="text"
                   inputMode="decimal"
                   pattern="[0-9]*[.]?[0-9]*"
-                  value={formatDecimalPreference(profilePreferences.motionStationaryThresholdNm)}
-                  onChange={(event) => updateViewPreferences({ motionStationaryThresholdNm: parseDecimalPreference(event.target.value, profilePreferences.motionStationaryThresholdNm) })}
+                  value={motionThresholdValue}
+                  onChange={(event) => {
+                    const nextValue = event.target.value.replace(",", ".");
+                    if (/^\d*(?:\.\d*)?$/.test(nextValue)) setMotionThresholdDraft(nextValue);
+                  }}
+                  onBlur={commitMotionThresholdDraft}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") event.currentTarget.blur();
+                  }}
                 />
               </label>
             </div>
