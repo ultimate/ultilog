@@ -722,8 +722,16 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                   <strong>{activeSheetSummary.totalMiles} nm</strong>
                 </article>
                 <article>
-                  <span>{t("details.duration")}</span>
+                  <span>{t("dashboard.overallDuration")}</span>
                   <strong>{activeSheetSummary.duration}</strong>
+                </article>
+                <article>
+                  <span>{t("dashboard.motionDuration")}</span>
+                  <strong>{activeSheetSummary.motionDuration}</strong>
+                </article>
+                <article>
+                  <span>{t("dashboard.motorHours")}</span>
+                  <strong>{activeSheetSummary.motorHours.toLocaleString(undefined, { maximumFractionDigits: 1 })}h</strong>
                 </article>
               </section>
 
