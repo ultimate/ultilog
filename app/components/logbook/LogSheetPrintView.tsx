@@ -68,6 +68,28 @@ export function LogSheetPrintView(props: LogSheetPrintViewProps) {
           </header>
 
           <table className="print-log-table">
+            <colgroup>
+              <col className="print-col-time" />
+              <col className="print-col-position" />
+              <col className="print-col-weather" />
+              <col className="print-col-temp" />
+              <col className="print-col-baro" />
+              <col className="print-col-wind" />
+              <col className="print-col-sea" />
+              <col className="print-col-tide" />
+              <col className="print-col-course" />
+              <col className="print-col-course" />
+              <col className="print-col-course" />
+              <col className="print-col-course" />
+              <col className="print-col-course" />
+              <col className="print-col-course" />
+              <col className="print-col-course" />
+              <col className="print-col-speed" />
+              <col className="print-col-log" />
+              <col className="print-col-sail" />
+              <col className="print-col-motor" />
+              <col className="print-col-remarks" />
+            </colgroup>
             <thead>
               <tr>
                 <th>Time</th>
@@ -142,9 +164,15 @@ function renderLogRow(line: LogLine | undefined, index: number) {
       <td>{formatNumber(line?.logNm)}</td>
       <td>{formatNumber(line?.sailMiles)}</td>
       <td>{formatMotor(line)}</td>
-      <td>{line?.remarks}</td>
+      <td className="print-remarks-cell"><span className={remarkSizeClass(line?.remarks ?? "")}>{line?.remarks}</span></td>
     </tr>
   );
+}
+
+function remarkSizeClass(remark: string) {
+  if (remark.length > 120) return "print-remark-text print-remark-tiny";
+  if (remark.length > 70) return "print-remark-text print-remark-small";
+  return "print-remark-text";
 }
 
 function PrintField({ label, value }: { label: string; value?: string | number | null }) {
@@ -209,11 +237,23 @@ const printStyles = `
 .print-field { min-width: 0; border-bottom: 1px solid #000; }
 .print-field strong { display: block; min-height: 11pt; overflow: hidden; font-size: 8pt; line-height: 1.15; text-overflow: ellipsis; white-space: nowrap; }
 .print-log-table { width: 100%; height: 100%; border-collapse: collapse; table-layout: fixed; font-size: 6.6pt; line-height: 1.05; }
-.print-log-table th, .print-log-table td { overflow: hidden; border: 1px solid #000; padding: .8mm; text-align: left; vertical-align: top; }
-.print-log-table th { font-size: 6.4pt; font-weight: 700; text-transform: uppercase; }
-.print-log-table td { height: 7mm; }
-.print-log-table th:nth-child(2), .print-log-table td:nth-child(2), .print-log-table th:nth-child(20), .print-log-table td:nth-child(20) { width: 17%; }
-.print-log-table th:not(:nth-child(2)):not(:nth-child(20)), .print-log-table td:not(:nth-child(2)):not(:nth-child(20)) { width: 3.6%; }
+.print-log-table col.print-col-time { width: 4%; }
+.print-log-table col.print-col-position { width: 11%; }
+.print-log-table col.print-col-weather, .print-log-table col.print-col-wind { width: 7%; }
+.print-log-table col.print-col-temp, .print-log-table col.print-col-baro, .print-log-table col.print-col-tide { width: 4%; }
+.print-log-table col.print-col-sea { width: 6%; }
+.print-log-table col.print-col-course { width: 3%; }
+.print-log-table col.print-col-speed, .print-log-table col.print-col-log, .print-log-table col.print-col-sail { width: 3.5%; }
+.print-log-table col.print-col-motor { width: 4.5%; }
+.print-log-table col.print-col-remarks { width: 17%; }
+.print-log-table tr { height: 7mm; max-height: 7mm; }
+.print-log-table th, .print-log-table td { box-sizing: border-box; height: 7mm; max-height: 7mm; overflow: hidden; border: 1px solid #000; padding: .8mm; text-align: left; vertical-align: top; }
+.print-log-table th { font-size: 6.4pt; font-weight: 700; text-transform: uppercase; white-space: nowrap; }
+.print-log-table td { white-space: nowrap; text-overflow: ellipsis; }
+.print-remarks-cell { white-space: nowrap; }
+.print-remark-text { display: block; overflow: hidden; width: 100%; max-height: 5.2mm; font-size: 6.3pt; line-height: 1.05; text-overflow: ellipsis; white-space: nowrap; }
+.print-remark-small { font-size: 5.5pt; }
+.print-remark-tiny { font-size: 4.8pt; }
 .print-footer { position: relative; grid-template-columns: 72mm 1fr 82mm; }
 .print-footer section { border: 1px solid #000; padding: 2mm; }
 .print-footer h2 { margin: 0 0 2mm; font-size: 8pt; text-transform: uppercase; }
