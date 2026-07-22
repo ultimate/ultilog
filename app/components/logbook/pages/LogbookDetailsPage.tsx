@@ -578,11 +578,11 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                   <button
                     type="button"
                     className="edit-chip compact-chip"
-                    aria-label="Print logsheet"
-                    title="Print"
+                    aria-label={t("details.printSheet")}
+                    title={t("details.printSheet")}
                     onClick={printActiveSheet}
                   >
-                    Print
+                    {t("details.printSheet")}
                   </button>
                   <button
                     type="button"

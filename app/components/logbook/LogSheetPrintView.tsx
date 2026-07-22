@@ -1,4 +1,5 @@
 import type { Boat, LogLine, LogSheet } from "../../models/logbook";
+import { useI18n } from "../../lib/i18n";
 import { paginatePrintLogLines, PRINT_LOG_ROWS_PER_PAGE } from "./print-pagination";
 import type { LogSheetMetrics } from "../../domain/logbook/sheet-metrics";
 import { calculateLogSheetMetrics, formatLogSheetDuration } from "../../domain/logbook/sheet-metrics";
@@ -29,6 +30,7 @@ export type LogSheetPrintViewProps =
 
 
 export function LogSheetPrintView(props: LogSheetPrintViewProps) {
+  const { t } = useI18n();
   const linesPerPage = Math.max(1, props.linesPerPage ?? PRINT_LOG_ROWS_PER_PAGE);
   const sheet = props.sheet;
   const sourceLines = props.mode === "filled" ? props.sheet.lines : [];
@@ -37,14 +39,14 @@ export function LogSheetPrintView(props: LogSheetPrintViewProps) {
 
   return (
     <div className="log-sheet-print-view" aria-label={props.mode === "filled" ? `Printable log sheet ${props.sheet.title}` : "Blank printable log sheet"}>
-      <p className="print-layout-hint screen-only no-print">Print layout optimized for A4 landscape. Select landscape in the print dialog if your browser does not choose it automatically.</p>
+      <p className="print-layout-hint screen-only no-print">{t("print.a4LandscapeHint")}</p>
       <style>{printStyles}</style>
       {pages.map((page) => (
         <section className="log-sheet-print-page print-page" key={page.pageIndex} aria-label={`Log sheet print page ${page.pageIndex + 1} of ${page.pageCount}`}>
           <header className="print-header">
             <div className="print-title-block">
-              <p className="print-kicker">Log sheet</p>
-              <h1>{valueOrBlank(sheet?.title, "Blank passage")}</h1>
+              <p className="print-kicker">{props.mode === "filled" ? t("print.filledSheet") : t("print.emptySheet")}</p>
+              <h1>{valueOrBlank(sheet?.title, t("print.emptySheet"))}</h1>
               <div className="print-master-grid">
                 <PrintField label="Date" value={sheet?.dateRange} />
                 <PrintField label="From" value={sheet?.route.from} />
@@ -122,9 +124,9 @@ export function LogSheetPrintView(props: LogSheetPrintViewProps) {
 
           <footer className="print-footer">
             <section className="print-route-box"><h2>Route / map</h2></section>
-            <section className="print-tech-box"><h2>Tech log</h2>{renderList(sheet?.technicalChecks)}</section>
-            <section className="print-remarks-box"><h2>Remarks / signature</h2></section>
-            <span className="print-page-number">Page {page.pageIndex + 1} of {page.pageCount}</span>
+            <section className="print-tech-box"><h2>Tech log</h2>{renderList(sheet?.technicalChecks, t("print.truncated"))}</section>
+            <section className="print-remarks-box"><h2>Remarks / signature</h2>{hasTruncatedRemark(page.lines) ? <small>{t("print.truncated")}</small> : null}</section>
+            <span className="print-page-number">{formatPageOf(t("print.pageOf"), page.pageIndex + 1, page.pageCount)}</span>
           </footer>
         </section>
       ))}
@@ -170,6 +172,10 @@ function renderLogRow(line: LogLine | undefined, index: number) {
   );
 }
 
+function hasTruncatedRemark(lines: Array<LogLine | undefined>) {
+  return lines.some((line) => (line?.remarks.length ?? 0) > 70);
+}
+
 function remarkSizeClass(remark: string) {
   if (remark.length > 120) return "print-remark-text print-remark-tiny";
   if (remark.length > 70) return "print-remark-text print-remark-small";
@@ -180,9 +186,14 @@ function PrintField({ label, value }: { label: string; value?: string | number |
   return <div className="print-field"><span>{label}</span><strong>{valueOrBlank(value)}</strong></div>;
 }
 
-function renderList(items: string[] | undefined) {
+function renderList(items: string[] | undefined, truncatedLabel: string) {
   if (!items?.length) return <div className="print-writing-lines" aria-hidden="true" />;
-  return <ul>{items.slice(0, 5).map((item) => <li key={item}>{item}</li>)}</ul>;
+  const visibleItems = items.slice(0, 5);
+  return <ul>{visibleItems.map((item) => <li key={item}>{item}</li>)}{items.length > visibleItems.length ? <li>{truncatedLabel}</li> : null}</ul>;
+}
+
+function formatPageOf(template: string, page: number, pageCount: number) {
+  return template.replace("{page}", String(page)).replace("{pageCount}", String(pageCount));
 }
 
 function formatCrew(sheet: LogSheet | undefined) {
