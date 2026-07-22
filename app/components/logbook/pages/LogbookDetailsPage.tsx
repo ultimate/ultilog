@@ -731,7 +731,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                 </article>
                 <article>
                   <span>{t("dashboard.motorHours")}</span>
-                  <strong>{activeSheetSummary.motorHours.toLocaleString(undefined, { maximumFractionDigits: 1 })}h</strong>
+                  <strong>{activeSheetSummary.motorHoursDuration}</strong>
                 </article>
               </section>
 

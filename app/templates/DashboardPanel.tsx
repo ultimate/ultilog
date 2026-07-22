@@ -38,7 +38,7 @@ export function DashboardPanel({ stats, onboardingChecklist }: DashboardPanelPro
         <article><i>✚</i><span>{t("dashboard.motorMiles")}</span><strong>{stats.motorNm.toLocaleString()} nm</strong><small>{motorPct}% {t("dashboard.ofTotal")}</small></article>
         <article><i>⏱</i><span>{t("dashboard.overallDuration")}</span><strong>{formatDuration(stats.durationMinutes)}</strong><small>{t("dashboard.allTime")}</small></article>
         <article><i>↬</i><span>{t("dashboard.motionDuration")}</span><strong>{formatDuration(stats.motionDurationMinutes)}</strong><small>{t("dashboard.inMotion")}</small></article>
-        <article><i>⚙</i><span>{t("dashboard.motorHours")}</span><strong>{stats.motorHours.toLocaleString(undefined, { maximumFractionDigits: 1 })}h</strong><small>{t("dashboard.allTime")}</small></article>
+        <article><i>⚙</i><span>{t("dashboard.motorHours")}</span><strong>{formatDuration(stats.motorHours * 60)}</strong><small>{t("dashboard.allTime")}</small></article>
         <article><i>⚓</i><span>{t("dashboard.boats")}</span><strong>{stats.boats}</strong><small>{t("dashboard.activeVessels")}</small></article>
       </div>
       <div className="dashboard-grid">
@@ -61,8 +61,10 @@ export function DashboardPanel({ stats, onboardingChecklist }: DashboardPanelPro
 }
 
 function formatDuration(minutes: number) {
-  const hours = Math.floor(Math.max(0, minutes) / 60);
-  return `${hours.toLocaleString()}h`;
+  const safeMinutes = Math.max(0, Math.round(minutes));
+  const hours = Math.floor(safeMinutes / 60);
+  const remainingMinutes = safeMinutes % 60;
+  return `${hours.toLocaleString()}h ${remainingMinutes.toString().padStart(2, "0")}m`;
 }
 
 const pieColors = ["var(--blue)", "#58b7ff", "#7cc6a4", "#f2b84b", "#d987ff", "#ff8c8c"];

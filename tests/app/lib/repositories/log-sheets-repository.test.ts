@@ -50,7 +50,7 @@ describe("LogSheetsRepository", () => {
     await new LogSheetsRepository(db).insert(sheet);
 
     expect(db.calls[0].sql).toContain("insert into log_sheets");
-    expect(db.calls[0].values).toEqual([`legacy-user:${sheet.id}`, sheet.title, sheet.dateRange, sheet.status, null, null, null, `legacy-user:${sheet.boatId}`, JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), null, null, null, null, "legacy-user", 9, 54, 63, 635, 1, 635, 0, "private", 0, 0, 0, 0, 0, 0, 0]);
+    expect(db.calls[0].values).toEqual([`legacy-user:${sheet.id}`, sheet.title, sheet.dateRange, sheet.status, null, null, null, `legacy-user:${sheet.boatId}`, JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), null, null, null, null, "legacy-user", 9, 54, 63, 635, 1, 635, 635, "private", 0, 0, 0, 0, 0, 0, 0]);
   });
 
   it("maps relational rows back to a persisted logbook", () => {

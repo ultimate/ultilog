@@ -55,6 +55,20 @@ describe("calculateLogSheetMetrics", () => {
     expect(metrics.totalMiles).toBe(11);
   });
 
+  it("calculates motion deltas from full ISO timestamps", () => {
+    const metrics = calculateLogSheetMetrics([
+      { ...baseLine, time: "2026-07-22T12:31", latitude: 0, longitude: 0, logNm: 0 },
+      { ...baseLine, time: "2026-07-22T13:31", latitude: 0, longitude: 1 / 60, logNm: 1 },
+      { ...baseLine, time: "2026-07-22T14:02", latitude: 0, longitude: 1.5 / 60, logNm: 1.5 },
+      { ...baseLine, time: "2026-07-22T16:22", latitude: 0, longitude: 6.5 / 60, logNm: 6.5 },
+      { ...baseLine, time: "2026-07-22T16:40", latitude: 0, longitude: 6.58 / 60, logNm: 6.5 },
+      { ...baseLine, time: "2026-07-22T16:50", latitude: 0, longitude: 6.67 / 60, logNm: 7 },
+      { ...baseLine, time: "2026-07-22T17:45", latitude: 0, longitude: 8 / 60, logNm: 7 },
+    ]);
+
+    expect(metrics.motionDurationMinutes).toBe(296);
+  });
+
   it("uses a configurable stationary distance threshold for motion time", () => {
     const lines = [
       { ...baseLine, time: "09:00", latitude: 47, longitude: 8, logNm: 0 },

@@ -69,23 +69,26 @@ function parseRouteStamp(value: string) {
 }
 
 function lineTimeValue(line: LogLine) {
-  return parseLogTimeMinutes(line.time) ?? Number.MAX_SAFE_INTEGER;
+  return parseLogTimeValue(line.time)?.value ?? Number.MAX_SAFE_INTEGER;
 }
 
 function timeDeltaMinutes(previousTime: string, currentTime: string) {
-  const previous = parseLogTimeMinutes(previousTime);
-  const current = parseLogTimeMinutes(currentTime);
-  if (previous === undefined || current === undefined) return 0;
-  return current >= previous ? current - previous : current + 24 * 60 - previous;
+  const previous = parseLogTimeValue(previousTime);
+  const current = parseLogTimeValue(currentTime);
+  if (!previous || !current) return 0;
+  if (previous.kind === "absolute" && current.kind === "absolute") return Math.max(0, current.value - previous.value);
+  return current.value >= previous.value ? current.value - previous.value : current.value + 24 * 60 - previous.value;
 }
 
-function parseLogTimeMinutes(time: string) {
-  const match = time.match(/^(\d{1,2}):(\d{2})/);
+function parseLogTimeValue(time: string): { kind: "absolute" | "dayTime"; value: number } | undefined {
+  const timestamp = Date.parse(time);
+  if (Number.isFinite(timestamp) && /\d{4}-\d{2}-\d{2}/.test(time)) return { kind: "absolute", value: Math.round(timestamp / 60000) };
+  const match = time.match(/(?:^|T)(\d{1,2}):(\d{2})/);
   if (!match) return undefined;
   const hours = Number.parseInt(match[1], 10);
   const minutes = Number.parseInt(match[2], 10);
   if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return undefined;
-  return hours * 60 + minutes;
+  return { kind: "dayTime", value: hours * 60 + minutes };
 }
 
 function hasPosition(line: LogLine) {

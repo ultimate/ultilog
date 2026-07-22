@@ -169,6 +169,7 @@ function calculateSheetSummary(sheet: LogSheet, motionStationaryThresholdNm: num
     duration: formatLogSheetDuration(metrics.overallDurationMinutes ?? metrics.durationMinutes),
     motionDuration: formatLogSheetDuration(metrics.motionDurationMinutes),
     motorHours: metrics.motorHours,
+    motorHoursDuration: formatLogSheetDuration(metrics.motorHours * 60),
   };
 }
 
