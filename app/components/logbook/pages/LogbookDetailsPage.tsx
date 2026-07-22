@@ -10,7 +10,7 @@ import type {
   LogSheetShareSettings,
   PersistedLogbook,
 } from "../../../models/logbook";
-import { coordinateToInput, decimalToDmsParts, parseCoordinate, type CoordinateFormat, type DmsParts } from "../../../domain/nautical/coordinates";
+import { coordinateToInput, decimalToDmsParts, dmsPartsToDecimal, parseCoordinate, type CoordinateFormat, type DmsParts } from "../../../domain/nautical/coordinates";
 import { boatToForm, sheetToForm } from "../forms";
 import { dateTimeLocalFromParts, splitDateTimeLocal } from "../date-utils";
 import { updateLogLineFormForInput } from "../../../domain/log-lines/log-line-editor";
@@ -286,16 +286,26 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
 
   const renderCoordinateInput = (field: "latitude" | "longitude", label: string) => {
     if (coordinateFormat === "decimal") return <input aria-label={label} value={lineForm[field]} onChange={(e) => updateCoordinateField(field, e.target.value)} />;
-    const parts = coordinateInputToDmsParts(lineForm[field]);
-    const updatePart = (part: keyof DmsParts, value: string) => {
-      const nextParts = { ...parts, [part]: value };
-      updateCoordinateField(field, dmsPartsToInput(nextParts));
+    const parts = decimalToDmsParts(parseCoordinate(lineForm[field]));
+    const commitDmsInput = (container: HTMLDivElement) => {
+      updateCoordinateField(field, String(dmsPartsToDecimal({
+        degrees: dmsInputValue(container, "degrees"),
+        minutes: dmsInputValue(container, "minutes"),
+        seconds: dmsInputValue(container, "seconds"),
+      })));
     };
     return (
-      <div className="compound-inputs dms-inputs" aria-label={label}>
-        <label><span>[°]</span><input aria-label={`${label} degrees`} type="number" value={parts.degrees} onChange={(e) => updatePart("degrees", e.target.value)} /></label>
-        <label><span>[&prime;]</span><input aria-label={`${label} minutes`} type="number" value={parts.minutes} onChange={(e) => updatePart("minutes", e.target.value)} /></label>
-        <label><span>[&Prime;]</span><input aria-label={`${label} seconds`} type="number" step="0.1" value={parts.seconds} onChange={(e) => updatePart("seconds", e.target.value)} /></label>
+      <div
+        className="compound-inputs dms-inputs"
+        aria-label={label}
+        onBlur={(event) => {
+          if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) return;
+          commitDmsInput(event.currentTarget);
+        }}
+      >
+        <label><span>[°]</span><input aria-label={`${label} degrees`} type="text" inputMode="decimal" data-dms-part="degrees" defaultValue={parts.degrees} /></label>
+        <label><span>[&prime;]</span><input aria-label={`${label} minutes`} type="text" inputMode="decimal" data-dms-part="minutes" defaultValue={parts.minutes} /></label>
+        <label><span>[&Prime;]</span><input aria-label={`${label} seconds`} type="text" inputMode="decimal" data-dms-part="seconds" defaultValue={parts.seconds} /></label>
       </div>
     );
   };
@@ -1030,14 +1040,7 @@ const compassDirections = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S"
 const weatherEmojis = ["☁️", "⛅", "⛈️", "🌤️", "🌥️", "🌦️", "🌧️", "🌨️", "🌩️", "🌪️", "🌫️", "☀️", "❄️", "⭐"];
 const moonEmojis = ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌘"];
 
-function coordinateInputToDmsParts(value: string): DmsParts {
-  const trimmed = value.trim();
-  if (!trimmed) return { degrees: "", minutes: "", seconds: "" };
-  const dmsMatch = trimmed.match(/^([+-]?\d*(?:\.\d+)?)\s*(?:°|deg|d)\s*(\d*(?:\.\d+)?)?\s*(?:'|′|m|min)?\s*(\d*(?:\.\d+)?)?/i);
-  if (dmsMatch) return { degrees: dmsMatch[1] ?? "", minutes: dmsMatch[2] ?? "", seconds: dmsMatch[3] ?? "" };
-  return decimalToDmsParts(parseCoordinate(trimmed));
-}
-
-function dmsPartsToInput(parts: DmsParts) {
-  return `${parts.degrees}° ${parts.minutes}' ${parts.seconds}"`;
+function dmsInputValue(container: HTMLElement, part: keyof DmsParts) {
+  const input = container.querySelector<HTMLInputElement>(`[data-dms-part="${part}"]`);
+  return input?.value.trim().replace(",", ".") ?? "";
 }
