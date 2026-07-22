@@ -97,8 +97,10 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     addTechnicalCheck,
     updateTechnicalCheck,
     deleteTechnicalCheck,
+    onPrintSheet,
   } = props;
   const activeBoat = props.activeBoat as Boat;
+  const printActiveSheet = onPrintSheet as () => void;
   const sharingOwnerId = props.userId as string | undefined;
   const updateShare = updateActiveSheetShare as (share: LogSheetShareSettings) => Promise<void>;
   const activeSheet = props.activeSheet as LogSheet;
@@ -599,6 +601,15 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                 </div>
                 <div className="inline-edit-actions sheet-master-actions">
                   <span className="status-pill">{activeSheet.status}</span>
+                  <button
+                    type="button"
+                    className="edit-chip compact-chip"
+                    aria-label="Print logsheet"
+                    title="Print"
+                    onClick={printActiveSheet}
+                  >
+                    Print
+                  </button>
                   <button
                     type="button"
                     className="edit-chip compact-chip"
