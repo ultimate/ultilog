@@ -37,9 +37,10 @@ export function LogSheetPrintView(props: LogSheetPrintViewProps) {
 
   return (
     <div className="log-sheet-print-view" aria-label={props.mode === "filled" ? `Printable log sheet ${props.sheet.title}` : "Blank printable log sheet"}>
+      <p className="print-layout-hint screen-only no-print">Print layout optimized for A4 landscape. Select landscape in the print dialog if your browser does not choose it automatically.</p>
       <style>{printStyles}</style>
       {pages.map((page) => (
-        <section className="log-sheet-print-page" key={page.pageIndex} aria-label={`Log sheet print page ${page.pageIndex + 1} of ${page.pageCount}`}>
+        <section className="log-sheet-print-page print-page" key={page.pageIndex} aria-label={`Log sheet print page ${page.pageIndex + 1} of ${page.pageCount}`}>
           <header className="print-header">
             <div className="print-title-block">
               <p className="print-kicker">Log sheet</p>
@@ -67,7 +68,7 @@ export function LogSheetPrintView(props: LogSheetPrintViewProps) {
             </aside>
           </header>
 
-          <table className="print-log-table">
+          <table className="print-log-table print-loglines">
             <colgroup>
               <col className="print-col-time" />
               <col className="print-col-position" />
@@ -261,5 +262,5 @@ const printStyles = `
 .print-tech-box ul { margin: 0; padding-left: 4mm; font-size: 7pt; }
 .print-writing-lines { height: 25mm; background: repeating-linear-gradient(to bottom, transparent 0, transparent 7mm, #000 7.2mm); }
 .print-page-number { position: absolute; right: 2mm; bottom: 1.5mm; font-size: 7pt; font-weight: 700; }
-@media print { body { margin: 0; } @page { size: A4 landscape; margin: 0; } .log-sheet-print-page { width: 297mm; height: 210mm; } }
+@media print { body { margin: 0; } @page { size: A4 landscape; margin: 8mm; } .log-sheet-print-page { width: 281mm; height: 194mm; padding: 0; } }
 `;
