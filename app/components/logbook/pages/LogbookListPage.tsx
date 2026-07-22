@@ -100,7 +100,7 @@ export function LogbookListPage({
             className="secondary-action"
             onClick={onPrintEmptySheet}
           >
-            Print empty sheet
+            {t("logbooks.printEmptySheet")}
           </button>
           <button
             type="button"
@@ -347,7 +347,7 @@ export function LogbookListPage({
                             onClick={() => onPrintSheet(sheet.id)}
                             type="button"
                           >
-                            Print
+                            {t("logbooks.printSheet")}
                           </button>
                         </div>
                       </td>
