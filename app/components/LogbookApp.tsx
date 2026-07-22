@@ -1860,7 +1860,7 @@ export function LogbookApp({
                   {adminError && <p className="save-error">{adminError}</p>}
                 </article>
               )}
-              <article className="table-card">
+              <article className="table-card admin-users-table-card">
                 <div className="table-header">
                   <div>
                     <p className="eyebrow">{t("admin.tagStyleGroups")}</p>
@@ -1871,8 +1871,8 @@ export function LogbookApp({
                     </p>
                   </div>
                 </div>
-                <div className="table-scroll">
-                  <table className="logbook-table">
+                <div className="table-scroll admin-users-table-scroll">
+                  <table className="logbook-table admin-users-table">
                     <thead>
                       <tr>
                         <th>{t("users.username")}</th>
