@@ -834,3 +834,25 @@ h3 { margin-block:.25rem .55rem; }
     max-width: 100dvw;
   }
 }
+
+/* Match the log sheets list: keep wide admin content from widening the page, and scroll only the table area. */
+.admin-users-table-card,
+.admin-users-table-scroll {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+.admin-users-table-scroll {
+  display: block;
+  overflow-x: auto;
+  overflow-y: visible;
+  touch-action: pan-x pan-y;
+}
+@media (max-width: 1000px) and (orientation: portrait) {
+  .module-workspace,
+  .module-panel,
+  .admin-users-table-card {
+    min-width: 0;
+    max-width: 100%;
+  }
+}
