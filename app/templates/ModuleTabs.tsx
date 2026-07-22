@@ -1,5 +1,4 @@
 import Image from "next/image";
-import { createPortal } from "react-dom";
 import { LocaleSelect, MobileLocaleAction, useI18n } from "../lib/i18n";
 import { moduleTabs, type ModuleTab } from "./app-shell";
 
@@ -54,18 +53,6 @@ function NavigationItems({ activeModule, isAdmin, onSelectModule }: NavigationIt
 export function ModuleTabs({ activeModule, onSelectModule, onOpenProfile, theme, onToggleTheme, userEmail, userName, userGroups = [], isNavSlim, onToggleNavSlim, onLogout, isLoggingOut }: ModuleTabsProps) {
   const { t } = useI18n();
   const isAdmin = userGroups.includes("admin");
-  const mobileNavRoot = typeof document === "undefined" ? null : document.body;
-  const mobileNav = (
-    <nav className={`mobile-bottom-nav ${isAdmin ? "has-admin-tab" : ""}`} aria-label={t("nav.primary")}>
-      <NavigationItems activeModule={activeModule} isAdmin={isAdmin} onSelectModule={onSelectModule} />
-      <button className="mobile-sync-action" type="button" disabled aria-label={t("nav.synced")}><span className="sync-icon" aria-hidden="true" /></button>
-      <MobileLocaleAction className="mobile-locale-action" />
-      <button className="mobile-theme-action" type="button" onClick={onToggleTheme} aria-label={theme === "dark" ? t("nav.switchLight") : t("nav.switchDark")}><span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span><small>{theme === "dark" ? t("nav.light") : t("nav.dark")}</small></button>
-      <button className={`mobile-profile-action ${activeModule === "profile" ? "active" : ""}`} type="button" onClick={onOpenProfile} aria-label={t("nav.profile")}><span aria-hidden="true"><Image className="nav-svg-icon" src="/icons/icon_profile.svg" alt="" width={24} height={24} /></span><small>{t("nav.profile")}</small></button>
-    </nav>
-  );
-
-
   return (
     <>
       <aside className="app-sidebar side-navigation" aria-label={t("nav.primary")}>
@@ -83,7 +70,13 @@ export function ModuleTabs({ activeModule, onSelectModule, onOpenProfile, theme,
         <button className={`profile-card ${activeModule === "profile" ? "active" : ""}`} type="button" onClick={onOpenProfile}><span><Image className="nav-svg-icon" src="/icons/icon_profile.svg" alt="" width={24} height={24} /></span><strong>{userName ?? t("nav.profile")}</strong><small>{userEmail ?? t("nav.noEmail")}</small></button>
         <button className="logout-chip" type="button" onClick={onLogout} disabled={isLoggingOut} aria-label={t("nav.logout")}>{isLoggingOut ? t("nav.saving") : t("nav.logout")}</button>
       </aside>
-      {mobileNavRoot ? createPortal(mobileNav, mobileNavRoot) : mobileNav}
+      <nav className={`mobile-bottom-nav ${isAdmin ? "has-admin-tab" : ""}`} aria-label={t("nav.primary")}>
+        <NavigationItems activeModule={activeModule} isAdmin={isAdmin} onSelectModule={onSelectModule} />
+        <button className="mobile-sync-action" type="button" disabled aria-label={t("nav.synced")}><span className="sync-icon" aria-hidden="true" /></button>
+        <MobileLocaleAction className="mobile-locale-action" />
+        <button className="mobile-theme-action" type="button" onClick={onToggleTheme} aria-label={theme === "dark" ? t("nav.switchLight") : t("nav.switchDark")}><span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span><small>{theme === "dark" ? t("nav.light") : t("nav.dark")}</small></button>
+        <button className={`mobile-profile-action ${activeModule === "profile" ? "active" : ""}`} type="button" onClick={onOpenProfile} aria-label={t("nav.profile")}><span aria-hidden="true"><Image className="nav-svg-icon" src="/icons/icon_profile.svg" alt="" width={24} height={24} /></span><small>{t("nav.profile")}</small></button>
+      </nav>
     </>
   );
 }
