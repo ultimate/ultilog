@@ -300,11 +300,11 @@ export function ProfilePage(props: ProfilePageProps) {
               <label>
                 {t("profile.motionStationaryThresholdNm")}
                 <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={profilePreferences.motionStationaryThresholdNm}
-                  onChange={(event) => updateViewPreferences({ motionStationaryThresholdNm: Number(event.target.value) })}
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9]*[.]?[0-9]*"
+                  value={formatDecimalPreference(profilePreferences.motionStationaryThresholdNm)}
+                  onChange={(event) => updateViewPreferences({ motionStationaryThresholdNm: parseDecimalPreference(event.target.value, profilePreferences.motionStationaryThresholdNm) })}
                 />
               </label>
             </div>
@@ -382,4 +382,15 @@ export function ProfilePage(props: ProfilePageProps) {
       </section>
     </section>
   );
+}
+
+function formatDecimalPreference(value: number) {
+  return Number.isFinite(value) ? String(value) : "0.1";
+}
+
+function parseDecimalPreference(value: string, fallback: number) {
+  const normalizedValue = value.trim().replace(",", ".");
+  if (normalizedValue === "") return fallback;
+  const parsedValue = Number(normalizedValue);
+  return Number.isFinite(parsedValue) && parsedValue >= 0 ? parsedValue : fallback;
 }
