@@ -1306,3 +1306,128 @@ img.entity-image--preview {
   min-height: 2.75rem;
 }
 
+
+/* Print visibility and A4 log sheet defaults */
+.print-only {
+  display: none !important;
+}
+
+.screen-only,
+.no-print {
+  display: revert;
+}
+
+.print-page {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.print-loglines {
+  border-collapse: collapse;
+}
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 8mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .screen-only,
+  .no-print,
+  nav,
+  [role="navigation"],
+  [role="toolbar"],
+  [role="dialog"],
+  dialog,
+  button,
+  .app-sidebar,
+  .top-actions,
+  .module-tabs,
+  .sidebar,
+  .sidebar-header,
+  .table-actions,
+  .logbook-toolbar,
+  .filters,
+  .pagination-controls,
+  .pagination-buttons,
+  .edit-chip,
+  .share-logsheet-modal,
+  .scanner-upload-status,
+  .logbook-scanner-actions,
+  .logbook-scanner-empty,
+  .map-card,
+  .leaflet-container {
+    display: none !important;
+  }
+
+  body:has(.print-page) * {
+    visibility: hidden !important;
+  }
+
+  body:has(.print-page) .print-page,
+  body:has(.print-page) .print-page * {
+    visibility: visible !important;
+  }
+
+  body:has(.print-page) .print-page {
+    position: relative;
+  }
+
+  .print-page {
+    overflow: hidden;
+    background: #fff !important;
+    color: #000 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    border-radius: 0 !important;
+    break-after: page;
+    page-break-after: always;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .print-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  .print-page *,
+  .print-header,
+  .print-loglines,
+  .print-footer {
+    color: #000 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    border-color: #000 !important;
+    border-radius: 0 !important;
+  }
+
+  .print-header,
+  .print-footer,
+  .print-page section,
+  .print-loglines th,
+  .print-loglines td {
+    background-color: #fff !important;
+  }
+
+  .print-loglines {
+    width: 100%;
+    border-collapse: collapse !important;
+    font-size: 6.5pt;
+  }
+
+  .print-loglines th,
+  .print-loglines td {
+    border: 0.2mm solid #000 !important;
+  }
+}
