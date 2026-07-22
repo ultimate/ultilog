@@ -54,4 +54,14 @@ describe("calculateLogSheetMetrics", () => {
     expect(metrics.motionDurationMinutes).toBe(90);
     expect(metrics.totalMiles).toBe(11);
   });
+
+  it("uses a configurable stationary distance threshold for motion time", () => {
+    const lines = [
+      { ...baseLine, time: "09:00", latitude: 47, longitude: 8, logNm: 0 },
+      { ...baseLine, time: "10:00", latitude: 47.002, longitude: 8, logNm: 0 },
+    ];
+
+    expect(calculateLogSheetMetrics(lines, undefined, { stationaryDistanceThresholdNm: 0.1 }).motionDurationMinutes).toBe(60);
+    expect(calculateLogSheetMetrics(lines, undefined, { stationaryDistanceThresholdNm: 1 }).motionDurationMinutes).toBe(0);
+  });
 });

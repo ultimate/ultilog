@@ -297,6 +297,16 @@ export function ProfilePage(props: ProfilePageProps) {
                   {logbook.crewMembers.map((crew) => <option key={crew.id} value={crew.id}>{crew.name}</option>)}
                 </select>
               </label>
+              <label>
+                {t("profile.motionStationaryThresholdNm")}
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={profilePreferences.motionStationaryThresholdNm}
+                  onChange={(event) => updateViewPreferences({ motionStationaryThresholdNm: Number(event.target.value) })}
+                />
+              </label>
             </div>
           </fieldset>
           <fieldset className="preference-group wide-field">

@@ -361,6 +361,7 @@ export const it: Dictionary = {
   "profile.coordinateDms": "DMS",
   "profile.additionalDistanceDisplay": "Additional distance display",
   "profile.off": "Off",
+  "profile.motionStationaryThresholdNm": "Soglia movimento fermo (nm)",
   "profile.defaultCrewMembers": "Default crew members",
   "profile.autoMode": "Auto",
   "profile.sidebarMode": "Sidebar mode",

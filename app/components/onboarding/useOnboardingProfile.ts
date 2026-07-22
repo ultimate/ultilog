@@ -19,6 +19,7 @@ export type ProfilePreferences = {
   isNavSlim: boolean;
   showCourseConversionTable: boolean;
   defaultPageSize: 5 | 10 | 25 | 50 | 100;
+  motionStationaryThresholdNm: number;
 };
 
 const defaultPreferences: ProfilePreferences = {
@@ -35,6 +36,7 @@ const defaultPreferences: ProfilePreferences = {
   isNavSlim: false,
   showCourseConversionTable: true,
   defaultPageSize: 10,
+  motionStationaryThresholdNm: 0.1,
 };
 
 export type ProfileApiPreferences = Partial<ProfilePreferences> & {
@@ -74,7 +76,14 @@ function mergePreferences(current: ProfilePreferences, next?: ProfileApiPreferen
     language: next?.language ?? current.language,
     defaultCrewMemberIds: Array.isArray(next?.defaultCrewMemberIds) ? next.defaultCrewMemberIds : current.defaultCrewMemberIds,
     defaultPageSize: [5, 10, 25, 50, 100].includes(next?.defaultPageSize ?? current.defaultPageSize) ? (next?.defaultPageSize ?? current.defaultPageSize) : current.defaultPageSize,
+    motionStationaryThresholdNm: normalizeMotionThreshold(next?.motionStationaryThresholdNm, current.motionStationaryThresholdNm),
   };
+}
+
+function normalizeMotionThreshold(value: unknown, fallback: number) {
+  if (value === undefined || value === null || value === "") return fallback;
+  const threshold = Number(value);
+  return Number.isFinite(threshold) && threshold >= 0 ? threshold : fallback;
 }
 
 function preferencesFromPayload(payload: ProfilePayload, fallback: ProfilePreferences): ProfilePreferences {

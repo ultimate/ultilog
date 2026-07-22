@@ -1,6 +1,8 @@
 import type { LogLine, LogSheet } from "../../models/logbook";
 import { calculateGlobeDistanceNm } from "../nautical/globe-distance";
 
+export const defaultMotionStationaryThresholdNm = 0.1;
+
 export type LogSheetMetrics = {
   motorMiles: number;
   sailMiles: number;
@@ -11,7 +13,7 @@ export type LogSheetMetrics = {
   motionDurationMinutes: number;
 };
 
-export function calculateLogSheetMetrics(lines: LogLine[], route?: LogSheet["route"]): LogSheetMetrics {
+export function calculateLogSheetMetrics(lines: LogLine[], route?: LogSheet["route"], options: { stationaryDistanceThresholdNm?: number } = {}): LogSheetMetrics {
   const chronologicalLines = [...lines].sort((a, b) => lineTimeValue(a) - lineTimeValue(b));
   const deltas = chronologicalLines.map((line, index) => Math.max(0, numeric(line.logNm) - numeric(chronologicalLines[index - 1]?.logNm)));
   const explicitMotorMiles = chronologicalLines.some((line) => numeric(line.motorMiles) > 0);
@@ -24,7 +26,7 @@ export function calculateLogSheetMetrics(lines: LogLine[], route?: LogSheet["rou
     ? chronologicalLines.reduce((sum, line) => sum + numeric(line.sailMiles), 0)
     : Math.max(0, totalMiles - motorMiles);
   const motorHours = chronologicalLines.reduce((sum, line) => sum + numeric(line.motorHours), 0);
-  const motionDurationMinutes = calculateMotionDurationMinutes(chronologicalLines);
+  const motionDurationMinutes = calculateMotionDurationMinutes(chronologicalLines, options.stationaryDistanceThresholdNm ?? defaultMotionStationaryThresholdNm);
   const overallDurationMinutes = calculateOverallDurationMinutes(route);
   return { motorMiles, sailMiles, totalMiles: Math.max(totalMiles, motorMiles + sailMiles), motorHours, durationMinutes: overallDurationMinutes, overallDurationMinutes, motionDurationMinutes };
 }
@@ -37,18 +39,18 @@ export function formatLogSheetDuration(durationMinutes: number | null | undefine
   return `${hours}h ${remainingMinutes.toString().padStart(2, "0")}m`;
 }
 
-function calculateMotionDurationMinutes(lines: LogLine[]) {
+function calculateMotionDurationMinutes(lines: LogLine[], stationaryDistanceThresholdNm: number) {
   return lines.reduce((sum, line, index) => {
     const previous = lines[index - 1];
-    if (!previous || isStationary(previous, line)) return sum;
+    if (!previous || isStationary(previous, line, stationaryDistanceThresholdNm)) return sum;
     return sum + timeDeltaMinutes(previous.time, line.time);
   }, 0);
 }
 
-function isStationary(previous: LogLine, current: LogLine) {
+function isStationary(previous: LogLine, current: LogLine, stationaryDistanceThresholdNm: number) {
   if (numeric(previous.logNm) !== numeric(current.logNm)) return false;
   if (!hasPosition(previous) || !hasPosition(current)) return false;
-  return calculateGlobeDistanceNm(previous, current) < 0.1;
+  return calculateGlobeDistanceNm(previous, current) < stationaryDistanceThresholdNm;
 }
 
 function calculateOverallDurationMinutes(route: LogSheet["route"] | undefined) {

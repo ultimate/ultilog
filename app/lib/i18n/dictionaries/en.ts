@@ -359,6 +359,7 @@ export const en = {
   "profile.coordinateDms": "DMS",
   "profile.additionalDistanceDisplay": "Additional distance display",
   "profile.off": "Off",
+  "profile.motionStationaryThresholdNm": "Stationary motion threshold (nm)",
   "profile.defaultCrewMembers": "Default crew members",
   "profile.autoMode": "Auto",
   "profile.sidebarMode": "Sidebar mode",

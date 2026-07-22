@@ -156,12 +156,12 @@ const mockSocialUsers: SocialUser[] = [
   },
 ];
 
-function withCalculatedSheetMetrics(sheet: LogSheet): LogSheet {
-  return { ...sheet, metrics: calculateLogSheetMetrics(sheet.lines, sheet.route) };
+function withCalculatedSheetMetrics(sheet: LogSheet, motionStationaryThresholdNm: number): LogSheet {
+  return { ...sheet, metrics: calculateLogSheetMetrics(sheet.lines, sheet.route, { stationaryDistanceThresholdNm: motionStationaryThresholdNm }) };
 }
 
-function calculateSheetSummary(sheet: LogSheet) {
-  const metrics = sheet.metrics ?? calculateLogSheetMetrics(sheet.lines, sheet.route);
+function calculateSheetSummary(sheet: LogSheet, motionStationaryThresholdNm: number) {
+  const metrics = calculateLogSheetMetrics(sheet.lines, sheet.route, { stationaryDistanceThresholdNm: motionStationaryThresholdNm });
   return {
     motorMiles: metrics.motorMiles,
     sailMiles: metrics.sailMiles,
@@ -685,8 +685,8 @@ export function LogbookApp({
   const isAdmin = userGroups.includes("admin");
   const isActiveSheetLocked = activeSheet.status === "Locked";
   const activeSheetSummary = useMemo(
-    () => calculateSheetSummary(activeSheet),
-    [activeSheet],
+    () => calculateSheetSummary(activeSheet, preferences.motionStationaryThresholdNm),
+    [activeSheet, preferences.motionStationaryThresholdNm],
   );
   const canEditActiveSheetMasterData = activeSheet.status === "Draft";
   const sheetInlineActions = editingSheetField ? (
@@ -822,7 +822,7 @@ export function LogbookApp({
   const stats = useMemo(() => {
     const sheetsWithMetrics = logbook.sheets.map((sheet) => ({
       sheet,
-      metrics: sheet.metrics ?? calculateLogSheetMetrics(sheet.lines, sheet.route),
+      metrics: calculateLogSheetMetrics(sheet.lines, sheet.route, { stationaryDistanceThresholdNm: preferences.motionStationaryThresholdNm }),
     }));
     const totalNm = sheetsWithMetrics.reduce((sum, item) => sum + item.metrics.totalMiles, 0);
     const sailNm = sheetsWithMetrics.reduce((sum, item) => sum + item.metrics.sailMiles, 0);
@@ -851,7 +851,7 @@ export function LogbookApp({
       sheets: logbook.sheets.length,
       boats: logbook.boats.length,
     };
-  }, [logbook]);
+  }, [logbook, preferences.motionStationaryThresholdNm]);
 
   async function saveBoat(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1107,7 +1107,7 @@ export function LogbookApp({
             : sheet.lines.map((candidate, index) =>
                 index === editingLineIndex ? line : candidate,
               );
-        return withCalculatedSheetMetrics({ ...sheet, lines: sortLogLines(lines) });
+        return withCalculatedSheetMetrics({ ...sheet, lines: sortLogLines(lines) }, preferences.motionStationaryThresholdNm);
       }),
     };
     if (!(await saveLogbookNow(nextLogbook))) return;
@@ -1205,7 +1205,7 @@ export function LogbookApp({
       ...currentLogbook,
       sheets: currentLogbook.sheets.map((sheet) =>
         sheet.id === activeSheet.id
-          ? withCalculatedSheetMetrics({ ...sheet, lines: sheet.lines.filter((_, index) => index !== indexToDelete) })
+          ? withCalculatedSheetMetrics({ ...sheet, lines: sheet.lines.filter((_, index) => index !== indexToDelete) }, preferences.motionStationaryThresholdNm)
           : sheet,
       ),
     });
@@ -1694,7 +1694,7 @@ export function LogbookApp({
               isScanning={isScanning}
               scannerError={scannerError}
               isScannerPrivacyConfirmed={isScannerPrivacyConfirmed}
-              calculateSheetSummary={calculateSheetSummary}
+              calculateSheetSummary={(sheet) => calculateSheetSummary(sheet, preferences.motionStationaryThresholdNm)}
               logbook={logbook}
               navigate={navigate}
               onScanFilesSelected={selectScannerFiles}

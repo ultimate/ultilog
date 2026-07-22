@@ -41,6 +41,12 @@ export abstract class LogbookDatabase implements QueryableDatabase {
 
   protected abstract insertLogbook(logbook: PersistedLogbook): Promise<void>;
 
+  protected async motionStationaryThresholdNm() {
+    const row = (await this.query<{ motion_stationary_threshold_nm?: number | string | null }>(`select motion_stationary_threshold_nm from users where id = ${this.placeholder(1)}`, [this.ownerId])).rows[0];
+    const threshold = Number(row?.motion_stationary_threshold_nm);
+    return Number.isFinite(threshold) && threshold >= 0 ? threshold : 0.1;
+  }
+
   async readLogbook(): Promise<PersistedLogbook> {
     await this.ensureSchemaAndBackfill();
     await this.crew.ensurePrimaryProfile(this.ownerId);
