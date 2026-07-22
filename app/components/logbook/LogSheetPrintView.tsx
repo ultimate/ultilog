@@ -1,4 +1,5 @@
 import type { Boat, LogLine, LogSheet } from "../../models/logbook";
+import { paginatePrintLogLines, PRINT_LOG_ROWS_PER_PAGE } from "./print-pagination";
 import type { LogSheetMetrics } from "../../domain/logbook/sheet-metrics";
 import { calculateLogSheetMetrics, formatLogSheetDuration } from "../../domain/logbook/sheet-metrics";
 
@@ -26,27 +27,19 @@ export type LogSheetPrintViewProps =
       linesPerPage?: number;
     };
 
-type PrintPage = {
-  lines: LogLine[];
-  pageNumber: number;
-  totalPages: number;
-};
-
-const DEFAULT_LINES_PER_PAGE = 18;
-const EMPTY_LINE_COUNT = 18;
 
 export function LogSheetPrintView(props: LogSheetPrintViewProps) {
-  const linesPerPage = Math.max(1, props.linesPerPage ?? DEFAULT_LINES_PER_PAGE);
+  const linesPerPage = Math.max(1, props.linesPerPage ?? PRINT_LOG_ROWS_PER_PAGE);
   const sheet = props.sheet;
   const sourceLines = props.mode === "filled" ? props.sheet.lines : [];
-  const pages = props.mode === "empty" ? createEmptyPages() : paginateLines(sourceLines, linesPerPage);
+  const pages = paginatePrintLogLines(sourceLines, linesPerPage);
   const summary = getSummary(props.summary, sheet);
 
   return (
     <div className="log-sheet-print-view" aria-label={props.mode === "filled" ? `Printable log sheet ${props.sheet.title}` : "Blank printable log sheet"}>
       <style>{printStyles}</style>
       {pages.map((page) => (
-        <section className="log-sheet-print-page" key={page.pageNumber} aria-label={`Log sheet print page ${page.pageNumber} of ${page.totalPages}`}>
+        <section className="log-sheet-print-page" key={page.pageIndex} aria-label={`Log sheet print page ${page.pageIndex + 1} of ${page.pageCount}`}>
           <header className="print-header">
             <div className="print-title-block">
               <p className="print-kicker">Log sheet</p>
@@ -100,7 +93,7 @@ export function LogSheetPrintView(props: LogSheetPrintViewProps) {
               </tr>
             </thead>
             <tbody>
-              {Array.from({ length: props.mode === "empty" ? EMPTY_LINE_COUNT : linesPerPage }, (_, index) => renderLogRow(page.lines[index], index))}
+              {page.lines.map((line, index) => renderLogRow(line, index))}
             </tbody>
           </table>
 
@@ -108,25 +101,12 @@ export function LogSheetPrintView(props: LogSheetPrintViewProps) {
             <section className="print-route-box"><h2>Route / map</h2></section>
             <section className="print-tech-box"><h2>Tech log</h2>{renderList(sheet?.technicalChecks)}</section>
             <section className="print-remarks-box"><h2>Remarks / signature</h2></section>
-            <span className="print-page-number">Page {page.pageNumber}/{page.totalPages}</span>
+            <span className="print-page-number">Page {page.pageIndex + 1} of {page.pageCount}</span>
           </footer>
         </section>
       ))}
     </div>
   );
-}
-
-function paginateLines(lines: LogLine[], linesPerPage: number): PrintPage[] {
-  const pageCount = Math.max(1, Math.ceil(lines.length / linesPerPage));
-  return Array.from({ length: pageCount }, (_, index) => ({
-    lines: lines.slice(index * linesPerPage, (index + 1) * linesPerPage),
-    pageNumber: index + 1,
-    totalPages: pageCount,
-  }));
-}
-
-function createEmptyPages(): PrintPage[] {
-  return [{ lines: [], pageNumber: 1, totalPages: 1 }];
 }
 
 function getSummary(summary: LogSheetPrintSummary | undefined, sheet: LogSheet | undefined) {
