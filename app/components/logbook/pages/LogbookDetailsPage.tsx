@@ -10,7 +10,7 @@ import type {
   LogSheetShareSettings,
   PersistedLogbook,
 } from "../../../models/logbook";
-import { coordinateToInput, decimalToDmsParts, dmsPartsToDecimal, parseCoordinate, type CoordinateFormat, type DmsParts } from "../../../domain/nautical/coordinates";
+import { coordinateToInput, decimalToDmsParts, parseCoordinate, type CoordinateFormat, type DmsParts } from "../../../domain/nautical/coordinates";
 import { boatToForm, sheetToForm } from "../forms";
 import { dateTimeLocalFromParts, splitDateTimeLocal } from "../date-utils";
 import { updateLogLineFormForInput } from "../../../domain/log-lines/log-line-editor";
@@ -286,10 +286,10 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
 
   const renderCoordinateInput = (field: "latitude" | "longitude", label: string) => {
     if (coordinateFormat === "decimal") return <input aria-label={label} value={lineForm[field]} onChange={(e) => updateCoordinateField(field, e.target.value)} />;
-    const parts = lineForm[field].trim() ? decimalToDmsParts(parseCoordinate(lineForm[field])) : { degrees: "", minutes: "", seconds: "" };
+    const parts = coordinateInputToDmsParts(lineForm[field]);
     const updatePart = (part: keyof DmsParts, value: string) => {
       const nextParts = { ...parts, [part]: value };
-      updateCoordinateField(field, String(dmsPartsToDecimal(nextParts)));
+      updateCoordinateField(field, dmsPartsToInput(nextParts));
     };
     return (
       <div className="compound-inputs dms-inputs" aria-label={label}>
@@ -1029,3 +1029,15 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
 const compassDirections = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
 const weatherEmojis = ["☁️", "⛅", "⛈️", "🌤️", "🌥️", "🌦️", "🌧️", "🌨️", "🌩️", "🌪️", "🌫️", "☀️", "❄️", "⭐"];
 const moonEmojis = ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌘"];
+
+function coordinateInputToDmsParts(value: string): DmsParts {
+  const trimmed = value.trim();
+  if (!trimmed) return { degrees: "", minutes: "", seconds: "" };
+  const dmsMatch = trimmed.match(/^([+-]?\d*(?:\.\d+)?)\s*(?:°|deg|d)\s*(\d*(?:\.\d+)?)?\s*(?:'|′|m|min)?\s*(\d*(?:\.\d+)?)?/i);
+  if (dmsMatch) return { degrees: dmsMatch[1] ?? "", minutes: dmsMatch[2] ?? "", seconds: dmsMatch[3] ?? "" };
+  return decimalToDmsParts(parseCoordinate(trimmed));
+}
+
+function dmsPartsToInput(parts: DmsParts) {
+  return `${parts.degrees}° ${parts.minutes}' ${parts.seconds}"`;
+}
