@@ -15,7 +15,7 @@ type Navigate = (
   module: "details" | "logbooks",
   itemId?: string | number,
 ) => void;
-type SheetSummary = { motorMiles: number; sailMiles: number; totalMiles: number; duration: string };
+type SheetSummary = { motorMiles: number; sailMiles: number; totalMiles: number; duration: string; motionDuration: string; motorHours: number };
 
 export function LogbookListPage({
   activeBoat,
@@ -272,7 +272,9 @@ export function LogbookListPage({
                   <th>{t("compliance.sailMiles")}</th>
                   <th>{t("compliance.motorMiles")}</th>
                   <th>{t("logbooks.totalMiles")}</th>
-                  <th>{t("dashboard.duration")}</th>
+                  <th>{t("dashboard.overallDuration")}</th>
+                  <th>{t("dashboard.motionDuration")}</th>
+                  <th>{t("dashboard.motorHours")}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -314,6 +316,8 @@ export function LogbookListPage({
                       <td>{sheetSummary.motorMiles} nm</td>
                       <td>{sheetSummary.totalMiles} nm</td>
                       <td>{sheetSummary.duration}</td>
+                      <td>{sheetSummary.motionDuration}</td>
+                      <td>{sheetSummary.motorHours.toLocaleString(undefined, { maximumFractionDigits: 1 })}h</td>
                       <td>
                         <button
                           className="edit-chip"

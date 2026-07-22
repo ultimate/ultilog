@@ -157,16 +157,18 @@ const mockSocialUsers: SocialUser[] = [
 ];
 
 function withCalculatedSheetMetrics(sheet: LogSheet): LogSheet {
-  return { ...sheet, metrics: calculateLogSheetMetrics(sheet.lines) };
+  return { ...sheet, metrics: calculateLogSheetMetrics(sheet.lines, sheet.route) };
 }
 
 function calculateSheetSummary(sheet: LogSheet) {
-  const metrics = sheet.metrics ?? calculateLogSheetMetrics(sheet.lines);
+  const metrics = sheet.metrics ?? calculateLogSheetMetrics(sheet.lines, sheet.route);
   return {
     motorMiles: metrics.motorMiles,
     sailMiles: metrics.sailMiles,
     totalMiles: metrics.totalMiles,
-    duration: formatLogSheetDuration(metrics.durationMinutes),
+    duration: formatLogSheetDuration(metrics.overallDurationMinutes ?? metrics.durationMinutes),
+    motionDuration: formatLogSheetDuration(metrics.motionDurationMinutes),
+    motorHours: metrics.motorHours,
   };
 }
 
@@ -820,12 +822,14 @@ export function LogbookApp({
   const stats = useMemo(() => {
     const sheetsWithMetrics = logbook.sheets.map((sheet) => ({
       sheet,
-      metrics: sheet.metrics ?? calculateLogSheetMetrics(sheet.lines),
+      metrics: sheet.metrics ?? calculateLogSheetMetrics(sheet.lines, sheet.route),
     }));
     const totalNm = sheetsWithMetrics.reduce((sum, item) => sum + item.metrics.totalMiles, 0);
     const sailNm = sheetsWithMetrics.reduce((sum, item) => sum + item.metrics.sailMiles, 0);
     const motorNm = sheetsWithMetrics.reduce((sum, item) => sum + item.metrics.motorMiles, 0);
-    const durationMinutes = sheetsWithMetrics.reduce((sum, item) => sum + (item.metrics.durationMinutes ?? 0), 0);
+    const durationMinutes = sheetsWithMetrics.reduce((sum, item) => sum + (item.metrics.overallDurationMinutes ?? item.metrics.durationMinutes ?? 0), 0);
+    const motionDurationMinutes = sheetsWithMetrics.reduce((sum, item) => sum + item.metrics.motionDurationMinutes, 0);
+    const motorHours = sheetsWithMetrics.reduce((sum, item) => sum + item.metrics.motorHours, 0);
     const timeline = sheetsWithMetrics
       .slice().sort((a, b) => a.sheet.dateRange.localeCompare(b.sheet.dateRange))
       .map((item) => ({ label: item.sheet.dateRange, totalNm: item.metrics.totalMiles, sailNm: item.metrics.sailMiles, motorNm: item.metrics.motorMiles }));
@@ -840,6 +844,8 @@ export function LogbookApp({
       sailNm,
       motorNm,
       durationMinutes,
+      motionDurationMinutes,
+      motorHours,
       timeline,
       boatDistribution,
       sheets: logbook.sheets.length,

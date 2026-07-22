@@ -4,7 +4,7 @@ import type React from "react";
 import type { ReactNode } from "react";
 import { useI18n } from "../lib/i18n";
 
-export type DashboardStats = { totalNm: number; sailNm: number; motorNm: number; durationMinutes: number; sheets: number; boats: number; timeline: { label: string; totalNm: number; sailNm: number; motorNm: number }[]; boatDistribution: { boatName: string; totalNm: number }[]; };
+export type DashboardStats = { totalNm: number; sailNm: number; motorNm: number; durationMinutes: number; motionDurationMinutes: number; motorHours: number; sheets: number; boats: number; timeline: { label: string; totalNm: number; sailNm: number; motorNm: number }[]; boatDistribution: { boatName: string; totalNm: number }[]; };
 type DashboardPanelProps = { stats: DashboardStats; onboardingChecklist?: ReactNode; };
 
 export function DashboardPanel({ stats, onboardingChecklist }: DashboardPanelProps) {
@@ -36,7 +36,9 @@ export function DashboardPanel({ stats, onboardingChecklist }: DashboardPanelPro
         <article><i>⛵</i><span>{t("dashboard.totalMiles")}</span><strong>{stats.totalNm.toLocaleString()} nm</strong><small>{t("dashboard.allTime")}</small></article>
         <article><i>△</i><span>{t("dashboard.sailMiles")}</span><strong>{stats.sailNm.toLocaleString()} nm</strong><small>{sailPct}% {t("dashboard.ofTotal")}</small></article>
         <article><i>✚</i><span>{t("dashboard.motorMiles")}</span><strong>{stats.motorNm.toLocaleString()} nm</strong><small>{motorPct}% {t("dashboard.ofTotal")}</small></article>
-        <article><i>⏱</i><span>{t("dashboard.duration")}</span><strong>{formatDuration(stats.durationMinutes)}</strong><small>{t("dashboard.allTime")}</small></article>
+        <article><i>⏱</i><span>{t("dashboard.overallDuration")}</span><strong>{formatDuration(stats.durationMinutes)}</strong><small>{t("dashboard.allTime")}</small></article>
+        <article><i>↬</i><span>{t("dashboard.motionDuration")}</span><strong>{formatDuration(stats.motionDurationMinutes)}</strong><small>{t("dashboard.inMotion")}</small></article>
+        <article><i>⚙</i><span>{t("dashboard.motorHours")}</span><strong>{stats.motorHours.toLocaleString(undefined, { maximumFractionDigits: 1 })}h</strong><small>{t("dashboard.allTime")}</small></article>
         <article><i>⚓</i><span>{t("dashboard.boats")}</span><strong>{stats.boats}</strong><small>{t("dashboard.activeVessels")}</small></article>
       </div>
       <div className="dashboard-grid">
