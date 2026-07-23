@@ -156,6 +156,18 @@ const mockSocialUsers: SocialUser[] = [
   },
 ];
 
+function monthLabelForSheet(sheet: LogSheet) {
+  const source = sheet.route.departed || sheet.dateRange;
+  const isoMatch = source.match(/(\d{4})-(\d{2})/);
+  if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}`;
+  const parsed = Date.parse(source.replace(",", ""));
+  if (Number.isFinite(parsed)) {
+    const date = new Date(parsed);
+    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+  }
+  return sheet.dateRange;
+}
+
 function withCalculatedSheetMetrics(sheet: LogSheet, motionStationaryThresholdNm: number): LogSheet {
   return { ...sheet, metrics: calculateLogSheetMetrics(sheet.lines, sheet.route, { stationaryDistanceThresholdNm: motionStationaryThresholdNm }) };
 }
@@ -833,7 +845,7 @@ export function LogbookApp({
     const motorHours = sheetsWithMetrics.reduce((sum, item) => sum + item.metrics.motorHours, 0);
     const timeline = sheetsWithMetrics
       .slice().sort((a, b) => a.sheet.dateRange.localeCompare(b.sheet.dateRange))
-      .map((item) => ({ label: item.sheet.dateRange, totalNm: item.metrics.totalMiles, sailNm: item.metrics.sailMiles, motorNm: item.metrics.motorMiles }));
+      .map((item) => ({ label: monthLabelForSheet(item.sheet), totalNm: item.metrics.totalMiles, sailNm: item.metrics.sailMiles, motorNm: item.metrics.motorMiles, overallMinutes: item.metrics.overallDurationMinutes ?? item.metrics.durationMinutes ?? 0, motionMinutes: item.metrics.motionDurationMinutes, motorMinutes: item.metrics.motorHours * 60 }));
     const boatDistribution = logbook.boats.map((boat) => ({
       boatName: boat.name,
       totalNm: sheetsWithMetrics

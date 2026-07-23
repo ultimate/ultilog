@@ -823,3 +823,19 @@ h3 { margin-block:.25rem .55rem; }
 .dashboard-boat-pie svg { width:160px; height:160px; transform:rotate(-90deg); }
 .dashboard-boat-pie circle { fill:none; stroke-width:32; }
 .dashboard-pies dt span { display:inline-block; width:.7rem; height:.7rem; border-radius:50%; margin-right:.4rem; }
+.dashboard-grid--charts { grid-template-columns:1fr; }
+.dashboard-chart-card { overflow:hidden; }
+.chart-toggle-legend { display:flex; flex-wrap:wrap; gap:.45rem .9rem; justify-content:center; margin:.4rem 0 .8rem; color:var(--subtle); font-size:.78rem; }
+.chart-toggle-legend label { display:inline-flex; align-items:center; gap:.3rem; cursor:pointer; }
+.chart-toggle-legend input { margin:0; }
+.chart-toggle-legend span { width:.8rem; height:.8rem; border-radius:.2rem; display:inline-block; }
+.dashboard-combo-chart svg { width:100%; height:280px; }
+.chart-area-sail { fill:#7cc6a455; stroke:none; }
+.chart-area-motor { fill:#58b7ff40; stroke:none; }
+.chart-line-total,.chart-line-motion,.chart-line-motor { fill:none; stroke:var(--blue); stroke-width:4; stroke-linecap:round; stroke-linejoin:round; }
+.chart-line-motion { stroke:#7cc6a4; stroke-width:3; }
+.chart-line-motor { stroke:#58b7ff; stroke-width:3; }
+.chart-bar-sail,.chart-bar-motor,.chart-bar-overall { rx:2; }
+.chart-bar-sail { fill:#a5d8bd; }
+.chart-bar-motor { fill:#9fd4ff; }
+.chart-bar-overall { fill:#8fb8ff; }
