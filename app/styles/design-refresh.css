@@ -839,3 +839,6 @@ h3 { margin-block:.25rem .55rem; }
 .chart-bar-sail { fill:#a5d8bd; }
 .chart-bar-motor { fill:#9fd4ff; }
 .chart-bar-overall { fill:#8fb8ff; }
+.chart-axis-line { fill:none; stroke:color-mix(in srgb, var(--text) 28%, transparent); stroke-width:1.4; }
+.chart-axis-label { fill:var(--subtle); font-size:11px; }
+.dashboard-combo-chart .grid-line { stroke:color-mix(in srgb, var(--line) 62%, transparent); stroke-width:1; stroke-dasharray:3 5; }

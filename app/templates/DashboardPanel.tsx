@@ -65,7 +65,7 @@ export function DashboardPanel({ stats, onboardingChecklist }: DashboardPanelPro
             { key: "monthlySail", label: t("dashboard.monthlySailMiles"), color: "#a5d8bd", checked: visibleMiles.monthlySail, onToggle: () => toggleMiles("monthlySail") },
             { key: "monthlyMotor", label: t("dashboard.monthlyMotorMiles"), color: "#9fd4ff", checked: visibleMiles.monthlyMotor, onToggle: () => toggleMiles("monthlyMotor") },
           ]} />
-          <div className="line-chart dashboard-combo-chart" aria-hidden="true"><svg viewBox="0 0 640 260" role="img"><ChartGrid />{visibleMiles.sail && <polygon className="chart-area-sail" points={milesChart.sailArea} />}{visibleMiles.motor && <polygon className="chart-area-motor" points={milesChart.motorArea} />}{visibleMiles.monthlySail && milesChart.bars.map((bar) => <rect key={`${bar.label}-sail`} className="chart-bar-sail" x={bar.x - 9} y={bar.sailY} width="8" height={bar.sailHeight} />)}{visibleMiles.monthlyMotor && milesChart.bars.map((bar) => <rect key={`${bar.label}-motor`} className="chart-bar-motor" x={bar.x + 1} y={bar.motorY} width="8" height={bar.motorHeight} />)}{visibleMiles.total && <polyline className="chart-line-total" points={milesChart.totalLine} />}</svg></div>
+          <div className="line-chart dashboard-combo-chart" aria-hidden="true"><svg viewBox="0 0 640 280" role="img"><ChartGrid maxValue={milesChart.maxValue} unit="nm" labels={milesChart.labels} />{visibleMiles.sail && <polygon className="chart-area-sail" points={milesChart.sailArea} />}{visibleMiles.motor && <polygon className="chart-area-motor" points={milesChart.motorArea} />}{visibleMiles.monthlySail && milesChart.bars.map((bar) => <rect key={`${bar.label}-sail`} className="chart-bar-sail" x={bar.x - 9} y={bar.sailY} width="8" height={bar.sailHeight} />)}{visibleMiles.monthlyMotor && milesChart.bars.map((bar) => <rect key={`${bar.label}-motor`} className="chart-bar-motor" x={bar.x + 1} y={bar.motorY} width="8" height={bar.motorHeight} />)}{visibleMiles.total && <polyline className="chart-line-total" points={milesChart.totalLine} />}</svg></div>
         </article>
         <article className="chart-card dashboard-chart-card">
           <h3>{t("dashboard.hoursOverTime")}</h3>
@@ -77,7 +77,7 @@ export function DashboardPanel({ stats, onboardingChecklist }: DashboardPanelPro
             { key: "monthlyMotion", label: t("dashboard.monthlyMotionHours"), color: "#a5d8bd", checked: visibleHours.monthlyMotion, onToggle: () => toggleHours("monthlyMotion") },
             { key: "monthlyMotor", label: t("dashboard.monthlyMotorHours"), color: "#9fd4ff", checked: visibleHours.monthlyMotor, onToggle: () => toggleHours("monthlyMotor") },
           ]} />
-          <div className="line-chart dashboard-combo-chart" aria-hidden="true"><svg viewBox="0 0 640 260" role="img"><ChartGrid />{visibleHours.monthlyOverall && hoursChart.bars.map((bar) => <rect key={`${bar.label}-overall`} className="chart-bar-overall" x={bar.x - 14} y={bar.overallY} width="8" height={bar.overallHeight} />)}{visibleHours.monthlyMotion && hoursChart.bars.map((bar) => <rect key={`${bar.label}-motion`} className="chart-bar-sail" x={bar.x - 4} y={bar.motionY} width="8" height={bar.motionHeight} />)}{visibleHours.monthlyMotor && hoursChart.bars.map((bar) => <rect key={`${bar.label}-motor`} className="chart-bar-motor" x={bar.x + 6} y={bar.motorY} width="8" height={bar.motorHeight} />)}{visibleHours.overall && <polyline className="chart-line-total" points={hoursChart.overallLine} />}{visibleHours.motion && <polyline className="chart-line-motion" points={hoursChart.motionLine} />}{visibleHours.motor && <polyline className="chart-line-motor" points={hoursChart.motorLine} />}</svg></div>
+          <div className="line-chart dashboard-combo-chart" aria-hidden="true"><svg viewBox="0 0 640 280" role="img"><ChartGrid maxValue={hoursChart.maxValue} unit="h" labels={hoursChart.labels} />{visibleHours.monthlyOverall && hoursChart.bars.map((bar) => <rect key={`${bar.label}-overall`} className="chart-bar-overall" x={bar.x - 14} y={bar.overallY} width="8" height={bar.overallHeight} />)}{visibleHours.monthlyMotion && hoursChart.bars.map((bar) => <rect key={`${bar.label}-motion`} className="chart-bar-sail" x={bar.x - 4} y={bar.motionY} width="8" height={bar.motionHeight} />)}{visibleHours.monthlyMotor && hoursChart.bars.map((bar) => <rect key={`${bar.label}-motor`} className="chart-bar-motor" x={bar.x + 6} y={bar.motorY} width="8" height={bar.motorHeight} />)}{visibleHours.overall && <polyline className="chart-line-total" points={hoursChart.overallLine} />}{visibleHours.motion && <polyline className="chart-line-motion" points={hoursChart.motionLine} />}{visibleHours.motor && <polyline className="chart-line-motor" points={hoursChart.motorLine} />}</svg></div>
         </article>
         <article className="compliance-summary">
           <h3>{t("dashboard.distribution")}</h3>
@@ -96,8 +96,19 @@ function ChartLegend({ items }: { items: { key: string; label: string; color: st
   return <div className="chart-toggle-legend">{items.map((item) => <label key={item.key}><input type="checkbox" checked={item.checked} onChange={item.onToggle} /><span style={{ background: item.color }} />{item.label}</label>)}</div>;
 }
 
-function ChartGrid() {
-  return <path className="grid-line" d="M40 30H620M40 80H620M40 130H620M40 180H620M40 230H620" />;
+function ChartGrid({ maxValue, unit, labels }: { maxValue: number; unit: string; labels: { label: string; x: number }[] }) {
+  const yTicks = [0, 0.25, 0.5, 0.75, 1].map((fraction) => ({
+    value: Math.round(maxValue * (1 - fraction)),
+    y: 30 + fraction * 200,
+  }));
+  const visibleLabels = labels.filter((_, index) => index === 0 || index === labels.length - 1 || index % Math.max(1, Math.ceil(labels.length / 6)) === 0);
+  return (
+    <g className="chart-axis-layer">
+      {yTicks.map((tick) => <g key={tick.y}><path className="grid-line" d={`M40 ${tick.y}H620`} /><text className="chart-axis-label" x="34" y={tick.y + 4} textAnchor="end">{tick.value.toLocaleString()} {unit}</text></g>)}
+      <path className="chart-axis-line" d="M40 30V230H620" />
+      {visibleLabels.map((label) => <text key={`${label.label}-${label.x}`} className="chart-axis-label" x={label.x} y="252" textAnchor="middle">{label.label}</text>)}
+    </g>
+  );
 }
 
 function buildMonthlyTimeline(points: TimelinePoint[]) {
@@ -127,6 +138,8 @@ function buildMilesChart(points: TimelinePoint[]) {
     ),
     totalLine: coordinates.map((point) => `${point.x},${point.totalY}`).join(" "),
     bars: points.map((point, index) => monthlyBar(index, points.length, point.sailNm, point.motorNm, maxValue)),
+    labels: points.map((point, index) => ({ label: point.label, ...chartPosition(index, Math.max(points.length, 1)) })),
+    maxValue,
   };
 }
 
@@ -148,6 +161,8 @@ function buildHoursChart(points: TimelinePoint[]) {
     motionLine: coordinates.map((point) => `${point.x},${point.motionY}`).join(" "),
     motorLine: coordinates.map((point) => `${point.x},${point.motorY}`).join(" "),
     bars: points.map((point, index) => monthlyHoursBar(index, points.length, point, maxValue)),
+    labels: points.map((point, index) => ({ label: point.label, ...chartPosition(index, Math.max(points.length, 1)) })),
+    maxValue,
   };
 }
 
