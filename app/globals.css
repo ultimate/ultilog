@@ -1329,12 +1329,15 @@ img.entity-image--preview {
 @media print {
   @page {
     size: A4 landscape;
+    size: 297mm 210mm;
     page-orientation: landscape;
     margin: 8mm;
   }
 
   html,
   body {
+    width: 297mm !important;
+    min-width: 297mm !important;
     background: #fff !important;
     color: #000 !important;
   }
@@ -1345,12 +1348,20 @@ img.entity-image--preview {
 
   .print-root {
     position: static !important;
-    width: auto !important;
+    width: 281mm !important;
+    min-width: 281mm !important;
+    max-width: none !important;
     min-height: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
     background: #fff !important;
     color: #000 !important;
+  }
+
+  .print-root .log-sheet-print-view {
+    width: 281mm !important;
+    min-width: 281mm !important;
+    max-width: none !important;
   }
 
   body:has(.print-root .print-page) .app-shell {
