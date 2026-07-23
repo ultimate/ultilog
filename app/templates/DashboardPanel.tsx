@@ -165,7 +165,7 @@ function monthlyBar(index: number, count: number, sail: number, motor: number, m
   const { x } = chartPosition(index, Math.max(count, 1));
   const sailHeight = (sail / maxValue) * 200;
   const motorHeight = (motor / maxValue) * 200;
-  return { label: String(index), x, sailY: 230 - sailHeight, sailHeight, motorY: 230 - sailHeight - motorHeight, motorHeight };
+  return { label: String(index), x, sailY: 230 - sailHeight, sailHeight, motorY: 230 - motorHeight, motorHeight };
 }
 
 function monthlyHoursBar(index: number, count: number, point: TimelinePoint, maxValue: number) {
