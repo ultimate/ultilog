@@ -121,7 +121,10 @@ function buildMilesChart(points: TimelinePoint[]) {
   const coordinates = cumulative.map((point, index) => ({ ...chartPosition(index, Math.max(cumulative.length, 1)), sailY: chartY(point.cumulativeSail, maxValue), totalY: chartY(point.cumulativeTotal, maxValue) }));
   return {
     sailArea: areaPoints(coordinates.map((point) => ({ x: point.x, y: point.sailY }))),
-    motorArea: areaPoints(coordinates.map((point) => ({ x: point.x, y: point.totalY }))),
+    motorArea: areaBetweenPoints(
+      coordinates.map((point) => ({ x: point.x, y: point.totalY })),
+      coordinates.map((point) => ({ x: point.x, y: point.sailY })),
+    ),
     totalLine: coordinates.map((point) => `${point.x},${point.totalY}`).join(" "),
     bars: points.map((point, index) => monthlyBar(index, points.length, point.sailNm, point.motorNm, maxValue)),
   };
@@ -159,6 +162,11 @@ function chartY(value: number, maxValue: number) {
 function areaPoints(points: { x: number; y: number }[]) {
   if (!points.length) return "40,230 620,230";
   return `40,230 ${points.map((point) => `${point.x},${point.y}`).join(" ")} ${points.at(-1)?.x ?? 620},230`;
+}
+
+function areaBetweenPoints(upperPoints: { x: number; y: number }[], lowerPoints: { x: number; y: number }[]) {
+  if (!upperPoints.length || !lowerPoints.length) return "";
+  return `${upperPoints.map((point) => `${point.x},${point.y}`).join(" ")} ${[...lowerPoints].reverse().map((point) => `${point.x},${point.y}`).join(" ")}`;
 }
 
 function monthlyBar(index: number, count: number, sail: number, motor: number, maxValue: number) {
