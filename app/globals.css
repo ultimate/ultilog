@@ -1452,6 +1452,7 @@ img.entity-image--preview {
 @media print {
   @page {
     size: A4 landscape;
+    page-orientation: landscape;
     margin: 8mm;
   }
 
@@ -1541,6 +1542,7 @@ img.entity-image--preview {
     text-shadow: none !important;
     border-color: #000 !important;
     border-radius: 0 !important;
+    filter: none !important;
   }
 
   .print-header,
@@ -1548,7 +1550,9 @@ img.entity-image--preview {
   .print-page section,
   .print-loglines th,
   .print-loglines td {
+    background: #fff !important;
     background-color: #fff !important;
+    background-image: none !important;
   }
 
   .print-loglines {
