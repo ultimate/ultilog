@@ -1665,7 +1665,8 @@ export function LogbookApp({
   }
 
   return (
-    <main
+    <>
+      <main
       className="app-shell"
       data-theme={theme}
       data-nav={isNavSlim ? "slim" : "full"}
@@ -2036,14 +2037,15 @@ export function LogbookApp({
           {activeModule === "compliance" && <CompliancePage />}
         </section>
       </section>
-      <div className="print-only" aria-hidden={!printTarget}>
+      </main>
+      <div className="print-only print-root" aria-hidden={!printTarget}>
         {printTarget?.mode === "empty" ? (
           <LogSheetPrintView mode="empty" boat={printBoat} />
         ) : printSheet ? (
           <LogSheetPrintView mode="filled" sheet={printSheet} boat={printBoat} summary={printSummary} />
         ) : null}
       </div>
-    </main>
+    </>
   );
 }
 
