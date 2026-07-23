@@ -1465,6 +1465,20 @@ img.entity-image--preview {
     display: block !important;
   }
 
+  .print-root {
+    position: static !important;
+    width: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  body:has(.print-root .print-page) .app-shell {
+    display: none !important;
+  }
+
   .screen-only,
   .no-print,
   nav,
@@ -1493,17 +1507,11 @@ img.entity-image--preview {
     display: none !important;
   }
 
-  body:has(.print-page) * {
-    visibility: hidden !important;
-  }
-
-  body:has(.print-page) .print-page,
-  body:has(.print-page) .print-page * {
+  body:has(.print-root .print-page) .print-root,
+  body:has(.print-root .print-page) .print-root *,
+  body:has(.print-root .print-page) .print-page,
+  body:has(.print-root .print-page) .print-page * {
     visibility: visible !important;
-  }
-
-  body:has(.print-page) .print-page {
-    position: relative;
   }
 
   .print-page {
