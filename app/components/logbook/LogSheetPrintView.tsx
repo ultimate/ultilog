@@ -238,15 +238,15 @@ function valueOrBlank(value: string | number | undefined | null, fallback = "—
 
 const printStyles = `
 .log-sheet-print-view { color: #000; background: #fff; font-family: Arial, Helvetica, sans-serif; }
-.log-sheet-print-page { box-sizing: border-box; display: grid; grid-template-rows: 31mm 1fr 42mm; gap: 3mm; width: 297mm; height: 210mm; padding: 8mm; page-break-after: always; break-after: page; background: #fff; color: #000; }
+.log-sheet-print-page { box-sizing: border-box; display: grid; grid-template-rows: 27mm 1fr 36mm; gap: 2mm; width: 297mm; height: 210mm; padding: 6mm; border: 0.3mm solid #000; page-break-after: always; break-after: page; background: #fff; color: #000; }
 .log-sheet-print-page:last-child { page-break-after: auto; break-after: auto; }
-.print-header, .print-footer { display: grid; gap: 3mm; }
-.print-header { grid-template-columns: 1fr 62mm; border: 1px solid #000; padding: 2mm; }
+.print-header, .print-footer { display: grid; gap: 2mm; }
+.print-header { grid-template-columns: 1fr 58mm; border: 0.25mm solid #000; padding: 1.2mm; }
 .print-kicker, .print-field span { margin: 0; font-size: 7pt; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
-.print-title-block h1 { margin: 0 0 1.5mm; font-size: 15pt; line-height: 1.1; }
-.print-master-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.5mm; }
-.print-summary { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.5mm; border-left: 1px solid #000; padding-left: 2mm; }
-.print-field { min-width: 0; border-bottom: 1px solid #000; }
+.print-title-block h1 { margin: 0 0 1mm; font-size: 13pt; line-height: 1.05; }
+.print-master-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1mm; }
+.print-summary { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1mm; border-left: 0.25mm solid #000; padding-left: 1.2mm; }
+.print-field { min-width: 0; border-bottom: 0.2mm solid #000; }
 .print-field strong { display: block; min-height: 11pt; overflow: hidden; font-size: 8pt; line-height: 1.15; text-overflow: ellipsis; white-space: nowrap; }
 .print-log-table { width: 100%; height: 100%; border-collapse: collapse; table-layout: fixed; font-size: 6.6pt; line-height: 1.05; }
 .print-log-table col.print-col-time { width: 4%; }
@@ -259,19 +259,19 @@ const printStyles = `
 .print-log-table col.print-col-motor { width: 4%; }
 .print-log-table col.print-col-remarks { width: 26%; }
 .print-log-table tr { height: 7mm; max-height: 7mm; }
-.print-log-table th, .print-log-table td { box-sizing: border-box; height: 7mm; max-height: 7mm; overflow: hidden; border: 1px solid #000; padding: .8mm; text-align: left; vertical-align: top; }
+.print-log-table th, .print-log-table td { box-sizing: border-box; height: 7mm; max-height: 7mm; overflow: hidden; border: 0.2mm solid #000; padding: .55mm; text-align: left; vertical-align: top; background: #fff; color: #000; }
 .print-log-table th { font-size: 6.4pt; font-weight: 700; text-transform: uppercase; white-space: nowrap; }
 .print-log-table td { white-space: nowrap; text-overflow: ellipsis; }
 .print-remarks-cell { white-space: nowrap; }
 .print-remark-text { display: block; overflow: hidden; width: 100%; max-height: 5.2mm; font-size: 6.3pt; line-height: 1.05; text-overflow: ellipsis; white-space: nowrap; }
 .print-remark-small { font-size: 5.5pt; }
 .print-remark-tiny { font-size: 4.8pt; }
-.print-footer { position: relative; grid-template-columns: 72mm 1fr 82mm; }
-.print-footer section { border: 1px solid #000; padding: 2mm; }
+.print-footer { position: relative; grid-template-columns: 68mm 1fr 78mm; }
+.print-footer section { border: 0.25mm solid #000; padding: 1.2mm; background: #fff; color: #000; }
 .print-footer h2 { margin: 0 0 2mm; font-size: 8pt; text-transform: uppercase; }
-.print-route-box { background-image: linear-gradient(#000 1px, transparent 1px), linear-gradient(90deg, #000 1px, transparent 1px); background-size: 10mm 10mm; }
+.print-route-box { background: #fff; }
 .print-tech-box ul { margin: 0; padding-left: 4mm; font-size: 7pt; }
 .print-writing-lines { height: 25mm; background: repeating-linear-gradient(to bottom, transparent 0, transparent 7mm, #000 7.2mm); }
 .print-page-number { position: absolute; right: 2mm; bottom: 1.5mm; font-size: 7pt; font-weight: 700; }
-@media print { body { margin: 0; } @page { size: A4 landscape; margin: 8mm; } .log-sheet-print-page { width: 281mm; height: 194mm; padding: 0; } }
+@media print { body { margin: 0; } @page { size: A4 landscape; page-orientation: landscape; margin: 8mm; } .log-sheet-print-page { width: 281mm; min-width: 281mm; height: 194mm; min-height: 194mm; padding: 0; } }
 `;
