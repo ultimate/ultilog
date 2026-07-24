@@ -1039,7 +1039,7 @@ td { color: #28384b; line-height: 1.45; }
 }
 
 .route-edit-row {
-  grid-template-columns: minmax(5rem, 0.25fr) minmax(12rem, 1fr) minmax(7rem, 0.28fr) minmax(12rem, 1fr);
+  grid-template-columns: minmax(5rem, 0.25fr) minmax(10rem, 1fr) minmax(5.75rem, 0.18fr) minmax(10rem, 1fr);
 }
 
 .header-edit-row > span {

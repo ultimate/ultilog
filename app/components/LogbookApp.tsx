@@ -43,6 +43,7 @@ import {
   routeStamp,
   routeStampFromDateTimeLocal,
   splitDateTimeLocal,
+  timeZoneOffsetOptions,
   timezoneOffsetFromStamp,
 } from "./logbook/date-utils";
 import { ManagerShell } from "./managers/ManagerShell";
@@ -233,6 +234,7 @@ export function LogbookApp({
   const [editingSheetField, setEditingSheetField] =
     useState<SheetInlineField | null>(null);
   const [sheetInlineDraft, setSheetInlineDraft] = useState("");
+  const [sheetInlineTimezoneDraft, setSheetInlineTimezoneDraft] = useState(timezoneOffsetFromStamp(""));
   const [editingLineIndex, setEditingLineIndex] = useState<number | null>(null);
   const [selectedBoatId, setSelectedBoatId] = useState(
     defaultLogbook.boats[0]?.id ?? "",
@@ -815,6 +817,17 @@ export function LogbookApp({
           onChange={(event) => setSheetInlineDraft(event.target.value)}
           autoFocus
         />
+        <select
+          aria-label={`${t("details.edit")} ${field} time zone`}
+          value={sheetInlineTimezoneDraft}
+          onChange={(event) => setSheetInlineTimezoneDraft(event.target.value)}
+        >
+          {timeZoneOffsetOptions.map((offset) => (
+            <option key={offset} value={offset}>
+              UTC{offset}
+            </option>
+          ))}
+        </select>
         {sheetInlineActions}
       </span>
     ) : (
@@ -823,7 +836,11 @@ export function LogbookApp({
         className="inline-value-button"
         disabled={!canEditActiveSheetMasterData}
         onClick={() =>
-          startEditingSheetField(field, dateTimeLocalFromStamp(stamp))
+          startEditingSheetField(
+            field,
+            dateTimeLocalFromStamp(stamp),
+            timezoneOffsetFromStamp(stamp),
+          )
         }
       >
         {stamp || activeSheet.dateRange}
@@ -1077,10 +1094,15 @@ export function LogbookApp({
     };
     await saveLogbookNow(nextLogbook);
   }
-  function startEditingSheetField(field: SheetInlineField, value: string) {
+  function startEditingSheetField(
+    field: SheetInlineField,
+    value: string,
+    timezone = timezoneOffsetFromStamp(""),
+  ) {
     if (activeSheet.status !== "Draft") return;
     setEditingSheetField(field);
     setSheetInlineDraft(value);
+    setSheetInlineTimezoneDraft(timezone);
   }
 
   async function saveSheetInlineField() {
@@ -1106,7 +1128,7 @@ export function LogbookApp({
             route: {
               ...sheet.route,
               departed:
-                routeStampFromDateTimeLocal(value, timezoneOffsetFromStamp(sheet.route.departed)) || sheet.route.departed,
+                routeStampFromDateTimeLocal(value, sheetInlineTimezoneDraft) || sheet.route.departed,
             },
           };
         }
@@ -1116,7 +1138,7 @@ export function LogbookApp({
           dateRange: sheet.dateRange || date,
           route: {
             ...sheet.route,
-            arrived: routeStampFromDateTimeLocal(value, timezoneOffsetFromStamp(sheet.route.arrived)) || sheet.route.arrived,
+            arrived: routeStampFromDateTimeLocal(value, sheetInlineTimezoneDraft) || sheet.route.arrived,
           },
         };
       }),
@@ -1129,6 +1151,7 @@ export function LogbookApp({
   function cancelSheetInlineEdit() {
     setEditingSheetField(null);
     setSheetInlineDraft("");
+    setSheetInlineTimezoneDraft(timezoneOffsetFromStamp(""));
   }
 
   function cancelSheetEdit() {
