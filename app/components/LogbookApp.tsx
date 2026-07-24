@@ -718,21 +718,13 @@ export function LogbookApp({
   useEffect(() => {
     if (!printTarget) return;
 
-    let isPrintCanceled = false;
     const clearPrintTarget = () => setPrintTarget(null);
-    const previousAfterPrint = window.onafterprint;
 
     window.onafterprint = clearPrintTarget;
     window.setTimeout(() => {
-      if (isPrintCanceled) return;
       window.print();
       window.setTimeout(() => clearPrintTarget(), 60_000);
     }, 0);
-
-    return () => {
-      isPrintCanceled = true;
-      if (window.onafterprint === clearPrintTarget) window.onafterprint = previousAfterPrint;
-    };
   }, [printTarget]);
   const canEditActiveSheetMasterData = activeSheet.status === "Draft";
   const sheetInlineActions = editingSheetField ? (
