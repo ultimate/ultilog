@@ -7,8 +7,8 @@ export type PersistedLogbook = {
   sheets: LogSheet[];
 };
 
-export { defaultDeviationTable, deviationTableHeadings, normalizeDeviationTable } from "./boat";
-export type { Boat, BoatType, DeviationTableRow } from "./boat";
+export { defaultDeviationTable, defaultWindDriftTable, deviationTableHeadings, normalizeDeviationTable, normalizeWindDriftTable, windDriftAngles, windDriftSailSettings } from "./boat";
+export type { Boat, BoatType, DeviationTableRow, WindDriftAngle, WindDriftSailSetting, WindDriftTableRow } from "./boat";
 export type { StoredImage } from "./stored-image";
 export type { CrewMember, SheetCrewMember } from "./crew-member";
 export type { LogLine, TemperatureUnit, WindUnit } from "./log-line";

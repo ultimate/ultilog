@@ -265,3 +265,20 @@ describe("course conversion with position", () => {
     });
   });
 });
+
+it("derives wind drift from the wind drift table using relative wind angle", () => {
+  expect(calculateCourseConversion({
+    trueCourse: 100,
+  }, undefined, {
+    windDirection: 185,
+    windDriftTable: {
+      closeHauled: { fullSail: 4, secondReef: 8, stormSail: 16 },
+      beamReach: { fullSail: 2, secondReef: 4, stormSail: 8 },
+      broadReach: { fullSail: 1, secondReef: 2, stormSail: 4 },
+    },
+  })).toEqual({
+    trueCourse: 100,
+    windDrift: 2,
+    courseThroughWater: 102,
+  });
+});

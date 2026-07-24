@@ -1,5 +1,5 @@
 import type { Boat, LineForm } from "../../models/logbook";
-import { calculateCourseConversion, type CourseConversionInput, type CourseConversionLookupOptions, type DeviationTable } from "../nautical/course-conversion";
+import { calculateCourseConversion, type CourseConversionInput, type CourseConversionLookupOptions, type DeviationTable, type WindDriftTable } from "../nautical/course-conversion";
 import { normalizeCoordinate, parseCoordinate, type CoordinateAxis } from "../nautical/coordinates";
 
 type CourseFieldName = typeof courseInputFieldNames[number];
@@ -10,7 +10,7 @@ export type LogLineFormUpdate = {
 };
 
 export type LogLineFormUpdateContext = {
-  boat?: Pick<Boat, "deviationTable">;
+  boat?: Pick<Boat, "deviationTable" | "windDriftTable">;
   variationLookup?: CourseConversionLookupOptions["variationLookup"];
 };
 
@@ -22,12 +22,13 @@ export function updateLogLineFormForInput(form: LineForm, update: LogLineFormUpd
   if (!shouldRecalculateCourses(update.field, nextForm)) return nextForm;
 
   const deviationTable = context.boat ? deviationTableFromBoat(context.boat) : undefined;
-  const input = courseInputFromForm(nextForm, Boolean(deviationTable));
+  const windDriftTable = context.boat ? windDriftTableFromBoat(context.boat) : undefined;
+  const input = courseInputFromForm(nextForm, Boolean(deviationTable), Boolean(windDriftTable));
   const position = nextForm.latitude.trim() || nextForm.longitude.trim()
     ? { latitude: parseCoordinate(nextForm.latitude), longitude: parseCoordinate(nextForm.longitude) }
     : undefined;
   const date = nextForm.time ? new Date(nextForm.time) : undefined;
-  const options = { position, date, variationLookup: context.variationLookup };
+  const options = { position, date, variationLookup: context.variationLookup, windDirection: optionalNumber(nextForm.windDirection), windDriftTable };
   const conversion = calculateCourseConversion(input, deviationTable, options);
 
   if (conversion instanceof Promise) {
@@ -45,7 +46,7 @@ function applyFieldUpdate(form: LineForm, { field, value }: LogLineFormUpdate): 
 }
 
 function shouldRecalculateCourses(field: keyof LineForm, form: LineForm) {
-  return (courseInputFieldNames.includes(field as CourseFieldName) || field === "latitude" || field === "longitude" || field === "time") && hasAnyCourseInput(form);
+  return (courseInputFieldNames.includes(field as CourseFieldName) || field === "windDirection" || field === "latitude" || field === "longitude" || field === "time") && hasAnyCourseInput(form);
 }
 
 function optionalNumber(value: string) {
@@ -58,14 +59,14 @@ function hasAnyCourseInput(form: LineForm) {
   return courseInputFieldNames.some((field) => form[field].trim());
 }
 
-function courseInputFromForm(form: LineForm, forceDeviationFromTable = false): CourseConversionInput {
+function courseInputFromForm(form: LineForm, forceDeviationFromTable = false, forceWindDriftFromTable = false): CourseConversionInput {
   return {
     compassCourse: optionalNumber(form.compassCourse),
     deviation: forceDeviationFromTable ? undefined : optionalNumber(form.deviation),
     magneticCourse: optionalNumber(form.magneticCourse),
     variation: optionalNumber(form.variation),
     trueCourse: optionalNumber(form.trueCourse),
-    windDrift: optionalNumber(form.windDrift),
+    windDrift: forceWindDriftFromTable ? undefined : optionalNumber(form.windDrift),
     courseThroughWater: optionalNumber(form.courseThroughWater),
     currentDrift: optionalNumber(form.currentDrift),
     courseOverGround: optionalNumber(form.courseOverGround),
@@ -95,4 +96,12 @@ function deviationTableFromBoat(boat: Pick<Boat, "deviationTable">): DeviationTa
     .map((row) => [row.heading, optionalNumber(row.deviation)] as const)
     .filter((entry): entry is readonly [number, number] => entry[1] !== undefined);
   return entries.length ? Object.fromEntries(entries) : undefined;
+}
+
+function windDriftTableFromBoat(boat: Pick<Boat, "windDriftTable">): WindDriftTable | undefined {
+  const rows = (boat.windDriftTable ?? []).map((row) => {
+    const values = Object.fromEntries(Object.entries(row.values).map(([key, value]) => [key, optionalNumber(value)]));
+    return [row.angle, values];
+  });
+  return rows.some(([, values]) => Object.values(values).some((value) => value !== undefined)) ? Object.fromEntries(rows) as WindDriftTable : undefined;
 }

@@ -2,7 +2,7 @@ import { EntityImage } from "../EntityImage";
 import { flagGroups, flagOptionEmoji } from "../../../lib/flags";
 import { useI18n } from "../../../lib/i18n";
 import { useRef, type Dispatch, type SetStateAction } from "react";
-import type { Boat, BoatForm, PersistedLogbook } from "../../../models/logbook";
+import { windDriftSailSettings, type Boat, type BoatForm, type PersistedLogbook } from "../../../models/logbook";
 import type { BoatType } from "../../../models/logbook";
 import { boatToForm, defaultBoatForm } from "../forms";
 import { modulePath } from "../persistence";
@@ -315,6 +315,50 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                             }
                           />
                         </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </details>
+
+            <details className="wide-field deviation-table-field">
+              <summary>
+                <span className="eyebrow">{t("boats.windDriftTable")}</span>
+                <span>{t("boats.windDriftHelp")}</span>
+              </summary>
+              <div className="table-scroll">
+                <table className="deviation-table">
+                  <thead>
+                    <tr>
+                      <th>{t("boats.windAngle")}</th>
+                      {windDriftSailSettings.map((setting) => (
+                        <th key={setting}>{t(`boats.windDrift.${setting}`)}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {boatForm.windDriftTable.map((row, index) => (
+                      <tr key={row.angle}>
+                        <td>{t(`boats.windDrift.${row.angle}`)}</td>
+                        {windDriftSailSettings.map((setting) => (
+                          <td key={setting}>
+                            <input
+                              aria-label={`${t(`boats.windDrift.${row.angle}`)} ${t(`boats.windDrift.${setting}`)}`}
+                              value={row.values[setting]}
+                              onChange={(e) =>
+                                setBoatForm({
+                                  ...boatForm,
+                                  windDriftTable: boatForm.windDriftTable.map((candidate, candidateIndex) =>
+                                    candidateIndex === index
+                                      ? { ...candidate, values: { ...candidate.values, [setting]: e.target.value } }
+                                      : candidate,
+                                  ),
+                                })
+                              }
+                            />
+                          </td>
+                        ))}
                       </tr>
                     ))}
                   </tbody>

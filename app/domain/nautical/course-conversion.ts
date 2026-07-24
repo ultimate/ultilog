@@ -14,6 +14,9 @@ export type CourseConversionLookupOptions = {
   position?: Position;
   date?: Date;
   variationLookup?: (request: CourseConversionVariationLookupRequest) => Promise<number>;
+  windDirection?: number;
+  windDriftTable?: WindDriftTable;
+  windDriftSailSetting?: WindDriftSailSetting;
 };
 
 export type CourseConversion = {
@@ -32,6 +35,9 @@ type CourseKey = "compassCourse" | "magneticCourse" | "trueCourse" | "courseThro
 type DeltaKey = "deviation" | "variation" | "windDrift" | "currentDrift";
 
 export type DeviationTable = Record<number, number>;
+export type WindDriftTable = Record<WindDriftAngle, Record<WindDriftSailSetting, number | undefined>>;
+export type WindDriftAngle = "closeHauled" | "beamReach" | "broadReach";
+export type WindDriftSailSetting = "fullSail" | "secondReef" | "stormSail";
 
 type DeviationEntry = {
   compassCourse: number;
@@ -190,7 +196,25 @@ function setDeviationFromTable(input: CourseConversionInput, deviationTable?: De
   return false;
 }
 
-function calculateCourseConversionValues(input: CourseConversionInput, deviationTable?: DeviationTable): CourseConversionInput {
+function windDriftAngleForCourses(windDirection: number, heading: number): WindDriftAngle {
+  const relative = Math.abs(normalizeDelta(windDirection - heading));
+  if (relative < 60) return "closeHauled";
+  if (relative < 120) return "beamReach";
+  return "broadReach";
+}
+
+function setWindDriftFromTable(input: CourseConversionInput, options?: CourseConversionLookupOptions | null) {
+  if (!options?.windDriftTable || options.windDirection === undefined || hasValue(input, "windDrift")) return false;
+  const heading = input.trueCourse ?? input.courseThroughWater;
+  if (heading === undefined) return false;
+
+  const angle = windDriftAngleForCourses(options.windDirection, heading);
+  const sailSetting = options.windDriftSailSetting ?? "fullSail";
+  const windDrift = options.windDriftTable[angle]?.[sailSetting];
+  return windDrift === undefined ? false : setDelta(input, "windDrift", windDrift);
+}
+
+function calculateCourseConversionValues(input: CourseConversionInput, deviationTable?: DeviationTable, options?: CourseConversionLookupOptions | null): CourseConversionInput {
   const result: CourseConversionInput = { ...input };
 
   let changed = true;
@@ -198,6 +222,7 @@ function calculateCourseConversionValues(input: CourseConversionInput, deviation
     changed = false;
 
     changed = setDeviationFromTable(result, deviationTable) || changed;
+    changed = setWindDriftFromTable(result, options) || changed;
 
     for (const step of conversionSteps) {
       const from = result[step.from];
@@ -240,7 +265,7 @@ export function calculateCourseConversion(
   const position = options?.position;
 
   if (input.variation !== undefined || !position) {
-    return calculateCourseConversionValues(input, deviationTable);
+    return calculateCourseConversionValues(input, deviationTable, options);
   }
 
   return (async () => {
@@ -250,7 +275,7 @@ export function calculateCourseConversion(
     return calculateCourseConversionValues({
       ...input,
       variation: await variationLookup({ ...position, date: options.date }),
-    }, deviationTable);
+    }, deviationTable, options);
   })();
 }
 

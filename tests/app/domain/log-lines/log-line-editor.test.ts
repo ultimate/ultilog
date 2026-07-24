@@ -53,3 +53,21 @@ describe("log line editor business logic", () => {
     })).resolves.toMatchObject({ latitude: "39", variation: "3", trueCourse: "18" });
   });
 });
+
+it("uses the boat wind drift table when wind direction and true course are known", () => {
+  const boat = {
+    deviationTable: [],
+    windDriftTable: [
+      { angle: "closeHauled", values: { fullSail: "4", secondReef: "8", stormSail: "16" } },
+      { angle: "beamReach", values: { fullSail: "2", secondReef: "4", stormSail: "8" } },
+      { angle: "broadReach", values: { fullSail: "1", secondReef: "2", stormSail: "4" } },
+    ],
+  } as Pick<Boat, "deviationTable" | "windDriftTable">;
+  const form = { ...defaultLineForm, trueCourse: "100", windDirection: "185", windDrift: "99" };
+
+  expect(updateLogLineFormForInput(form, { field: "windDirection", value: "185" }, { boat })).toMatchObject({
+    trueCourse: "100",
+    windDrift: "2",
+    courseThroughWater: "102",
+  });
+});
