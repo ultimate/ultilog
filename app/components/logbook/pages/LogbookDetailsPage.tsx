@@ -310,6 +310,21 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
       </div>
     );
   };
+  const renderClampedLogText = (label: string, value: string | number | undefined) => {
+    const text = String(value ?? "").trim();
+    if (!text) return null;
+
+    return (
+      <span className="log-line-clamped-text-wrap">
+        <span className="log-line-clamped-text">{text}</span>
+        <span className="log-line-text-tooltip" tabIndex={0} aria-label={`${label}: ${text}`}>
+          <span aria-hidden="true">ⓘ</span>
+          <span className="log-line-text-tooltip-bubble" role="tooltip">{text}</span>
+        </span>
+      </span>
+    );
+  };
+
 
   const renderLineEditor = (key: string) => (
     <tr key={key} className="inline-line-row">
@@ -779,11 +794,11 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                       {showAddLine && renderLineEditor("new")}
                       {activeSheet.lines.map((line, index) => editingLineIndex === index ? renderLineEditor(`edit-${index}`) : (
                         <tr key={`${line.time}-${line.position}-${index}`}>
-                          <td>{line.time}</td><td>{coordinateToInput(line.latitude, "lat", coordinateFormat)}</td><td>{coordinateToInput(line.longitude, "lon", coordinateFormat)}</td><td>{line.weather}</td><td>{line.weatherRemark}</td><td>{line.temperature} {line.temperatureUnit}</td><td>{line.barometer}</td><td>{line.windDirection} {line.windStrength} {line.windUnit}</td><td>{line.waves} {line.seaUnit}</td><td>{line.tide} {line.tideUnit}</td><td>{line.moon}</td>
+                          <td>{line.time}</td><td>{coordinateToInput(line.latitude, "lat", coordinateFormat)}</td><td>{coordinateToInput(line.longitude, "lon", coordinateFormat)}</td><td>{line.weather}</td><td>{renderClampedLogText(t("details.weatherRemark"), line.weatherRemark)}</td><td>{line.temperature} {line.temperatureUnit}</td><td>{line.barometer}</td><td>{line.windDirection} {line.windStrength} {line.windUnit}</td><td>{line.waves} {line.seaUnit}</td><td>{line.tide} {line.tideUnit}</td><td>{line.moon}</td>
                           {courseConversionColumns.map((column) => (!column.isOptional || showCourseColumns) && (
                             <td className={column.isOptional ? "optional-course-cell" : undefined} key={`${line.time}-${index}-${column.field}`}>{line[column.field as keyof LogLine]}</td>
                           ))}
-                          <td>{line.speedKn}</td><td>{line.logNm}</td><td>{line.sailMiles} nm {line.sailNote}</td><td>{line.motorMiles} nm · {line.motorHours} h {line.motorNote}</td><td>{line.remarks}</td>
+                          <td>{line.speedKn}</td><td>{line.logNm}</td><td><span className="log-line-distance-summary">{line.sailMiles} nm</span>{renderClampedLogText(t("details.sailNote"), line.sailNote)}</td><td><span className="log-line-distance-summary">{line.motorMiles} nm · {line.motorHours} h</span>{renderClampedLogText(t("details.motorNote"), line.motorNote)}</td><td>{renderClampedLogText(t("details.remarksEvent"), line.remarks)}</td>
                           <td><button type="button" className="edit-chip" disabled={isActiveSheetLocked} onClick={() => startEditingLine(line, index)}>✏️</button></td>
                           <td><button type="button" className="edit-chip" disabled={isActiveSheetLocked} onClick={() => deleteLine(index)}>🗑️</button></td>
                         </tr>

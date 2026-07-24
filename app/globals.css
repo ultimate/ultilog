@@ -1092,6 +1092,77 @@ td { color: #28384b; line-height: 1.45; }
   padding: 0.45rem 0.5rem;
 }
 
+.log-line-clamped-text-wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.25rem;
+  max-width: 16rem;
+}
+
+.log-line-distance-summary {
+  display: block;
+  margin-bottom: 0.15rem;
+  white-space: nowrap;
+}
+
+.log-line-clamped-text {
+  display: -webkit-box;
+  max-height: 2.9rem;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.log-line-text-tooltip {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  color: var(--muted);
+  cursor: help;
+  font-size: 0.82rem;
+  line-height: 1;
+}
+
+.log-line-text-tooltip:hover,
+.log-line-text-tooltip:focus-visible {
+  color: var(--primary);
+  outline: none;
+}
+
+.log-line-text-tooltip-bubble {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 0.45rem);
+  z-index: 20;
+  display: none;
+  width: min(24rem, 70vw);
+  max-height: 14rem;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
+  background: #102033;
+  box-shadow: 0 18px 45px rgba(16, 32, 51, 0.24);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.45;
+  padding: 0.7rem 0.8rem;
+  text-align: left;
+  white-space: normal;
+}
+
+.log-line-text-tooltip:hover .log-line-text-tooltip-bubble,
+.log-line-text-tooltip:focus-visible .log-line-text-tooltip-bubble {
+  display: block;
+}
+
 .labeled-inputs label {
   display: grid;
   gap: 0.2rem;
