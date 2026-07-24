@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import L, { type LatLngBoundsExpression, type LatLngExpression } from "leaflet";
 import {
   MapContainer,
@@ -10,6 +10,7 @@ import {
   TileLayer,
   Tooltip,
   useMap,
+  useMapEvents,
 } from "react-leaflet";
 import { useI18n } from "../../lib/i18n";
 import type { LogLine, LogSheet } from "../../models/logbook";
@@ -42,6 +43,7 @@ type OpenSeaMapLeafletProps = {
   className?: string;
   emptyMessage?: string;
   onRouteClick?: (route: MapRoute) => void;
+  onAddLogLineAt?: (coordinate: Coordinate) => void;
 };
 
 const defaultCenter: LatLngExpression = [54.5, 10.25];
@@ -108,6 +110,56 @@ function FitMapToRoutes({ routes }: { routes: MapRoute[] }) {
   return null;
 }
 
+type MapContextMenuState = Coordinate & {
+  x: number;
+  y: number;
+};
+
+function MapContextMenu({
+  onAddLogLineAt,
+}: {
+  onAddLogLineAt?: (coordinate: Coordinate) => void;
+}) {
+  const { t } = useI18n();
+  const [menu, setMenu] = useState<MapContextMenuState | null>(null);
+
+  useMapEvents({
+    click: () => setMenu(null),
+    contextmenu: (event) => {
+      if (!onAddLogLineAt) return;
+      setMenu({
+        latitude: event.latlng.lat,
+        longitude: event.latlng.lng,
+        x: event.containerPoint.x,
+        y: event.containerPoint.y,
+      });
+    },
+    movestart: () => setMenu(null),
+    zoomstart: () => setMenu(null),
+  });
+
+  if (!menu) return null;
+
+  return (
+    <div
+      className="open-seamap-context-menu"
+      style={{ left: menu.x, top: menu.y }}
+      role="menu"
+    >
+      <button
+        type="button"
+        role="menuitem"
+        onClick={() => {
+          onAddLogLineAt?.({ latitude: menu.latitude, longitude: menu.longitude });
+          setMenu(null);
+        }}
+      >
+        {t("map.addLogLineHere")}
+      </button>
+    </div>
+  );
+}
+
 function markerPointsForRoute(route: MapRoute) {
   if (route.detailLevel === "full") return route.points;
   if (route.points.length <= 1) return route.points;
@@ -134,6 +186,7 @@ export function OpenSeaMapLeaflet({
   className,
   emptyMessage,
   onRouteClick,
+  onAddLogLineAt,
 }: OpenSeaMapLeafletProps) {
   const { t } = useI18n();
   const mapAriaLabel = ariaLabel ?? t("map.routeMapAria");
@@ -169,6 +222,7 @@ export function OpenSeaMapLeaflet({
           url="https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png"
         />
         <FitMapToRoutes routes={visibleRoutes} />
+        <MapContextMenu onAddLogLineAt={onAddLogLineAt} />
 
         {visibleRoutes.map((route, routeIndex) => {
           const positions = route.points.map(toLatLng);

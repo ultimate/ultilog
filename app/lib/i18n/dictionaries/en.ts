@@ -407,6 +407,7 @@ export const en = {
   "map.openRoute": "Open route",
   "map.routeMapAria": "OpenSeaMap route map",
   "map.noPositions": "No valid positions are available for this map yet.",
+  "map.addLogLineHere": "Add log-line here",
   "admin.aria": "Admin page",
   "admin.title": "Admin",
   "admin.subtitle": "Manage user groups for issues #45 and #46.",

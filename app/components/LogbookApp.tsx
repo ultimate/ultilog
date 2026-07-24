@@ -1166,6 +1166,20 @@ export function LogbookApp({
     });
   }
 
+  function startAddingLineAtCoordinates(coordinate: { latitude: number; longitude: number }) {
+    if (activeSheet.status === "Locked") return;
+    const now = new Date();
+    const time = dateTimeLocalFromDate(now);
+    setEditingLineIndex(null);
+    setLineForm({
+      ...lineDefaults,
+      time,
+      latitude: String(Number(coordinate.latitude.toFixed(6))),
+      longitude: String(Number(coordinate.longitude.toFixed(6))),
+    });
+    setShowAddLine(true);
+  }
+
   async function startAddingSmartLine() {
     if (activeSheet.status === "Locked" || smartLineStatus === "loading") return;
     const now = new Date();
@@ -1762,6 +1776,7 @@ export function LogbookApp({
               onShowCourseColumnsChange={updateShowCourseColumnsDisplay}
               startAddingLine={startAddingLine}
               startAddingLineHereNow={startAddingLineHereNow}
+              startAddingLineAtCoordinates={startAddingLineAtCoordinates}
               startAddingSmartLine={startAddingSmartLine}
               smartLineStatus={smartLineStatus}
               showAddLine={showAddLine}

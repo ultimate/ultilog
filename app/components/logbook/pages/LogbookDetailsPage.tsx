@@ -81,6 +81,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     showCourseColumns,
     startAddingLine,
     startAddingLineHereNow,
+    startAddingLineAtCoordinates,
     startAddingSmartLine,
     smartLineStatus,
     showAddLine,
@@ -1006,7 +1007,10 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                       {t("details.fullMap")}
                     </button>
                   </div>
-                  <LogLinesMapView logLines={activeSheet.lines} />
+                  <LogLinesMapView
+                    logLines={activeSheet.lines}
+                    onAddLogLineAt={isActiveSheetLocked ? undefined : startAddingLineAtCoordinates}
+                  />
                 </article>
               </section>
               {isMapExpanded && (
@@ -1032,6 +1036,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                     <LogLinesMapView
                       className="open-seamap-expanded"
                       logLines={activeSheet.lines}
+                      onAddLogLineAt={isActiveSheetLocked ? undefined : startAddingLineAtCoordinates}
                     />
                   </div>
                 </div>
