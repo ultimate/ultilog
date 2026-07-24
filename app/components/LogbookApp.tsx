@@ -718,25 +718,23 @@ export function LogbookApp({
   useEffect(() => {
     if (!printTarget) return;
 
-    let clearPrintTargetTimer: number | undefined;
-    let printFrame = 0;
-    let nestedPrintFrame = 0;
+    let isPrintCanceled = false;
     const clearPrintTarget = () => setPrintTarget(null);
     const previousAfterPrint = window.onafterprint;
 
     window.onafterprint = clearPrintTarget;
-    printFrame = window.requestAnimationFrame(() => {
-      nestedPrintFrame = window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      if (isPrintCanceled) return;
+      window.requestAnimationFrame(() => {
+        if (isPrintCanceled) return;
         window.print();
-        clearPrintTargetTimer = window.setTimeout(clearPrintTarget, 60_000);
+        window.setTimeout(clearPrintTarget, 60_000);
       });
     });
 
     return () => {
+      isPrintCanceled = true;
       if (window.onafterprint === clearPrintTarget) window.onafterprint = previousAfterPrint;
-      window.cancelAnimationFrame(printFrame);
-      window.cancelAnimationFrame(nestedPrintFrame);
-      if (clearPrintTargetTimer) window.clearTimeout(clearPrintTargetTimer);
     };
   }, [printTarget]);
   const canEditActiveSheetMasterData = activeSheet.status === "Draft";
