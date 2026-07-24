@@ -409,6 +409,7 @@ export const de: Dictionary = {
   "map.openRoute": "Route öffnen",
   "map.routeMapAria": "OpenSeaMap-Routenkarte",
   "map.noPositions": "Für diese Karte sind noch keine gültigen Positionen verfügbar.",
+  "map.addLogLineHere": "Logzeile hier hinzufügen",
   "admin.aria": "Admin-Seite",
   "admin.title": "Admin",
   "admin.subtitle": "Benutzergruppen für Issues #45 und #46 verwalten.",

@@ -11,6 +11,7 @@ type LogLinesMapViewProps = {
   ariaLabel?: string;
   className?: string;
   emptyMessage?: string;
+  onAddLogLineAt?: (coordinate: { latitude: number; longitude: number }) => void;
 };
 
 type LogSheetsMapViewProps = {
@@ -103,6 +104,7 @@ export function LogLinesMapView({
   ariaLabel,
   className = "open-seamap-detail",
   emptyMessage,
+  onAddLogLineAt,
 }: LogLinesMapViewProps) {
   const { t } = useI18n();
   const mapLabels = useMemo(() => ({ weather: t("details.weather"), wind: t("details.wind"), logLinePositions: t("map.logLinePositions") }), [t]);
@@ -113,6 +115,7 @@ export function LogLinesMapView({
       className={className}
       emptyMessage={emptyMessage ?? t("map.noSheetPositions")}
       routes={routes}
+      onAddLogLineAt={onAddLogLineAt}
     />
   );
 }

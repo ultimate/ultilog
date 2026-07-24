@@ -184,6 +184,36 @@ dd { margin: 0; }
   font: inherit;
 }
 
+.open-seamap-context-menu {
+  position: absolute;
+  z-index: 1000;
+  min-width: 11rem;
+  transform: translate(0.35rem, 0.35rem);
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  background: #fff;
+  box-shadow: 0 18px 45px rgba(16, 32, 51, 0.2);
+  padding: 0.35rem;
+}
+
+.open-seamap-context-menu button {
+  width: 100%;
+  border: 0;
+  border-radius: 0.65rem;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-weight: 800;
+  padding: 0.65rem 0.8rem;
+  text-align: left;
+}
+
+.open-seamap-context-menu button:hover,
+.open-seamap-context-menu button:focus-visible {
+  background: #eaf4ff;
+  outline: none;
+}
+
 .open-seamap-empty {
   display: grid;
   place-items: center;
