@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useI18n } from "../../../lib/i18n";
 import type { FormEvent, Dispatch, ReactNode, SetStateAction } from "react";
 import type { Boat, PersistedLogbook } from "../../../models/logbook";
@@ -31,6 +32,15 @@ export function ProfilePage(props: ProfilePageProps) {
   const logbook = props.logbook as PersistedLogbook;
   const activeBoat = props.activeBoat as Boat;
   const profilePreferences = preferences as ProfilePreferences;
+  const [motionThresholdDraft, setMotionThresholdDraft] = useState<string | null>(null);
+  const motionThresholdValue = motionThresholdDraft ?? formatDecimalPreference(profilePreferences.motionStationaryThresholdNm);
+
+  function commitMotionThresholdDraft() {
+    if (motionThresholdDraft === null) return;
+    const nextThreshold = parseDecimalPreference(motionThresholdDraft, profilePreferences.motionStationaryThresholdNm);
+    setMotionThresholdDraft(null);
+    updateViewPreferences({ motionStationaryThresholdNm: nextThreshold });
+  }
   const onboardingChecklist = props.onboardingChecklist as ReactNode;
   const nameForm = props.nameForm as { name: string; currentPassword: string };
   const emailForm = props.emailForm as {
@@ -297,6 +307,23 @@ export function ProfilePage(props: ProfilePageProps) {
                   {logbook.crewMembers.map((crew) => <option key={crew.id} value={crew.id}>{crew.name}</option>)}
                 </select>
               </label>
+              <label>
+                {t("profile.motionStationaryThresholdNm")}
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9]*[.]?[0-9]*"
+                  value={motionThresholdValue}
+                  onChange={(event) => {
+                    const nextValue = event.target.value.replace(",", ".");
+                    if (/^\d*(?:\.\d*)?$/.test(nextValue)) setMotionThresholdDraft(nextValue);
+                  }}
+                  onBlur={commitMotionThresholdDraft}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") event.currentTarget.blur();
+                  }}
+                />
+              </label>
             </div>
           </fieldset>
           <fieldset className="preference-group wide-field">
@@ -372,4 +399,15 @@ export function ProfilePage(props: ProfilePageProps) {
       </section>
     </section>
   );
+}
+
+function formatDecimalPreference(value: number) {
+  return Number.isFinite(value) ? String(value) : "0.1";
+}
+
+function parseDecimalPreference(value: string, fallback: number) {
+  const normalizedValue = value.trim().replace(",", ".");
+  if (normalizedValue === "") return fallback;
+  const parsedValue = Number(normalizedValue);
+  return Number.isFinite(parsedValue) && parsedValue >= 0 ? parsedValue : fallback;
 }

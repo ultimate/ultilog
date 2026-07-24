@@ -1,5 +1,5 @@
 import { calculateLogSheetMetrics } from "../../domain/logbook/sheet-metrics";
-import { defaultLogSheetShareSettings, normalizeDeviationTable, type Boat, type BoatRow, type CrewMemberRow, type LogLineRow, type LogSheet, type LogSheetRow, type PersistedLogbook, type StoredLogSheet } from "../../models/logbook";
+import { defaultLogSheetShareSettings, normalizeDeviationTable, type Boat, type BoatRow, type CrewMemberRow, type LogLine, type LogLineRow, type LogSheet, type LogSheetRow, type PersistedLogbook, type StoredLogSheet } from "../../models/logbook";
 import type { QueryableDatabase } from "../db/logbook-database";
 import { imageFromRow, imageValues, scopedId, unscopedId } from "./boats-repository";
 
@@ -22,11 +22,20 @@ export class LogSheetsRepository {
     await this.db.query(`delete from log_sheets where owner_id = ${this.db.placeholder(1)}`, [ownerId]);
   }
 
-  async insert(sheet: LogSheet, ownerId = "legacy-user") {
-    const metrics = calculateLogSheetMetrics(sheet.lines);
+  async insert(sheet: LogSheet, ownerId = "legacy-user", motionStationaryThresholdNm = 0.1) {
+    const metrics = calculateLogSheetMetrics(sheet.lines, sheet.route, { stationaryDistanceThresholdNm: motionStationaryThresholdNm });
     await this.db.query(
-      `insert into log_sheets (id, title, date_range, status, source, verification_note, scanner_warnings, boat_id, skipper, route, weather_briefing, day_summary, remarks, watch_plan, technical_checks, image_data, image_mime_type, image_width, image_height, owner_id, motor_miles, sail_miles, total_miles, duration_minutes, share_privacy, share_master_data, share_picture, share_loglines, share_metrics, share_technical_log, share_skipper, share_crew) values (${this.values(32)})`,
-      [scopedId(ownerId, sheet.id), sheet.title, sheet.dateRange, sheet.status, sheet.source ?? null, sheet.verificationNote ?? null, sheet.scannerWarnings ? JSON.stringify(sheet.scannerWarnings) : null, scopedId(ownerId, sheet.boatId), JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), ...imageValues(sheet.image), ownerId, metrics.motorMiles, metrics.sailMiles, metrics.totalMiles, metrics.durationMinutes, overallPrivacy(sheet.share), privacyFor(sheet.share?.masterData), privacyFor(sheet.share?.picture), privacyFor(sheet.share?.logLines), privacyFor(sheet.share?.metrics), privacyFor(sheet.share?.technicalLog), privacyFor(sheet.share?.skipper), privacyFor(sheet.share?.crew)],
+      `insert into log_sheets (id, title, date_range, status, source, verification_note, scanner_warnings, boat_id, skipper, route, weather_briefing, day_summary, remarks, watch_plan, technical_checks, image_data, image_mime_type, image_width, image_height, owner_id, motor_miles, sail_miles, total_miles, duration_minutes, motor_hours, overall_duration_minutes, motion_duration_minutes, share_privacy, share_master_data, share_picture, share_loglines, share_metrics, share_technical_log, share_skipper, share_crew) values (${this.values(35)})`,
+      [scopedId(ownerId, sheet.id), sheet.title, sheet.dateRange, sheet.status, sheet.source ?? null, sheet.verificationNote ?? null, sheet.scannerWarnings ? JSON.stringify(sheet.scannerWarnings) : null, scopedId(ownerId, sheet.boatId), JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), ...imageValues(sheet.image), ownerId, metrics.motorMiles, metrics.sailMiles, metrics.totalMiles, metrics.durationMinutes, metrics.motorHours, metrics.overallDurationMinutes, metrics.motionDurationMinutes, overallPrivacy(sheet.share), privacyFor(sheet.share?.masterData), privacyFor(sheet.share?.picture), privacyFor(sheet.share?.logLines), privacyFor(sheet.share?.metrics), privacyFor(sheet.share?.technicalLog), privacyFor(sheet.share?.skipper), privacyFor(sheet.share?.crew)],
+    );
+  }
+
+
+  async updateMetrics(sheet: Pick<LogSheet, "id" | "route">, lines: LogLine[], ownerId = "legacy-user", motionStationaryThresholdNm = 0.1) {
+    const metrics = calculateLogSheetMetrics(lines, sheet.route, { stationaryDistanceThresholdNm: motionStationaryThresholdNm });
+    await this.db.query(
+      `update log_sheets set motor_miles = ${this.db.placeholder(1)}, sail_miles = ${this.db.placeholder(2)}, total_miles = ${this.db.placeholder(3)}, duration_minutes = ${this.db.placeholder(4)}, motor_hours = ${this.db.placeholder(5)}, overall_duration_minutes = ${this.db.placeholder(6)}, motion_duration_minutes = ${this.db.placeholder(7)} where id = ${this.db.placeholder(8)}`,
+      [metrics.motorMiles, metrics.sailMiles, metrics.totalMiles, metrics.durationMinutes, metrics.motorHours, metrics.overallDurationMinutes, metrics.motionDurationMinutes, scopedId(ownerId, sheet.id)],
     );
   }
 
@@ -119,6 +128,9 @@ function mapStoredSheet(sheet: LogSheetRow): StoredLogSheet {
       sailMiles: Number(sheet.sail_miles) || 0,
       totalMiles: Number(sheet.total_miles) || 0,
       durationMinutes: sheet.duration_minutes == null ? null : Number(sheet.duration_minutes),
+      motorHours: Number(sheet.motor_hours) || 0,
+      overallDurationMinutes: sheet.overall_duration_minutes == null ? (sheet.duration_minutes == null ? null : Number(sheet.duration_minutes)) : Number(sheet.overall_duration_minutes),
+      motionDurationMinutes: Number(sheet.motion_duration_minutes) || 0,
     },
     share: {
       masterData: privacyFromRow(sheet.share_master_data, sheet.share_privacy),

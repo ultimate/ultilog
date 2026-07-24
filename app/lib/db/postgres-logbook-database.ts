@@ -46,12 +46,14 @@ export class PostgresLogbookDatabase extends LogbookDatabase {
 
   private async insertPostgresLogbook(logbook: PersistedLogbook) {
     const ownerId = this.ownerId;
+    const motionStationaryThresholdNm = await this.motionStationaryThresholdNm();
     for (const boat of logbook.boats) await this.boats.insert(boat, ownerId);
     for (const crew of logbook.crewMembers ?? []) await this.crew.insertProfile(crew, ownerId);
     for (const sheet of logbook.sheets) {
-      await this.sheets.insert(sheet, ownerId);
+      await this.sheets.insert(sheet, ownerId, motionStationaryThresholdNm);
       for (const [index, crew] of sheet.crew.entries()) await this.crew.insert(sheet.id, index, crew, ownerId);
       for (const [index, line] of sheet.lines.entries()) await this.lines.insert(sheet.id, index, line, ownerId);
+      await this.sheets.updateMetrics(sheet, sheet.lines, ownerId, motionStationaryThresholdNm);
     }
   }
 }
@@ -77,12 +79,14 @@ class PostgresTransactionLogbookDatabase extends LogbookDatabase {
 
   protected async insertLogbook(logbook: PersistedLogbook) {
     const ownerId = this.ownerId;
+    const motionStationaryThresholdNm = await this.motionStationaryThresholdNm();
     for (const boat of logbook.boats) await this.boats.insert(boat, ownerId);
     for (const crew of logbook.crewMembers ?? []) await this.crew.insertProfile(crew, ownerId);
     for (const sheet of logbook.sheets) {
-      await this.sheets.insert(sheet, ownerId);
+      await this.sheets.insert(sheet, ownerId, motionStationaryThresholdNm);
       for (const [index, crew] of sheet.crew.entries()) await this.crew.insert(sheet.id, index, crew, ownerId);
       for (const [index, line] of sheet.lines.entries()) await this.lines.insert(sheet.id, index, line, ownerId);
+      await this.sheets.updateMetrics(sheet, sheet.lines, ownerId, motionStationaryThresholdNm);
     }
   }
 }

@@ -37,6 +37,9 @@ export type LogSheetRow = ImageRowFields & {
   sail_miles?: number | null;
   total_miles?: number | null;
   duration_minutes?: number | null;
+  motor_hours?: number | null;
+  overall_duration_minutes?: number | null;
+  motion_duration_minutes?: number | null;
   share_privacy?: LogSheetSharePrivacy | null;
   share_master_data?: LogSheetSharePrivacy | number | boolean | null;
   share_picture?: LogSheetSharePrivacy | number | boolean | null;

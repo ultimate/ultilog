@@ -286,16 +286,26 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
 
   const renderCoordinateInput = (field: "latitude" | "longitude", label: string) => {
     if (coordinateFormat === "decimal") return <input aria-label={label} value={lineForm[field]} onChange={(e) => updateCoordinateField(field, e.target.value)} />;
-    const parts = lineForm[field].trim() ? decimalToDmsParts(parseCoordinate(lineForm[field])) : { degrees: "", minutes: "", seconds: "" };
-    const updatePart = (part: keyof DmsParts, value: string) => {
-      const nextParts = { ...parts, [part]: value };
-      updateCoordinateField(field, String(dmsPartsToDecimal(nextParts)));
+    const parts = decimalToDmsParts(parseCoordinate(lineForm[field]));
+    const commitDmsInput = (container: HTMLDivElement) => {
+      updateCoordinateField(field, String(dmsPartsToDecimal({
+        degrees: dmsInputValue(container, "degrees"),
+        minutes: dmsInputValue(container, "minutes"),
+        seconds: dmsInputValue(container, "seconds"),
+      })));
     };
     return (
-      <div className="compound-inputs dms-inputs" aria-label={label}>
-        <label><span>[°]</span><input aria-label={`${label} degrees`} type="number" value={parts.degrees} onChange={(e) => updatePart("degrees", e.target.value)} /></label>
-        <label><span>[&prime;]</span><input aria-label={`${label} minutes`} type="number" value={parts.minutes} onChange={(e) => updatePart("minutes", e.target.value)} /></label>
-        <label><span>[&Prime;]</span><input aria-label={`${label} seconds`} type="number" step="0.1" value={parts.seconds} onChange={(e) => updatePart("seconds", e.target.value)} /></label>
+      <div
+        className="compound-inputs dms-inputs"
+        aria-label={label}
+        onBlur={(event) => {
+          if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) return;
+          commitDmsInput(event.currentTarget);
+        }}
+      >
+        <label><span>[°]</span><input aria-label={`${label} degrees`} type="text" inputMode="decimal" data-dms-part="degrees" defaultValue={parts.degrees} /></label>
+        <label><span>[&prime;]</span><input aria-label={`${label} minutes`} type="text" inputMode="decimal" data-dms-part="minutes" defaultValue={parts.minutes} /></label>
+        <label><span>[&Prime;]</span><input aria-label={`${label} seconds`} type="text" inputMode="decimal" data-dms-part="seconds" defaultValue={parts.seconds} /></label>
       </div>
     );
   };
@@ -730,8 +740,16 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                   <strong>{activeSheetSummary.totalMiles} nm</strong>
                 </article>
                 <article>
-                  <span>{t("details.duration")}</span>
+                  <span>{t("dashboard.overallDuration")}</span>
                   <strong>{activeSheetSummary.duration}</strong>
+                </article>
+                <article>
+                  <span>{t("dashboard.motionDuration")}</span>
+                  <strong>{activeSheetSummary.motionDuration}</strong>
+                </article>
+                <article>
+                  <span>{t("dashboard.motorHours")}</span>
+                  <strong>{activeSheetSummary.motorHoursDuration}</strong>
                 </article>
               </section>
 
@@ -1029,3 +1047,8 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
 const compassDirections = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
 const weatherEmojis = ["☁️", "⛅", "⛈️", "🌤️", "🌥️", "🌦️", "🌧️", "🌨️", "🌩️", "🌪️", "🌫️", "☀️", "❄️", "⭐"];
 const moonEmojis = ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌘"];
+
+function dmsInputValue(container: HTMLElement, part: keyof DmsParts) {
+  const input = container.querySelector<HTMLInputElement>(`[data-dms-part="${part}"]`);
+  return input?.value.trim().replace(",", ".") ?? "";
+}
