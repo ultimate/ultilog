@@ -722,8 +722,9 @@ export function LogbookApp({
     let printFrame = 0;
     let nestedPrintFrame = 0;
     const clearPrintTarget = () => setPrintTarget(null);
+    const previousAfterPrint = window.onafterprint;
 
-    window.addEventListener("afterprint", clearPrintTarget);
+    window.onafterprint = clearPrintTarget;
     printFrame = window.requestAnimationFrame(() => {
       nestedPrintFrame = window.requestAnimationFrame(() => {
         window.print();
@@ -732,7 +733,7 @@ export function LogbookApp({
     });
 
     return () => {
-      window.removeEventListener("afterprint", clearPrintTarget);
+      if (window.onafterprint === clearPrintTarget) window.onafterprint = previousAfterPrint;
       window.cancelAnimationFrame(printFrame);
       window.cancelAnimationFrame(nestedPrintFrame);
       if (clearPrintTargetTimer) window.clearTimeout(clearPrintTargetTimer);
