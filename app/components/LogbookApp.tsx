@@ -1166,35 +1166,36 @@ export function LogbookApp({
     });
   }
 
-  function startAddingLineAtCoordinates(coordinate: { latitude: number; longitude: number }) {
-    if (activeSheet.status === "Locked") return;
+  async function startAddingLineAtCoordinates(coordinate: { latitude: number; longitude: number }) {
+    await startAddingSmartLine(coordinate);
+  }
+
+  async function startAddingSmartLine(coordinate?: { latitude: number; longitude: number }) {
+    if (activeSheet.status === "Locked" || smartLineStatus === "loading") return;
     const now = new Date();
     const time = dateTimeLocalFromDate(now);
     setEditingLineIndex(null);
     setLineForm({
       ...lineDefaults,
       time,
-      latitude: String(Number(coordinate.latitude.toFixed(6))),
-      longitude: String(Number(coordinate.longitude.toFixed(6))),
+      ...(coordinate
+        ? {
+            latitude: String(Number(coordinate.latitude.toFixed(6))),
+            longitude: String(Number(coordinate.longitude.toFixed(6))),
+          }
+        : {}),
     });
-    setShowAddLine(true);
-  }
-
-  async function startAddingSmartLine() {
-    if (activeSheet.status === "Locked" || smartLineStatus === "loading") return;
-    const now = new Date();
-    const time = dateTimeLocalFromDate(now);
-    setEditingLineIndex(null);
-    setLineForm({ ...lineDefaults, time });
     setShowAddLine(true);
     setSmartLineStatus("loading");
     setSaveError(null);
 
     try {
-      const position = await getCurrentPosition();
-      const latitude = position.coords.latitude;
-      const longitude = position.coords.longitude;
-      setLineForm((current) => ({ ...current, latitude: String(latitude), longitude: String(longitude) }));
+      const linePosition = coordinate ?? await currentGeolocationCoordinates();
+      const latitude = linePosition.latitude;
+      const longitude = linePosition.longitude;
+      const latitudeValue = String(Number(latitude.toFixed(6)));
+      const longitudeValue = String(Number(longitude.toFixed(6)));
+      setLineForm((current) => ({ ...current, latitude: latitudeValue, longitude: longitudeValue }));
 
       const response = await fetch("/api/meteo/log-line-autofill", {
         method: "POST",
@@ -1215,8 +1216,8 @@ export function LogbookApp({
       setLineForm((current) => ({
         ...current,
         ...(payload.fields ?? {}),
-        latitude: String(latitude),
-        longitude: String(longitude),
+        latitude: latitudeValue,
+        longitude: longitudeValue,
         time,
         weatherRemark: formatMeteoWeatherRemark(payload.remarkParts ?? [], t),
       }));
@@ -2064,6 +2065,14 @@ function dateTimeLocalFromDate(date: Date) {
   const hours = String(date.getHours()).padStart(2, "0");
   const minutes = String(date.getMinutes()).padStart(2, "0");
   return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+async function currentGeolocationCoordinates() {
+  const position = await getCurrentPosition();
+  return {
+    latitude: position.coords.latitude,
+    longitude: position.coords.longitude,
+  };
 }
 
 function getCurrentPosition() {

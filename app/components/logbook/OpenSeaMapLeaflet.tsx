@@ -145,11 +145,15 @@ function MapContextMenu({
       className="open-seamap-context-menu"
       style={{ left: menu.x, top: menu.y }}
       role="menu"
+      onClick={(event) => event.stopPropagation()}
+      onContextMenu={(event) => event.preventDefault()}
+      onMouseDown={(event) => event.stopPropagation()}
     >
       <button
         type="button"
         role="menuitem"
-        onClick={() => {
+        onClick={(event) => {
+          event.stopPropagation();
           onAddLogLineAt?.({ latitude: menu.latitude, longitude: menu.longitude });
           setMenu(null);
         }}
