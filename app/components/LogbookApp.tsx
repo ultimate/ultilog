@@ -75,7 +75,7 @@ type SocialUser = {
   logbookSheets: number;
   boats: number;
 };
-type PrintTarget = { mode: "filled"; sheetId: string } | { mode: "empty" } | null;
+type PrintTarget = { mode: "filled"; sheetId: string; showCourseColumns: boolean } | { mode: "empty"; showCourseColumns: boolean } | null;
 
 type SheetInlineField =
   | "title"
@@ -708,7 +708,7 @@ export function LogbookApp({
     printFrame = window.requestAnimationFrame(() => {
       nestedPrintFrame = window.requestAnimationFrame(() => {
         window.print();
-        clearPrintTargetTimer = window.setTimeout(clearPrintTarget, 500);
+        clearPrintTargetTimer = window.setTimeout(clearPrintTarget, 60_000);
       });
     });
 
@@ -1737,8 +1737,8 @@ export function LogbookApp({
               setShowNewSheet={setShowNewSheet}
               createDefaultSheetForm={() => sheetDefaults}
               defaultPageSize={preferences.defaultPageSize}
-              onPrintSheet={(sheetId) => setPrintTarget({ mode: "filled", sheetId })}
-              onPrintEmptySheet={() => setPrintTarget({ mode: "empty" })}
+              onPrintSheet={(sheetId) => setPrintTarget({ mode: "filled", sheetId, showCourseColumns: preferences.showCourseConversionTable })}
+              onPrintEmptySheet={() => setPrintTarget({ mode: "empty", showCourseColumns: preferences.showCourseConversionTable })}
             />
           )}
 
@@ -1791,7 +1791,7 @@ export function LogbookApp({
               updateTechnicalCheck={updateTechnicalCheck}
               deleteTechnicalCheck={deleteTechnicalCheck}
               technicalCheckSuggestions={technicalCheckSuggestions}
-              onPrintSheet={() => setPrintTarget({ mode: "filled", sheetId: activeSheet.id })}
+              onPrintSheet={() => setPrintTarget({ mode: "filled", sheetId: activeSheet.id, showCourseColumns })}
             />
           )}
 
@@ -2040,9 +2040,9 @@ export function LogbookApp({
       </main>
       <div className="print-only print-root" aria-hidden={!printTarget}>
         {printTarget?.mode === "empty" ? (
-          <LogSheetPrintView mode="empty" boat={printBoat} />
+          <LogSheetPrintView mode="empty" boat={printBoat} showCourseColumns={printTarget?.showCourseColumns ?? preferences.showCourseConversionTable} />
         ) : printSheet ? (
-          <LogSheetPrintView mode="filled" sheet={printSheet} boat={printBoat} summary={printSummary} />
+          <LogSheetPrintView mode="filled" sheet={printSheet} boat={printBoat} summary={printSummary} showCourseColumns={printTarget?.showCourseColumns ?? preferences.showCourseConversionTable} />
         ) : null}
       </div>
     </>
