@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState, type MouseEventHandler } from "react";
 import { signOut } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -732,7 +732,7 @@ export function LogbookApp({
       <button
         type="button"
         aria-label={t("details.approveChange")}
-        onClick={saveSheetInlineField}
+        onClick={saveSheetInlineField as MouseEventHandler<HTMLButtonElement>}
       >
         ✅
       </button>
