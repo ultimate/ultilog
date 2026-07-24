@@ -713,7 +713,7 @@ export function LogbookApp({
   const printBoat = printSheet
     ? logbook.boats.find((boat) => boat.id === printSheet.boatId)
     : activeBoat;
-  const printSummary = printSheet ? calculateSheetSummary(printSheet) : undefined;
+  const printSummary = printSheet ? calculateSheetSummary(printSheet, preferences.motionStationaryThresholdNm) : undefined;
 
   useEffect(() => {
     if (!printTarget) return;
