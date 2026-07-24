@@ -450,7 +450,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                     </button>
                   )}
                 </div>
-                <div className="header-edit-row">
+                <div className="header-edit-row route-edit-row">
                   <span>{t("common.from")}</span>
                   <input
                     aria-label={t("details.fromDateTime")}
@@ -480,7 +480,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                     }
                   />
                 </div>
-                <div className="header-edit-row">
+                <div className="header-edit-row route-edit-row">
                   <span>{t("common.to")}</span>
                   <input
                     aria-label={t("details.toDateTime")}

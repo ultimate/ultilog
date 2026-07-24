@@ -1038,6 +1038,10 @@ td { color: #28384b; line-height: 1.45; }
   grid-template-columns: minmax(5rem, 0.25fr) minmax(0, 1fr) minmax(0, 1fr);
 }
 
+.route-edit-row {
+  grid-template-columns: minmax(5rem, 0.25fr) minmax(12rem, 1fr) minmax(7rem, 0.28fr) minmax(12rem, 1fr);
+}
+
 .header-edit-row > span {
   grid-column: auto;
   align-self: center;
@@ -1072,7 +1076,8 @@ td { color: #28384b; line-height: 1.45; }
   }
 
   .header-table-row,
-  .header-edit-row {
+  .header-edit-row,
+  .route-edit-row {
     grid-template-columns: 1fr;
   }
 }
@@ -1428,4 +1433,3 @@ img.entity-image--preview {
   width: 100%;
   min-height: 2.75rem;
 }
-
