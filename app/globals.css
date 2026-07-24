@@ -1432,7 +1432,14 @@ img.entity-image--preview {
 
 /* Print visibility and A4 log sheet defaults */
 .print-only {
-  display: none !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: -10000px !important;
+  width: 281mm !important;
+  min-width: 281mm !important;
+  max-width: none !important;
+  overflow: hidden !important;
+  visibility: hidden !important;
 }
 
 .screen-only,
@@ -1466,7 +1473,11 @@ img.entity-image--preview {
   }
 
   .print-only {
+    position: static !important;
+    left: auto !important;
     display: block !important;
+    overflow: visible !important;
+    visibility: visible !important;
   }
 
   .print-root {
