@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "CREW_DATA_ENCRYPTION_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef vitest run tests/app",
-    "test:e2e": "playwright test"
+    "test:e2e": "node scripts/reset-e2e-db.mjs && playwright test",
+    "test:e2e:ci": "CI=true npm run test:e2e"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
