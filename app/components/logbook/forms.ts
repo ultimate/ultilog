@@ -1,18 +1,19 @@
+import { dateTimeLocalFromStamp, timezoneOffsetFromStamp } from "./date-utils";
 import { defaultDeviationTable, normalizeDeviationTable, type Boat, type BoatForm, type CrewForm, type LineForm, type LogLine, type LogSheet, type PersistedLogbook, type SheetForm } from "../../models/logbook";
 export const emptyBoat: Boat = { id: "", name: "", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: { Manufacturer: "", MMSI: "", Engine: "", Safety: "" }, deviationTable: defaultDeviationTable(), image: undefined };
 export const emptySheet: LogSheet = { id: "", title: "", status: "Draft", dateRange: new Date().toISOString().slice(0, 10), boatId: "", route: { from: "", to: "", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], image: undefined, lines: [] };
 export const defaultLogbook: PersistedLogbook = { boats: [], crewMembers: [], sheets: [] };
 
-export const defaultSheetForm = (boatId: string): SheetForm => ({ title: "", status: "Draft", dateRange: new Date().toISOString().slice(0, 10), boatId, from: "", to: "", fromTime: "", toTime: "", image: undefined });
+export const defaultSheetForm = (boatId: string): SheetForm => ({ title: "", status: "Draft", dateRange: new Date().toISOString().slice(0, 10), boatId, from: "", to: "", fromTime: "", toTime: "", fromTimezone: timezoneOffsetFromStamp(""), toTimezone: timezoneOffsetFromStamp(""), image: undefined });
 export const defaultBoatForm: BoatForm = { name: "", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, manufacturer: "", mmsi: "", engine: "", safety: "", deviationTable: defaultDeviationTable(), image: undefined };
 export const defaultLineForm: LineForm = { time: "", position: "", latitude: "", longitude: "", weather: "", weatherRemark: "", temperature: "", temperatureUnit: "°C", barometer: "", windDirection: "", windStrength: "", windUnit: "bft", waves: "", seaUnit: "m", tide: "", tideUnit: "m", moon: "", compassCourse: "", deviation: "", magneticCourse: "", variation: "", trueCourse: "", windDrift: "", courseThroughWater: "", currentDrift: "", courseOverGround: "", speedKn: "", logNm: "", sailMiles: "", sailNote: "", motorMiles: "", motorHours: "", motorNote: "", remarks: "" };
 export const defaultCrewForm: CrewForm = { id: "", name: "", nationality: "", role: "", address: "", certificate: "", isPrimary: false, image: undefined };
 
 export const boatToForm = (boat: Boat): BoatForm => ({ name: boat.name, type: boat.type, registration: boat.registration, flagState: boat.flagState, homePort: boat.homePort, owner: boat.owner, dimensions: boat.dimensions, logfactor: boat.logfactor > 0 ? boat.logfactor : 1, manufacturer: boat.yachtData.Manufacturer === "—" ? "" : boat.yachtData.Manufacturer, mmsi: boat.yachtData.MMSI === "—" ? "" : boat.yachtData.MMSI, engine: boat.yachtData.Engine === "—" ? "" : boat.yachtData.Engine, safety: boat.yachtData.Safety === "To be completed" ? "" : boat.yachtData.Safety, deviationTable: normalizeDeviationTable(boat.deviationTable), image: boat.image });
-export const sheetToForm = (sheet: LogSheet): SheetForm => ({ title: sheet.title, status: sheet.status, dateRange: sheet.dateRange, boatId: sheet.boatId, from: sheet.route.from, to: sheet.route.to, fromTime: timeFromRouteStamp(sheet.route.departed), toTime: timeFromRouteStamp(sheet.route.arrived), image: sheet.image });
+export const sheetToForm = (sheet: LogSheet): SheetForm => ({ title: sheet.title, status: sheet.status, dateRange: sheet.dateRange, boatId: sheet.boatId, from: sheet.route.from, to: sheet.route.to, fromTime: timeFromRouteStamp(sheet.route.departed), toTime: timeFromRouteStamp(sheet.route.arrived), fromTimezone: timezoneOffsetFromStamp(sheet.route.departed), toTimezone: timezoneOffsetFromStamp(sheet.route.arrived), image: sheet.image });
 export const lineToForm = (line: LogLine): LineForm => Object.fromEntries(Object.entries(line).map(([key, value]) => [key, String(value ?? "")])) as LineForm;
 export const crewToForm = (crew: Partial<CrewForm>): CrewForm => ({ id: crew.id ?? "", name: crew.name ?? "", nationality: crew.nationality ?? "", role: crew.role ?? "", address: crew.address ?? "", certificate: crew.certificate ?? "", isPrimary: crew.isPrimary ?? false, image: crew.image });
 
 function timeFromRouteStamp(value: string) {
-  return value.match(/(\d{1,2}:\d{2})/)?.[1] ?? "";
+  return dateTimeLocalFromStamp(value).split("T")[1] ?? "";
 }

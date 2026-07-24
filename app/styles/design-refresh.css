@@ -842,3 +842,48 @@ h3 { margin-block:.25rem .55rem; }
 .chart-axis-line { fill:none; stroke:color-mix(in srgb, var(--text) 28%, transparent); stroke-width:1.4; }
 .chart-axis-label { fill:var(--subtle); font-size:11px; }
 .dashboard-combo-chart .grid-line { stroke:color-mix(in srgb, var(--line) 62%, transparent); stroke-width:1; stroke-dasharray:3 5; }
+
+/* Keep the admin user table's horizontal overflow inside the content area so the mobile bottom bar stays viewport-sized. */
+.admin-users-table-card {
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+.admin-users-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.admin-users-table {
+  min-width: 860px;
+}
+@media (max-width: 1000px) and (orientation: portrait) {
+  .mobile-bottom-nav {
+    width: 100dvw;
+    max-width: 100dvw;
+  }
+}
+
+/* Match the log sheets list: keep wide admin content from widening the page, and scroll only the table area. */
+.admin-users-table-card,
+.admin-users-table-scroll {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+.admin-users-table-scroll {
+  display: block;
+  overflow-x: auto;
+  overflow-y: visible;
+  touch-action: pan-x pan-y;
+}
+@media (max-width: 1000px) and (orientation: portrait) {
+  .module-workspace,
+  .module-panel,
+  .admin-users-table-card {
+    min-width: 0;
+    max-width: 100%;
+  }
+}

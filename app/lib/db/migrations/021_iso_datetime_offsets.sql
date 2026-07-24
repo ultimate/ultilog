@@ -1,0 +1,3 @@
+-- Data migration implemented in app/lib/db/migrations.ts so it can safely
+-- normalize JSON route payloads and legacy datetime strings for both SQLite
+-- and PostgreSQL without relying on dialect-specific JSON functions.
