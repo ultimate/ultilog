@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "CREW_DATA_ENCRYPTION_KEY=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef vitest run tests/app",
     "test:e2e": "node scripts/reset-e2e-db.mjs && playwright test",
-    "test:e2e:ci": "CI=true npm run test:e2e"
+    "test:e2e:ci": "CI=true npm run test:e2e",
+    "test:coverage": "npm test -- --coverage"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
@@ -34,6 +35,7 @@
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
     "@types/sql.js": "^1.4.11",
+    "@vitest/coverage-v8": "^4.1.10",
     "eslint": "9.39.4",
     "eslint-config-next": "16.2.9",
     "typescript": "6.0.3",
