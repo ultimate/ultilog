@@ -1,4 +1,4 @@
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Locator, type Page, test } from "@playwright/test";
 import { sampleBoats, sampleLogSheets } from "../fixtures/logbook";
 
 const demoSheet = sampleLogSheets[0];
@@ -31,6 +31,7 @@ test("prints empty sheets with fixed blank rows and print-only layout", async ({
   await expect(printPage.locator(".print-footer")).toHaveCount(1);
   await expect(printPage.locator(".print-page-number")).toHaveText("Page 1 of 1");
   await expect(printPage.locator("tbody tr")).toHaveCount(18);
+  await expectPrintContentWithinPage(printPage);
   await expect(page.getByRole("navigation", { name: "Primary modules" })).toBeHidden();
 });
 
@@ -84,6 +85,23 @@ test("splits filled sheets that exceed one A4 landscape page", async ({ page }) 
   await expect(printPages.nth(1).locator("tbody tr")).toHaveCount(18);
   await expect(printPages.nth(0).locator(".print-remark-small, .print-remark-tiny")).toHaveCount(1);
 });
+
+async function expectPrintContentWithinPage(printPage: Locator) {
+  const bounds = await printPage.evaluate((pageElement) => {
+    const pageBox = pageElement.getBoundingClientRect();
+    const logTableBox = pageElement.querySelector(".print-log-table")?.getBoundingClientRect();
+    const footerBox = pageElement.querySelector(".print-footer")?.getBoundingClientRect();
+
+    return {
+      pageRight: pageBox.right,
+      logTableRight: logTableBox?.right ?? pageBox.right,
+      footerRight: footerBox?.right ?? pageBox.right,
+    };
+  });
+
+  expect(bounds.logTableRight).toBeLessThanOrEqual(bounds.pageRight + 1);
+  expect(bounds.footerRight).toBeLessThanOrEqual(bounds.pageRight + 1);
+}
 
 async function loginWithSeededDemoData(page: Page, sheets = sampleLogSheets) {
   const unique = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
