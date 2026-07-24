@@ -1433,3 +1433,172 @@ img.entity-image--preview {
   width: 100%;
   min-height: 2.75rem;
 }
+
+
+/* Print visibility and A4 log sheet defaults */
+.print-only {
+  position: fixed !important;
+  top: 0 !important;
+  left: -10000px !important;
+  width: 281mm !important;
+  min-width: 281mm !important;
+  max-width: none !important;
+  overflow: hidden !important;
+  visibility: hidden !important;
+}
+
+.screen-only,
+.no-print {
+  display: revert;
+}
+
+.print-page {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.print-loglines {
+  border-collapse: collapse;
+}
+
+@media print {
+  @page {
+    size: A4 landscape;
+    size: 297mm 210mm;
+    page-orientation: landscape;
+    margin: 8mm;
+  }
+
+  html,
+  body {
+    width: 297mm !important;
+    min-width: 297mm !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  .print-only {
+    position: static !important;
+    left: auto !important;
+    display: block !important;
+    overflow: visible !important;
+    visibility: visible !important;
+  }
+
+  .print-root {
+    position: static !important;
+    width: 281mm !important;
+    min-width: 281mm !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  .print-root .log-sheet-print-view {
+    width: 281mm !important;
+    min-width: 281mm !important;
+    max-width: none !important;
+  }
+
+  body:has(.print-root .print-page) .app-shell {
+    display: none !important;
+  }
+
+  .screen-only,
+  .no-print,
+  nav,
+  [role="navigation"],
+  [role="toolbar"],
+  [role="dialog"],
+  dialog,
+  button,
+  .app-sidebar,
+  .top-actions,
+  .module-tabs,
+  .sidebar,
+  .sidebar-header,
+  .table-actions,
+  .logbook-toolbar,
+  .filters,
+  .pagination-controls,
+  .pagination-buttons,
+  .edit-chip,
+  .share-logsheet-modal,
+  .scanner-upload-status,
+  .logbook-scanner-actions,
+  .logbook-scanner-empty,
+  .map-card,
+  .leaflet-container {
+    display: none !important;
+  }
+
+  body:has(.print-root .print-page) .print-root,
+  body:has(.print-root .print-page) .print-root *,
+  body:has(.print-root .print-page) .print-page,
+  body:has(.print-root .print-page) .print-page * {
+    visibility: visible !important;
+  }
+
+  .print-page {
+    overflow: hidden;
+    background: #fff !important;
+    color: #000 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    border-radius: 0 !important;
+    break-after: page;
+    page-break-after: always;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .print-page:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  .print-page *,
+  .print-header,
+  .print-loglines,
+  .print-footer {
+    color: #000 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    border-color: #000 !important;
+    border-radius: 0 !important;
+    filter: none !important;
+  }
+
+  .print-header,
+  .print-footer,
+  .print-page section,
+  .print-loglines th,
+  .print-loglines td {
+    background: #fff !important;
+    background-color: #fff !important;
+    background-image: none !important;
+  }
+
+  .print-loglines {
+    width: 100%;
+    border-collapse: collapse !important;
+    font-size: 6.5pt;
+  }
+
+  .print-loglines th,
+  .print-loglines td {
+    border: 0.2mm solid #000 !important;
+  }
+}
+
+.page-heading-actions,
+.table-row-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: flex-end;
+}

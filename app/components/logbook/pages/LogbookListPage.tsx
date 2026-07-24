@@ -38,6 +38,8 @@ export function LogbookListPage({
   setShowNewSheet,
   createDefaultSheetForm,
   defaultPageSize,
+  onPrintSheet,
+  onPrintEmptySheet,
 }: {
   activeBoat?: Boat;
   scannerBoatId: string;
@@ -59,6 +61,8 @@ export function LogbookListPage({
   setShowNewSheet: Dispatch<SetStateAction<boolean>>;
   createDefaultSheetForm: () => SheetForm;
   defaultPageSize: number;
+  onPrintSheet: (sheetId: string) => void;
+  onPrintEmptySheet: () => void;
 }) {
   const { t } = useI18n();
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -90,19 +94,28 @@ export function LogbookListPage({
           <h1>{t("logbooks.title")}</h1>
           <p>{t("logbooks.subtitle")}</p>
         </div>
-        <button
-          type="button"
-          className="primary-action"
-          onClick={() => {
-            setEditingSheetId(null);
-            if (!activeBoat) return;
-            setSheetForm(createDefaultSheetForm());
-            setShowNewSheet(true);
-            navigate("details");
-          }}
-        >
-          {t("logbooks.newSheet")}
-        </button>
+        <div className="page-heading-actions">
+          <button
+            type="button"
+            className="secondary-action"
+            onClick={onPrintEmptySheet}
+          >
+            {t("logbooks.printEmptySheet")}
+          </button>
+          <button
+            type="button"
+            className="primary-action"
+            onClick={() => {
+              setEditingSheetId(null);
+              if (!activeBoat) return;
+              setSheetForm(createDefaultSheetForm());
+              setShowNewSheet(true);
+              navigate("details");
+            }}
+          >
+            {t("logbooks.newSheet")}
+          </button>
+        </div>
       </div>
       {hasBoats ? (
         <div className="logbook-scanner-actions" aria-label={t("logbooks.scannerActions")}>
@@ -319,15 +332,24 @@ export function LogbookListPage({
                       <td>{sheetSummary.motionDuration}</td>
                       <td>{sheetSummary.motorHoursDuration}</td>
                       <td>
-                        <button
-                          className="edit-chip"
-                          onClick={() => {
-                            openSheet(sheet);
-                          }}
-                          type="button"
-                        >
-                          Open
-                        </button>
+                        <div className="table-row-actions">
+                          <button
+                            className="edit-chip"
+                            onClick={() => {
+                              openSheet(sheet);
+                            }}
+                            type="button"
+                          >
+                            Open
+                          </button>
+                          <button
+                            className="edit-chip"
+                            onClick={() => onPrintSheet(sheet.id)}
+                            type="button"
+                          >
+                            {t("logbooks.printSheet")}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

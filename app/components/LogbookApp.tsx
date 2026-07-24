@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState, type MouseEventHandler } from "react";
 import { signOut } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -57,6 +57,7 @@ import { CompliancePage } from "./logbook/pages/CompliancePage";
 import { LogbookListPage } from "./logbook/pages/LogbookListPage";
 import { UserListPage } from "./logbook/pages/UserListPage";
 import { LogbookDetailsPage } from "./logbook/pages/LogbookDetailsPage";
+import { LogSheetPrintView } from "./logbook/LogSheetPrintView";
 import { BoatManagerPage } from "./logbook/pages/BoatManagerPage";
 import { DashboardPage } from "./logbook/pages/DashboardPage";
 import { CrewManagerPage } from "./logbook/pages/CrewManagerPage";
@@ -74,6 +75,8 @@ type SocialUser = {
   logbookSheets: number;
   boats: number;
 };
+type PrintTarget = { mode: "filled"; sheetId: string; showCourseColumns: boolean } | { mode: "empty"; showCourseColumns: boolean } | null;
+
 type SheetInlineField =
   | "title"
   | "boatId"
@@ -214,6 +217,7 @@ export function LogbookApp({
     isVisible: boolean;
   } | null>(null);
   const [showNewSheet, setShowNewSheet] = useState(false);
+  const [printTarget, setPrintTarget] = useState<PrintTarget>(null);
   const [showBoatManager, setShowBoatManager] = useState(false);
   const [showAddLine, setShowAddLine] = useState(false);
   const [sheetForm, setSheetForm] = useState<SheetForm>(
@@ -703,13 +707,38 @@ export function LogbookApp({
     () => calculateSheetSummary(activeSheet, preferences.motionStationaryThresholdNm),
     [activeSheet, preferences.motionStationaryThresholdNm],
   );
+  const printSheet = printTarget?.mode === "filled"
+    ? logbook.sheets.find((sheet) => sheet.id === printTarget.sheetId)
+    : undefined;
+  const printBoat = printSheet
+    ? logbook.boats.find((boat) => boat.id === printSheet.boatId)
+    : activeBoat;
+  const printSummary = printSheet ? calculateSheetSummary(printSheet) : undefined;
+
+  useEffect(() => {
+    if (!printTarget) return;
+
+    const clearPrintTarget = () => setPrintTarget(null);
+    const printTimer = window.setTimeout(() => {
+      window.print();
+    }, 0);
+    const fallbackTimer = window.setTimeout(clearPrintTarget, 60_000);
+
+    window.addEventListener("afterprint", clearPrintTarget);
+
+    return () => {
+      window.clearTimeout(printTimer);
+      window.clearTimeout(fallbackTimer);
+      window.removeEventListener("afterprint", clearPrintTarget);
+    };
+  }, [printTarget]);
   const canEditActiveSheetMasterData = activeSheet.status === "Draft";
   const sheetInlineActions = editingSheetField ? (
     <span className="inline-value-actions">
       <button
         type="button"
         aria-label={t("details.approveChange")}
-        onClick={saveSheetInlineField}
+        onClick={saveSheetInlineField as MouseEventHandler<HTMLButtonElement>}
       >
         ✅
       </button>
@@ -1672,7 +1701,8 @@ export function LogbookApp({
   }
 
   return (
-    <main
+    <>
+      <main
       className="app-shell"
       data-theme={theme}
       data-nav={isNavSlim ? "slim" : "full"}
@@ -1743,6 +1773,8 @@ export function LogbookApp({
               setShowNewSheet={setShowNewSheet}
               createDefaultSheetForm={() => sheetDefaults}
               defaultPageSize={preferences.defaultPageSize}
+              onPrintSheet={(sheetId) => setPrintTarget({ mode: "filled", sheetId, showCourseColumns: preferences.showCourseConversionTable })}
+              onPrintEmptySheet={() => setPrintTarget({ mode: "empty", showCourseColumns: preferences.showCourseConversionTable })}
             />
           )}
 
@@ -1796,6 +1828,7 @@ export function LogbookApp({
               updateTechnicalCheck={updateTechnicalCheck}
               deleteTechnicalCheck={deleteTechnicalCheck}
               technicalCheckSuggestions={technicalCheckSuggestions}
+              onPrintSheet={() => setPrintTarget({ mode: "filled", sheetId: activeSheet.id, showCourseColumns })}
             />
           )}
 
@@ -2041,7 +2074,15 @@ export function LogbookApp({
           {activeModule === "compliance" && <CompliancePage />}
         </section>
       </section>
-    </main>
+      </main>
+      <div className="print-only print-root" aria-hidden={!printTarget}>
+        {printTarget?.mode === "empty" ? (
+          <LogSheetPrintView mode="empty" boat={printBoat} showCourseColumns={printTarget?.showCourseColumns ?? preferences.showCourseConversionTable} />
+        ) : printSheet ? (
+          <LogSheetPrintView mode="filled" sheet={printSheet} boat={printBoat} summary={printSummary} showCourseColumns={printTarget?.showCourseColumns ?? preferences.showCourseConversionTable} />
+        ) : null}
+      </div>
+    </>
   );
 }
 
