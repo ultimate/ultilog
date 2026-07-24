@@ -180,6 +180,7 @@ export const fr: Dictionary = {
   "boats.deviation": "Déviation",
   "boats.windDriftTable": "Table de dérive au vent",
   "boats.windDriftHelp": "Dérive selon angle de vent relatif et voilure. Saisissez des valeurs comme 4° ou -2°. La pleine toile est utilisée pour la conversion automatique.",
+  "boats.windSpeedLimit": "Vitesse du vent minimale (kn)",
   "boats.windAngle": "Angle au vent",
   "boats.windDrift.closeHauled": "Près serré",
   "boats.windDrift.beamReach": "Travers",

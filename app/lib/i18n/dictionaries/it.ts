@@ -180,6 +180,7 @@ export const it: Dictionary = {
   "boats.deviation": "Deviazione",
   "boats.windDriftTable": "Tabella scarroccio",
   "boats.windDriftHelp": "Scarroccio per angolo del vento relativo e configurazione vele. Inserisci valori come 4° o -2°. Per la conversione automatica si usa vele piene.",
+  "boats.windSpeedLimit": "Limite inferiore vento (kn)",
   "boats.windAngle": "Angolo vento",
   "boats.windDrift.closeHauled": "Bolina stretta",
   "boats.windDrift.beamReach": "Traverso",

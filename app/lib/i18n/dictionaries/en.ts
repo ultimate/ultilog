@@ -178,6 +178,7 @@ export const en = {
   "boats.deviation": "Deviation",
   "boats.windDriftTable": "Wind drift table",
   "boats.windDriftHelp": "Wind drift by relative wind angle and sail setting. Enter values such as 4° or -2°. Full sail is used for automatic course conversion.",
+  "boats.windSpeedLimit": "Wind speed lower limit (kn)",
   "boats.windAngle": "Wind angle",
   "boats.windDrift.closeHauled": "Close-hauled",
   "boats.windDrift.beamReach": "Beam reach",

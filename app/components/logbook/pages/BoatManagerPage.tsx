@@ -333,12 +333,31 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                     <tr>
                       <th>{t("boats.windAngle")}</th>
                       {windDriftSailSettings.map((setting) => (
-                        <th key={setting}>{t(`boats.windDrift.${setting}`)}</th>
+                        <th key={setting}>
+                          <span>{t(`boats.windDrift.${setting}`)}</span>
+                          <input
+                            aria-label={`${t(`boats.windDrift.${setting}`)} ${t("boats.windSpeedLimit")}`}
+                            type="number"
+                            min="0"
+                            step="0.1"
+                            disabled={setting === "fullSail"}
+                            value={boatForm.windDriftTable.windSpeedLimits[setting]}
+                            onChange={(e) =>
+                              setBoatForm({
+                                ...boatForm,
+                                windDriftTable: {
+                                  ...boatForm.windDriftTable,
+                                  windSpeedLimits: { ...boatForm.windDriftTable.windSpeedLimits, [setting]: e.target.value },
+                                },
+                              })
+                            }
+                          />
+                        </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {boatForm.windDriftTable.map((row, index) => (
+                    {boatForm.windDriftTable.rows.map((row, index) => (
                       <tr key={row.angle}>
                         <td>{t(`boats.windDrift.${row.angle}`)}</td>
                         {windDriftSailSettings.map((setting) => (
@@ -349,11 +368,14 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                               onChange={(e) =>
                                 setBoatForm({
                                   ...boatForm,
-                                  windDriftTable: boatForm.windDriftTable.map((candidate, candidateIndex) =>
+                                  windDriftTable: {
+                                    ...boatForm.windDriftTable,
+                                    rows: boatForm.windDriftTable.rows.map((candidate, candidateIndex) =>
                                     candidateIndex === index
                                       ? { ...candidate, values: { ...candidate.values, [setting]: e.target.value } }
                                       : candidate,
-                                  ),
+                                    ),
+                                  },
                                 })
                               }
                             />

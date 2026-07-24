@@ -16,7 +16,7 @@ export type CourseConversionLookupOptions = {
   variationLookup?: (request: CourseConversionVariationLookupRequest) => Promise<number>;
   windDirection?: number;
   windDriftTable?: WindDriftTable;
-  windDriftSailSetting?: WindDriftSailSetting;
+  windSpeedKnots?: number;
 };
 
 export type CourseConversion = {
@@ -35,7 +35,10 @@ type CourseKey = "compassCourse" | "magneticCourse" | "trueCourse" | "courseThro
 type DeltaKey = "deviation" | "variation" | "windDrift" | "currentDrift";
 
 export type DeviationTable = Record<number, number>;
-export type WindDriftTable = Record<WindDriftAngle, Record<WindDriftSailSetting, number | undefined>>;
+export type WindDriftTable = {
+  windSpeedLimits: Record<WindDriftSailSetting, number>;
+  rows: Record<WindDriftAngle, Record<WindDriftSailSetting, number | undefined>>;
+};
 export type WindDriftAngle = "closeHauled" | "beamReach" | "broadReach";
 export type WindDriftSailSetting = "fullSail" | "secondReef" | "stormSail";
 
@@ -198,9 +201,15 @@ function setDeviationFromTable(input: CourseConversionInput, deviationTable?: De
 
 function windDriftAngleForCourses(windDirection: number, heading: number): WindDriftAngle {
   const relative = Math.abs(normalizeDelta(windDirection - heading));
-  if (relative < 60) return "closeHauled";
+  if (relative <= 60) return "closeHauled";
   if (relative < 120) return "beamReach";
   return "broadReach";
+}
+
+function windDriftSailSettingForSpeed(limits: Record<WindDriftSailSetting, number>, windSpeedKnots: number): WindDriftSailSetting {
+  return (["fullSail", "secondReef", "stormSail"] as WindDriftSailSetting[])
+    .filter((setting) => windSpeedKnots >= limits[setting])
+    .at(-1) ?? "fullSail";
 }
 
 function setWindDriftFromTable(input: CourseConversionInput, options?: CourseConversionLookupOptions | null) {
@@ -209,8 +218,9 @@ function setWindDriftFromTable(input: CourseConversionInput, options?: CourseCon
   if (heading === undefined) return false;
 
   const angle = windDriftAngleForCourses(options.windDirection, heading);
-  const sailSetting = options.windDriftSailSetting ?? "fullSail";
-  const windDrift = options.windDriftTable[angle]?.[sailSetting];
+  const windSpeedKnots = options.windSpeedKnots ?? 0;
+  const sailSetting = windDriftSailSettingForSpeed(options.windDriftTable.windSpeedLimits, windSpeedKnots);
+  const windDrift = options.windDriftTable.rows[angle]?.[sailSetting];
   return windDrift === undefined ? false : setDelta(input, "windDrift", windDrift);
 }
 

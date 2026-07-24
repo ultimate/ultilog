@@ -15,6 +15,11 @@ export type WindDriftTableRow = {
   values: Record<WindDriftSailSetting, string>;
 };
 
+export type WindDriftTable = {
+  windSpeedLimits: Record<WindDriftSailSetting, string>;
+  rows: WindDriftTableRow[];
+};
+
 export const deviationTableHeadings = Array.from({ length: 36 }, (_, index) => index * 10);
 export const windDriftAngles: WindDriftAngle[] = ["closeHauled", "beamReach", "broadReach"];
 export const windDriftSailSettings: WindDriftSailSetting[] = ["fullSail", "secondReef", "stormSail"];
@@ -28,20 +33,32 @@ export function normalizeDeviationTable(rows: DeviationTableRow[] = []): Deviati
   return deviationTableHeadings.map((heading) => ({ heading, deviation: rowsByHeading.get(heading) ?? "" }));
 }
 
-export function defaultWindDriftTable(): WindDriftTableRow[] {
-  return windDriftAngles.map((angle) => ({ angle, values: { fullSail: "", secondReef: "", stormSail: "" } }));
+export function defaultWindDriftTable(): WindDriftTable {
+  return {
+    windSpeedLimits: { fullSail: "0", secondReef: "", stormSail: "" },
+    rows: windDriftAngles.map((angle) => ({ angle, values: { fullSail: "", secondReef: "", stormSail: "" } })),
+  };
 }
 
-export function normalizeWindDriftTable(rows: WindDriftTableRow[] = []): WindDriftTableRow[] {
-  const rowsByAngle = new Map(rows.map((row) => [row.angle, row.values]));
-  return windDriftAngles.map((angle) => ({
-    angle,
-    values: {
-      fullSail: rowsByAngle.get(angle)?.fullSail ?? "",
-      secondReef: rowsByAngle.get(angle)?.secondReef ?? "",
-      stormSail: rowsByAngle.get(angle)?.stormSail ?? "",
+export function normalizeWindDriftTable(table: WindDriftTable | WindDriftTableRow[] = defaultWindDriftTable()): WindDriftTable {
+  const windSpeedLimits = Array.isArray(table) ? defaultWindDriftTable().windSpeedLimits : table.windSpeedLimits;
+  const rows = Array.isArray(table) ? table : table.rows;
+  const rowsByAngle = new Map((rows ?? []).map((row) => [row.angle, row.values]));
+  return {
+    windSpeedLimits: {
+      fullSail: "0",
+      secondReef: windSpeedLimits?.secondReef ?? "",
+      stormSail: windSpeedLimits?.stormSail ?? "",
     },
-  }));
+    rows: windDriftAngles.map((angle) => ({
+      angle,
+      values: {
+        fullSail: rowsByAngle.get(angle)?.fullSail ?? "",
+        secondReef: rowsByAngle.get(angle)?.secondReef ?? "",
+        stormSail: rowsByAngle.get(angle)?.stormSail ?? "",
+      },
+    })),
+  };
 }
 
 export type Boat = {
@@ -56,6 +73,6 @@ export type Boat = {
   logfactor: number;
   yachtData: Record<string, string>;
   deviationTable: DeviationTableRow[];
-  windDriftTable?: WindDriftTableRow[];
+  windDriftTable?: WindDriftTable;
   image?: StoredImage;
 };

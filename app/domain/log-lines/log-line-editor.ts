@@ -28,7 +28,7 @@ export function updateLogLineFormForInput(form: LineForm, update: LogLineFormUpd
     ? { latitude: parseCoordinate(nextForm.latitude), longitude: parseCoordinate(nextForm.longitude) }
     : undefined;
   const date = nextForm.time ? new Date(nextForm.time) : undefined;
-  const options = { position, date, variationLookup: context.variationLookup, windDirection: optionalNumber(nextForm.windDirection), windDriftTable };
+  const options = { position, date, variationLookup: context.variationLookup, windDirection: parseWindDirection(nextForm.windDirection), windSpeedKnots: windSpeedKnotsFromForm(nextForm), windDriftTable };
   const conversion = calculateCourseConversion(input, deviationTable, options);
 
   if (conversion instanceof Promise) {
@@ -46,7 +46,45 @@ function applyFieldUpdate(form: LineForm, { field, value }: LogLineFormUpdate): 
 }
 
 function shouldRecalculateCourses(field: keyof LineForm, form: LineForm) {
-  return (courseInputFieldNames.includes(field as CourseFieldName) || field === "windDirection" || field === "latitude" || field === "longitude" || field === "time") && hasAnyCourseInput(form);
+  return (courseInputFieldNames.includes(field as CourseFieldName) || field === "windDirection" || field === "windStrength" || field === "windUnit" || field === "latitude" || field === "longitude" || field === "time") && hasAnyCourseInput(form);
+}
+
+const cardinalWindDirections: Record<string, number> = {
+  N: 0,
+  NNE: 22.5,
+  NE: 45,
+  ENE: 67.5,
+  E: 90,
+  ESE: 112.5,
+  SE: 135,
+  SSE: 157.5,
+  S: 180,
+  SSW: 202.5,
+  SW: 225,
+  WSW: 247.5,
+  W: 270,
+  WNW: 292.5,
+  NW: 315,
+  NNW: 337.5,
+};
+
+function parseWindDirection(value: string) {
+  const numeric = optionalNumber(value);
+  if (numeric !== undefined) return numeric;
+  return cardinalWindDirections[value.trim().toUpperCase()];
+}
+
+function windSpeedKnotsFromForm(form: LineForm) {
+  const speed = optionalNumber(form.windStrength);
+  if (speed === undefined) return undefined;
+  if (form.windUnit === "kn") return speed;
+  if (form.windUnit === "bft") return beaufortToKnots(speed);
+  return speed;
+}
+
+function beaufortToKnots(beaufort: number) {
+  const lowerLimits = [0, 1, 4, 7, 11, 17, 22, 28, 34, 41, 48, 56, 64];
+  return lowerLimits[Math.max(0, Math.min(12, Math.round(beaufort)))] ?? 0;
 }
 
 function optionalNumber(value: string) {
@@ -99,9 +137,13 @@ function deviationTableFromBoat(boat: Pick<Boat, "deviationTable">): DeviationTa
 }
 
 function windDriftTableFromBoat(boat: Pick<Boat, "windDriftTable">): WindDriftTable | undefined {
-  const rows = (boat.windDriftTable ?? []).map((row) => {
+  if (!boat.windDriftTable) return undefined;
+  const rows = boat.windDriftTable.rows.map((row) => {
     const values = Object.fromEntries(Object.entries(row.values).map(([key, value]) => [key, optionalNumber(value)]));
     return [row.angle, values];
   });
-  return rows.some(([, values]) => Object.values(values).some((value) => value !== undefined)) ? Object.fromEntries(rows) as WindDriftTable : undefined;
+  const windSpeedLimits = Object.fromEntries(Object.entries(boat.windDriftTable.windSpeedLimits).map(([key, value]) => [key, optionalNumber(value) ?? 0]));
+  return rows.some(([, values]) => Object.values(values).some((value) => value !== undefined))
+    ? { windSpeedLimits, rows: Object.fromEntries(rows) } as WindDriftTable
+    : undefined;
 }

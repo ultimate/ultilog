@@ -180,6 +180,7 @@ export const de: Dictionary = {
   "boats.deviation": "Deviation",
   "boats.windDriftTable": "Windabdrifttabelle",
   "boats.windDriftHelp": "Windabdrift nach relativem Windwinkel und Besegelung. Werte wie 4° oder -2° eingeben. Für die automatische Kursumwandlung wird Vollzeug verwendet.",
+  "boats.windSpeedLimit": "Windgeschwindigkeit Untergrenze (kn)",
   "boats.windAngle": "Windwinkel",
   "boats.windDrift.closeHauled": "Hart am Wind",
   "boats.windDrift.beamReach": "Halber Wind",
