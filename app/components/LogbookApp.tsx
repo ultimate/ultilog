@@ -723,14 +723,11 @@ export function LogbookApp({
     const previousAfterPrint = window.onafterprint;
 
     window.onafterprint = clearPrintTarget;
-    window.requestAnimationFrame(() => {
+    window.setTimeout(() => {
       if (isPrintCanceled) return;
-      window.requestAnimationFrame(() => {
-        if (isPrintCanceled) return;
-        window.print();
-        window.setTimeout(clearPrintTarget, 60_000);
-      });
-    });
+      window.print();
+      window.setTimeout(() => clearPrintTarget(), 60_000);
+    }, 0);
 
     return () => {
       isPrintCanceled = true;
