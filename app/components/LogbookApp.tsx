@@ -719,12 +719,18 @@ export function LogbookApp({
     if (!printTarget) return;
 
     const clearPrintTarget = () => setPrintTarget(null);
-
-    window.onafterprint = clearPrintTarget;
-    window.setTimeout(() => {
+    const printTimer = window.setTimeout(() => {
       window.print();
-      window.setTimeout(() => clearPrintTarget(), 60_000);
     }, 0);
+    const fallbackTimer = window.setTimeout(clearPrintTarget, 60_000);
+
+    window.addEventListener("afterprint", clearPrintTarget);
+
+    return () => {
+      window.clearTimeout(printTimer);
+      window.clearTimeout(fallbackTimer);
+      window.removeEventListener("afterprint", clearPrintTarget);
+    };
   }, [printTarget]);
   const canEditActiveSheetMasterData = activeSheet.status === "Draft";
   const sheetInlineActions = editingSheetField ? (
