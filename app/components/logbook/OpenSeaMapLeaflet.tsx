@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import L, { type LatLngBoundsExpression, type LatLngExpression } from "leaflet";
 import {
   MapContainer,
@@ -122,6 +122,13 @@ function MapContextMenu({
 }) {
   const { t } = useI18n();
   const [menu, setMenu] = useState<MapContextMenuState | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!menuRef.current) return;
+    L.DomEvent.disableClickPropagation(menuRef.current);
+    L.DomEvent.disableScrollPropagation(menuRef.current);
+  }, [menu]);
 
   useMapEvents({
     click: () => setMenu(null),
@@ -140,22 +147,38 @@ function MapContextMenu({
 
   if (!menu) return null;
 
+  const addLogLine = () => {
+    onAddLogLineAt?.({ latitude: menu.latitude, longitude: menu.longitude });
+    setMenu(null);
+  };
+
   return (
     <div
+      ref={menuRef}
       className="open-seamap-context-menu"
       style={{ left: menu.x, top: menu.y }}
       role="menu"
       onClick={(event) => event.stopPropagation()}
       onContextMenu={(event) => event.preventDefault()}
       onMouseDown={(event) => event.stopPropagation()}
+      onPointerDown={(event) => event.stopPropagation()}
     >
+      <div className="open-seamap-context-menu-header">
+        <strong>{t("map.contextCoordinates")}</strong>
+        <span>{menu.latitude.toFixed(6)} / {menu.longitude.toFixed(6)}</span>
+      </div>
       <button
         type="button"
         role="menuitem"
         onClick={(event) => {
+          event.preventDefault();
           event.stopPropagation();
-          onAddLogLineAt?.({ latitude: menu.latitude, longitude: menu.longitude });
-          setMenu(null);
+          addLogLine();
+        }}
+        onPointerDown={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          addLogLine();
         }}
       >
         {t("map.addLogLineHere")}

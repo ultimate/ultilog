@@ -410,6 +410,7 @@ export const it: Dictionary = {
   "map.routeMapAria": "Mappa rotta OpenSeaMap",
   "map.noPositions": "Non sono ancora disponibili posizioni valide per questa mappa.",
   "map.addLogLineHere": "Aggiungi riga di log qui",
+  "map.contextCoordinates": "Coordinate",
   "admin.aria": "Pagina admin",
   "admin.title": "Admin",
   "admin.subtitle": "Gestisci i gruppi utenti per le issue #45 e #46.",

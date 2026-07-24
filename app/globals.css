@@ -196,6 +196,28 @@ dd { margin: 0; }
   padding: 0.35rem;
 }
 
+.open-seamap-context-menu-header {
+  display: grid;
+  gap: 0.15rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.25rem;
+  padding: 0.55rem 0.8rem 0.65rem;
+}
+
+.open-seamap-context-menu-header strong {
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.open-seamap-context-menu-header span {
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
 .open-seamap-context-menu button {
   width: 100%;
   border: 0;
