@@ -63,12 +63,18 @@ import { BoatManagerPage } from "./logbook/pages/BoatManagerPage";
 import { DashboardPage } from "./logbook/pages/DashboardPage";
 import { CrewManagerPage } from "./logbook/pages/CrewManagerPage";
 import { ProfilePage } from "./logbook/pages/ProfilePage";
+import { ListPagination, ListSearch, SortableColumnHeader, useSortableList } from "./logbook/SortableList";
 import { OnboardingChecklist } from "./onboarding/OnboardingChecklist";
 import { useOnboardingProfile } from "./onboarding/useOnboardingProfile";
 import type { OnboardingTaskId } from "../lib/onboarding/tasks";
 import type { ProfilePreferences } from "./onboarding/useOnboardingProfile";
 
 type AdminUser = { id: string; name: string; email: string; groups: string[] };
+const adminUserColumns = [
+  { key: "name", value: (user: AdminUser) => user.name },
+  { key: "email", value: (user: AdminUser) => user.email },
+  { key: "groups", value: (user: AdminUser) => user.groups },
+];
 type SocialUser = { id: string; username: string; sailMiles: number; motorMiles: number; logbookSheets: number; boats: number };
 type PrintTarget = { mode: "filled"; sheetId: string; showCourseColumns: boolean } | { mode: "empty"; showCourseColumns: boolean } | null;
 
@@ -276,6 +282,7 @@ export function LogbookApp({
     onLocaleChange: setLocale,
     t,
   });
+  const adminList = useSortableList(adminUsers, adminUserColumns, preferences.defaultPageSize);
 
 
   async function logout() {
@@ -1866,7 +1873,7 @@ export function LogbookApp({
           )}
 
           {activeModule === "users" && (
-            <UserListPage users={directoryUsers} />
+            <UserListPage users={directoryUsers} defaultPageSize={preferences.defaultPageSize} />
           )}
 
           {activeModule === "profile" && (
@@ -1943,20 +1950,21 @@ export function LogbookApp({
                       {knownGroups.length ? knownGroups.join(", ") : t("admin.noneYet")}
                     </p>
                   </div>
+                  <ListSearch value={adminList.query} onChange={adminList.setQuery} />
                 </div>
                 <div className="table-scroll admin-users-table-scroll">
                   <table className="logbook-table admin-users-table">
                     <thead>
                       <tr>
-                        <th>{t("users.username")}</th>
-                        <th>{t("auth.email")}</th>
-                        <th>{t("admin.groups")}</th>
+                        <SortableColumnHeader columnKey="name" activeKey={adminList.sort.key} direction={adminList.sort.direction} onSort={adminList.setSortKey}>{t("users.username")}</SortableColumnHeader>
+                        <SortableColumnHeader columnKey="email" activeKey={adminList.sort.key} direction={adminList.sort.direction} onSort={adminList.setSortKey}>{t("auth.email")}</SortableColumnHeader>
+                        <SortableColumnHeader columnKey="groups" activeKey={adminList.sort.key} direction={adminList.sort.direction} onSort={adminList.setSortKey}>{t("admin.groups")}</SortableColumnHeader>
                         <th></th>
                         <th></th>
                       </tr>
                     </thead>
                     <tbody>
-                      {adminUsers.map((user) => (
+                      {adminList.pageItems.map((user) => (
                         <tr key={user.id}>
                           <td>{user.name}</td>
                           <td>{user.email}</td>
@@ -2057,6 +2065,7 @@ export function LogbookApp({
                     </tbody>
                   </table>
                 </div>
+                <ListPagination list={adminList} />
                 <datalist id="known-groups">
                   {knownGroups.map((group) => (
                     <option key={group} value={group} />

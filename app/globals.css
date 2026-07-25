@@ -1602,3 +1602,12 @@ img.entity-image--preview {
   align-items: center;
   justify-content: flex-end;
 }
+
+/* Shared searchable and sortable list controls. */
+.list-search { min-width: min(100%, 16rem); }
+.list-search label, .list-search input { display: block; width: 100%; }
+.list-search input { min-height: 2.5rem; border: 1px solid var(--border); border-radius: .65rem; padding: .55rem .75rem; background: var(--surface, white); color: var(--foreground); }
+.sortable-column-button { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: .5rem; border: 0; padding: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.manager-list-sort { display: flex; align-items: center; justify-content: flex-end; gap: .5rem; margin: .75rem 0; }
+.manager-list-sort label { display: flex; align-items: center; gap: .5rem; font-weight: 700; }
+.manager-list-sort select { border: 1px solid var(--border); border-radius: .65rem; padding: .4rem .55rem; background: var(--surface, white); color: var(--foreground); }
