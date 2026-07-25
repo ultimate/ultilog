@@ -393,7 +393,7 @@ export const de: Dictionary = {
   "users.subtitle": "Entdecke andere ultilog-Segler und vergleiche allgemeine Logbuchaktivität.",
   "users.directory": "Community-Verzeichnis",
   "users.all": "Alle Benutzer",
-  "users.mockHelp": "Beispielhafte Zusammenfassungsdaten, bis geteilte Profilstatistiken verbunden sind.",
+  "users.directoryHelp": "Zusammenfassungsdaten werden aus gespeicherten Logbüchern und Booten berechnet.",
   "users.username": "Benutzername",
   "users.totalSail": "Gesamte Segelmeilen",
   "users.totalMotor": "Gesamte Motormeilen",

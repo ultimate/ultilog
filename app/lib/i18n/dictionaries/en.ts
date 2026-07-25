@@ -391,7 +391,7 @@ export const en = {
   "users.subtitle": "Discover other ultilog sailors and compare high-level logbook activity.",
   "users.directory": "Community directory",
   "users.all": "All users",
-  "users.mockHelp": "Mocked summary data until shared profile statistics are connected.",
+  "users.directoryHelp": "Summary data is calculated from saved logbooks and boats.",
   "users.username": "Username",
   "users.totalSail": "Total sail mileage",
   "users.totalMotor": "Total motor mileage",

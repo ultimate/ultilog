@@ -393,7 +393,7 @@ export const fr: Dictionary = {
   "users.subtitle": "Découvrez d’autres marins ultilog et comparez l’activité globale des journaux.",
   "users.directory": "Annuaire de la communauté",
   "users.all": "Tous les utilisateurs",
-  "users.mockHelp": "Données de résumé fictives jusqu’à la connexion des statistiques de profil partagées.",
+  "users.directoryHelp": "Les données récapitulatives sont calculées à partir des journaux et bateaux enregistrés.",
   "users.username": "Nom d’utilisateur",
   "users.totalSail": "Millage total à la voile",
   "users.totalMotor": "Millage total au moteur",

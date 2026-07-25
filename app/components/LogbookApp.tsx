@@ -69,13 +69,7 @@ import type { OnboardingTaskId } from "../lib/onboarding/tasks";
 import type { ProfilePreferences } from "./onboarding/useOnboardingProfile";
 
 type AdminUser = { id: string; name: string; email: string; groups: string[] };
-type SocialUser = {
-  username: string;
-  sailMiles: number;
-  motorMiles: number;
-  logbookSheets: number;
-  boats: number;
-};
+type SocialUser = { id: string; username: string; sailMiles: number; motorMiles: number; logbookSheets: number; boats: number };
 type PrintTarget = { mode: "filled"; sheetId: string; showCourseColumns: boolean } | { mode: "empty"; showCourseColumns: boolean } | null;
 
 type SheetInlineField =
@@ -123,44 +117,6 @@ function createDefaultLineForm(preferences: LineFormPreferences): LineForm {
     temperatureUnit: preferences.temperatureUnit,
   };
 }
-
-const mockSocialUsers: SocialUser[] = [
-  {
-    username: "amelia.salt",
-    sailMiles: 1842,
-    motorMiles: 326,
-    logbookSheets: 18,
-    boats: 2,
-  },
-  {
-    username: "harbor-hugo",
-    sailMiles: 967,
-    motorMiles: 214,
-    logbookSheets: 11,
-    boats: 1,
-  },
-  {
-    username: "nora.nautic",
-    sailMiles: 2410,
-    motorMiles: 502,
-    logbookSheets: 27,
-    boats: 3,
-  },
-  {
-    username: "tidewalker",
-    sailMiles: 705,
-    motorMiles: 688,
-    logbookSheets: 9,
-    boats: 1,
-  },
-  {
-    username: "bluewater-max",
-    sailMiles: 3196,
-    motorMiles: 431,
-    logbookSheets: 34,
-    boats: 2,
-  },
-];
 
 function monthLabelForSheet(sheet: LogSheet) {
   const source = sheet.route.departed || sheet.dateRange;
@@ -270,6 +226,7 @@ export function LogbookApp({
     confirmation: "",
   });
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [directoryUsers, setDirectoryUsers] = useState<SocialUser[]>([]);
   const [knownGroups, setKnownGroups] = useState<string[]>(userGroups);
   const [adminMessage, setAdminMessage] = useState<string | null>(null);
   const [adminError, setAdminError] = useState<string | null>(null);
@@ -552,6 +509,21 @@ export function LogbookApp({
     setAdminUsers(payload.users ?? []);
     setKnownGroups(payload.groups ?? []);
   }, [t]);
+
+  const loadDirectoryUsers = useCallback(async () => {
+    const response = await fetch("/api/users");
+    const payload = (await response.json().catch(() => ({}))) as { users?: SocialUser[] };
+    if (!response.ok) return;
+    setDirectoryUsers(payload.users ?? []);
+  }, []);
+
+  useEffect(() => {
+    if (activeModule !== "users" || directoryUsers.length > 0) return;
+    const timeout = window.setTimeout(() => {
+      loadDirectoryUsers().catch(() => undefined);
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, [activeModule, directoryUsers.length, loadDirectoryUsers]);
 
   useEffect(() => {
     if (
@@ -1894,7 +1866,7 @@ export function LogbookApp({
           )}
 
           {activeModule === "users" && (
-            <UserListPage mockSocialUsers={mockSocialUsers} />
+            <UserListPage users={directoryUsers} />
           )}
 
           {activeModule === "profile" && (
