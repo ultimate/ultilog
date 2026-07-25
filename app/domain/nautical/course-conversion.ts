@@ -221,7 +221,11 @@ function setWindDriftFromTable(input: CourseConversionInput, options?: CourseCon
   const windSpeedKnots = options.windSpeedKnots ?? 0;
   const sailSetting = windDriftSailSettingForSpeed(options.windDriftTable.windSpeedLimits, windSpeedKnots);
   const windDrift = options.windDriftTable.rows[angle]?.[sailSetting];
-  return windDrift === undefined ? false : setDelta(input, "windDrift", windDrift);
+  if (windDrift === undefined) return false;
+
+  const windwardSide = normalizeDelta(heading - options.windDirection);
+  const signedWindDrift = windwardSide > 0 ? Math.abs(windDrift) : -Math.abs(windDrift);
+  return setDelta(input, "windDrift", signedWindDrift);
 }
 
 function calculateCourseConversionValues(input: CourseConversionInput, deviationTable?: DeviationTable, options?: CourseConversionLookupOptions | null): CourseConversionInput {

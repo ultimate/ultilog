@@ -40,6 +40,12 @@ export function defaultWindDriftTable(): WindDriftTable {
   };
 }
 
+function nonNegativeValue(value: string | undefined) {
+  if (!value) return "";
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) && parsed < 0 ? "0" : value;
+}
+
 export function normalizeWindDriftTable(table: WindDriftTable | WindDriftTableRow[] = defaultWindDriftTable()): WindDriftTable {
   const windSpeedLimits = Array.isArray(table) ? defaultWindDriftTable().windSpeedLimits : table.windSpeedLimits;
   const rows = Array.isArray(table) ? table : table.rows;
@@ -47,15 +53,15 @@ export function normalizeWindDriftTable(table: WindDriftTable | WindDriftTableRo
   return {
     windSpeedLimits: {
       fullSail: "0",
-      secondReef: windSpeedLimits?.secondReef ?? "",
-      stormSail: windSpeedLimits?.stormSail ?? "",
+      secondReef: nonNegativeValue(windSpeedLimits?.secondReef),
+      stormSail: nonNegativeValue(windSpeedLimits?.stormSail),
     },
     rows: windDriftAngles.map((angle) => ({
       angle,
       values: {
-        fullSail: rowsByAngle.get(angle)?.fullSail ?? "",
-        secondReef: rowsByAngle.get(angle)?.secondReef ?? "",
-        stormSail: rowsByAngle.get(angle)?.stormSail ?? "",
+        fullSail: nonNegativeValue(rowsByAngle.get(angle)?.fullSail),
+        secondReef: nonNegativeValue(rowsByAngle.get(angle)?.secondReef),
+        stormSail: nonNegativeValue(rowsByAngle.get(angle)?.stormSail),
       },
     })),
   };

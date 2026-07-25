@@ -12,6 +12,11 @@ import { PaginationControls, usePagination } from "../PaginationControls";
 
 type BoatManagerPageProps = Record<string, any>;
 
+function nonNegativeInputValue(value: string) {
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) && parsed < 0 ? "0" : value;
+}
+
 export function BoatManagerPage(props: BoatManagerPageProps) {
   const { t } = useI18n();
   const {
@@ -347,7 +352,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                                 ...boatForm,
                                 windDriftTable: {
                                   ...boatForm.windDriftTable,
-                                  windSpeedLimits: { ...boatForm.windDriftTable.windSpeedLimits, [setting]: e.target.value },
+                                  windSpeedLimits: { ...boatForm.windDriftTable.windSpeedLimits, [setting]: nonNegativeInputValue(e.target.value) },
                                 },
                               })
                             }
@@ -364,6 +369,9 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                           <td key={setting}>
                             <input
                               aria-label={`${t(`boats.windDrift.${row.angle}`)} ${t(`boats.windDrift.${setting}`)}`}
+                              type="number"
+                              min="0"
+                              step="0.1"
                               value={row.values[setting]}
                               onChange={(e) =>
                                 setBoatForm({
@@ -372,7 +380,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                                     ...boatForm.windDriftTable,
                                     rows: boatForm.windDriftTable.rows.map((candidate, candidateIndex) =>
                                     candidateIndex === index
-                                      ? { ...candidate, values: { ...candidate.values, [setting]: e.target.value } }
+                                      ? { ...candidate, values: { ...candidate.values, [setting]: nonNegativeInputValue(e.target.value) } }
                                       : candidate,
                                     ),
                                   },

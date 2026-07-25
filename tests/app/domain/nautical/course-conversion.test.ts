@@ -282,7 +282,23 @@ it("derives wind drift from the wind drift table using relative wind angle", () 
     },
   })).toEqual({
     trueCourse: 100,
-    windDrift: 4,
-    courseThroughWater: 104,
+    windDrift: -4,
+    courseThroughWater: 96,
   });
+});
+
+
+it("applies positive wind drift across north when true course is clockwise from wind", () => {
+  expect(calculateCourseConversion({ trueCourse: 10 }, undefined, {
+    windDirection: 350,
+    windSpeedKnots: 5,
+    windDriftTable: {
+      windSpeedLimits: { fullSail: 0, secondReef: 15, stormSail: 30 },
+      rows: {
+        closeHauled: { fullSail: 3, secondReef: 6, stormSail: 9 },
+        beamReach: { fullSail: 2, secondReef: 4, stormSail: 8 },
+        broadReach: { fullSail: 1, secondReef: 2, stormSail: 4 },
+      },
+    },
+  })).toMatchObject({ windDrift: 3, courseThroughWater: 13 });
 });

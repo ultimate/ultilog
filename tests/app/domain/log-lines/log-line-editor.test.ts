@@ -66,7 +66,7 @@ it("uses the boat wind drift table when wind direction and true course are known
       ],
     },
   } as Pick<Boat, "deviationTable" | "windDriftTable">;
-  const form = { ...defaultLineForm, trueCourse: "100", windDirection: "E", windStrength: "18", windUnit: "kn", windDrift: "99" };
+  const form = { ...defaultLineForm, trueCourse: "100", windDirection: "E", windStrength: "10", windUnit: "m/s", windDrift: "99" };
 
   expect(updateLogLineFormForInput(form, { field: "windDirection", value: "E" }, { boat })).toMatchObject({
     trueCourse: "100",

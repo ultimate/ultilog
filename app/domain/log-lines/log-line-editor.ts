@@ -77,9 +77,20 @@ function parseWindDirection(value: string) {
 function windSpeedKnotsFromForm(form: LineForm) {
   const speed = optionalNumber(form.windStrength);
   if (speed === undefined) return undefined;
-  if (form.windUnit === "kn") return speed;
-  if (form.windUnit === "bft") return beaufortToKnots(speed);
-  return speed;
+  switch (form.windUnit) {
+    case "kn":
+      return speed;
+    case "bft":
+      return beaufortToKnots(speed);
+    case "m/s":
+      return speed * 1.9438444924406048;
+    case "km/h":
+      return speed / 1.852;
+    case "mp/h":
+      return speed / 1.1507794480235425;
+    default:
+      return speed;
+  }
 }
 
 function beaufortToKnots(beaufort: number) {
