@@ -395,6 +395,7 @@ export const it: Dictionary = {
   "users.all": "Tutti gli utenti",
   "users.directoryHelp": "I dati riepilogativi vengono calcolati da logbook e barche salvati.",
   "users.username": "Nome utente",
+  "users.totalMileage": "Miglia totali",
   "users.totalSail": "Miglia totali a vela",
   "users.totalMotor": "Miglia totali a motore",
   "users.sheets": "Fogli di log",

@@ -393,6 +393,7 @@ export const en = {
   "users.all": "All users",
   "users.directoryHelp": "Summary data is calculated from saved logbooks and boats.",
   "users.username": "Username",
+  "users.totalMileage": "Total mileage",
   "users.totalSail": "Total sail mileage",
   "users.totalMotor": "Total motor mileage",
   "users.sheets": "Logbook sheets",

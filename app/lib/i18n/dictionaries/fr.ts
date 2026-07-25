@@ -395,6 +395,7 @@ export const fr: Dictionary = {
   "users.all": "Tous les utilisateurs",
   "users.directoryHelp": "Les données récapitulatives sont calculées à partir des journaux et bateaux enregistrés.",
   "users.username": "Nom d’utilisateur",
+  "users.totalMileage": "Millage total",
   "users.totalSail": "Millage total à la voile",
   "users.totalMotor": "Millage total au moteur",
   "users.sheets": "Feuilles de journal",
