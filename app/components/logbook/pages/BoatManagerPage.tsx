@@ -1,14 +1,14 @@
 import { EntityImage } from "../EntityImage";
 import { flagGroups, flagOptionEmoji } from "../../../lib/flags";
 import { useI18n } from "../../../lib/i18n";
-import { useRef, type Dispatch, type SetStateAction } from "react";
+import { useMemo, useRef, type Dispatch, type SetStateAction } from "react";
 import type { Boat, BoatForm, PersistedLogbook } from "../../../models/logbook";
 import type { BoatType } from "../../../models/logbook";
 import { boatToForm, defaultBoatForm } from "../forms";
 import { modulePath } from "../persistence";
 import { ManagerShell } from "../../managers/ManagerShell";
 import { fileToStoredImage } from "../image-utils";
-import { PaginationControls, usePagination } from "../PaginationControls";
+import { ListPagination, ListSearch, useSortableList } from "../SortableList";
 
 type BoatManagerPageProps = Record<string, any>;
 
@@ -36,7 +36,15 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
     SetStateAction<boolean>
   >;
   const imageInputRef = useRef<HTMLInputElement>(null);
-  const listPagination = usePagination(logbook.boats, props.defaultPageSize as number);
+  const columns = useMemo(() => [
+    { key: "name", value: (boat: Boat) => boat.name },
+    { key: "type", value: (boat: Boat) => boat.type },
+    { key: "registration", value: (boat: Boat) => boat.registration },
+    { key: "flagState", value: (boat: Boat) => boat.flagState },
+    { key: "homePort", value: (boat: Boat) => boat.homePort },
+    { key: "owner", value: (boat: Boat) => boat.owner },
+  ], []);
+  const list = useSortableList(logbook.boats, columns, props.defaultPageSize as number);
 
   return (
     <section className="sheet-detail module-panel">
@@ -50,8 +58,13 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
         }}
         list={
           <>
+          <ListSearch value={list.query} onChange={list.setQuery} />
+          <div className="manager-list-sort">
+            <label>{t("list.sortBy")} <select value={list.sort.key} onChange={(event) => list.setSortKey(event.target.value)}><option value="">{t("common.name")}</option>{columns.map((column) => <option key={column.key} value={column.key}>{t(column.key === "flagState" ? "boats.flagState" : column.key === "homePort" ? "boats.homePort" : `common.${column.key}` as any)}</option>)}</select></label>
+            <button type="button" className="edit-chip" disabled={!list.sort.key} onClick={() => list.sort.key && list.setSortKey(list.sort.key)} aria-label={t("list.toggleDirection")}>{list.sort.direction === "ascending" ? "▲" : "▼"}</button>
+          </div>
           <ul className="manager-list">
-            {listPagination.pageItems.map((boat) => (
+            {list.pageItems.map((boat) => (
               <li key={boat.id}>
                 <button
                   type="button"
@@ -80,14 +93,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
               </li>
             ))}
           </ul>
-          <PaginationControls
-            page={listPagination.page}
-            pageCount={listPagination.pageCount}
-            pageSize={listPagination.pageSize}
-            totalItems={logbook.boats.length}
-            onPageChange={listPagination.setPage}
-            onPageSizeChange={listPagination.setPageSize}
-          />
+          <ListPagination list={list} />
           </>
         }
         form={
