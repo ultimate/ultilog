@@ -20,6 +20,9 @@ const coordinateAxes: Partial<Record<keyof LineForm, CoordinateAxis>> = { latitu
 export function updateLogLineFormForInput(form: LineForm, update: LogLineFormUpdate, context: LogLineFormUpdateContext = {}) {
   const nextForm = applyFieldUpdate(form, update);
   if (!shouldRecalculateCourses(update.field, nextForm)) return nextForm;
+  const explicitlyClearedCourseField = courseInputFieldNames.includes(update.field as CourseFieldName) && !update.value.trim()
+    ? update.field as CourseFieldName
+    : undefined;
 
   const deviationTable = context.boat ? deviationTableFromBoat(context.boat) : undefined;
   const windDriftTable = context.boat ? windDriftTableFromBoat(context.boat) : undefined;
@@ -32,10 +35,16 @@ export function updateLogLineFormForInput(form: LineForm, update: LogLineFormUpd
   const conversion = calculateCourseConversion(input, deviationTable, options);
 
   if (conversion instanceof Promise) {
-    return conversion.then((result) => ({ ...nextForm, ...courseFormFromConversion(result) }));
+    return conversion.then((result) => mergeCourseConversion(nextForm, result, explicitlyClearedCourseField));
   }
 
-  return { ...nextForm, ...courseFormFromConversion(conversion) };
+  return mergeCourseConversion(nextForm, conversion, explicitlyClearedCourseField);
+}
+
+function mergeCourseConversion(form: LineForm, conversion: CourseConversionInput, explicitlyClearedField?: CourseFieldName) {
+  const merged = { ...form, ...courseFormFromConversion(conversion) };
+  if (explicitlyClearedField) merged[explicitlyClearedField] = "";
+  return merged;
 }
 
 function applyFieldUpdate(form: LineForm, { field, value }: LogLineFormUpdate): LineForm {

@@ -340,23 +340,26 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                       {windDriftSailSettings.map((setting) => (
                         <th key={setting}>
                           <span>{t(`boats.windDrift.${setting}`)}</span>
-                          <input
-                            aria-label={`${t(`boats.windDrift.${setting}`)} ${t("boats.windSpeedLimit")}`}
-                            type="number"
-                            min="0"
-                            step="0.1"
-                            disabled={setting === "fullSail"}
-                            value={boatForm.windDriftTable.windSpeedLimits[setting]}
-                            onChange={(e) =>
-                              setBoatForm({
-                                ...boatForm,
-                                windDriftTable: {
-                                  ...boatForm.windDriftTable,
-                                  windSpeedLimits: { ...boatForm.windDriftTable.windSpeedLimits, [setting]: nonNegativeInputValue(e.target.value) },
-                                },
-                              })
-                            }
-                          />
+                          <label className="wind-drift-value">
+                            <input
+                              aria-label={`${t(`boats.windDrift.${setting}`)} ${t("boats.windSpeedLimit")} [kn]`}
+                              type="number"
+                              min="0"
+                              step="0.1"
+                              disabled={setting === "fullSail"}
+                              value={boatForm.windDriftTable.windSpeedLimits[setting]}
+                              onChange={(e) =>
+                                setBoatForm({
+                                  ...boatForm,
+                                  windDriftTable: {
+                                    ...boatForm.windDriftTable,
+                                    windSpeedLimits: { ...boatForm.windDriftTable.windSpeedLimits, [setting]: nonNegativeInputValue(e.target.value) },
+                                  },
+                                })
+                              }
+                            />
+                            <span>[kn]</span>
+                          </label>
                         </th>
                       ))}
                     </tr>
@@ -367,26 +370,29 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                         <td>{t(`boats.windDrift.${row.angle}`)}</td>
                         {windDriftSailSettings.map((setting) => (
                           <td key={setting}>
-                            <input
-                              aria-label={`${t(`boats.windDrift.${row.angle}`)} ${t(`boats.windDrift.${setting}`)}`}
-                              type="number"
-                              min="0"
-                              step="0.1"
-                              value={row.values[setting]}
-                              onChange={(e) =>
-                                setBoatForm({
-                                  ...boatForm,
-                                  windDriftTable: {
-                                    ...boatForm.windDriftTable,
-                                    rows: boatForm.windDriftTable.rows.map((candidate, candidateIndex) =>
-                                    candidateIndex === index
-                                      ? { ...candidate, values: { ...candidate.values, [setting]: nonNegativeInputValue(e.target.value) } }
-                                      : candidate,
-                                    ),
-                                  },
-                                })
-                              }
-                            />
+                            <label className="wind-drift-value">
+                              <input
+                                aria-label={`${t(`boats.windDrift.${row.angle}`)} ${t(`boats.windDrift.${setting}`)} °`}
+                                type="number"
+                                min="0"
+                                step="0.1"
+                                value={row.values[setting]}
+                                onChange={(e) =>
+                                  setBoatForm({
+                                    ...boatForm,
+                                    windDriftTable: {
+                                      ...boatForm.windDriftTable,
+                                      rows: boatForm.windDriftTable.rows.map((candidate, candidateIndex) =>
+                                      candidateIndex === index
+                                        ? { ...candidate, values: { ...candidate.values, [setting]: nonNegativeInputValue(e.target.value) } }
+                                        : candidate,
+                                      ),
+                                    },
+                                  })
+                                }
+                              />
+                              <span>°</span>
+                            </label>
                           </td>
                         ))}
                       </tr>

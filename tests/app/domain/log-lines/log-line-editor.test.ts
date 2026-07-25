@@ -40,6 +40,16 @@ describe("log line editor business logic", () => {
     });
   });
 
+  it("keeps a course field empty when the user explicitly clears it", () => {
+    const form = { ...defaultLineForm, trueCourse: "100", windDrift: "5", courseThroughWater: "105" };
+
+    expect(updateLogLineFormForInput(form, { field: "trueCourse", value: "" })).toMatchObject({
+      trueCourse: "",
+      windDrift: "5",
+      courseThroughWater: "105",
+    });
+  });
+
   it("uses coordinates and date for async variation lookup", async () => {
     const form = { ...defaultLineForm, time: "2026-05-14T07:35", latitude: "38", longitude: "20", magneticCourse: "15" };
 
