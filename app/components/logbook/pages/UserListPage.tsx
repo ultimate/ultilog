@@ -40,6 +40,7 @@ export function UserListPage({
             <thead>
               <tr>
                 <th>{t("users.username")}</th>
+                <th>{t("users.totalMileage")}</th>
                 <th>{t("users.totalSail")}</th>
                 <th>{t("users.totalMotor")}</th>
                 <th>{t("users.sheets")}</th>
@@ -52,6 +53,7 @@ export function UserListPage({
                   <td>
                     <strong>{user.username}</strong>
                   </td>
+                  <td>{(user.sailMiles + user.motorMiles).toLocaleString()} nm</td>
                   <td>{user.sailMiles.toLocaleString()} nm</td>
                   <td>{user.motorMiles.toLocaleString()} nm</td>
                   <td>{user.logbookSheets}</td>

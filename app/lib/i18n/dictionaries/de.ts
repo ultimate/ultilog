@@ -395,6 +395,7 @@ export const de: Dictionary = {
   "users.all": "Alle Benutzer",
   "users.directoryHelp": "Zusammenfassungsdaten werden aus gespeicherten Logbüchern und Booten berechnet.",
   "users.username": "Benutzername",
+  "users.totalMileage": "Gesamtmeilen",
   "users.totalSail": "Gesamte Segelmeilen",
   "users.totalMotor": "Gesamte Motormeilen",
   "users.sheets": "Logblätter",
