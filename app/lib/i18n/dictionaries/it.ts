@@ -393,7 +393,7 @@ export const it: Dictionary = {
   "users.subtitle": "Scopri altri velisti ultilog e confronta l’attività generale dei logbook.",
   "users.directory": "Directory community",
   "users.all": "Tutti gli utenti",
-  "users.mockHelp": "Dati riepilogativi simulati finché le statistiche dei profili condivisi non saranno collegate.",
+  "users.directoryHelp": "I dati riepilogativi vengono calcolati da logbook e barche salvati.",
   "users.username": "Nome utente",
   "users.totalSail": "Miglia totali a vela",
   "users.totalMotor": "Miglia totali a motore",

@@ -1,6 +1,7 @@
 import { useI18n } from "../../../lib/i18n";
 
 type SocialUser = {
+  id: string;
   username: string;
   sailMiles: number;
   motorMiles: number;
@@ -9,9 +10,9 @@ type SocialUser = {
 };
 
 export function UserListPage({
-  mockSocialUsers,
+  users,
 }: {
-  mockSocialUsers: SocialUser[];
+  users: SocialUser[];
 }) {
   const { t } = useI18n();
   return (
@@ -30,7 +31,7 @@ export function UserListPage({
             <p className="eyebrow">{t("users.directory")}</p>
             <h3>{t("users.all")}</h3>
             <p>
-              {t("users.mockHelp")}
+              {t("users.directoryHelp")}
             </p>
           </div>
         </div>
@@ -46,8 +47,8 @@ export function UserListPage({
               </tr>
             </thead>
             <tbody>
-              {mockSocialUsers.map((user) => (
-                <tr key={user.username}>
+              {users.map((user) => (
+                <tr key={user.id}>
                   <td>
                     <strong>{user.username}</strong>
                   </td>
