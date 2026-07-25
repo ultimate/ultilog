@@ -43,9 +43,9 @@ export function filterAndSortItems<T>(
   }).map(({ item }) => item);
 }
 
-export function useSortableList<T>(items: T[], columns: SortableListColumn<T>[], defaultPageSize: number) {
+export function useSortableList<T>(items: T[], columns: SortableListColumn<T>[], defaultPageSize: number, defaultSortKey = "") {
   const [query, setQuery] = useState("");
-  const [sort, setSort] = useState<{ key: string; direction: SortDirection }>({ key: "", direction: "ascending" });
+  const [sort, setSort] = useState<{ key: string; direction: SortDirection }>(() => ({ key: defaultSortKey, direction: "ascending" }));
   const processedItems = useMemo(
     () => filterAndSortItems(items, columns, query, sort.key, sort.direction),
     [items, columns, query, sort],

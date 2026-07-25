@@ -43,7 +43,7 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
     { key: "address", value: (person: PersistedLogbook["crewMembers"][number]) => person.address },
     { key: "certificate", value: (person: PersistedLogbook["crewMembers"][number]) => person.certificate },
   ], []);
-  const list = useSortableList(logbook.crewMembers, columns, props.defaultPageSize as number);
+  const list = useSortableList(logbook.crewMembers, columns, props.defaultPageSize as number, "name");
 
   return (
     <section className="sheet-detail module-panel">
@@ -61,8 +61,8 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
           <>
           <ListSearch value={list.query} onChange={list.setQuery} />
           <div className="manager-list-sort">
-            <label>{t("list.sortBy")} <select value={list.sort.key} onChange={(event) => list.setSortKey(event.target.value)}><option value="">{t("common.name")}</option>{columns.map((column) => <option key={column.key} value={column.key}>{t(column.key === "name" ? "common.name" : `crew.${column.key}` as any)}</option>)}</select></label>
-            <button type="button" className="edit-chip" disabled={!list.sort.key} onClick={() => list.sort.key && list.setSortKey(list.sort.key)} aria-label={t("list.toggleDirection")}>{list.sort.direction === "ascending" ? "▲" : "▼"}</button>
+            <label>{t("list.sortBy")} <select value={list.sort.key} onChange={(event) => list.setSortKey(event.target.value)}>{columns.map((column) => <option key={column.key} value={column.key}>{t(column.key === "name" ? "common.name" : `crew.${column.key}` as any)}</option>)}</select></label>
+            <button type="button" className="edit-chip" onClick={() => list.setSortKey(list.sort.key)} aria-label={t("list.toggleDirection")}>{list.sort.direction === "ascending" ? "▲" : "▼"}</button>
           </div>
           <ul className="manager-list">
             {list.pageItems.map((person) => {
