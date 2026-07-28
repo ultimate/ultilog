@@ -5,6 +5,7 @@ import { signOut } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   normalizeDeviationTable,
+  normalizeWindDriftTable,
   type Boat,
   type BoatType,
   type BoatForm,
@@ -909,6 +910,7 @@ export function LogbookApp({
       dimensions: boatForm.dimensions,
       logfactor: boatForm.logfactor,
       deviationTable: normalizeDeviationTable(boatForm.deviationTable),
+      windDriftTable: normalizeWindDriftTable(boatForm.windDriftTable),
       yachtData: {
         "Class / type":
           boatForm.type === "Sail" ? "Cruising yacht" : "Motor yacht",

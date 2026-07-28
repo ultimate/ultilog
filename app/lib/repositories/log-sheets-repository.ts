@@ -1,5 +1,5 @@
 import { calculateLogSheetMetrics } from "../../domain/logbook/sheet-metrics";
-import { defaultLogSheetShareSettings, normalizeDeviationTable, type Boat, type BoatRow, type CrewMemberRow, type LogLine, type LogLineRow, type LogSheet, type LogSheetRow, type PersistedLogbook, type StoredLogSheet } from "../../models/logbook";
+import { defaultLogSheetShareSettings, normalizeDeviationTable, normalizeWindDriftTable, type Boat, type BoatRow, type CrewMemberRow, type LogLine, type LogLineRow, type LogSheet, type LogSheetRow, type PersistedLogbook, type StoredLogSheet } from "../../models/logbook";
 import type { QueryableDatabase } from "../db/logbook-database";
 import { imageFromRow, imageValues, scopedId, unscopedId } from "./boats-repository";
 
@@ -54,6 +54,7 @@ export class LogSheetsRepository {
       logfactor: Number(boat.logfactor) > 0 ? Number(boat.logfactor) : 1,
       yachtData: parseJson<Record<string, string>>(boat.yacht_data),
       deviationTable: normalizeDeviationTable(parseJson<Boat["deviationTable"]>(boat.deviation_table ?? [])),
+      ...(boat.wind_drift_table == null ? {} : { windDriftTable: normalizeWindDriftTable(parseJson<NonNullable<Boat["windDriftTable"]>>(boat.wind_drift_table)) }),
       ...(imageFromRow(boat) ? { image: imageFromRow(boat) } : {}),
     }));
     const crewMembers = crewProfileRows.map((crew) => ({ id: unscopedId(crew.crew_member_id ?? crew.id), name: crew.name, nationality: crew.nationality, role: crew.role, address: crew.address ?? "", certificate: crew.certificate ?? "", isPrimary: Boolean(crew.is_primary), ...(imageFromRow(crew) ? { image: imageFromRow(crew) } : {}) }));

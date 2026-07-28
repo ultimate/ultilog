@@ -9,6 +9,7 @@ export type BoatForm = Pick<Boat, "name" | "registration" | "flagState" | "homeP
   engine: string;
   safety: string;
   deviationTable: Boat["deviationTable"];
+  windDriftTable: NonNullable<Boat["windDriftTable"]>;
 };
 
 export type LineForm = Record<keyof LogLine, string>;
