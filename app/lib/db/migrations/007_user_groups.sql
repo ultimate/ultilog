@@ -1,3 +1,6 @@
+-- Permanent, manually assigned groups only. Expiring or externally derived
+-- access (subscriptions, trials, promotions) must retain its source and
+-- validity in separate tables and be resolved by the authorization layer.
 create table if not exists user_groups (
   user_id text not null references users(id) on delete cascade,
   name text not null,

@@ -2,6 +2,18 @@
 
 Ultilog is a responsive personal skipper logbook for tracking ICC / Swiss Hochseeausweis nautical miles across multiple boats, trips, crew lists, and log sheets.
 
+## Authorization
+
+`user_groups` contains permanent groups assigned by an administrator. It must
+not be used to persist access derived from subscriptions, trials, promotions,
+or other expiring sources. Those sources need their own provenance and validity
+data and should be combined through `app/lib/authorization.ts`.
+
+Server-side feature boundaries must call `userHasEntitlement` with the current
+user ID. The groups copied into a session JWT are intended for navigation and
+other presentation only: they are a snapshot from sign-in and must not be used
+as authoritative permission data.
+
 > [!NOTE]
 > This web application is vibe coded with ChatGPT Codex.
 
