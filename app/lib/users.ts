@@ -22,11 +22,13 @@ export type UserPreferences = {
 };
 export type AppUser = { id: string; name: string; email: string; emailVerified?: boolean; groups: string[]; onboardingCompletedTasks: OnboardingTaskId[]; hasReadCompliance: boolean } & UserPreferences;
 export type AdminUserListItem = AppUser;
+export type DirectoryUserListItem = { id: string; username: string; sailMiles: number; motorMiles: number; logbookSheets: number; boats: number };
 
 type UserRow = Omit<AppUser, "groups" | "onboardingCompletedTasks" | "hasReadCompliance" | "isNavSlim" | "countryCode" | "windUnit" | "waterHeightUnit" | "temperatureUnit" | "coordinateFormat" | "distanceDisplayUnit" | "defaultBoatId" | "defaultCrewMemberIds" | "showCourseConversionTable" | "motionStationaryThresholdNm" | "emailVerified"> & { password_hash: string; onboarding_completed_tasks: string; country_code: string; wind_unit: string; water_height_unit: string; temperature_unit: string; coordinate_format: string; distance_display_unit: string; default_boat_id: string; default_crew_member_ids: string; nav_slim: number | boolean; has_read_compliance: number | boolean; show_course_conversion_table: number | boolean; motion_stationary_threshold_nm: number | string | null; email_verified_at: string | null };
 type GroupRow = { user_id?: string; name: string };
 type PasswordResetTokenRow = { id: string; user_id: string; token_hash: string; expires_at: string; used_at: string | null };
 type EmailVerificationTokenRow = PasswordResetTokenRow;
+type DirectoryUserRow = { id: string; username: string; sail_miles: number | string | null; motor_miles: number | string | null; logbook_sheets: number | string | null; boats: number | string | null };
 
 const USER_COLUMNS = "id, name, email, password_hash, onboarding_completed_tasks, theme, nav_slim, has_read_compliance, country_code, language, wind_unit, water_height_unit, temperature_unit, coordinate_format, distance_display_unit, default_boat_id, default_crew_member_ids, show_course_conversion_table, motion_stationary_threshold_nm, email_verified_at";
 
@@ -185,7 +187,10 @@ function assertAllowedGroupName(name: string) {
   if (!/^[a-z0-9][a-z0-9-]*$/.test(name)) throw new Error("Group names may only contain lowercase letters, numbers, and hyphens.");
 }
 
-async function groupsForUser(userId: string) {
+// These are manually assigned, non-expiring groups. Derived access such as a
+// subscription or trial belongs in its own store and is combined by the
+// authorization layer rather than written to user_groups.
+async function manualGroupsForUser(userId: string) {
   const db = getDatabase();
   await db.migrate();
   const result = await db.query<GroupRow>(`select name from user_groups where user_id = ${db.placeholder(1)} order by name`, [userId]);
@@ -194,7 +199,7 @@ async function groupsForUser(userId: string) {
 
 async function withGroups(user: UserRow | undefined): Promise<AppUser | undefined> {
   if (!user) return undefined;
-  return toAppUser(user, await groupsForUser(user.id));
+  return toAppUser(user, await manualGroupsForUser(user.id));
 }
 
 async function findUserByName(name: string) {
@@ -231,7 +236,7 @@ export async function validateUser(email: string, password: string): Promise<App
   const isValid = await bcrypt.compare(password, user.password_hash);
   if (!isValid) return null;
   if (!user.email_verified_at) await sendEmailVerificationIfNeeded(user);
-  return toAppUser(user, await groupsForUser(user.id));
+  return toAppUser(user, await manualGroupsForUser(user.id));
 }
 
 export async function validateDemoUser(): Promise<AppUser | null> {
@@ -244,7 +249,7 @@ export function isAdminUser(user?: { groups?: string[] } | null) {
 }
 
 export async function userHasGroup(userId: string, group: string) {
-  return (await groupsForUser(userId)).includes(normalizeGroupName(group));
+  return (await manualGroupsForUser(userId)).includes(normalizeGroupName(group));
 }
 
 export async function registerUser(input: { name: string; email: string; password: string }): Promise<AppUser> {
@@ -280,7 +285,7 @@ export async function updateUserEmail(userId: string, input: { email: string; cu
   if (existing && existing.id !== userId) throw new Error("An account with this email already exists.");
   await db.query(`update users set email = ${db.placeholder(1)}, email_verified_at = null where id = ${db.placeholder(2)}`, [email, userId]);
   await sendEmailVerification(userId);
-  return toAppUser({ ...current, email, email_verified_at: null }, await groupsForUser(userId));
+  return toAppUser({ ...current, email, email_verified_at: null }, await manualGroupsForUser(userId));
 }
 
 export async function updateUserPassword(userId: string, input: { currentPassword: string; newPassword: string }): Promise<void> {
@@ -390,7 +395,7 @@ export async function updateUserName(userId: string, input: { name: string; curr
   const existing = await findUserByName(name);
   if (existing && existing.id !== userId) throw new Error("An account with this name already exists.");
   await db.query(`update users set name = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [name, userId]);
-  return toAppUser({ ...current, name }, await groupsForUser(userId));
+  return toAppUser({ ...current, name }, await manualGroupsForUser(userId));
 }
 
 export async function deleteUserAccount(userId: string, input: { currentPassword: string }): Promise<void> {
@@ -417,6 +422,40 @@ export async function listUsersForAdmin(): Promise<AdminUserListItem[]> {
   const users = (await db.query<UserRow>(`select ${USER_COLUMNS} from users order by lower(name), lower(email)`)).rows;
   const groupRows = (await db.query<GroupRow>("select user_id, name from user_groups order by name")).rows;
   return users.map((user) => toAppUser(user, groupRows.filter((group) => group.user_id === user.id).map((group) => group.name)));
+}
+
+export async function listUsersForDirectory(): Promise<DirectoryUserListItem[]> {
+  const db = getDatabase();
+  await db.migrate();
+  const rows = (await db.query<DirectoryUserRow>(`
+    select
+      users.id,
+      users.name as username,
+      coalesce(sheet_totals.sail_miles, 0) as sail_miles,
+      coalesce(sheet_totals.motor_miles, 0) as motor_miles,
+      coalesce(sheet_totals.logbook_sheets, 0) as logbook_sheets,
+      coalesce(boat_totals.boats, 0) as boats
+    from users
+    left join (
+      select owner_id, sum(sail_miles) as sail_miles, sum(motor_miles) as motor_miles, count(*) as logbook_sheets
+      from log_sheets
+      group by owner_id
+    ) sheet_totals on sheet_totals.owner_id = users.id
+    left join (
+      select owner_id, count(*) as boats
+      from boats
+      group by owner_id
+    ) boat_totals on boat_totals.owner_id = users.id
+    order by lower(users.name)
+  `)).rows;
+  return rows.map((row) => ({
+    id: row.id,
+    username: row.username,
+    sailMiles: Number(row.sail_miles) || 0,
+    motorMiles: Number(row.motor_miles) || 0,
+    logbookSheets: Number(row.logbook_sheets) || 0,
+    boats: Number(row.boats) || 0,
+  }));
 }
 
 export async function listKnownGroups(): Promise<string[]> {
@@ -448,7 +487,7 @@ export async function updateUserOnboardingCompletedTasks(userId: string, tasks: 
   const onboardingCompletedTasks = normalizeOnboardingCompletedTasks(tasks);
   await db.query(`update users set onboarding_completed_tasks = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [serializeOnboardingCompletedTasks(onboardingCompletedTasks), userId]);
   return {
-    ...toAppUser(current, await groupsForUser(userId)),
+    ...toAppUser(current, await manualGroupsForUser(userId)),
     onboardingCompletedTasks,
   };
 }
@@ -464,7 +503,7 @@ export async function updateUserViewPreferences(userId: string, input: Partial<R
     [preferences.countryCode, preferences.language, preferences.windUnit, preferences.waterHeightUnit, preferences.temperatureUnit, preferences.coordinateFormat, preferences.distanceDisplayUnit, preferences.defaultBoatId, JSON.stringify(preferences.defaultCrewMemberIds), preferences.theme, preferences.isNavSlim ? 1 : 0, preferences.showCourseConversionTable ? 1 : 0, preferences.motionStationaryThresholdNm, userId],
   );
   return {
-    ...toAppUser(current, await groupsForUser(userId)),
+    ...toAppUser(current, await manualGroupsForUser(userId)),
     ...preferences,
   };
 }
@@ -476,7 +515,7 @@ export async function updateUserComplianceRead(userId: string): Promise<AppUser>
   if (!current) throw new Error("User not found.");
   await db.query(`update users set has_read_compliance = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [1, userId]);
   return {
-    ...toAppUser(current, await groupsForUser(userId)),
+    ...toAppUser(current, await manualGroupsForUser(userId)),
     hasReadCompliance: true,
   };
 }

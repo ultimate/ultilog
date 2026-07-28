@@ -44,6 +44,7 @@ import {
   routeStamp,
   routeStampFromDateTimeLocal,
   splitDateTimeLocal,
+  timeZoneOffsetOptions,
   timezoneOffsetFromStamp,
 } from "./logbook/date-utils";
 import { ManagerShell } from "./managers/ManagerShell";
@@ -63,19 +64,19 @@ import { BoatManagerPage } from "./logbook/pages/BoatManagerPage";
 import { DashboardPage } from "./logbook/pages/DashboardPage";
 import { CrewManagerPage } from "./logbook/pages/CrewManagerPage";
 import { ProfilePage } from "./logbook/pages/ProfilePage";
+import { ListPagination, ListSearch, SortableColumnHeader, useSortableList } from "./logbook/SortableList";
 import { OnboardingChecklist } from "./onboarding/OnboardingChecklist";
 import { useOnboardingProfile } from "./onboarding/useOnboardingProfile";
 import type { OnboardingTaskId } from "../lib/onboarding/tasks";
 import type { ProfilePreferences } from "./onboarding/useOnboardingProfile";
 
 type AdminUser = { id: string; name: string; email: string; groups: string[] };
-type SocialUser = {
-  username: string;
-  sailMiles: number;
-  motorMiles: number;
-  logbookSheets: number;
-  boats: number;
-};
+const adminUserColumns = [
+  { key: "name", value: (user: AdminUser) => user.name },
+  { key: "email", value: (user: AdminUser) => user.email },
+  { key: "groups", value: (user: AdminUser) => user.groups },
+];
+type SocialUser = { id: string; username: string; sailMiles: number; motorMiles: number; logbookSheets: number; boats: number };
 type PrintTarget = { mode: "filled"; sheetId: string; showCourseColumns: boolean } | { mode: "empty"; showCourseColumns: boolean } | null;
 
 type SheetInlineField =
@@ -123,44 +124,6 @@ function createDefaultLineForm(preferences: LineFormPreferences): LineForm {
     temperatureUnit: preferences.temperatureUnit,
   };
 }
-
-const mockSocialUsers: SocialUser[] = [
-  {
-    username: "amelia.salt",
-    sailMiles: 1842,
-    motorMiles: 326,
-    logbookSheets: 18,
-    boats: 2,
-  },
-  {
-    username: "harbor-hugo",
-    sailMiles: 967,
-    motorMiles: 214,
-    logbookSheets: 11,
-    boats: 1,
-  },
-  {
-    username: "nora.nautic",
-    sailMiles: 2410,
-    motorMiles: 502,
-    logbookSheets: 27,
-    boats: 3,
-  },
-  {
-    username: "tidewalker",
-    sailMiles: 705,
-    motorMiles: 688,
-    logbookSheets: 9,
-    boats: 1,
-  },
-  {
-    username: "bluewater-max",
-    sailMiles: 3196,
-    motorMiles: 431,
-    logbookSheets: 34,
-    boats: 2,
-  },
-];
 
 function monthLabelForSheet(sheet: LogSheet) {
   const source = sheet.route.departed || sheet.dateRange;
@@ -234,6 +197,7 @@ export function LogbookApp({
   const [editingSheetField, setEditingSheetField] =
     useState<SheetInlineField | null>(null);
   const [sheetInlineDraft, setSheetInlineDraft] = useState("");
+  const [sheetInlineTimezoneDraft, setSheetInlineTimezoneDraft] = useState(timezoneOffsetFromStamp(""));
   const [editingLineIndex, setEditingLineIndex] = useState<number | null>(null);
   const [selectedBoatId, setSelectedBoatId] = useState(
     defaultLogbook.boats[0]?.id ?? "",
@@ -269,6 +233,7 @@ export function LogbookApp({
     confirmation: "",
   });
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [directoryUsers, setDirectoryUsers] = useState<SocialUser[]>([]);
   const [knownGroups, setKnownGroups] = useState<string[]>(userGroups);
   const [adminMessage, setAdminMessage] = useState<string | null>(null);
   const [adminError, setAdminError] = useState<string | null>(null);
@@ -318,6 +283,7 @@ export function LogbookApp({
     onLocaleChange: setLocale,
     t,
   });
+  const adminList = useSortableList(adminUsers, adminUserColumns, preferences.defaultPageSize);
 
 
   async function logout() {
@@ -551,6 +517,21 @@ export function LogbookApp({
     setAdminUsers(payload.users ?? []);
     setKnownGroups(payload.groups ?? []);
   }, [t]);
+
+  const loadDirectoryUsers = useCallback(async () => {
+    const response = await fetch("/api/users");
+    const payload = (await response.json().catch(() => ({}))) as { users?: SocialUser[] };
+    if (!response.ok) return;
+    setDirectoryUsers(payload.users ?? []);
+  }, []);
+
+  useEffect(() => {
+    if (activeModule !== "users" || directoryUsers.length > 0) return;
+    const timeout = window.setTimeout(() => {
+      loadDirectoryUsers().catch(() => undefined);
+    }, 0);
+    return () => window.clearTimeout(timeout);
+  }, [activeModule, directoryUsers.length, loadDirectoryUsers]);
 
   useEffect(() => {
     if (
@@ -816,6 +797,17 @@ export function LogbookApp({
           onChange={(event) => setSheetInlineDraft(event.target.value)}
           autoFocus
         />
+        <select
+          aria-label={`${t("details.edit")} ${field} time zone`}
+          value={sheetInlineTimezoneDraft}
+          onChange={(event) => setSheetInlineTimezoneDraft(event.target.value)}
+        >
+          {timeZoneOffsetOptions.map((offset) => (
+            <option key={offset} value={offset}>
+              UTC{offset}
+            </option>
+          ))}
+        </select>
         {sheetInlineActions}
       </span>
     ) : (
@@ -824,7 +816,11 @@ export function LogbookApp({
         className="inline-value-button"
         disabled={!canEditActiveSheetMasterData}
         onClick={() =>
-          startEditingSheetField(field, dateTimeLocalFromStamp(stamp))
+          startEditingSheetField(
+            field,
+            dateTimeLocalFromStamp(stamp),
+            timezoneOffsetFromStamp(stamp),
+          )
         }
       >
         {stamp || activeSheet.dateRange}
@@ -1079,10 +1075,15 @@ export function LogbookApp({
     };
     await saveLogbookNow(nextLogbook);
   }
-  function startEditingSheetField(field: SheetInlineField, value: string) {
+  function startEditingSheetField(
+    field: SheetInlineField,
+    value: string,
+    timezone = timezoneOffsetFromStamp(""),
+  ) {
     if (activeSheet.status !== "Draft") return;
     setEditingSheetField(field);
     setSheetInlineDraft(value);
+    setSheetInlineTimezoneDraft(timezone);
   }
 
   async function saveSheetInlineField() {
@@ -1108,7 +1109,7 @@ export function LogbookApp({
             route: {
               ...sheet.route,
               departed:
-                routeStampFromDateTimeLocal(value, timezoneOffsetFromStamp(sheet.route.departed)) || sheet.route.departed,
+                routeStampFromDateTimeLocal(value, sheetInlineTimezoneDraft) || sheet.route.departed,
             },
           };
         }
@@ -1118,7 +1119,7 @@ export function LogbookApp({
           dateRange: sheet.dateRange || date,
           route: {
             ...sheet.route,
-            arrived: routeStampFromDateTimeLocal(value, timezoneOffsetFromStamp(sheet.route.arrived)) || sheet.route.arrived,
+            arrived: routeStampFromDateTimeLocal(value, sheetInlineTimezoneDraft) || sheet.route.arrived,
           },
         };
       }),
@@ -1131,6 +1132,7 @@ export function LogbookApp({
   function cancelSheetInlineEdit() {
     setEditingSheetField(null);
     setSheetInlineDraft("");
+    setSheetInlineTimezoneDraft(timezoneOffsetFromStamp(""));
   }
 
   function cancelSheetEdit() {
@@ -1873,7 +1875,7 @@ export function LogbookApp({
           )}
 
           {activeModule === "users" && (
-            <UserListPage mockSocialUsers={mockSocialUsers} />
+            <UserListPage users={directoryUsers} defaultPageSize={preferences.defaultPageSize} />
           )}
 
           {activeModule === "profile" && (
@@ -1950,20 +1952,21 @@ export function LogbookApp({
                       {knownGroups.length ? knownGroups.join(", ") : t("admin.noneYet")}
                     </p>
                   </div>
+                  <ListSearch value={adminList.query} onChange={adminList.setQuery} />
                 </div>
                 <div className="table-scroll admin-users-table-scroll">
                   <table className="logbook-table admin-users-table">
                     <thead>
                       <tr>
-                        <th>{t("users.username")}</th>
-                        <th>{t("auth.email")}</th>
-                        <th>{t("admin.groups")}</th>
+                        <SortableColumnHeader columnKey="name" activeKey={adminList.sort.key} direction={adminList.sort.direction} onSort={adminList.setSortKey}>{t("users.username")}</SortableColumnHeader>
+                        <SortableColumnHeader columnKey="email" activeKey={adminList.sort.key} direction={adminList.sort.direction} onSort={adminList.setSortKey}>{t("auth.email")}</SortableColumnHeader>
+                        <SortableColumnHeader columnKey="groups" activeKey={adminList.sort.key} direction={adminList.sort.direction} onSort={adminList.setSortKey}>{t("admin.groups")}</SortableColumnHeader>
                         <th></th>
                         <th></th>
                       </tr>
                     </thead>
                     <tbody>
-                      {adminUsers.map((user) => (
+                      {adminList.pageItems.map((user) => (
                         <tr key={user.id}>
                           <td>{user.name}</td>
                           <td>{user.email}</td>
@@ -2064,6 +2067,7 @@ export function LogbookApp({
                     </tbody>
                   </table>
                 </div>
+                <ListPagination list={adminList} />
                 <datalist id="known-groups">
                   {knownGroups.map((group) => (
                     <option key={group} value={group} />

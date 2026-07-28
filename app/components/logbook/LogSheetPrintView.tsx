@@ -262,7 +262,7 @@ const printStyles = `
 .log-sheet-print-view { color: #000; background: #fff; font-family: Arial, Helvetica, sans-serif; }
 .log-sheet-print-page { box-sizing: border-box; display: grid; grid-template-rows: 32mm 1fr 40mm; gap: 2mm; width: 297mm; height: 210mm; padding: 6mm; border: 0.3mm solid #000; page-break-after: always; break-after: page; background: #fff; color: #000; }
 .log-sheet-print-page:last-child { page-break-after: auto; break-after: auto; }
-.print-header, .print-footer { display: grid; gap: 2mm; }
+.print-header, .print-footer { box-sizing: border-box; display: grid; gap: 2mm; width: 100%; min-width: 0; max-width: 100%; }
 .print-header { grid-template-columns: 1fr 46mm 46mm; border: 0.25mm solid #000; padding: 1.2mm; }
 .print-kicker, .print-field span { margin: 0; font-size: 7pt; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
 .print-title-block h1 { margin: 0 0 1mm; font-size: 13pt; line-height: 1.05; }
@@ -270,7 +270,7 @@ const printStyles = `
 .print-boat, .print-summary { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1mm; border-left: 0.25mm solid #000; padding-left: 1.2mm; }
 .print-field { min-width: 0; border-bottom: 0.2mm solid #000; }
 .print-field strong { display: block; min-height: 11pt; overflow: hidden; font-size: 8pt; line-height: 1.15; text-overflow: ellipsis; white-space: nowrap; }
-.print-log-table { width: 100%; height: 100%; border-collapse: collapse; table-layout: fixed; font-size: 6.6pt; line-height: 1.05; }
+.print-log-table { box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; height: 100%; border-collapse: collapse; table-layout: fixed; font-size: 6.6pt; line-height: 1.05; }
 .print-log-table col.print-col-time { width: 4%; }
 .print-log-table col.print-col-position { width: 10%; }
 .print-log-table col.print-col-weather, .print-log-table col.print-col-wind { width: 7%; }
@@ -279,24 +279,24 @@ const printStyles = `
 .print-log-table col.print-col-course { width: 2.5%; }
 .print-log-table col.print-col-speed, .print-log-table col.print-col-log, .print-log-table col.print-col-sail { width: 3%; }
 .print-log-table col.print-col-motor { width: 4%; }
-.print-log-table col.print-col-remarks { width: 26%; }
+.print-log-table col.print-col-remarks { width: 22.5%; }
 .print-log-table.compact-course col.print-col-position { width: 11%; }
 .print-log-table.compact-course col.print-col-weather, .print-log-table.compact-course col.print-col-wind { width: 8%; }
-.print-log-table.compact-course col.print-col-remarks { width: 38%; }
+.print-log-table.compact-course col.print-col-remarks { width: 32%; }
 .print-log-table tr { height: 6mm; max-height: 6mm; }
 .print-log-table th, .print-log-table td { box-sizing: border-box; height: 6mm; max-height: 6mm; overflow: hidden; border: 0.2mm solid #000; padding: .55mm; text-align: left; vertical-align: top; background: #fff; color: #000; }
-.print-log-table th { font-size: 6.4pt; font-weight: 700; text-transform: uppercase; white-space: nowrap; }
+.print-log-table th { font-size: 6.4pt; font-weight: 700; text-transform: uppercase; white-space: normal; overflow-wrap: anywhere; }
 .print-log-table td { white-space: nowrap; text-overflow: ellipsis; }
 .print-remarks-cell { white-space: nowrap; }
 .print-remark-text { display: block; overflow: hidden; width: 100%; max-height: 5.2mm; font-size: 6.3pt; line-height: 1.05; text-overflow: ellipsis; white-space: nowrap; }
 .print-remark-small { font-size: 5.5pt; }
 .print-remark-tiny { font-size: 4.8pt; }
 .print-footer { position: relative; grid-template-columns: 54mm 58mm 64mm 1fr; }
-.print-footer section { border: 0.25mm solid #000; padding: 1.2mm; background: #fff; color: #000; }
+.print-footer section { min-width: 0; border: 0.25mm solid #000; padding: 1.2mm; background: #fff; color: #000; }
 .print-footer h2 { margin: 0 0 2mm; font-size: 8pt; text-transform: uppercase; }
 .print-route-box { background: #fff; }
 .print-crew-box ul, .print-tech-box ul { margin: 0; padding-left: 3.5mm; font-size: 7pt; }
 .print-writing-lines { height: 21mm; background: repeating-linear-gradient(to bottom, transparent 0, transparent 7mm, #000 7.2mm); }
 .print-page-number { position: absolute; right: 1.5mm; bottom: 1mm; font-size: 7pt; font-weight: 700; }
-@media print { body { margin: 0; } @page { size: A4 landscape; size: 297mm 210mm; page-orientation: landscape; margin: 8mm; } .log-sheet-print-view { width: 281mm; min-width: 281mm; max-width: none; } .log-sheet-print-page { width: 281mm; min-width: 281mm; height: 194mm; min-height: 194mm; padding: 0; } }
+@media print { body { margin: 0; } @page { size: A4 landscape; size: 297mm 210mm; page-orientation: landscape; margin: 8mm; } .log-sheet-print-view { width: 281mm; min-width: 281mm; max-width: none; } .log-sheet-print-page { width: 281mm; min-width: 281mm; height: 194mm; min-height: 194mm; padding: 0; } .print-header, .print-footer { width: 281mm; } .print-log-table { width: 281mm !important; min-width: 0 !important; max-width: 281mm !important; } }
 `;
