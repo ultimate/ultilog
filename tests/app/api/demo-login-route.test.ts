@@ -1,33 +1,35 @@
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("../../../app/lib/users", () => ({
-  validateDemoUser: vi.fn(),
+vi.mock("../../../app/lib/demo/demo-sandboxes", () => ({
+  createDemoSandbox: vi.fn(),
 }));
 
-const { validateDemoUser } = await import("../../../app/lib/users");
+const { createDemoSandbox } = await import("../../../app/lib/demo/demo-sandboxes");
 const { POST } = await import("../../../app/api/demo-login/route");
 const { config: proxyConfig } = await import("../../../proxy");
 
-const mockedValidateDemoUser = vi.mocked(validateDemoUser);
+const mockedCreateDemoSandbox = vi.mocked(createDemoSandbox);
 
 describe("demo login endpoint", () => {
-  it("returns ok when the seeded demo user is available", async () => {
-    mockedValidateDemoUser.mockResolvedValueOnce({ id: "legacy-user", name: "Local demo user", email: "demo@ultilog.local", groups: ["demo"], onboardingCompletedTasks: [], countryCode: "", language: "en" as const, windUnit: "bft" as const, waterHeightUnit: "m" as const, temperatureUnit: "°C" as const, coordinateFormat: "decimal" as const, distanceDisplayUnit: "off" as const, defaultBoatId: "", defaultCrewMemberIds: [], showCourseConversionTable: true, theme: "light" as const, isNavSlim: false, hasReadCompliance: false });
+  it("creates a sandbox and returns its one-time login token", async () => {
+    mockedCreateDemoSandbox.mockResolvedValueOnce({ token: "one-time-token", expiresAt: "2026-07-29T00:00:00.000Z" });
 
     const response = await POST();
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ ok: true });
-    expect(mockedValidateDemoUser).toHaveBeenCalledOnce();
+    await expect(response.json()).resolves.toEqual({ token: "one-time-token", expiresAt: "2026-07-29T00:00:00.000Z" });
+    expect(mockedCreateDemoSandbox).toHaveBeenCalledOnce();
   });
 
-  it("returns not found when the demo user is unavailable", async () => {
-    mockedValidateDemoUser.mockResolvedValueOnce(null);
+  it("returns service unavailable when sandbox creation fails", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    mockedCreateDemoSandbox.mockRejectedValueOnce(new Error("database unavailable"));
 
     const response = await POST();
 
-    expect(response.status).toBe(404);
-    await expect(response.json()).resolves.toEqual({ error: "Demo user is not available." });
+    expect(response.status).toBe(503);
+    await expect(response.json()).resolves.toEqual({ error: "Demo is temporarily unavailable." });
+    consoleError.mockRestore();
   });
 
   it("excludes demo-login requests from the auth proxy matcher", () => {

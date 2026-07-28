@@ -1,0 +1,74 @@
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+let directory = "";
+
+beforeEach(async () => {
+  vi.resetModules();
+  directory = await mkdtemp(join(tmpdir(), "ultilog-demo-sandbox-"));
+  process.env.LOCAL_DATABASE_PATH = join(directory, "ultilog.sqlite");
+});
+
+afterEach(async () => {
+  delete process.env.LOCAL_DATABASE_PATH;
+  delete process.env.DEMO_SANDBOX_TTL_HOURS;
+  await rm(directory, { force: true, recursive: true });
+});
+
+describe("demo sandboxes", () => {
+  it("creates isolated users with independent copies of the template", async () => {
+    const { createDemoSandbox, consumeDemoSandboxLogin } = await import("../../../../app/lib/demo/demo-sandboxes");
+    const { readLogbook, writeLogbook } = await import("../../../../app/lib/logbook-store");
+
+    const firstLogin = await createDemoSandbox();
+    const secondLogin = await createDemoSandbox();
+    const firstUser = await consumeDemoSandboxLogin(firstLogin.token);
+    const secondUser = await consumeDemoSandboxLogin(secondLogin.token);
+
+    expect(firstUser).toMatchObject({ groups: ["demo"] });
+    expect(secondUser).toMatchObject({ groups: ["demo"] });
+    expect(firstUser?.id).not.toBe(secondUser?.id);
+
+    const firstLogbook = await readLogbook(firstUser!.id);
+    const secondLogbook = await readLogbook(secondUser!.id);
+    expect(firstLogbook).toEqual(secondLogbook);
+    await writeLogbook({ ...firstLogbook, sheets: firstLogbook.sheets.slice(1) }, firstUser!.id);
+
+    await expect(readLogbook(firstUser!.id)).resolves.toMatchObject({ sheets: { length: 7 } });
+    await expect(readLogbook(secondUser!.id)).resolves.toMatchObject({ sheets: { length: 8 } });
+  });
+
+  it("only accepts each short-lived login token once", async () => {
+    const { createDemoSandbox, consumeDemoSandboxLogin } = await import("../../../../app/lib/demo/demo-sandboxes");
+    const login = await createDemoSandbox();
+
+    await expect(consumeDemoSandboxLogin(login.token)).resolves.toMatchObject({ groups: ["demo"] });
+    await expect(consumeDemoSandboxLogin(login.token)).resolves.toBeNull();
+    await expect(consumeDemoSandboxLogin("unknown-token")).resolves.toBeNull();
+  });
+
+  it("allows only one concurrent claimant for a login token", async () => {
+    const { createDemoSandbox, consumeDemoSandboxLogin } = await import("../../../../app/lib/demo/demo-sandboxes");
+    const login = await createDemoSandbox();
+
+    const claimants = await Promise.all([consumeDemoSandboxLogin(login.token), consumeDemoSandboxLogin(login.token)]);
+
+    expect(claimants.filter(Boolean)).toHaveLength(1);
+  });
+
+  it("records the configured sandbox expiry and template version", async () => {
+    process.env.DEMO_SANDBOX_TTL_HOURS = "2";
+    const before = Date.now();
+    const { createDemoSandbox } = await import("../../../../app/lib/demo/demo-sandboxes");
+    const { getDatabase } = await import("../../../../app/lib/logbook-store");
+    const login = await createDemoSandbox();
+    const rows = (await getDatabase().query<{ template_version: number; expires_at: string }>("select template_version, expires_at from demo_sandboxes")).rows;
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0].template_version).toBe(1);
+    expect(new Date(rows[0].expires_at).getTime()).toBeGreaterThanOrEqual(before + (2 * 60 * 60 * 1000));
+    expect(login.expiresAt).toBe(rows[0].expires_at);
+  });
+});

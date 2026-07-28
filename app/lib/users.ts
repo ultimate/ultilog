@@ -239,11 +239,6 @@ export async function validateUser(email: string, password: string): Promise<App
   return toAppUser(user, await manualGroupsForUser(user.id));
 }
 
-export async function validateDemoUser(): Promise<AppUser | null> {
-  const user = await findUserByEmail("demo@ultilog.local");
-  return user ?? null;
-}
-
 export function isAdminUser(user?: { groups?: string[] } | null) {
   return user?.groups?.includes("admin") ?? false;
 }
@@ -446,6 +441,7 @@ export async function listUsersForDirectory(): Promise<DirectoryUserListItem[]> 
       from boats
       group by owner_id
     ) boat_totals on boat_totals.owner_id = users.id
+    where not exists (select 1 from demo_sandboxes where demo_sandboxes.user_id = users.id)
     order by lower(users.name)
   `)).rows;
   return rows.map((row) => ({

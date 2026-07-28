@@ -22,7 +22,13 @@ export function AuthForm({ mode, footer }: Props) {
       setIsSubmitting(false);
       return;
     }
-    const result = await signIn("credentials", { demo: "true", redirect: false });
+    const payload = await response.json() as { token?: string };
+    if (!payload.token) {
+      setError(t("auth.demoError"));
+      setIsSubmitting(false);
+      return;
+    }
+    const result = await signIn("credentials", { demoToken: payload.token, redirect: false });
     setIsSubmitting(false);
     if (result?.error) {
       setError(t("auth.demoError"));

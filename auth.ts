@@ -1,6 +1,7 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import { validateDemoUser, validateUser } from "./app/lib/users";
+import { consumeDemoSandboxLogin } from "./app/lib/demo/demo-sandboxes";
+import { validateUser } from "./app/lib/users";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
@@ -9,10 +10,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
-        demo: { label: "Demo", type: "text" },
+        demoToken: { label: "Demo token", type: "text" },
       },
       async authorize(credentials) {
-        if (credentials?.demo === "true") return validateDemoUser();
+        if (typeof credentials?.demoToken === "string") return consumeDemoSandboxLogin(credentials.demoToken);
         const email = typeof credentials?.email === "string" ? credentials.email : "";
         const password = typeof credentials?.password === "string" ? credentials.password : "";
         return validateUser(email, password);
