@@ -40,6 +40,16 @@ describe("log line editor business logic", () => {
     });
   });
 
+  it("keeps a course field empty when the user explicitly clears it", () => {
+    const form = { ...defaultLineForm, trueCourse: "100", windDrift: "5", courseThroughWater: "105" };
+
+    expect(updateLogLineFormForInput(form, { field: "trueCourse", value: "" })).toMatchObject({
+      trueCourse: "",
+      windDrift: "5",
+      courseThroughWater: "105",
+    });
+  });
+
   it("uses coordinates and date for async variation lookup", async () => {
     const form = { ...defaultLineForm, time: "2026-05-14T07:35", latitude: "38", longitude: "20", magneticCourse: "15" };
 
@@ -51,5 +61,26 @@ describe("log line editor business logic", () => {
         return 3;
       },
     })).resolves.toMatchObject({ latitude: "39", variation: "3", trueCourse: "18" });
+  });
+});
+
+it("uses the boat wind drift table when wind direction and true course are known", () => {
+  const boat = {
+    deviationTable: [],
+    windDriftTable: {
+      windSpeedLimits: { fullSail: "0", secondReef: "15", stormSail: "30" },
+      rows: [
+        { angle: "closeHauled", values: { fullSail: "4", secondReef: "8", stormSail: "16" } },
+        { angle: "beamReach", values: { fullSail: "2", secondReef: "4", stormSail: "8" } },
+        { angle: "broadReach", values: { fullSail: "1", secondReef: "2", stormSail: "4" } },
+      ],
+    },
+  } as Pick<Boat, "deviationTable" | "windDriftTable">;
+  const form = { ...defaultLineForm, trueCourse: "100", windDirection: "E", windStrength: "10", windUnit: "m/s", windDrift: "99" };
+
+  expect(updateLogLineFormForInput(form, { field: "windDirection", value: "E" }, { boat })).toMatchObject({
+    trueCourse: "100",
+    windDrift: "8",
+    courseThroughWater: "108",
   });
 });

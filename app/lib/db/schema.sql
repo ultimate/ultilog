@@ -69,6 +69,7 @@ create table if not exists boats (
   yacht_data text not null,
   owner_id text not null default 'legacy-user' references users(id) on delete cascade,
   deviation_table text not null default '[]',
+  wind_drift_table text not null default '[]',
   image_data text,
   image_mime_type text,
   image_width integer,
