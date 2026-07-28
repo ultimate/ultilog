@@ -1,16 +1,20 @@
 import { EntityImage } from "../EntityImage";
 import { flagGroups, flagOptionEmoji } from "../../../lib/flags";
 import { useI18n } from "../../../lib/i18n";
-import { useRef, type Dispatch, type SetStateAction } from "react";
-import type { Boat, BoatForm, PersistedLogbook } from "../../../models/logbook";
-import type { BoatType } from "../../../models/logbook";
+import { useMemo, useRef, type Dispatch, type SetStateAction } from "react";
+import { windDriftSailSettings, type Boat, type BoatForm, type BoatType, type PersistedLogbook } from "../../../models/logbook";
 import { boatToForm, defaultBoatForm } from "../forms";
 import { modulePath } from "../persistence";
 import { ManagerShell } from "../../managers/ManagerShell";
 import { fileToStoredImage } from "../image-utils";
-import { PaginationControls, usePagination } from "../PaginationControls";
+import * as Pagination from "../PaginationControls";
 
 type BoatManagerPageProps = Record<string, any>;
+
+function nonNegativeInputValue(value: string) {
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) && parsed < 0 ? "0" : value;
+}
 
 export function BoatManagerPage(props: BoatManagerPageProps) {
   const { t } = useI18n();
@@ -36,7 +40,11 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
     SetStateAction<boolean>
   >;
   const imageInputRef = useRef<HTMLInputElement>(null);
-  const listPagination = usePagination(logbook.boats, props.defaultPageSize as number);
+  const listPagination = Pagination.usePagination(logbook.boats, props.defaultPageSize as number);
+  const selectedBoatSheets = useMemo(
+    () => logbook.sheets.filter((sheet) => sheet.boatId === (editingBoatId ?? selectedBoat.id)),
+    [editingBoatId, logbook.sheets, selectedBoat.id],
+  );
 
   return (
     <section className="sheet-detail module-panel">
@@ -80,7 +88,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
               </li>
             ))}
           </ul>
-          <PaginationControls
+          <Pagination.PaginationControls
             page={listPagination.page}
             pageCount={listPagination.pageCount}
             pageSize={listPagination.pageSize}
@@ -321,20 +329,90 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                 </table>
               </div>
             </details>
+
+            <details className="wide-field deviation-table-field">
+              <summary>
+                <span className="eyebrow">{t("boats.windDriftTable")}</span>
+                <span>{t("boats.windDriftHelp")}</span>
+              </summary>
+              <div className="table-scroll">
+                <table className="deviation-table">
+                  <thead>
+                    <tr>
+                      <th>{t("boats.windAngle")}</th>
+                      {windDriftSailSettings.map((setting) => (
+                        <th key={setting}>
+                          <span>{t(`boats.windDrift.${setting}`)}</span>
+                          <label className="wind-drift-value">
+                            <input
+                              aria-label={`${t(`boats.windDrift.${setting}`)} ${t("boats.windSpeedLimit")} [kn]`}
+                              type="number"
+                              min="0"
+                              step="0.1"
+                              disabled={setting === "fullSail"}
+                              value={boatForm.windDriftTable.windSpeedLimits[setting]}
+                              onChange={(e) =>
+                                setBoatForm({
+                                  ...boatForm,
+                                  windDriftTable: {
+                                    ...boatForm.windDriftTable,
+                                    windSpeedLimits: { ...boatForm.windDriftTable.windSpeedLimits, [setting]: nonNegativeInputValue(e.target.value) },
+                                  },
+                                })
+                              }
+                            />
+                            <span>[kn]</span>
+                          </label>
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {boatForm.windDriftTable.rows.map((row, index) => (
+                      <tr key={row.angle}>
+                        <td>{t(`boats.windDrift.${row.angle}`)}</td>
+                        {windDriftSailSettings.map((setting) => (
+                          <td key={setting}>
+                            <label className="wind-drift-value">
+                              <input
+                                aria-label={`${t(`boats.windDrift.${row.angle}`)} ${t(`boats.windDrift.${setting}`)} °`}
+                                type="number"
+                                min="0"
+                                step="0.1"
+                                value={row.values[setting]}
+                                onChange={(e) =>
+                                  setBoatForm({
+                                    ...boatForm,
+                                    windDriftTable: {
+                                      ...boatForm.windDriftTable,
+                                      rows: boatForm.windDriftTable.rows.map((candidate, candidateIndex) =>
+                                      candidateIndex === index
+                                        ? { ...candidate, values: { ...candidate.values, [setting]: nonNegativeInputValue(e.target.value) } }
+                                        : candidate,
+                                      ),
+                                    },
+                                  })
+                                }
+                              />
+                              <span>°</span>
+                            </label>
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </details>
             <article className="info-card wide-field">
               <h3>{t("boats.logSheets")}</h3>
               <ul className="stack-list">
-                {logbook.sheets
-                  .filter(
-                    (sheet) =>
-                      sheet.boatId === (editingBoatId ?? selectedBoat.id),
-                  )
-                  .map((sheet) => (
-                    <li key={sheet.id}>
-                      <strong>{sheet.title}</strong>
-                      <small>{sheet.dateRange}</small>
-                    </li>
-                  ))}
+                {selectedBoatSheets.map((sheet) => (
+                  <li key={sheet.id}>
+                    <strong>{sheet.title}</strong>
+                    <small>{sheet.dateRange}</small>
+                  </li>
+                ))}
               </ul>
             </article>
             <div className="inline-edit-actions">

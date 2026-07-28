@@ -239,6 +239,8 @@ h1 { margin:0 0 .45rem; font-size:1.8rem; line-height:1.1; letter-spacing:-.04em
 .deviation-table-field summary span + span { margin-top: .25rem; }
 .deviation-table { min-width: 320px; }
 .deviation-table input { min-width: 8rem; }
+.wind-drift-value { display: flex; align-items: center; gap: .35rem; }
+.wind-drift-value span { white-space: nowrap; font-weight: 600; }
 .group-tags { display:flex; flex-wrap:wrap; gap:.35rem; margin:.5rem 0; }
 .group-tags span { display:inline-flex; align-items:center; border:1px solid var(--line); border-radius:999px; padding:.2rem .55rem; background:var(--surface-strong); color:var(--text); font-size:.8rem; font-weight:850; }
 .demo-login-button,.secondary-auth-button { background:transparent !important; color:var(--blue) !important; border:1px solid var(--blue) !important; }
