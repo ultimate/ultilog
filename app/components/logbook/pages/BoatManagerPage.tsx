@@ -7,7 +7,7 @@ import { boatToForm, defaultBoatForm } from "../forms";
 import { modulePath } from "../persistence";
 import { ManagerShell } from "../../managers/ManagerShell";
 import { fileToStoredImage } from "../image-utils";
-import * as Pagination from "../PaginationControls";
+import { ListPagination, ListSearch, useSortableList } from "../SortableList";
 
 type BoatManagerPageProps = Record<string, any>;
 
@@ -40,11 +40,19 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
     SetStateAction<boolean>
   >;
   const imageInputRef = useRef<HTMLInputElement>(null);
-  const listPagination = Pagination.usePagination(logbook.boats, props.defaultPageSize as number);
   const selectedBoatSheets = useMemo(
     () => logbook.sheets.filter((sheet) => sheet.boatId === (editingBoatId ?? selectedBoat.id)),
     [editingBoatId, logbook.sheets, selectedBoat.id],
   );
+  const columns = useMemo(() => [
+    { key: "name", value: (boat: Boat) => boat.name },
+    { key: "type", value: (boat: Boat) => boat.type },
+    { key: "registration", value: (boat: Boat) => boat.registration },
+    { key: "flagState", value: (boat: Boat) => boat.flagState },
+    { key: "homePort", value: (boat: Boat) => boat.homePort },
+    { key: "owner", value: (boat: Boat) => boat.owner },
+  ], []);
+  const list = useSortableList(logbook.boats, columns, props.defaultPageSize as number, "name");
 
   return (
     <section className="sheet-detail module-panel">
@@ -93,14 +101,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
               </li>
             ))}
           </ul>
-          <Pagination.PaginationControls
-            page={listPagination.page}
-            pageCount={listPagination.pageCount}
-            pageSize={listPagination.pageSize}
-            totalItems={logbook.boats.length}
-            onPageChange={listPagination.setPage}
-            onPageSizeChange={listPagination.setPageSize}
-          />
+          <ListPagination list={list} />
           </>
         }
         form={
