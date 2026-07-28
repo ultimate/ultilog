@@ -1,6 +1,6 @@
 import { EntityImage } from "../EntityImage";
 import { useI18n } from "../../../lib/i18n";
-import { useRef, type Dispatch, type SetStateAction } from "react";
+import { useMemo, useRef, type Dispatch, type SetStateAction } from "react";
 import type {
   CrewForm,
   LogSheet,
@@ -10,7 +10,7 @@ import { defaultCrewForm } from "../forms";
 import { modulePath } from "../persistence";
 import { ManagerShell } from "../../managers/ManagerShell";
 import { fileToStoredImage } from "../image-utils";
-import { PaginationControls, usePagination } from "../PaginationControls";
+import { ListPagination, ListSearch, useSortableList } from "../SortableList";
 
 type CrewAssignment = {
   member: PersistedLogbook["crewMembers"][number];
@@ -36,7 +36,14 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
   const logbook = props.logbook as PersistedLogbook;
   const setCrewForm = props.setCrewForm as Dispatch<SetStateAction<CrewForm>>;
   const imageInputRef = useRef<HTMLInputElement>(null);
-  const listPagination = usePagination(logbook.crewMembers, props.defaultPageSize as number);
+  const columns = useMemo(() => [
+    { key: "name", value: (person: PersistedLogbook["crewMembers"][number]) => person.name },
+    { key: "nationality", value: (person: PersistedLogbook["crewMembers"][number]) => person.nationality },
+    { key: "role", value: (person: PersistedLogbook["crewMembers"][number]) => person.role },
+    { key: "address", value: (person: PersistedLogbook["crewMembers"][number]) => person.address },
+    { key: "certificate", value: (person: PersistedLogbook["crewMembers"][number]) => person.certificate },
+  ], []);
+  const list = useSortableList(logbook.crewMembers, columns, props.defaultPageSize as number, "name");
 
   return (
     <section className="sheet-detail module-panel">
@@ -52,8 +59,13 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
         }}
         list={
           <>
+          <ListSearch value={list.query} onChange={list.setQuery} />
+          <div className="manager-list-sort">
+            <label>{t("list.sortBy")} <select value={list.sort.key} onChange={(event) => list.setSortKey(event.target.value)}>{columns.map((column) => <option key={column.key} value={column.key}>{t(column.key === "name" ? "common.name" : `crew.${column.key}` as any)}</option>)}</select></label>
+            <button type="button" className="edit-chip" onClick={() => list.setSortKey(list.sort.key)} aria-label={t("list.toggleDirection")}>{list.sort.direction === "ascending" ? "▲" : "▼"}</button>
+          </div>
           <ul className="manager-list">
-            {listPagination.pageItems.map((person) => {
+            {list.pageItems.map((person) => {
               const index = logbook.crewMembers.findIndex((candidate) => candidate.id === person.id);
               return (
               <li key={person.id}>
@@ -83,14 +95,7 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
             );
             })}
           </ul>
-          <PaginationControls
-            page={listPagination.page}
-            pageCount={listPagination.pageCount}
-            pageSize={listPagination.pageSize}
-            totalItems={logbook.crewMembers.length}
-            onPageChange={listPagination.setPage}
-            onPageSizeChange={listPagination.setPageSize}
-          />
+          <ListPagination list={list} />
           </>
         }
         form={

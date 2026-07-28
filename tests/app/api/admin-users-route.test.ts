@@ -9,11 +9,15 @@ vi.mock("../../../app/lib/users", () => ({
   listKnownGroups: vi.fn(),
   listUsersForAdmin: vi.fn(),
   updateUserGroups: vi.fn(),
-  userHasGroup: vi.fn(),
+}));
+
+vi.mock("../../../app/lib/authorization", () => ({
+  userHasEntitlement: vi.fn(),
 }));
 
 const { auth } = await import("../../../auth");
 const users = await import("../../../app/lib/users");
+const authorization = await import("../../../app/lib/authorization");
 const { DELETE, GET, PATCH } = await import("../../../app/api/admin/users/route");
 
 const mockedAuth = auth as unknown as Mock;
@@ -21,7 +25,7 @@ const mockedDeleteUserAccountAsAdmin = vi.mocked(users.deleteUserAccountAsAdmin)
 const mockedListKnownGroups = vi.mocked(users.listKnownGroups);
 const mockedListUsersForAdmin = vi.mocked(users.listUsersForAdmin);
 const mockedUpdateUserGroups = vi.mocked(users.updateUserGroups);
-const mockedUserHasGroup = vi.mocked(users.userHasGroup);
+const mockedUserHasEntitlement = vi.mocked(authorization.userHasEntitlement);
 
 const adminSession = { user: { id: "admin-user", name: "Admin", email: "admin@example.test", groups: ["admin"], onboardingCompletedTasks: [], countryCode: "", language: "en" as const, windUnit: "bft" as const, waterHeightUnit: "m" as const, temperatureUnit: "°C" as const, coordinateFormat: "decimal" as const, distanceDisplayUnit: "off" as const, defaultBoatId: "", defaultCrewMemberIds: [], showCourseConversionTable: true, theme: "light" as const, isNavSlim: false, hasReadCompliance: false }, expires: "2099-01-01T00:00:00.000Z" };
 
@@ -37,24 +41,24 @@ describe("admin users endpoint", () => {
 
     expect(response.status).toBe(401);
     await expect(response.json()).resolves.toEqual({ error: "Unauthorized" });
-    expect(mockedUserHasGroup).not.toHaveBeenCalled();
+    expect(mockedUserHasEntitlement).not.toHaveBeenCalled();
   });
 
   it("returns forbidden when the current user lacks the persisted admin group", async () => {
     mockedAuth.mockResolvedValueOnce(adminSession);
-    mockedUserHasGroup.mockResolvedValueOnce(false);
+    mockedUserHasEntitlement.mockResolvedValueOnce(false);
 
     const response = await GET();
 
     expect(response.status).toBe(403);
     await expect(response.json()).resolves.toEqual({ error: "Forbidden" });
-    expect(mockedUserHasGroup).toHaveBeenCalledWith("admin-user", "admin");
+    expect(mockedUserHasEntitlement).toHaveBeenCalledWith("admin-user", "admin:manage-users");
   });
 
   it("lists users and known groups for admins", async () => {
     const listedUsers = [{ id: "demo", name: "Demo", email: "demo@ultilog.local", groups: ["demo"], onboardingCompletedTasks: [], countryCode: "", language: "en" as const, windUnit: "bft" as const, waterHeightUnit: "m" as const, temperatureUnit: "°C" as const, coordinateFormat: "decimal" as const, distanceDisplayUnit: "off" as const, defaultBoatId: "", defaultCrewMemberIds: [], showCourseConversionTable: true, theme: "light" as const, isNavSlim: false, hasReadCompliance: false }];
     mockedAuth.mockResolvedValueOnce(adminSession);
-    mockedUserHasGroup.mockResolvedValueOnce(true);
+    mockedUserHasEntitlement.mockResolvedValueOnce(true);
     mockedListUsersForAdmin.mockResolvedValueOnce(listedUsers);
     mockedListKnownGroups.mockResolvedValueOnce(["admin", "demo"]);
 
@@ -67,7 +71,7 @@ describe("admin users endpoint", () => {
 
   it("prevents admins from removing their own admin group", async () => {
     mockedAuth.mockResolvedValueOnce(adminSession);
-    mockedUserHasGroup.mockResolvedValueOnce(true);
+    mockedUserHasEntitlement.mockResolvedValueOnce(true);
 
     const response = await PATCH(new Request("https://ultilog.test/api/admin/users", {
       method: "PATCH",
@@ -82,7 +86,7 @@ describe("admin users endpoint", () => {
   it("updates groups for admins", async () => {
     const updatedUser = { id: "demo", name: "Demo", email: "demo@ultilog.local", groups: ["demo", "reviewer"], onboardingCompletedTasks: [], countryCode: "", language: "en" as const, windUnit: "bft" as const, waterHeightUnit: "m" as const, temperatureUnit: "°C" as const, coordinateFormat: "decimal" as const, distanceDisplayUnit: "off" as const, defaultBoatId: "", defaultCrewMemberIds: [], showCourseConversionTable: true, theme: "light" as const, isNavSlim: false, hasReadCompliance: false };
     mockedAuth.mockResolvedValueOnce(adminSession);
-    mockedUserHasGroup.mockResolvedValueOnce(true);
+    mockedUserHasEntitlement.mockResolvedValueOnce(true);
     mockedUpdateUserGroups.mockResolvedValueOnce(updatedUser);
     mockedListKnownGroups.mockResolvedValueOnce(["admin", "demo", "reviewer"]);
 
@@ -98,7 +102,7 @@ describe("admin users endpoint", () => {
 
   it("prevents admins from deleting their own account from the admin page", async () => {
     mockedAuth.mockResolvedValueOnce(adminSession);
-    mockedUserHasGroup.mockResolvedValueOnce(true);
+    mockedUserHasEntitlement.mockResolvedValueOnce(true);
 
     const response = await DELETE(new Request("https://ultilog.test/api/admin/users", {
       method: "DELETE",
@@ -112,7 +116,7 @@ describe("admin users endpoint", () => {
 
   it("deletes users for admins when the username confirmation is provided", async () => {
     mockedAuth.mockResolvedValueOnce(adminSession);
-    mockedUserHasGroup.mockResolvedValueOnce(true);
+    mockedUserHasEntitlement.mockResolvedValueOnce(true);
     mockedDeleteUserAccountAsAdmin.mockResolvedValueOnce();
 
     const response = await DELETE(new Request("https://ultilog.test/api/admin/users", {

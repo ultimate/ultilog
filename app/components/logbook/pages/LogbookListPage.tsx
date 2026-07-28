@@ -1,6 +1,6 @@
 import { EntityImage } from "../EntityImage";
 import { useI18n } from "../../../lib/i18n";
-import { useRef, type Dispatch, type SetStateAction } from "react";
+import { useMemo, useRef, type Dispatch, type SetStateAction } from "react";
 import type {
   Boat,
   LogSheet,
@@ -9,13 +9,14 @@ import type {
 } from "../../../models/logbook";
 import { sheetToForm } from "../forms";
 import { LogSheetsMapView } from "../OpenSeaMapView";
-import { PaginationControls, usePagination } from "../PaginationControls";
+import { ListPagination, ListSearch, SortableColumnHeader, useSortableList } from "../SortableList";
 
 type Navigate = (
   module: "details" | "logbooks",
   itemId?: string | number,
 ) => void;
 type SheetSummary = { motorMiles: number; sailMiles: number; totalMiles: number; duration: string; motionDuration: string; motorHours: number; motorHoursDuration: string };
+type SheetListRow = { sheet: LogSheet; boat?: Boat; summary: SheetSummary };
 
 export function LogbookListPage({
   activeBoat,
@@ -69,7 +70,25 @@ export function LogbookListPage({
   const importInputRef = useRef<HTMLInputElement>(null);
   const hasBoats = logbook.boats.length > 0;
   const hasMultipleBoats = logbook.boats.length > 1;
-  const sheetsPagination = usePagination(logbook.sheets, defaultPageSize);
+  const rows = useMemo(() => logbook.sheets.map((sheet) => ({
+    sheet,
+    boat: logbook.boats.find((candidate) => candidate.id === sheet.boatId),
+    summary: calculateSheetSummary(sheet),
+  })), [calculateSheetSummary, logbook.boats, logbook.sheets]);
+  const columns = useMemo(() => [
+    { key: "date", value: (row: SheetListRow) => row.sheet.dateRange },
+    { key: "entry", value: (row: SheetListRow) => row.sheet.title },
+    { key: "vessel", value: (row: SheetListRow) => row.boat?.name },
+    { key: "route", value: (row: SheetListRow) => [row.sheet.route.from, row.sheet.route.to] },
+    { key: "sailMiles", value: (row: SheetListRow) => row.summary.sailMiles },
+    { key: "motorMiles", value: (row: SheetListRow) => row.summary.motorMiles },
+    { key: "totalMiles", value: (row: SheetListRow) => row.summary.totalMiles },
+    { key: "duration", value: (row: SheetListRow) => row.summary.duration },
+    { key: "motionDuration", value: (row: SheetListRow) => row.summary.motionDuration },
+    { key: "motorHours", value: (row: SheetListRow) => row.summary.motorHours },
+  ], []);
+  const list = useSortableList(rows, columns, defaultPageSize);
+  const header = (key: string, label: string) => <SortableColumnHeader columnKey={key} activeKey={list.sort.key} direction={list.sort.direction} onSort={list.setSortKey}>{label}</SortableColumnHeader>;
 
   function handleScannerFilesSelected(files: FileList | null) {
     if (!files?.length) return;
@@ -257,11 +276,7 @@ export function LogbookListPage({
         </div>
       )}
       <div className="logbook-toolbar">
-        <input
-          aria-label={t("logbooks.search")}
-          placeholder={t("logbooks.searchPlaceholder")}
-          readOnly
-        />
+        <ListSearch value={list.query} onChange={list.setQuery} label={t("logbooks.search")} />
         <select aria-label={t("logbooks.vesselFilter")} defaultValue={t("logbooks.allVessels")}>
           <option>{t("logbooks.allVessels")}</option>
         </select>
@@ -278,25 +293,21 @@ export function LogbookListPage({
             <table className="logbook-table">
               <thead>
                 <tr>
-                  <th>{t("logbooks.date")}</th>
-                  <th>{t("logbooks.entry")}</th>
-                  <th>{t("logbooks.vessel")}</th>
-                  <th>{t("logbooks.fromTo")}</th>
-                  <th>{t("compliance.sailMiles")}</th>
-                  <th>{t("compliance.motorMiles")}</th>
-                  <th>{t("logbooks.totalMiles")}</th>
-                  <th>{t("dashboard.overallDuration")}</th>
-                  <th>{t("dashboard.motionDuration")}</th>
-                  <th>{t("dashboard.motorHours")}</th>
+                  {header("date", t("logbooks.date"))}
+                  {header("entry", t("logbooks.entry"))}
+                  {header("vessel", t("logbooks.vessel"))}
+                  {header("route", t("logbooks.fromTo"))}
+                  {header("sailMiles", t("compliance.sailMiles"))}
+                  {header("motorMiles", t("compliance.motorMiles"))}
+                  {header("totalMiles", t("logbooks.totalMiles"))}
+                  {header("duration", t("dashboard.overallDuration"))}
+                  {header("motionDuration", t("dashboard.motionDuration"))}
+                  {header("motorHours", t("dashboard.motorHours"))}
                   <th></th>
                 </tr>
               </thead>
               <tbody>
-                {sheetsPagination.pageItems.map((sheet) => {
-                  const boat = logbook.boats.find(
-                    (candidate) => candidate.id === sheet.boatId,
-                  );
-                  const sheetSummary = calculateSheetSummary(sheet);
+                {list.pageItems.map(({ sheet, boat, summary: sheetSummary }) => {
                   return (
                     <tr key={sheet.id}>
                       <td>{sheet.dateRange}</td>
@@ -357,14 +368,7 @@ export function LogbookListPage({
               </tbody>
             </table>
           </div>
-          <PaginationControls
-            page={sheetsPagination.page}
-            pageCount={sheetsPagination.pageCount}
-            pageSize={sheetsPagination.pageSize}
-            totalItems={logbook.sheets.length}
-            onPageChange={sheetsPagination.setPage}
-            onPageSizeChange={sheetsPagination.setPageSize}
-          />
+          <ListPagination list={list} />
         </article>
         <article className="map-card logbook-overview-map-card">
           <div className="logbook-overview-map-heading">

@@ -58,8 +58,13 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
         }}
         list={
           <>
+          <ListSearch value={list.query} onChange={list.setQuery} />
+          <div className="manager-list-sort">
+            <label>{t("list.sortBy")} <select value={list.sort.key} onChange={(event) => list.setSortKey(event.target.value)}>{columns.map((column) => <option key={column.key} value={column.key}>{t(column.key === "flagState" ? "boats.flagState" : column.key === "homePort" ? "boats.homePort" : `common.${column.key}` as any)}</option>)}</select></label>
+            <button type="button" className="edit-chip" onClick={() => list.setSortKey(list.sort.key)} aria-label={t("list.toggleDirection")}>{list.sort.direction === "ascending" ? "▲" : "▼"}</button>
+          </div>
           <ul className="manager-list">
-            {listPagination.pageItems.map((boat) => (
+            {list.pageItems.map((boat) => (
               <li key={boat.id}>
                 <button
                   type="button"

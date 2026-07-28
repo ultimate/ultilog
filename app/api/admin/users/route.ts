@@ -1,18 +1,23 @@
 import { NextResponse } from "next/server";
 import { auth } from "../../../../auth";
-import { deleteUserAccountAsAdmin, listKnownGroups, listUsersForAdmin, updateUserGroups, userHasGroup } from "../../../lib/users";
+import { userHasEntitlement } from "../../../lib/authorization";
+import { deleteUserAccountAsAdmin, listKnownGroups, listUsersForAdmin, updateUserGroups } from "../../../lib/users";
+
+async function canManageUsers(userId: string) {
+  return userHasEntitlement(userId, "admin:manage-users");
+}
 
 export async function GET() {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!await userHasGroup(session.user.id, "admin")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!await canManageUsers(session.user.id)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   return NextResponse.json({ users: await listUsersForAdmin(), groups: await listKnownGroups() });
 }
 
 export async function PATCH(request: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!await userHasGroup(session.user.id, "admin")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!await canManageUsers(session.user.id)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   try {
     const body = await request.json() as { userId?: string; groups?: string[] };
     if (!body.userId) return NextResponse.json({ error: "User is required." }, { status: 400 });
@@ -31,7 +36,7 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  if (!await userHasGroup(session.user.id, "admin")) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!await canManageUsers(session.user.id)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   try {
     const body = await request.json() as { userId?: string; confirmationName?: string };
     if (!body.userId) return NextResponse.json({ error: "User is required." }, { status: 400 });
