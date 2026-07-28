@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
-import { validateDemoUser } from "../../lib/users";
+import { createDemoSandbox } from "../../lib/demo/demo-sandboxes";
 
 export async function POST() {
-  const user = await validateDemoUser();
-  if (!user) return NextResponse.json({ error: "Demo user is not available." }, { status: 404 });
-  return NextResponse.json({ ok: true });
+  try {
+    return NextResponse.json(await createDemoSandbox());
+  } catch (error) {
+    console.error("Unable to create demo sandbox", error);
+    return NextResponse.json({ error: "Demo is temporarily unavailable." }, { status: 503 });
+  }
 }
