@@ -31,6 +31,19 @@ describe("immutable demo logbook template", () => {
     expect(DEMO_LOGBOOK_TEMPLATE.boats[0].deviationTable).not.toEqual(DEMO_LOGBOOK_TEMPLATE.boats[1].deviationTable);
   });
 
+  it("provides complete wind drift tables for both boats", () => {
+    for (const boat of DEMO_LOGBOOK_TEMPLATE.boats) {
+      expect(boat).toHaveProperty("windDriftTable.windSpeedLimits.fullSail", "0");
+      expect(boat).toHaveProperty("windDriftTable.rows", [
+        expect.objectContaining({ angle: "closeHauled" }),
+        expect.objectContaining({ angle: "beamReach" }),
+        expect.objectContaining({ angle: "broadReach" }),
+      ]);
+    }
+
+    expect(Reflect.get(DEMO_LOGBOOK_TEMPLATE.boats[0], "windDriftTable")).not.toEqual(Reflect.get(DEMO_LOGBOOK_TEMPLATE.boats[1], "windDriftTable"));
+  });
+
   it("only references template boats and crew and mixes crew between sheets", () => {
     const boatIds = new Set(DEMO_LOGBOOK_TEMPLATE.boats.map((boat) => boat.id));
     const crewIds = new Set(DEMO_LOGBOOK_TEMPLATE.crewMembers.map((member) => member.id));
