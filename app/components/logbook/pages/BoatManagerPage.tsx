@@ -1,9 +1,8 @@
 import { EntityImage } from "../EntityImage";
 import { flagGroups, flagOptionEmoji } from "../../../lib/flags";
 import { useI18n } from "../../../lib/i18n";
-import { useRef, type Dispatch, type SetStateAction } from "react";
-import { windDriftSailSettings, type Boat, type BoatForm, type PersistedLogbook } from "../../../models/logbook";
-import type { BoatType } from "../../../models/logbook";
+import { useMemo, useRef, type Dispatch, type SetStateAction } from "react";
+import { windDriftSailSettings, type Boat, type BoatForm, type BoatType, type PersistedLogbook } from "../../../models/logbook";
 import { boatToForm, defaultBoatForm } from "../forms";
 import { modulePath } from "../persistence";
 import { ManagerShell } from "../../managers/ManagerShell";
@@ -42,6 +41,10 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
   >;
   const imageInputRef = useRef<HTMLInputElement>(null);
   const listPagination = usePagination(logbook.boats, props.defaultPageSize as number);
+  const selectedBoatSheets = useMemo(
+    () => logbook.sheets.filter((sheet) => sheet.boatId === (editingBoatId ?? selectedBoat.id)),
+    [editingBoatId, logbook.sheets, selectedBoat.id],
+  );
 
   return (
     <section className="sheet-detail module-panel">
@@ -404,17 +407,12 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
             <article className="info-card wide-field">
               <h3>{t("boats.logSheets")}</h3>
               <ul className="stack-list">
-                {logbook.sheets
-                  .filter(
-                    (sheet) =>
-                      sheet.boatId === (editingBoatId ?? selectedBoat.id),
-                  )
-                  .map((sheet) => (
-                    <li key={sheet.id}>
-                      <strong>{sheet.title}</strong>
-                      <small>{sheet.dateRange}</small>
-                    </li>
-                  ))}
+                {selectedBoatSheets.map((sheet) => (
+                  <li key={sheet.id}>
+                    <strong>{sheet.title}</strong>
+                    <small>{sheet.dateRange}</small>
+                  </li>
+                ))}
               </ul>
             </article>
             <div className="inline-edit-actions">
