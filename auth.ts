@@ -33,6 +33,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
+        // This snapshot supports UI presentation only and can become stale.
+        // Protected server operations must resolve current entitlements from
+        // the database rather than authorizing from session.user.groups.
         session.user.groups = Array.isArray(token.groups) ? token.groups as string[] : [];
       }
       return session;

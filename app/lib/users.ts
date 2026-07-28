@@ -187,7 +187,10 @@ function assertAllowedGroupName(name: string) {
   if (!/^[a-z0-9][a-z0-9-]*$/.test(name)) throw new Error("Group names may only contain lowercase letters, numbers, and hyphens.");
 }
 
-async function groupsForUser(userId: string) {
+// These are manually assigned, non-expiring groups. Derived access such as a
+// subscription or trial belongs in its own store and is combined by the
+// authorization layer rather than written to user_groups.
+async function manualGroupsForUser(userId: string) {
   const db = getDatabase();
   await db.migrate();
   const result = await db.query<GroupRow>(`select name from user_groups where user_id = ${db.placeholder(1)} order by name`, [userId]);
@@ -196,7 +199,7 @@ async function groupsForUser(userId: string) {
 
 async function withGroups(user: UserRow | undefined): Promise<AppUser | undefined> {
   if (!user) return undefined;
-  return toAppUser(user, await groupsForUser(user.id));
+  return toAppUser(user, await manualGroupsForUser(user.id));
 }
 
 async function findUserByName(name: string) {
@@ -233,7 +236,7 @@ export async function validateUser(email: string, password: string): Promise<App
   const isValid = await bcrypt.compare(password, user.password_hash);
   if (!isValid) return null;
   if (!user.email_verified_at) await sendEmailVerificationIfNeeded(user);
-  return toAppUser(user, await groupsForUser(user.id));
+  return toAppUser(user, await manualGroupsForUser(user.id));
 }
 
 export async function validateDemoUser(): Promise<AppUser | null> {
@@ -246,7 +249,7 @@ export function isAdminUser(user?: { groups?: string[] } | null) {
 }
 
 export async function userHasGroup(userId: string, group: string) {
-  return (await groupsForUser(userId)).includes(normalizeGroupName(group));
+  return (await manualGroupsForUser(userId)).includes(normalizeGroupName(group));
 }
 
 export async function registerUser(input: { name: string; email: string; password: string }): Promise<AppUser> {
@@ -282,7 +285,7 @@ export async function updateUserEmail(userId: string, input: { email: string; cu
   if (existing && existing.id !== userId) throw new Error("An account with this email already exists.");
   await db.query(`update users set email = ${db.placeholder(1)}, email_verified_at = null where id = ${db.placeholder(2)}`, [email, userId]);
   await sendEmailVerification(userId);
-  return toAppUser({ ...current, email, email_verified_at: null }, await groupsForUser(userId));
+  return toAppUser({ ...current, email, email_verified_at: null }, await manualGroupsForUser(userId));
 }
 
 export async function updateUserPassword(userId: string, input: { currentPassword: string; newPassword: string }): Promise<void> {
@@ -392,7 +395,7 @@ export async function updateUserName(userId: string, input: { name: string; curr
   const existing = await findUserByName(name);
   if (existing && existing.id !== userId) throw new Error("An account with this name already exists.");
   await db.query(`update users set name = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [name, userId]);
-  return toAppUser({ ...current, name }, await groupsForUser(userId));
+  return toAppUser({ ...current, name }, await manualGroupsForUser(userId));
 }
 
 export async function deleteUserAccount(userId: string, input: { currentPassword: string }): Promise<void> {
@@ -484,7 +487,7 @@ export async function updateUserOnboardingCompletedTasks(userId: string, tasks: 
   const onboardingCompletedTasks = normalizeOnboardingCompletedTasks(tasks);
   await db.query(`update users set onboarding_completed_tasks = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [serializeOnboardingCompletedTasks(onboardingCompletedTasks), userId]);
   return {
-    ...toAppUser(current, await groupsForUser(userId)),
+    ...toAppUser(current, await manualGroupsForUser(userId)),
     onboardingCompletedTasks,
   };
 }
@@ -500,7 +503,7 @@ export async function updateUserViewPreferences(userId: string, input: Partial<R
     [preferences.countryCode, preferences.language, preferences.windUnit, preferences.waterHeightUnit, preferences.temperatureUnit, preferences.coordinateFormat, preferences.distanceDisplayUnit, preferences.defaultBoatId, JSON.stringify(preferences.defaultCrewMemberIds), preferences.theme, preferences.isNavSlim ? 1 : 0, preferences.showCourseConversionTable ? 1 : 0, preferences.motionStationaryThresholdNm, userId],
   );
   return {
-    ...toAppUser(current, await groupsForUser(userId)),
+    ...toAppUser(current, await manualGroupsForUser(userId)),
     ...preferences,
   };
 }
@@ -512,7 +515,7 @@ export async function updateUserComplianceRead(userId: string): Promise<AppUser>
   if (!current) throw new Error("User not found.");
   await db.query(`update users set has_read_compliance = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [1, userId]);
   return {
-    ...toAppUser(current, await groupsForUser(userId)),
+    ...toAppUser(current, await manualGroupsForUser(userId)),
     hasReadCompliance: true,
   };
 }
