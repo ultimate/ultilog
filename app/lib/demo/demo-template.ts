@@ -25,6 +25,14 @@ type DeepReadonly<T> = T extends (...args: never[]) => unknown
 
 type Waypoint = { name: string; latitude: number; longitude: number };
 type Weather = { icon: string; remark: string; temperature: number; pressure: number; windDirection: string; windBft: number; waves: number };
+type DemoWindDriftTable = {
+  windSpeedLimits: { fullSail: string; secondReef: string; stormSail: string };
+  rows: Array<{
+    angle: "closeHauled" | "beamReach" | "broadReach";
+    values: { fullSail: string; secondReef: string; stormSail: string };
+  }>;
+};
+type DemoBoat = Boat & { windDriftTable: DemoWindDriftTable };
 type Day = {
   id: string;
   date: string;
@@ -57,7 +65,7 @@ function demoDeviationTable(phaseShiftDegrees: number): Boat["deviationTable"] {
   });
 }
 
-const boats: Boat[] = [
+const boats: DemoBoat[] = [
   {
     id: "demo-boat-boreas",
     name: "SY Boreas",
@@ -75,6 +83,14 @@ const boats: Boat[] = [
       Safety: "6-person liferaft, EPIRB, jacklines, MOB beacon",
     },
     deviationTable: demoDeviationTable(40),
+    windDriftTable: {
+      windSpeedLimits: { fullSail: "0", secondReef: "17", stormSail: "28" },
+      rows: [
+        { angle: "closeHauled", values: { fullSail: "4", secondReef: "7", stormSail: "11" } },
+        { angle: "beamReach", values: { fullSail: "3", secondReef: "5", stormSail: "8" } },
+        { angle: "broadReach", values: { fullSail: "2", secondReef: "3", stormSail: "5" } },
+      ],
+    },
   },
   {
     id: "demo-boat-aurora",
@@ -93,6 +109,14 @@ const boats: Boat[] = [
       Safety: "6-person liferaft, EPIRB, flares, lifejackets",
     },
     deviationTable: demoDeviationTable(-70),
+    windDriftTable: {
+      windSpeedLimits: { fullSail: "0", secondReef: "20", stormSail: "35" },
+      rows: [
+        { angle: "closeHauled", values: { fullSail: "1", secondReef: "2", stormSail: "3" } },
+        { angle: "beamReach", values: { fullSail: "2", secondReef: "3", stormSail: "5" } },
+        { angle: "broadReach", values: { fullSail: "1", secondReef: "2", stormSail: "3" } },
+      ],
+    },
   },
 ];
 
