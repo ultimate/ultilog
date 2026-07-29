@@ -1704,6 +1704,36 @@ export function LogbookApp({
     router.refresh();
   }
 
+  async function resetDemoData() {
+    setProfileError(null);
+    setProfileMessage(null);
+    const response = await fetch("/api/demo-reset", { method: "POST" }).catch(() => undefined);
+    const payload = (await response?.json().catch(() => ({})) ?? {}) as { logbook?: PersistedLogbook; error?: string };
+    if (!response?.ok || !payload.logbook) {
+      setProfileError(payload.error ?? t("profile.demoResetError"));
+      return false;
+    }
+
+    const { logbook: resetLogbook } = normalizeLogbookIds(payload.logbook);
+    const firstBoat = resetLogbook.boats[0] ?? emptyBoat;
+    const firstSheet = resetLogbook.sheets[0] ?? emptySheet;
+    logbookRef.current = resetLogbook;
+    hasUnsavedLogbookChangesRef.current = false;
+    setLogbook(resetLogbook);
+    setActiveSheetId(firstSheet.id);
+    setSelectedBoatId(firstBoat.id);
+    setScannerBoatId(firstBoat.id);
+    setSheetForm(firstSheet.id ? sheetToForm(firstSheet) : defaultSheetForm(firstBoat.id));
+    setBoatForm(firstBoat.id ? boatToForm(firstBoat) : defaultBoatForm);
+    setCrewForm(crewToForm(resetLogbook.crewMembers[0] ?? defaultCrewForm));
+    setEditingBoatId(null);
+    setEditingSheetId(null);
+    setEditingLineIndex(null);
+    setSelectedCrewIndex(resetLogbook.crewMembers.length ? 0 : -2);
+    setProfileMessage(t("profile.demoResetSuccess"));
+    return true;
+  }
+
   return (
     <>
       <main
@@ -1891,6 +1921,7 @@ export function LogbookApp({
               updateName={updateName}
               updateEmail={updateEmail}
               updatePassword={updatePassword}
+              resetDemoData={resetDemoData}
               deleteAccount={deleteAccount}
               selectCrew={selectCrew}
               navigate={navigate}

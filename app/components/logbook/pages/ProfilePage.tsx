@@ -21,6 +21,7 @@ export function ProfilePage(props: ProfilePageProps) {
     updateName,
     updateEmail,
     updatePassword,
+    resetDemoData,
     deleteAccount,
     selectCrew,
     navigate,
@@ -33,6 +34,7 @@ export function ProfilePage(props: ProfilePageProps) {
   const activeBoat = props.activeBoat as Boat;
   const profilePreferences = preferences as ProfilePreferences;
   const [motionThresholdDraft, setMotionThresholdDraft] = useState<string | null>(null);
+  const [isResettingDemo, setIsResettingDemo] = useState(false);
   const motionThresholdValue = motionThresholdDraft ?? formatDecimalPreference(profilePreferences.motionStationaryThresholdNm);
 
   function commitMotionThresholdDraft() {
@@ -126,6 +128,27 @@ export function ProfilePage(props: ProfilePageProps) {
             <h3>{t("profile.accountStatus")}</h3>
             {profileMessage && <p className="save-success">{profileMessage}</p>}
             {profileError && <p className="save-error">{profileError}</p>}
+          </article>
+        )}
+        {userGroups.includes("demo") && (
+          <article className="info-card inline-edit-grid">
+            <h3>{t("profile.demoResetTitle")}</h3>
+            <p className="wide-field">{t("profile.demoResetHelp")}</p>
+            <div className="inline-edit-actions">
+              <button
+                type="button"
+                className="ghost-button"
+                disabled={isResettingDemo}
+                onClick={async () => {
+                  if (!window.confirm(t("profile.demoResetConfirm"))) return;
+                  setIsResettingDemo(true);
+                  await resetDemoData();
+                  setIsResettingDemo(false);
+                }}
+              >
+                {isResettingDemo ? t("profile.demoResetting") : t("profile.demoResetAction")}
+              </button>
+            </div>
           </article>
         )}
         <form className="info-card inline-edit-grid" onSubmit={updateName}>

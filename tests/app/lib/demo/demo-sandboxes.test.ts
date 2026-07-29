@@ -71,4 +71,29 @@ describe("demo sandboxes", () => {
     expect(new Date(rows[0].expires_at).getTime()).toBeGreaterThanOrEqual(before + (2 * 60 * 60 * 1000));
     expect(login.expiresAt).toBe(rows[0].expires_at);
   });
+
+  it("resets only an active demo sandbox to a fresh template copy", async () => {
+    const { createDemoSandbox, consumeDemoSandboxLogin, resetDemoSandbox } = await import("../../../../app/lib/demo/demo-sandboxes");
+    const { readLogbook, writeLogbook } = await import("../../../../app/lib/logbook-store");
+    const login = await createDemoSandbox();
+    const user = await consumeDemoSandboxLogin(login.token);
+    const original = await readLogbook(user!.id);
+    await writeLogbook({ ...original, boats: [], sheets: [] }, user!.id);
+
+    const reset = await resetDemoSandbox(user!.id);
+
+    expect(reset).toMatchObject({ boats: { length: 2 }, crewMembers: { length: 5 }, sheets: { length: 8 } });
+    await expect(readLogbook(user!.id)).resolves.toEqual(reset);
+    await expect(resetDemoSandbox("legacy-user")).resolves.toBeNull();
+  });
+
+  it("refuses to reset an expired sandbox", async () => {
+    const { createDemoSandbox, consumeDemoSandboxLogin, resetDemoSandbox } = await import("../../../../app/lib/demo/demo-sandboxes");
+    const { getDatabase } = await import("../../../../app/lib/logbook-store");
+    const login = await createDemoSandbox();
+    const user = await consumeDemoSandboxLogin(login.token);
+    await getDatabase().query("update demo_sandboxes set expires_at = ? where user_id = ?", ["2000-01-01T00:00:00.000Z", user!.id]);
+
+    await expect(resetDemoSandbox(user!.id)).resolves.toBeNull();
+  });
 });
