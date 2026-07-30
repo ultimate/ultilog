@@ -20,7 +20,7 @@ export type UserPreferences = {
   showCourseConversionTable: boolean;
   motionStationaryThresholdNm?: number;
 };
-export type AppUser = { id: string; name: string; email: string; emailVerified?: boolean; groups: string[]; onboardingCompletedTasks: OnboardingTaskId[]; hasReadCompliance: boolean } & UserPreferences;
+export type AppUser = { id: string; name: string; email: string; emailVerified?: boolean; groups: string[]; onboardingCompletedTasks: OnboardingTaskId[]; hasReadCompliance: boolean; demoSandboxExpiresAt?: string } & UserPreferences;
 export type AdminUserListItem = AppUser;
 export type DirectoryUserListItem = { id: string; username: string; sailMiles: number; motorMiles: number; logbookSheets: number; boats: number };
 

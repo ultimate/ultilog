@@ -8,7 +8,7 @@ import { DEMO_LOGBOOK_TEMPLATE, DEMO_TEMPLATE_VERSION } from "./demo-template";
 const DEFAULT_SANDBOX_TTL_HOURS = 6;
 const LOGIN_TOKEN_TTL_MINUTES = 5;
 
-type DemoTokenRow = { user_id: string; used_at?: string | null };
+type DemoTokenRow = { user_id: string; used_at?: string | null; sandbox_expires_at?: string };
 
 export type DemoSandboxLogin = {
   token: string;
@@ -72,7 +72,7 @@ export async function consumeDemoSandboxLogin(token: string): Promise<AppUser | 
   const claim = `${now}#${randomUUID()}`;
   const hash = tokenHash(normalizedToken);
   const row = (await db.query<DemoTokenRow>(`
-    select demo_login_tokens.user_id
+    select demo_login_tokens.user_id, demo_sandboxes.expires_at as sandbox_expires_at
     from demo_login_tokens
     join demo_sandboxes on demo_sandboxes.user_id = demo_login_tokens.user_id
     where demo_login_tokens.token_hash = ${db.placeholder(1)}
@@ -93,7 +93,8 @@ export async function consumeDemoSandboxLogin(token: string): Promise<AppUser | 
   if (claimed?.used_at !== claim || claimed.user_id !== row.user_id) return null;
 
   await db.query(`update demo_sandboxes set last_accessed_at = ${db.placeholder(1)} where user_id = ${db.placeholder(2)}`, [now, row.user_id]);
-  return (await findUserById(row.user_id)) ?? null;
+  const user = await findUserById(row.user_id);
+  return user ? { ...user, demoSandboxExpiresAt: row.sandbox_expires_at } : null;
 }
 
 export async function resetDemoSandbox(userId: string): Promise<PersistedLogbook | null> {
@@ -110,4 +111,46 @@ export async function resetDemoSandbox(userId: string): Promise<PersistedLogbook
   await writeLogbook(logbook, userId);
   await db.query(`update demo_sandboxes set last_accessed_at = ${db.placeholder(1)}, template_version = ${db.placeholder(2)} where user_id = ${db.placeholder(3)}`, [now, DEMO_TEMPLATE_VERSION, userId]);
   return readLogbook(userId);
+}
+
+export type DemoSandboxCleanupResult = {
+  sandboxesDeleted: number;
+  loginTokensDeleted: number;
+};
+
+export async function cleanupExpiredDemoSandboxes(options: { now?: Date; limit?: number } = {}): Promise<DemoSandboxCleanupResult> {
+  const db = getDatabase();
+  await db.migrate();
+  const now = (options.now ?? new Date()).toISOString();
+  const limit = Math.max(1, Math.min(1000, Math.floor(options.limit ?? 100)));
+  const expiredSandboxes = (await db.query<{ user_id: string }>(
+    `select user_id from demo_sandboxes where expires_at <= ${db.placeholder(1)} order by expires_at limit ${db.placeholder(2)}`,
+    [now, limit],
+  )).rows;
+  const expiredTokenCount = Number((await db.query<{ count: number | string }>(
+    `select count(*) as count from demo_login_tokens where expires_at <= ${db.placeholder(1)}`,
+    [now],
+  )).rows[0]?.count) || 0;
+
+  await db.query(`delete from demo_login_tokens where expires_at <= ${db.placeholder(1)}`, [now]);
+  for (const sandbox of expiredSandboxes) {
+    await deleteDemoSandboxUser(db, sandbox.user_id);
+  }
+  await db.flush();
+  return { sandboxesDeleted: expiredSandboxes.length, loginTokensDeleted: expiredTokenCount };
+}
+
+async function deleteDemoSandboxUser(db: ReturnType<typeof getDatabase>, userId: string) {
+  const owner = db.placeholder(1);
+  await db.query(`delete from log_lines where sheet_id in (select id from log_sheets where owner_id = ${owner})`, [userId]);
+  await db.query(`delete from sheet_crew_members where sheet_id in (select id from log_sheets where owner_id = ${owner})`, [userId]);
+  await db.query(`delete from crew_members where owner_id = ${owner}`, [userId]);
+  await db.query(`delete from log_sheets where owner_id = ${owner}`, [userId]);
+  await db.query(`delete from boats where owner_id = ${owner}`, [userId]);
+  await db.query(`delete from password_reset_tokens where user_id = ${owner}`, [userId]);
+  await db.query(`delete from email_verification_tokens where user_id = ${owner}`, [userId]);
+  await db.query(`delete from demo_login_tokens where user_id = ${owner}`, [userId]);
+  await db.query(`delete from user_groups where user_id = ${owner}`, [userId]);
+  await db.query(`delete from demo_sandboxes where user_id = ${owner}`, [userId]);
+  await db.query(`delete from users where id = ${owner}`, [userId]);
 }
