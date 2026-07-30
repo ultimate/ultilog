@@ -29,6 +29,7 @@ describe("demo sandboxes", () => {
 
     expect(firstUser).toMatchObject({ groups: ["demo"] });
     expect(secondUser).toMatchObject({ groups: ["demo"] });
+    expect(firstUser?.demoSandboxExpiresAt).toBe(firstLogin.expiresAt);
     expect(firstUser?.id).not.toBe(secondUser?.id);
 
     const firstLogbook = await readLogbook(firstUser!.id);
@@ -95,5 +96,25 @@ describe("demo sandboxes", () => {
     await getDatabase().query("update demo_sandboxes set expires_at = ? where user_id = ?", ["2000-01-01T00:00:00.000Z", user!.id]);
 
     await expect(resetDemoSandbox(user!.id)).resolves.toBeNull();
+  });
+
+  it("deletes expired sandboxes in bounded batches and prunes expired login tokens", async () => {
+    const { createDemoSandbox, consumeDemoSandboxLogin, cleanupExpiredDemoSandboxes } = await import("../../../../app/lib/demo/demo-sandboxes");
+    const { getDatabase } = await import("../../../../app/lib/logbook-store");
+    const firstLogin = await createDemoSandbox();
+    const secondLogin = await createDemoSandbox();
+    const activeLogin = await createDemoSandbox();
+    const first = await consumeDemoSandboxLogin(firstLogin.token);
+    const second = await consumeDemoSandboxLogin(secondLogin.token);
+    const active = await consumeDemoSandboxLogin(activeLogin.token);
+    const db = getDatabase();
+    await db.query("update demo_sandboxes set expires_at = ? where user_id in (?, ?)", ["2000-01-01T00:00:00.000Z", first!.id, second!.id]);
+    await db.query("update demo_login_tokens set expires_at = ?", ["2000-01-01T00:00:00.000Z"]);
+
+    await expect(cleanupExpiredDemoSandboxes({ limit: 1 })).resolves.toEqual({ sandboxesDeleted: 1, loginTokensDeleted: 3 });
+    expect((await db.query<{ id: string }>("select id from users where id in (?, ?)", [first!.id, second!.id])).rows).toHaveLength(1);
+    expect((await db.query<{ id: string }>("select id from users where id = ?", [active!.id])).rows).toHaveLength(1);
+    await expect(cleanupExpiredDemoSandboxes({ limit: 1 })).resolves.toEqual({ sandboxesDeleted: 1, loginTokensDeleted: 0 });
+    expect((await db.query<{ id: string }>("select id from users where id in (?, ?)", [first!.id, second!.id])).rows).toHaveLength(0);
   });
 });

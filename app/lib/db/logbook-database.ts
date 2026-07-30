@@ -26,6 +26,8 @@ export abstract class LogbookDatabase implements QueryableDatabase {
   abstract query<Row>(sql: string, values?: unknown[]): Promise<QueryResult<Row>>;
   protected abstract ensureSchema(): Promise<void>;
 
+  async flush() {}
+
   async migrate() {
     await this.ensureSchemaAndBackfill();
   }

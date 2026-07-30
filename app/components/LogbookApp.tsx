@@ -341,6 +341,11 @@ export function LogbookApp({
     let isMounted = true;
     async function loadLogbook() {
       const response = await fetch("/api/logbook");
+      if (response.status === 401) {
+        await signOut({ redirect: false });
+        window.location.assign("/login");
+        return;
+      }
       if (!response.ok) throw new Error("Unable to load logbook");
       const storedLogbook = (await response.json()) as PersistedLogbook;
       const {
