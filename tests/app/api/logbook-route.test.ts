@@ -9,14 +9,17 @@ vi.mock("../../../app/lib/logbook-store", () => ({
   readLogbook: vi.fn(),
   writeLogbook: vi.fn(),
 }));
+vi.mock("../../../app/lib/demo/demo-policy", () => ({ isActiveDemoSandbox: vi.fn() }));
 
 const { auth } = await import("../../../auth");
 const store = await import("../../../app/lib/logbook-store");
+const { isActiveDemoSandbox } = await import("../../../app/lib/demo/demo-policy");
 const { GET, PUT } = await import("../../../app/api/logbook/route");
 
 const mockedAuth = auth as unknown as Mock;
 const mockedReadLogbook = vi.mocked(store.readLogbook);
 const mockedWriteLogbook = vi.mocked(store.writeLogbook);
+const mockedIsActiveDemoSandbox = vi.mocked(isActiveDemoSandbox);
 const session = { user: { id: "user-1", name: "User", email: "user@example.test", groups: [] }, expires: "2099-01-01T00:00:00.000Z" };
 const image = { data: "base64-image", mimeType: "image/png", width: 64, height: 32 };
 const logbook = { boats: [], crewMembers: [], sheets: [] };
@@ -24,6 +27,7 @@ const logbook = { boats: [], crewMembers: [], sheets: [] };
 describe("logbook endpoint", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockedIsActiveDemoSandbox.mockResolvedValue(false);
   });
 
   it("requires authentication for reads", async () => {
@@ -92,5 +96,25 @@ describe("logbook endpoint", () => {
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual(logbook);
     expect(mockedWriteLogbook).toHaveBeenCalledWith(logbook, "user-1");
+  });
+
+  it("removes images and public sharing from demo writes", async () => {
+    const demoLogbook: PersistedLogbook = {
+      boats: [{ id: "boat-1", name: "Aurora", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [], image }],
+      crewMembers: [{ id: "crew-1", name: "Luca", nationality: "CH", role: "Skipper", image }],
+      sheets: [{ id: "sheet-1", title: "Trip", status: "Draft", dateRange: "", boatId: "boat-1", route: { from: "", to: "", departed: "", arrived: "" }, crew: [{ id: "crew-1", name: "Luca", nationality: "CH", role: "Skipper", embarkationDateTime: "", embarkationPosition: "", disembarkationDateTime: "", disembarkationPosition: "", image }], watchPlan: [], technicalChecks: [], image, lines: [], share: { masterData: "public", picture: "public", logLines: "public", metrics: "public", technicalLog: "public", skipper: "public", crew: "public" } }],
+    };
+    mockedAuth.mockResolvedValueOnce(session);
+    mockedIsActiveDemoSandbox.mockResolvedValueOnce(true);
+    mockedWriteLogbook.mockImplementationOnce(async (value) => value);
+
+    const response = await PUT(new Request("https://ultilog.test/api/logbook", { method: "PUT", body: JSON.stringify(demoLogbook) }));
+    const saved = await response.json() as PersistedLogbook;
+
+    expect(saved.boats[0].image).toBeUndefined();
+    expect(saved.crewMembers[0].image).toBeUndefined();
+    expect(saved.sheets[0].image).toBeUndefined();
+    expect(saved.sheets[0].crew[0].image).toBeUndefined();
+    expect(Object.values(saved.sheets[0].share ?? {})).toEqual(Array(7).fill("private"));
   });
 });

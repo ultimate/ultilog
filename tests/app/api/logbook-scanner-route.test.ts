@@ -16,11 +16,13 @@ vi.mock("../../../app/lib/logbook-scanner/openai-provider", () => ({
 vi.mock("../../../app/lib/users", () => ({
   findUserById: vi.fn(),
 }));
+vi.mock("../../../app/lib/demo/demo-policy", () => ({ isActiveDemoSandbox: vi.fn() }));
 
 const { auth } = await import("../../../auth");
 const store = await import("../../../app/lib/logbook-store");
 const { openAiScannerProvider } = await import("../../../app/lib/logbook-scanner/openai-provider");
 const { findUserById } = await import("../../../app/lib/users");
+const { isActiveDemoSandbox } = await import("../../../app/lib/demo/demo-policy");
 const { POST } = await import("../../../app/api/logbook/scanner/route");
 
 const mockedAuth = auth as unknown as Mock;
@@ -29,6 +31,7 @@ const mockedWriteLogbook = vi.mocked(store.writeLogbook);
 const mockedScanner = vi.mocked(openAiScannerProvider.extractLogbookDraft);
 const mockedScannerConfigured = vi.mocked(openAiScannerProvider.isConfigured);
 const mockedFindUserById = vi.mocked(findUserById);
+const mockedIsActiveDemoSandbox = vi.mocked(isActiveDemoSandbox);
 const session = { user: { id: "user-1", name: "User", email: "user@example.test", groups: [] }, expires: "2099-01-01T00:00:00.000Z" };
 const boat = { id: "boat-1", name: "Aurora", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [] };
 const logbook = { boats: [boat], crewMembers: [], sheets: [] };
@@ -54,6 +57,7 @@ describe("logbook scanner endpoint", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockedScannerConfigured.mockReturnValue(true);
+    mockedIsActiveDemoSandbox.mockResolvedValue(false);
     mockedFindUserById.mockResolvedValue({ ...session.user, countryCode: "", language: "en", windUnit: "bft", waterHeightUnit: "m", temperatureUnit: "°C", coordinateFormat: "decimal", distanceDisplayUnit: "off", defaultBoatId: "", defaultCrewMemberIds: [], theme: "light", isNavSlim: false, onboardingCompletedTasks: [], hasReadCompliance: false, showCourseConversionTable: true });
   });
 
@@ -66,6 +70,21 @@ describe("logbook scanner endpoint", () => {
     expect(response.status).toBe(401);
     await expect(response.json()).resolves.toEqual({ code: "unauthenticated", error: "Sign in to scan logbook pages." });
     expect(mockedReadLogbook).not.toHaveBeenCalled();
+  });
+
+  it("blocks demo sessions before reading or uploading image data", async () => {
+    mockedAuth.mockResolvedValueOnce(session);
+    mockedIsActiveDemoSandbox.mockResolvedValueOnce(true);
+    const formData = new FormData();
+    formData.append("boatId", "boat-1");
+    formData.append("files", imageFile());
+
+    const response = await POST(scannerRequest(formData));
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({ code: "demo_feature_unavailable", error: "Logbook scanning is available after registration and is disabled in demo sessions." });
+    expect(mockedReadLogbook).not.toHaveBeenCalled();
+    expect(mockedScanner).not.toHaveBeenCalled();
   });
 
   it.each([

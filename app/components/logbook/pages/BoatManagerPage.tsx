@@ -39,6 +39,8 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
   const setShowBoatManager = props.setShowBoatManager as Dispatch<
     SetStateAction<boolean>
   >;
+  const isDemo = Boolean(props.isDemo);
+  const onDemoFeatureBlocked = props.onDemoFeatureBlocked as (feature: "images") => void;
   const imageInputRef = useRef<HTMLInputElement>(null);
   const selectedBoatSheets = useMemo(
     () => logbook.sheets.filter((sheet) => sheet.boatId === (editingBoatId ?? selectedBoat.id)),
@@ -259,7 +261,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                 }}
               />
               <div className="image-actions">
-                <button type="button" className="ghost-button" onClick={() => imageInputRef.current?.click()}>
+                <button type="button" className="ghost-button" onClick={() => isDemo ? onDemoFeatureBlocked("images") : imageInputRef.current?.click()}>
                   {boatForm.image ? "Change image" : "Upload image"}
                 </button>
                 {boatForm.image ? (
