@@ -4,12 +4,14 @@ import { createScannedSheet } from "../../../lib/logbook-scanner/create-scanned-
 import { openAiScannerProvider } from "../../../lib/logbook-scanner/openai-provider";
 import { readLogbook, writeLogbook } from "../../../lib/logbook-store";
 import { findUserById } from "../../../lib/users";
+import { isActiveDemoSandbox } from "../../../lib/demo/demo-policy";
 
 const MAX_FILE_COUNT = 5;
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
 
 type ScannerErrorCode =
   | "unauthenticated"
+  | "demo_feature_unavailable"
   | "missing_boat"
   | "invalid_boat"
   | "unsupported_file_type"
@@ -32,6 +34,9 @@ type ScannerErrorResponse = {
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user?.id) return scannerError("unauthenticated", "Sign in to scan logbook pages.", 401);
+  if (await isActiveDemoSandbox(session.user.id)) {
+    return scannerError("demo_feature_unavailable", "Logbook scanning is available after registration and is disabled in demo sessions.", 403);
+  }
 
   if (!request.headers.get("content-type")?.toLowerCase().includes("multipart/form-data")) {
     return scannerError("unsupported_file_type", "Upload logbook images with multipart/form-data.", 415);

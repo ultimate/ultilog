@@ -102,6 +102,8 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const activeBoat = props.activeBoat as Boat;
   const printActiveSheet = onPrintSheet as () => void;
   const sharingOwnerId = props.userId as string | undefined;
+  const isDemo = Boolean(props.isDemo);
+  const onDemoFeatureBlocked = props.onDemoFeatureBlocked as (feature: "sharing" | "images") => void;
   const updateShare = updateActiveSheetShare as (share: LogSheetShareSettings) => Promise<void>;
   const activeSheet = props.activeSheet as LogSheet;
   const lineForm = props.lineForm as LineForm;
@@ -543,7 +545,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                     }}
                   />
                   <div className="image-actions">
-                    <button type="button" className="ghost-button" onClick={() => sheetImageInputRef.current?.click()}>
+                    <button type="button" className="ghost-button" onClick={() => isDemo ? onDemoFeatureBlocked("images") : sheetImageInputRef.current?.click()}>
                       {sheetForm.image ? "Change image" : "Upload image"}
                     </button>
                     {sheetForm.image ? (
@@ -615,7 +617,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                     className="edit-chip compact-chip"
                     aria-label="Share logsheet"
                     title="Share"
-                    onClick={() => setIsShareDialogOpen(true)}
+                    onClick={() => isDemo ? onDemoFeatureBlocked("sharing") : setIsShareDialogOpen(true)}
                   >
                     <span aria-hidden="true">↗</span> Share
                   </button>

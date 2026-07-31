@@ -78,6 +78,7 @@ const adminUserColumns = [
 ];
 type SocialUser = { id: string; username: string; sailMiles: number; motorMiles: number; logbookSheets: number; boats: number };
 type PrintTarget = { mode: "filled"; sheetId: string; showCourseColumns: boolean } | { mode: "empty"; showCourseColumns: boolean } | null;
+type DemoRestrictedFeature = "sharing" | "scanner" | "images";
 
 type SheetInlineField =
   | "title"
@@ -182,6 +183,7 @@ export function LogbookApp({
   } | null>(null);
   const [showNewSheet, setShowNewSheet] = useState(false);
   const [printTarget, setPrintTarget] = useState<PrintTarget>(null);
+  const [demoRestrictedFeature, setDemoRestrictedFeature] = useState<DemoRestrictedFeature | null>(null);
   const [showBoatManager, setShowBoatManager] = useState(false);
   const [showAddLine, setShowAddLine] = useState(false);
   const [sheetForm, setSheetForm] = useState<SheetForm>(
@@ -604,6 +606,10 @@ export function LogbookApp({
   }
 
   function selectScannerFiles(files: FileList | File[] | null, boatId: string) {
+    if (userGroups.includes("demo")) {
+      setDemoRestrictedFeature("scanner");
+      return;
+    }
     if (!files?.length) return;
     if (!boatId) {
       const message = t("logbooks.createBoatBeforeScan");
@@ -1787,6 +1793,8 @@ export function LogbookApp({
         <section className="workspace module-workspace">
           {activeModule === "logbooks" && (
             <LogbookListPage
+              isDemo={userGroups.includes("demo")}
+              onDemoFeatureBlocked={setDemoRestrictedFeature}
               activeBoat={activeBoat}
               scannerBoatId={effectiveScannerBoatId}
               selectedScannerFiles={selectedScannerFiles}
@@ -1819,6 +1827,8 @@ export function LogbookApp({
 
           {activeModule === "details" && (
             <LogbookDetailsPage
+              isDemo={userGroups.includes("demo")}
+              onDemoFeatureBlocked={setDemoRestrictedFeature}
               isBackendReady={isBackendReady}
               showNewSheet={showNewSheet}
               editingSheetId={editingSheetId}
@@ -1873,6 +1883,8 @@ export function LogbookApp({
 
           {activeModule === "boats" && (
             <BoatManagerPage
+              isDemo={userGroups.includes("demo")}
+              onDemoFeatureBlocked={setDemoRestrictedFeature}
               logbook={logbook}
               selectedBoat={selectedBoat}
               setEditingBoatId={setEditingBoatId}
@@ -1892,6 +1904,8 @@ export function LogbookApp({
 
           {activeModule === "crew" && (
             <CrewManagerPage
+              isDemo={userGroups.includes("demo")}
+              onDemoFeatureBlocked={setDemoRestrictedFeature}
               selectedCrewIndex={selectedCrewIndex}
               lastCrewIndex={lastCrewIndex}
               setLastCrewIndex={setLastCrewIndex}
@@ -2117,6 +2131,21 @@ export function LogbookApp({
         </section>
       </section>
       </main>
+      {demoRestrictedFeature && (
+        <div className="share-logsheet-modal" role="dialog" aria-modal="true" aria-labelledby="demo-feature-title">
+          <div className="share-logsheet-panel">
+            <div className="share-logsheet-heading">
+              <h2 id="demo-feature-title">{t("demoLimits.title")}</h2>
+              <button className="edit-chip" type="button" onClick={() => setDemoRestrictedFeature(null)}>{t("demoLimits.close")}</button>
+            </div>
+            <p>{t(`demoLimits.${demoRestrictedFeature}` as TranslationKey)}</p>
+            <p>{t("demoLimits.register")}</p>
+            <div className="inline-edit-actions">
+              <button type="button" className="primary-action" onClick={() => window.location.assign("/register")}>{t("demoLimits.createAccount")}</button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="print-only print-root" aria-hidden={!printTarget}>
         {printTarget?.mode === "empty" ? (
           <LogSheetPrintView mode="empty" boat={printBoat} showCourseColumns={printTarget?.showCourseColumns ?? preferences.showCourseConversionTable} />

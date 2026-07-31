@@ -35,6 +35,8 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
   const crewAssignments = props.crewAssignments as CrewAssignment[];
   const logbook = props.logbook as PersistedLogbook;
   const setCrewForm = props.setCrewForm as Dispatch<SetStateAction<CrewForm>>;
+  const isDemo = Boolean(props.isDemo);
+  const onDemoFeatureBlocked = props.onDemoFeatureBlocked as (feature: "images") => void;
   const imageInputRef = useRef<HTMLInputElement>(null);
   const columns = useMemo(() => [
     { key: "name", value: (person: PersistedLogbook["crewMembers"][number]) => person.name },
@@ -189,7 +191,7 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
                 }}
               />
               <div className="image-actions">
-                <button type="button" className="ghost-button" onClick={() => imageInputRef.current?.click()}>
+                <button type="button" className="ghost-button" onClick={() => isDemo ? onDemoFeatureBlocked("images") : imageInputRef.current?.click()}>
                   {crewForm.image ? "Change image" : "Upload image"}
                 </button>
                 {crewForm.image ? (

@@ -41,6 +41,8 @@ export function LogbookListPage({
   defaultPageSize,
   onPrintSheet,
   onPrintEmptySheet,
+  isDemo,
+  onDemoFeatureBlocked,
 }: {
   activeBoat?: Boat;
   scannerBoatId: string;
@@ -64,6 +66,8 @@ export function LogbookListPage({
   defaultPageSize: number;
   onPrintSheet: (sheetId: string) => void;
   onPrintEmptySheet: () => void;
+  isDemo: boolean;
+  onDemoFeatureBlocked: (feature: "scanner") => void;
 }) {
   const { t } = useI18n();
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -171,7 +175,7 @@ export function LogbookListPage({
             type="button"
             className="secondary-action"
             disabled={isScanning}
-            onClick={() => cameraInputRef.current?.click()}
+            onClick={() => isDemo ? onDemoFeatureBlocked("scanner") : cameraInputRef.current?.click()}
           >
             {t("logbooks.scanWithCamera")}
           </button>
@@ -190,7 +194,7 @@ export function LogbookListPage({
             type="button"
             className="secondary-action"
             disabled={isScanning}
-            onClick={() => importInputRef.current?.click()}
+            onClick={() => isDemo ? onDemoFeatureBlocked("scanner") : importInputRef.current?.click()}
           >
             {isScanning
               ? t("logbooks.uploadingScan")
