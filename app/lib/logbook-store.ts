@@ -14,13 +14,13 @@ export function getDatabase() {
   return database;
 }
 
-export async function readLogbook(userId = "legacy-user"): Promise<PersistedLogbook> {
+export async function readLogbook(userId: string): Promise<PersistedLogbook> {
   const operation = writeQueue.then(() => getDatabase().forUser(userId).readLogbook());
   writeQueue = operation.then(() => undefined, () => undefined);
   return operation;
 }
 
-export async function writeLogbook(logbook: PersistedLogbook, userId = "legacy-user") {
+export async function writeLogbook(logbook: PersistedLogbook, userId: string) {
   const operation = writeQueue.then(() => getDatabase().forUser(userId).writeLogbook(logbook));
   writeQueue = operation.then(() => undefined, () => undefined);
   return operation;

@@ -39,7 +39,7 @@ export class SqliteLogbookDatabase extends LogbookDatabase {
       db.run("begin");
       await this.deleteTables();
       await this.insertSqliteLogbook(logbook);
-      await this.crew.ensurePrimaryProfile(this.ownerId);
+      await this.crew.ensurePrimaryProfile(this.requireOwnerId());
       db.run("commit");
       await this.persist();
       return logbook;
@@ -72,7 +72,7 @@ export class SqliteLogbookDatabase extends LogbookDatabase {
   }
 
   private async insertSqliteLogbook(logbook: PersistedLogbook) {
-    const ownerId = this.ownerId;
+    const ownerId = this.requireOwnerId();
     const motionStationaryThresholdNm = await this.motionStationaryThresholdNm();
     for (const boat of logbook.boats) await this.boats.insert(boat, ownerId);
     for (const crew of logbook.crewMembers ?? []) await this.crew.insertProfile(crew, ownerId);

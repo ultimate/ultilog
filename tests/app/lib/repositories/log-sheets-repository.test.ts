@@ -32,25 +32,25 @@ describe("LogSheetsRepository", () => {
     const row: LogSheetRow = logSheetRow();
     const db = new MockDatabase({ log_sheets: [row] });
 
-    await expect(new LogSheetsRepository(db).findAll()).resolves.toEqual([row]);
+    await expect(new LogSheetsRepository(db).findAll("repository-user")).resolves.toEqual([row]);
     expect(db.calls[0].sql).toBe("select * from log_sheets where owner_id = $1 order by date_range desc, title");
-    expect(db.calls[0].values).toEqual(["legacy-user"]);
+    expect(db.calls[0].values).toEqual(["repository-user"]);
   });
 
   it("deletes all log sheet rows", async () => {
     const db = new MockDatabase();
 
-    await new LogSheetsRepository(db).deleteAll();
-    expect(db.calls).toEqual([{ sql: "delete from log_sheets where owner_id = $1", values: ["legacy-user"] }]);
+    await new LogSheetsRepository(db).deleteAll("repository-user");
+    expect(db.calls).toEqual([{ sql: "delete from log_sheets where owner_id = $1", values: ["repository-user"] }]);
   });
 
   it("inserts a log sheet with nested values serialized", async () => {
     const db = new MockDatabase();
 
-    await new LogSheetsRepository(db).insert(sheet);
+    await new LogSheetsRepository(db).insert(sheet, "repository-user");
 
     expect(db.calls[0].sql).toContain("insert into log_sheets");
-    expect(db.calls[0].values).toEqual([`legacy-user:${sheet.id}`, sheet.title, sheet.dateRange, sheet.status, null, null, null, `legacy-user:${sheet.boatId}`, JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), null, null, null, null, "legacy-user", 9, 54, 63, 635, 1, 635, 635, "private", 0, 0, 0, 0, 0, 0, 0]);
+    expect(db.calls[0].values).toEqual([`repository-user:${sheet.id}`, sheet.title, sheet.dateRange, sheet.status, null, null, null, `repository-user:${sheet.boatId}`, JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), null, null, null, null, "repository-user", 9, 54, 63, 635, 1, 635, 635, "private", 0, 0, 0, 0, 0, 0, 0]);
   });
 
   it("maps relational rows back to a persisted logbook", () => {
@@ -70,7 +70,7 @@ describe("LogSheetsRepository", () => {
     const scannerSheet = { ...sheet, source: "scanner" as const, verificationNote: "Reviewed OCR fields", scannerWarnings: ["Missing signature"] };
     const db = new MockDatabase();
 
-    await new LogSheetsRepository(db).insert(scannerSheet);
+    await new LogSheetsRepository(db).insert(scannerSheet, "repository-user");
 
     expect(db.calls[0].values).toContain(scannerSheet.source);
     expect(db.calls[0].values).toContain(scannerSheet.verificationNote);
@@ -88,7 +88,7 @@ describe("LogSheetsRepository", () => {
     const image = { data: "base64-sheet", mimeType: "image/webp", width: 1024, height: 768 };
     const db = new MockDatabase();
 
-    await new LogSheetsRepository(db).insert({ ...sheet, image });
+    await new LogSheetsRepository(db).insert({ ...sheet, image }, "repository-user");
 
     expect(db.calls[0].values?.slice(15, 19)).toEqual([image.data, image.mimeType, image.width, image.height]);
 

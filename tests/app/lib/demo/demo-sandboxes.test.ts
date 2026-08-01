@@ -85,7 +85,7 @@ describe("demo sandboxes", () => {
 
     expect(reset).toMatchObject({ boats: { length: 2 }, crewMembers: { length: 5 }, sheets: { length: 8 } });
     await expect(readLogbook(user!.id)).resolves.toEqual(reset);
-    await expect(resetDemoSandbox("legacy-user")).resolves.toBeNull();
+    await expect(resetDemoSandbox("not-a-demo-sandbox")).resolves.toBeNull();
   });
 
   it("refuses to reset an expired sandbox", async () => {

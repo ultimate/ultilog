@@ -6,7 +6,7 @@ import { imageFromRow, imageValues, scopedId, unscopedId } from "./boats-reposit
 export class LogSheetsRepository {
   constructor(private db: QueryableDatabase) {}
 
-  async findAll(ownerId = "legacy-user") {
+  async findAll(ownerId: string) {
     return (await this.db.query<LogSheetRow>(`select * from log_sheets where owner_id = ${this.db.placeholder(1)} order by date_range desc, title`, [ownerId])).rows;
   }
 
@@ -18,11 +18,11 @@ export class LogSheetsRepository {
     return (await this.db.query<LogSheetRow>(`select * from log_sheets where (id = ${this.db.placeholder(1)} or id like ${this.db.placeholder(2)}) and share_privacy <> 'private' limit 1`, [sheetId, `%:${sheetId}`])).rows[0];
   }
 
-  async deleteAll(ownerId = "legacy-user") {
+  async deleteAll(ownerId: string) {
     await this.db.query(`delete from log_sheets where owner_id = ${this.db.placeholder(1)}`, [ownerId]);
   }
 
-  async insert(sheet: LogSheet, ownerId = "legacy-user", motionStationaryThresholdNm = 0.1) {
+  async insert(sheet: LogSheet, ownerId: string, motionStationaryThresholdNm = 0.1) {
     const metrics = calculateLogSheetMetrics(sheet.lines, sheet.route, { stationaryDistanceThresholdNm: motionStationaryThresholdNm });
     await this.db.query(
       `insert into log_sheets (id, title, date_range, status, source, verification_note, scanner_warnings, boat_id, skipper, route, weather_briefing, day_summary, remarks, watch_plan, technical_checks, image_data, image_mime_type, image_width, image_height, owner_id, motor_miles, sail_miles, total_miles, duration_minutes, motor_hours, overall_duration_minutes, motion_duration_minutes, share_privacy, share_master_data, share_picture, share_loglines, share_metrics, share_technical_log, share_skipper, share_crew) values (${this.values(35)})`,
@@ -31,7 +31,7 @@ export class LogSheetsRepository {
   }
 
 
-  async updateMetrics(sheet: Pick<LogSheet, "id" | "route">, lines: LogLine[], ownerId = "legacy-user", motionStationaryThresholdNm = 0.1) {
+  async updateMetrics(sheet: Pick<LogSheet, "id" | "route">, lines: LogLine[], ownerId: string, motionStationaryThresholdNm = 0.1) {
     const metrics = calculateLogSheetMetrics(lines, sheet.route, { stationaryDistanceThresholdNm: motionStationaryThresholdNm });
     await this.db.query(
       `update log_sheets set motor_miles = ${this.db.placeholder(1)}, sail_miles = ${this.db.placeholder(2)}, total_miles = ${this.db.placeholder(3)}, duration_minutes = ${this.db.placeholder(4)}, motor_hours = ${this.db.placeholder(5)}, overall_duration_minutes = ${this.db.placeholder(6)}, motion_duration_minutes = ${this.db.placeholder(7)} where id = ${this.db.placeholder(8)}`,

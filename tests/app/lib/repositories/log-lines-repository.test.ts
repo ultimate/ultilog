@@ -30,26 +30,26 @@ describe("LogLinesRepository", () => {
     const row: LogLineRow = logLineRow();
     const db = new MockDatabase({ log_lines: [row] });
 
-    await expect(new LogLinesRepository(db).findAll()).resolves.toEqual([row]);
+    await expect(new LogLinesRepository(db).findAll("repository-user")).resolves.toEqual([row]);
     expect(db.calls[0].sql).toContain("from log_lines join log_sheets");
     expect(db.calls[0].sql).toContain("where log_sheets.owner_id = $1");
-    expect(db.calls[0].values).toEqual(["legacy-user"]);
+    expect(db.calls[0].values).toEqual(["repository-user"]);
   });
 
   it("deletes all log line rows", async () => {
     const db = new MockDatabase();
 
-    await new LogLinesRepository(db).deleteAll();
-    expect(db.calls).toEqual([{ sql: "delete from log_lines where sheet_id in (select id from log_sheets where owner_id = $1)", values: ["legacy-user"] }]);
+    await new LogLinesRepository(db).deleteAll("repository-user");
+    expect(db.calls).toEqual([{ sql: "delete from log_lines where sheet_id in (select id from log_sheets where owner_id = $1)", values: ["repository-user"] }]);
   });
 
   it("inserts a log line", async () => {
     const db = new MockDatabase();
 
-    await new LogLinesRepository(db).insert(sheet.id, 0, line);
+    await new LogLinesRepository(db).insert(sheet.id, 0, line, "repository-user");
 
     expect(db.calls[0].sql).toContain("insert into log_lines");
-    expect(db.calls[0].values).toEqual([`legacy-user:${sheet.id}`, 0, line.time, line.position, line.latitude, line.longitude, line.logNm, line.compassCourse, line.waves, line.barometer, line.weather, line.weatherRemark, line.temperature, line.temperatureUnit, line.sailNote, line.motorNote, line.windDirection, line.windStrength, line.windUnit, line.seaUnit, line.tide, line.tideUnit, line.moon, line.deviation, line.magneticCourse, line.variation, line.trueCourse, line.windDrift, line.courseThroughWater, line.currentDrift, line.courseOverGround, line.speedKn, line.sailMiles, line.sailNote, line.motorMiles, line.motorHours, line.motorNote, line.remarks]);
+    expect(db.calls[0].values).toEqual([`repository-user:${sheet.id}`, 0, line.time, line.position, line.latitude, line.longitude, line.logNm, line.compassCourse, line.waves, line.barometer, line.weather, line.weatherRemark, line.temperature, line.temperatureUnit, line.sailNote, line.motorNote, line.windDirection, line.windStrength, line.windUnit, line.seaUnit, line.tide, line.tideUnit, line.moon, line.deviation, line.magneticCourse, line.variation, line.trueCourse, line.windDrift, line.courseThroughWater, line.currentDrift, line.courseOverGround, line.speedKn, line.sailMiles, line.sailNote, line.motorMiles, line.motorHours, line.motorNote, line.remarks]);
   });
 });
 

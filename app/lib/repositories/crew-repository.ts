@@ -6,7 +6,7 @@ import { imageValues, scopedId } from "./boats-repository";
 export class CrewRepository {
   constructor(private db: QueryableDatabase) {}
 
-  async findProfiles(ownerId = "legacy-user") {
+  async findProfiles(ownerId: string) {
     return (await this.db.query<CrewMemberRow>(`
       select id as crew_member_id, name, nationality, role, address, certificate, is_primary, image_data, image_mime_type, image_width, image_height
       from crew_members
@@ -15,7 +15,7 @@ export class CrewRepository {
     `, [ownerId])).rows.map((row) => this.decryptCrewRow(row, ownerId)).sort((left, right) => Number(right.is_primary ?? 0) - Number(left.is_primary ?? 0) || left.name.localeCompare(right.name));
   }
 
-  async findAll(ownerId = "legacy-user") {
+  async findAll(ownerId: string) {
     return (await this.db.query<CrewMemberRow>(`
       select
         sheet_crew_members.sheet_id,
@@ -44,7 +44,7 @@ export class CrewRepository {
     `, [ownerId])).rows.map((row) => this.decryptCrewRow(row, ownerId));
   }
 
-  async findForSheet(sheetScopedId: string, ownerId = "legacy-user") {
+  async findForSheet(sheetScopedId: string, ownerId: string) {
     return (await this.db.query<CrewMemberRow>(`
       select
         sheet_crew_members.sheet_id,
@@ -72,12 +72,12 @@ export class CrewRepository {
     `, [sheetScopedId])).rows.map((row) => this.decryptCrewRow(row, ownerId));
   }
 
-  async deleteAll(ownerId = "legacy-user") {
+  async deleteAll(ownerId: string) {
     await this.db.query(`delete from sheet_crew_members where sheet_id in (select id from log_sheets where owner_id = ${this.db.placeholder(1)})`, [ownerId]);
     await this.db.query(`delete from crew_members where owner_id = ${this.db.placeholder(1)}`, [ownerId]);
   }
 
-  async insertProfile(crew: CrewMember, ownerId = "legacy-user") {
+  async insertProfile(crew: CrewMember, ownerId: string) {
     const crewMemberId = scopedId(ownerId, crew.id);
     await this.db.query(
       `insert into crew_members (id, name, nationality, role, address, certificate, is_primary, image_data, image_mime_type, image_width, image_height, owner_id) values (${this.values(12)}) on conflict(id) do update set name = excluded.name, nationality = excluded.nationality, role = excluded.role, address = excluded.address, certificate = excluded.certificate, is_primary = excluded.is_primary, image_data = excluded.image_data, image_mime_type = excluded.image_mime_type, image_width = excluded.image_width, image_height = excluded.image_height`,
@@ -96,7 +96,7 @@ export class CrewRepository {
   }
 
 
-  async ensurePrimaryProfile(ownerId = "legacy-user") {
+  async ensurePrimaryProfile(ownerId: string) {
     const existingPrimary = await this.db.query<{ id: string }>(
       `select id from crew_members where owner_id = ${this.db.placeholder(1)} and is_primary = 1 limit 1`,
       [ownerId],
@@ -125,7 +125,7 @@ export class CrewRepository {
     }, ownerId);
   }
 
-  async insert(sheetId: string, sortOrder: number, crew: SheetCrewMember, ownerId = "legacy-user") {
+  async insert(sheetId: string, sortOrder: number, crew: SheetCrewMember, ownerId: string) {
     const crewMemberId = scopedId(ownerId, crew.id);
     await this.insertProfile(crew, ownerId);
     await this.db.query(

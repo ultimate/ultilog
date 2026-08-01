@@ -4,7 +4,7 @@ import type { QueryableDatabase } from "../db/logbook-database";
 export class BoatsRepository {
   constructor(private db: QueryableDatabase) {}
 
-  async findAll(ownerId = "legacy-user") {
+  async findAll(ownerId: string) {
     return (await this.db.query<BoatRow>(`select * from boats where owner_id = ${this.db.placeholder(1)} order by name`, [ownerId])).rows;
   }
 
@@ -12,11 +12,11 @@ export class BoatsRepository {
     return (await this.db.query<BoatRow>(`select * from boats where id = ${this.db.placeholder(1)} limit 1`, [id])).rows[0];
   }
 
-  async deleteAll(ownerId = "legacy-user") {
+  async deleteAll(ownerId: string) {
     await this.db.query(`delete from boats where owner_id = ${this.db.placeholder(1)}`, [ownerId]);
   }
 
-  async insert(boat: Boat, ownerId = "legacy-user") {
+  async insert(boat: Boat, ownerId: string) {
     await this.db.query(
       `insert into boats (id, name, type, registration, flag_state, home_port, owner, dimensions, logfactor, yacht_data, deviation_table, wind_drift_table, image_data, image_mime_type, image_width, image_height, owner_id) values (${this.values(17)})`,
       [scopedId(ownerId, boat.id), boat.name, boat.type, boat.registration, boat.flagState, boat.homePort, boat.owner, boat.dimensions, boat.logfactor, JSON.stringify(boat.yachtData), JSON.stringify(boat.deviationTable), JSON.stringify(boat.windDriftTable ?? []), ...imageValues(boat.image), ownerId],

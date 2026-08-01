@@ -17,7 +17,7 @@ const emptyLogbook: PersistedLogbook = { boats: [], crewMembers: [], sheets: [] 
 
 export abstract class LogbookDatabase implements QueryableDatabase {
   protected readonly boats = new BoatsRepository(this);
-  protected ownerId = "legacy-user";
+  protected ownerId: string | undefined;
   protected readonly sheets = new LogSheetsRepository(this);
   protected readonly crew = new CrewRepository(this);
   protected readonly lines = new LogLinesRepository(this);
@@ -33,8 +33,14 @@ export abstract class LogbookDatabase implements QueryableDatabase {
   }
 
   forUser(userId: string) {
+    if (!userId.trim()) throw new Error("A user id is required to access a logbook.");
     this.ownerId = userId;
     return this;
+  }
+
+  protected requireOwnerId() {
+    if (!this.ownerId) throw new Error("Logbook database access must be scoped with forUser(userId).");
+    return this.ownerId;
   }
   protected async ensureSchemaAndBackfill() {
     await this.ensureSchema();
@@ -44,14 +50,14 @@ export abstract class LogbookDatabase implements QueryableDatabase {
   protected abstract insertLogbook(logbook: PersistedLogbook): Promise<void>;
 
   protected async motionStationaryThresholdNm() {
-    const row = (await this.query<{ motion_stationary_threshold_nm?: number | string | null }>(`select motion_stationary_threshold_nm from users where id = ${this.placeholder(1)}`, [this.ownerId])).rows[0];
+    const row = (await this.query<{ motion_stationary_threshold_nm?: number | string | null }>(`select motion_stationary_threshold_nm from users where id = ${this.placeholder(1)}`, [this.requireOwnerId()])).rows[0];
     const threshold = Number(row?.motion_stationary_threshold_nm);
     return Number.isFinite(threshold) && threshold >= 0 ? threshold : 0.1;
   }
 
   async readLogbook(): Promise<PersistedLogbook> {
     await this.ensureSchemaAndBackfill();
-    await this.crew.ensurePrimaryProfile(this.ownerId);
+    await this.crew.ensurePrimaryProfile(this.requireOwnerId());
     const logbook = await this.readTables();
     return logbook.boats.length || logbook.sheets.length || logbook.crewMembers.length ? logbook : emptyLogbook;
   }
@@ -86,27 +92,29 @@ export abstract class LogbookDatabase implements QueryableDatabase {
   }
 
   protected async readTables(): Promise<PersistedLogbook> {
+    const ownerId = this.requireOwnerId();
     const [boats, sheets, crewProfiles, crew, lines] = await Promise.all([
-      this.boats.findAll(this.ownerId),
-      this.sheets.findAll(this.ownerId),
-      this.crew.findProfiles(this.ownerId),
-      this.crew.findAll(this.ownerId),
-      this.lines.findAll(this.ownerId),
+      this.boats.findAll(ownerId),
+      this.sheets.findAll(ownerId),
+      this.crew.findProfiles(ownerId),
+      this.crew.findAll(ownerId),
+      this.lines.findAll(ownerId),
     ]);
     return LogSheetsRepository.toLogbook(boats, sheets, crew, lines, crewProfiles);
   }
 
   protected async deleteTables() {
-    await this.lines.deleteAll(this.ownerId);
-    await this.crew.deleteAll(this.ownerId);
-    await this.sheets.deleteAll(this.ownerId);
-    await this.boats.deleteAll(this.ownerId);
+    const ownerId = this.requireOwnerId();
+    await this.lines.deleteAll(ownerId);
+    await this.crew.deleteAll(ownerId);
+    await this.sheets.deleteAll(ownerId);
+    await this.boats.deleteAll(ownerId);
   }
 
   private async replaceTables(logbook: PersistedLogbook) {
     await this.deleteTables();
     await this.insertLogbook(logbook);
-    await this.crew.ensurePrimaryProfile(this.ownerId);
+    await this.crew.ensurePrimaryProfile(this.requireOwnerId());
   }
 }
 
