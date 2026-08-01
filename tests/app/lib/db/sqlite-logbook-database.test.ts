@@ -12,10 +12,18 @@ afterEach(async () => {
 });
 
 describe("SqliteLogbookDatabase", () => {
-  it("creates an empty local database without sample data", async () => {
+  it("requires every logbook access to be scoped to an explicit user", async () => {
     const db = new SqliteLogbookDatabase(await tempDatabasePath());
 
-    await expect(db.readLogbook()).resolves.toEqual({ boats: [], crewMembers: [{ id: "me", name: "Local demo user", nationality: "", role: "Owner", address: "", certificate: "", isPrimary: true }], sheets: [] });
+    await expect(db.readLogbook()).rejects.toThrow("must be scoped with forUser(userId)");
+  });
+
+  it("removes the retired shared demo identity during migration", async () => {
+    const db = new SqliteLogbookDatabase(await tempDatabasePath());
+
+    await db.migrate();
+
+    await expect(db.query<{ id: string }>("select id from users where id = ?", ["legacy-user"])).resolves.toEqual({ rows: [] });
   });
 
   it("restores a missing primary crew profile when replacing a user logbook", async () => {
@@ -51,7 +59,9 @@ describe("SqliteLogbookDatabase", () => {
 
   it("persists replaced logbook data and can read it from a new database wrapper", async () => {
     const databasePath = await tempDatabasePath();
-    const firstWrapper = new SqliteLogbookDatabase(databasePath);
+    const firstWrapper = new SqliteLogbookDatabase(databasePath).forUser("new-user");
+    await firstWrapper.migrate();
+    await firstWrapper.query("insert into users (id, name, email, password_hash) values (?, ?, ?, ?)", ["new-user", "New User", "new@example.test", ""]);
     const updatedLogbook = {
       crewMembers: [],
       boats: [{ id: "boat-1", name: "SY Repository Test", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: defaultDeviationTable() }],
@@ -60,7 +70,7 @@ describe("SqliteLogbookDatabase", () => {
 
     await firstWrapper.writeLogbook(updatedLogbook);
 
-    await expect(new SqliteLogbookDatabase(databasePath).readLogbook()).resolves.toMatchObject({ boats: updatedLogbook.boats, sheets: updatedLogbook.sheets });
+    await expect(new SqliteLogbookDatabase(databasePath).forUser("new-user").readLogbook()).resolves.toMatchObject({ boats: updatedLogbook.boats, sheets: updatedLogbook.sheets });
   });
 });
 

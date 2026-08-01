@@ -29,7 +29,7 @@ export class PostgresLogbookDatabase extends LogbookDatabase {
     const client = await this.pool.connect();
     try {
       await client.query("begin");
-      await new PostgresTransactionLogbookDatabase(client, this.ownerId).writeLogbook(logbook);
+      await new PostgresTransactionLogbookDatabase(client, this.requireOwnerId()).writeLogbook(logbook);
       await client.query("commit");
       return logbook;
     } catch (error) {
@@ -45,7 +45,7 @@ export class PostgresLogbookDatabase extends LogbookDatabase {
   }
 
   private async insertPostgresLogbook(logbook: PersistedLogbook) {
-    const ownerId = this.ownerId;
+    const ownerId = this.requireOwnerId();
     const motionStationaryThresholdNm = await this.motionStationaryThresholdNm();
     for (const boat of logbook.boats) await this.boats.insert(boat, ownerId);
     for (const crew of logbook.crewMembers ?? []) await this.crew.insertProfile(crew, ownerId);
@@ -78,7 +78,7 @@ class PostgresTransactionLogbookDatabase extends LogbookDatabase {
   }
 
   protected async insertLogbook(logbook: PersistedLogbook) {
-    const ownerId = this.ownerId;
+    const ownerId = this.requireOwnerId();
     const motionStationaryThresholdNm = await this.motionStationaryThresholdNm();
     for (const boat of logbook.boats) await this.boats.insert(boat, ownerId);
     for (const crew of logbook.crewMembers ?? []) await this.crew.insertProfile(crew, ownerId);

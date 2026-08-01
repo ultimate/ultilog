@@ -29,33 +29,33 @@ describe("BoatsRepository", () => {
     const row: BoatRow = { ...boat, flag_state: boat.flagState, home_port: boat.homePort, yacht_data: boat.yachtData, deviation_table: boat.deviationTable };
     const db = new MockDatabase({ boats: [row] });
 
-    await expect(new BoatsRepository(db).findAll()).resolves.toEqual([row]);
+    await expect(new BoatsRepository(db).findAll("repository-user")).resolves.toEqual([row]);
     expect(db.calls[0].sql).toContain("from boats where owner_id = $1 order by name");
-    expect(db.calls[0].values).toEqual(["legacy-user"]);
+    expect(db.calls[0].values).toEqual(["repository-user"]);
   });
 
   it("deletes all boat rows", async () => {
     const db = new MockDatabase();
 
-    await new BoatsRepository(db).deleteAll();
-    expect(db.calls).toEqual([{ sql: "delete from boats where owner_id = $1", values: ["legacy-user"] }]);
+    await new BoatsRepository(db).deleteAll("repository-user");
+    expect(db.calls).toEqual([{ sql: "delete from boats where owner_id = $1", values: ["repository-user"] }]);
   });
 
   it("inserts a boat with serialized yacht data", async () => {
     const db = new MockDatabase();
 
-    await new BoatsRepository(db).insert(boat);
+    await new BoatsRepository(db).insert(boat, "repository-user");
 
     expect(db.calls[0].sql).toContain("insert into boats");
     expect(db.calls[0].sql).toContain("$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17");
-    expect(db.calls[0].values).toEqual([`legacy-user:${boat.id}`, boat.name, boat.type, boat.registration, boat.flagState, boat.homePort, boat.owner, boat.dimensions, boat.logfactor, JSON.stringify(boat.yachtData), JSON.stringify(boat.deviationTable), JSON.stringify(boat.windDriftTable ?? []), null, null, null, null, "legacy-user"]);
+    expect(db.calls[0].values).toEqual([`repository-user:${boat.id}`, boat.name, boat.type, boat.registration, boat.flagState, boat.homePort, boat.owner, boat.dimensions, boat.logfactor, JSON.stringify(boat.yachtData), JSON.stringify(boat.deviationTable), JSON.stringify(boat.windDriftTable ?? []), null, null, null, null, "repository-user"]);
   });
 
   it("inserts boat image metadata when present", async () => {
     const db = new MockDatabase();
     const image = { data: "base64-boat", mimeType: "image/png", width: 640, height: 480 };
 
-    await new BoatsRepository(db).insert({ ...boat, image });
+    await new BoatsRepository(db).insert({ ...boat, image }, "repository-user");
 
     expect(db.calls[0].values?.slice(12, 16)).toEqual([image.data, image.mimeType, image.width, image.height]);
   });
