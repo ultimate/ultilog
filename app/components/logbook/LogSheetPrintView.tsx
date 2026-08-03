@@ -54,26 +54,26 @@ export function LogSheetPrintView(props: LogSheetPrintViewProps) {
               <p className="print-kicker">{props.mode === "filled" ? t("print.filledSheet") : t("print.emptySheet")}</p>
               <h1>{valueOrBlank(sheet?.title, t("print.emptySheet"))}</h1>
               <div className="print-master-grid">
-                <PrintField label="Date" value={sheet?.dateRange} />
-                <PrintField label="From dt" value={sheet?.route.departed} />
-                <PrintField label="From" value={sheet?.route.from} />
-                <PrintField label="To dt" value={sheet?.route.arrived} />
-                <PrintField label="To" value={sheet?.route.to} />
-                <PrintField label="Skipper" value={formatSkipper(sheet)} />
+                <PrintField label={t("print.field.date")} value={sheet?.dateRange} />
+                <PrintField label={t("print.field.departed")} value={sheet?.route.departed} />
+                <PrintField label={t("print.field.from")} value={sheet?.route.from} />
+                <PrintField label={t("print.field.arrived")} value={sheet?.route.arrived} />
+                <PrintField label={t("print.field.to")} value={sheet?.route.to} />
+                <PrintField label={t("print.field.skipper")} value={formatSkipper(sheet)} />
               </div>
             </div>
             <aside className="print-boat" aria-label="Boat">
-              <PrintField label="Boat" value={props.boat?.name} />
-              <PrintField label="Type" value={props.boat?.type} />
-              <PrintField label="Reg" value={props.boat?.registration} />
-              <PrintField label="Flag" value={props.boat?.flagState} />
-              <PrintField label="Home" value={props.boat?.homePort} />
+              <PrintField label={t("print.field.boat")} value={props.boat?.name} />
+              <PrintField label={t("print.field.type")} value={props.boat?.type} />
+              <PrintField label={t("print.field.registration")} value={props.boat?.registration} />
+              <PrintField label={t("print.field.flag")} value={props.boat?.flagState} />
+              <PrintField label={t("print.field.homePort")} value={props.boat?.homePort} />
             </aside>
             <aside className="print-summary" aria-label="Summary">
-              <PrintField label="Total" value={formatNumber(summary.totalMiles, " nm")} />
-              <PrintField label="Sail" value={formatNumber(summary.sailMiles, " nm")} />
-              <PrintField label="Motor" value={formatNumber(summary.motorMiles, " nm")} />
-              <PrintField label="Dur" value={summary.duration} />
+              <PrintField label={t("print.field.total")} value={formatNumber(summary.totalMiles, " nm")} />
+              <PrintField label={t("print.field.sail")} value={formatNumber(summary.sailMiles, " nm")} />
+              <PrintField label={t("print.field.motor")} value={formatNumber(summary.motorMiles, " nm")} />
+              <PrintField label={t("print.field.duration")} value={summary.duration} />
             </aside>
           </header>
 
@@ -85,7 +85,7 @@ export function LogSheetPrintView(props: LogSheetPrintViewProps) {
             </colgroup>
             <thead>
               <tr>
-                {logColumns.map((column) => <th key={column.id}>{column.heading}</th>)}
+                {logColumns.map((column) => <th key={column.id}>{t(column.headingKey)}</th>)}
               </tr>
             </thead>
             <tbody>
@@ -95,9 +95,9 @@ export function LogSheetPrintView(props: LogSheetPrintViewProps) {
 
           <footer className="print-footer">
             <section className="print-crew-box"><h2>{t("crew.list")}</h2>{renderCrew(sheet)}</section>
-            <section className="print-tech-box"><h2>Tech log</h2>{renderList(sheet?.technicalChecks, t("print.truncated"))}</section>
-            <section className="print-route-box"><h2>Route / map</h2></section>
-            <section className="print-remarks-box"><h2>Remarks / signature</h2>{hasTruncatedRemark(page.lines) ? <small>{t("print.truncated")}</small> : null}</section>
+            <section className="print-tech-box"><h2>{t("print.footer.techLog")}</h2>{renderList(sheet?.technicalChecks, t("print.truncated"))}</section>
+            <section className="print-route-box"><h2>{t("print.footer.routeMap")}</h2></section>
+            <section className="print-remarks-box"><h2>{t("print.footer.remarksSignature")}</h2>{hasTruncatedRemark(page.lines) ? <small>{t("print.truncated")}</small> : null}</section>
             <span className="print-page-number">{formatPageOf(t("print.pageOf"), page.pageIndex + 1, page.pageCount)}</span>
           </footer>
         </section>
