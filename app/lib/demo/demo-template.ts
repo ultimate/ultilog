@@ -7,12 +7,18 @@ import {
   type SheetCrewMember,
 } from "../../models/logbook";
 
-export const DEMO_TEMPLATE_VERSION = 1;
+export const DEMO_TEMPLATE_VERSION = 2;
 
 export const DEMO_WEATHER_PROVENANCE = deepFreeze({
   source: "Open-Meteo Historical Weather API",
   url: "https://open-meteo.com/en/docs/historical-weather-api",
   note: "Weather values are representative historical-model demo data for the recorded positions and dates; they are not certified ship observations.",
+});
+
+export const DEMO_ROUTE_PROVENANCE = deepFreeze({
+  source: "Natural Earth 1:10m Land polygons",
+  url: "https://www.naturalearthdata.com/downloads/10m-physical-vectors/10m-land/",
+  note: "Every demo position and the straight connection to the following position was checked against the land polygons; harbor positions use navigable outer approaches where the coastline dataset does not resolve marina basins.",
 });
 
 type DeepReadonly<T> = T extends (...args: never[]) => unknown
@@ -40,11 +46,11 @@ type Day = {
   from: Waypoint;
   via: Waypoint;
   to: Waypoint;
+  track: Waypoint[];
   departure: string;
   midpoint: string;
   arrival: string;
   distance: number;
-  course: number;
   weather: [Weather, Weather, Weather];
   summary: string;
 };
@@ -143,22 +149,23 @@ const adriaticWeather: [Weather, Weather, Weather][] = [
 ];
 
 const ionianDays: Day[] = [
-  day("ionian-1", "2025-09-08", "Ionian Islands training cruise · Day 1", ["Preveza Marina", 38.956, 20.754], ["Lefkada Canal", 38.84, 20.72], ["Nidri", 38.708, 20.716], "07:40", "11:15", "15:50", 28, 176, ionianWeather[0], "Canal transit and close-quarters sail handling practice."),
-  day("ionian-2", "2025-09-09", "Ionian Islands training cruise · Day 2", ["Nidri", 38.708, 20.716], ["Meganisi east coast", 38.657, 20.794], ["Kioni, Ithaca", 38.448, 20.69], "08:10", "12:05", "16:35", 31, 190, ionianWeather[1], "Reefing drill followed by a passage south to Ithaca."),
-  day("ionian-3", "2025-09-10", "Ionian Islands training cruise · Day 3", ["Kioni, Ithaca", 38.448, 20.69], ["North Kefalonia", 38.505, 20.615], ["Fiskardo", 38.459, 20.577], "08:35", "11:20", "14:45", 19, 252, ionianWeather[2], "Pilotage exercise around the Ithaca Channel and harbor approach."),
-  day("ionian-4", "2025-09-11", "Ionian Islands training cruise · Day 4", ["Fiskardo", 38.459, 20.577], ["Lefkada west coast", 38.68, 20.56], ["Preveza Marina", 38.956, 20.754], "07:25", "12:30", "18:05", 48, 334, ionianWeather[3], "Return passage under sail with night-entry preparation review."),
+  day("ionian-1", "2025-09-08", "Ionian Islands training cruise · Day 1", [["Preveza Marina", 38.956, 20.754], ["Preveza roads", 38.873, 20.74], ["Lefkada Canal north approach", 38.8315, 20.733], ["Lefkada Canal", 38.79, 20.726], ["Lefkada Canal south exit", 38.782, 20.73], ["Lefkada east coast", 38.73, 20.73], ["Nidri", 38.708, 20.716]], "07:40", "11:15", "15:50", 15, ionianWeather[0], "Canal transit and close-quarters sail handling practice."),
+  day("ionian-2", "2025-09-09", "Ionian Islands training cruise · Day 2", [["Nidri", 38.708, 20.716], ["Nidri roads", 38.71, 20.72], ["Lefkada east coast", 38.706, 20.724], ["Meganisi west channel", 38.659, 20.724], ["Meganisi west channel", 38.612, 20.724], ["Ithaca north approach", 38.518, 20.724], ["Kioni approach, Ithaca", 38.456, 20.694]], "08:10", "12:05", "16:35", 16, ionianWeather[1], "Reefing drill followed by a passage south to Ithaca."),
+  day("ionian-3", "2025-09-10", "Ionian Islands training cruise · Day 3", [["Kioni approach, Ithaca", 38.456, 20.694], ["Ithaca northeast coast", 38.48, 20.71], ["Ithaca north cape", 38.505, 20.7], ["Ithaca Channel north", 38.52, 20.66], ["North Kefalonia", 38.51, 20.62], ["Fiskardo approach", 38.48, 20.59], ["Fiskardo", 38.459, 20.58]], "08:35", "11:20", "14:45", 11, ionianWeather[2], "Pilotage exercise around the Ithaca Channel and harbor approach."),
+  day("ionian-4", "2025-09-11", "Ionian Islands training cruise · Day 4", [["Fiskardo", 38.459, 20.58], ["North Kefalonia offing", 38.53, 20.62], ["Kefalonia northwest offing", 38.58, 20.48], ["Lefkada southwest offing", 38.7, 20.45], ["Lefkada west coast", 38.8, 20.5], ["Lefkada north approach", 38.88, 20.7], ["Preveza Marina", 38.956, 20.754]], "07:25", "12:30", "18:05", 41, ionianWeather[3], "Return passage under sail with night-entry preparation review."),
 ];
 
 const adriaticDays: Day[] = [
-  day("adriatic-1", "2025-09-15", "Central Dalmatia motor cruise · Day 1", ["Split ACI Marina", 43.501, 16.429], ["Maslinica, Šolta", 43.398, 16.208], ["Vis town quay", 43.061, 16.184], "08:20", "11:30", "15:40", 36, 207, adriaticWeather[0], "Engine familiarization and open-water navigation to Vis."),
-  day("adriatic-2", "2025-09-16", "Central Dalmatia motor cruise · Day 2", ["Vis town quay", 43.061, 16.184], ["Stiniva Bay", 43.022, 16.177], ["Komiža", 43.043, 16.09], "09:00", "12:10", "16:20", 21, 245, adriaticWeather[1], "Coastal pilotage and anchoring exercise on the south coast of Vis."),
-  day("adriatic-3", "2025-09-17", "Central Dalmatia motor cruise · Day 3", ["Komiža", 43.043, 16.09], ["Biševo", 42.98, 16.01], ["Stari Grad, Hvar", 43.184, 16.599], "07:50", "12:00", "16:55", 43, 72, adriaticWeather[2], "Offshore leg via Biševo with radar and collision-avoidance practice."),
-  day("adriatic-4", "2025-09-18", "Central Dalmatia motor cruise · Day 4", ["Stari Grad, Hvar", 43.184, 16.599], ["Milna, Brač", 43.327, 16.45], ["Split ACI Marina", 43.501, 16.429], "08:30", "12:15", "16:10", 32, 326, adriaticWeather[3], "Final return leg with MOB recovery and fuel-consumption check."),
+  day("adriatic-1", "2025-09-15", "Central Dalmatia motor cruise · Day 1", [["Split ACI Marina", 43.501, 16.429], ["Split roads", 43.46, 16.36], ["Šolta north coast", 43.44, 16.25], ["Šolta northwest offing", 43.42, 16.15], ["Šolta west offing", 43.32, 16.13], ["Vis north approach", 43.15, 16.17], ["Vis harbour approach", 43.08, 16.2]], "08:20", "11:30", "15:40", 34, adriaticWeather[0], "Engine familiarization and open-water navigation to Vis."),
+  day("adriatic-2", "2025-09-16", "Central Dalmatia motor cruise · Day 2", [["Vis harbour approach", 43.08, 16.2], ["Vis northeast offing", 43.1, 16.25], ["Vis east offing", 43.04, 16.28], ["Stiniva offing", 42.98, 16.25], ["Vis south coast", 42.96, 16.15], ["Komiža southwest offing", 43.02, 16.02], ["Komiža approach", 43.06, 16.04]], "09:00", "12:10", "16:20", 24, adriaticWeather[1], "Coastal pilotage and anchoring exercise on the south coast of Vis."),
+  day("adriatic-3", "2025-09-17", "Central Dalmatia motor cruise · Day 3", [["Komiža approach", 43.06, 16.04], ["Biševo south offing", 42.97, 15.98], ["Biševo northwest offing", 43.1, 15.94], ["Vis northwest offing", 43.24, 16.1], ["Pakleni channel west", 43.3, 16.3], ["Stari Grad Bay approach", 43.28, 16.45], ["Stari Grad outer approach", 43.23, 16.53]], "07:50", "12:00", "16:55", 46, adriaticWeather[2], "Offshore leg via Biševo with radar and collision-avoidance practice."),
+  day("adriatic-4", "2025-09-18", "Central Dalmatia motor cruise · Day 4", [["Stari Grad outer approach", 43.23, 16.53], ["Hvar northwest offing", 43.3, 16.3], ["Šolta southwest offing", 43.32, 16.15], ["Šolta west offing", 43.4, 16.1], ["Šolta northwest offing", 43.46, 16.115], ["Split Gate approach", 43.46, 16.36], ["Split ACI Marina", 43.501, 16.429]], "08:30", "12:15", "16:10", 41, adriaticWeather[3], "Final return leg with MOB recovery and fuel-consumption check."),
 ];
 
-function day(id: string, date: string, title: string, from: [string, number, number], via: [string, number, number], to: [string, number, number], departure: string, midpoint: string, arrival: string, distance: number, course: number, weather: [Weather, Weather, Weather], summary: string): Day {
+function day(id: string, date: string, title: string, route: [string, number, number][], departure: string, midpoint: string, arrival: string, distance: number, weather: [Weather, Weather, Weather], summary: string): Day {
   const waypoint = ([name, latitude, longitude]: [string, number, number]): Waypoint => ({ name, latitude, longitude });
-  return { id, date, title, from: waypoint(from), via: waypoint(via), to: waypoint(to), departure, midpoint, arrival, distance, course, weather, summary };
+  const track = route.map(waypoint);
+  return { id, date, title, from: track[0], via: track[Math.floor(track.length / 2)], to: track.at(-1)!, track, departure, midpoint, arrival, distance, weather, summary };
 }
 
 function sheetCrew(memberIds: string[], from: Waypoint, to: Waypoint, date: string): SheetCrewMember[] {
@@ -172,12 +179,12 @@ function sheetCrew(memberIds: string[], from: Waypoint, to: Waypoint, date: stri
 }
 
 function interpolateWaypoint(dayData: Day, fraction: number): Waypoint {
-  const start = fraction <= 0.5 ? dayData.from : dayData.via;
-  const end = fraction <= 0.5 ? dayData.via : dayData.to;
-  const legFraction = fraction <= 0.5 ? fraction * 2 : (fraction - 0.5) * 2;
-  if (fraction === 0) return dayData.from;
-  if (fraction === 0.5) return dayData.via;
-  if (fraction === 1) return dayData.to;
+  const scaled = fraction * (dayData.track.length - 1);
+  const startIndex = Math.min(Math.floor(scaled), dayData.track.length - 2);
+  const start = dayData.track[startIndex];
+  const end = dayData.track[startIndex + 1];
+  const legFraction = scaled - startIndex;
+  if (Number.isInteger(scaled)) return dayData.track[Math.round(scaled)];
   return {
     name: `Underway · position ${Math.round(fraction * 100)}%`,
     latitude: start.latitude + ((end.latitude - start.latitude) * legFraction),
@@ -203,13 +210,23 @@ function weatherAt(dayData: Day, fraction: number): Weather {
   return { ...closest, temperature: interpolate(lower.temperature, upper.temperature), pressure: interpolate(lower.pressure, upper.pressure), waves: interpolate(lower.waves, upper.waves) };
 }
 
-function logLine(dayData: Day, waypoint: Waypoint, time: string, index: number, count: number, boat: Boat): LogLine {
+function bearing(from: Waypoint, to: Waypoint) {
+  const fromLatitude = (from.latitude * Math.PI) / 180;
+  const toLatitude = (to.latitude * Math.PI) / 180;
+  const longitudeDelta = ((to.longitude - from.longitude) * Math.PI) / 180;
+  const y = Math.sin(longitudeDelta) * Math.cos(toLatitude);
+  const x = (Math.cos(fromLatitude) * Math.sin(toLatitude)) - (Math.sin(fromLatitude) * Math.cos(toLatitude) * Math.cos(longitudeDelta));
+  return Math.round((((Math.atan2(y, x) * 180) / Math.PI) + 360) % 360);
+}
+
+function logLine(dayData: Day, waypoint: Waypoint, nextWaypoint: Waypoint | undefined, time: string, index: number, count: number, boat: Boat): LogLine {
   const fraction = index / (count - 1);
   const weather = weatherAt(dayData, fraction);
   const underway = index < count - 1;
+  const trueCourse = nextWaypoint ? bearing(waypoint, nextWaypoint) : 0;
   const motorBoat = boat.type === "Motor";
   const distance = Math.round(dayData.distance * fraction * 10) / 10;
-  const magneticCourse = underway ? (dayData.course + 356) % 360 : 0;
+  const magneticCourse = underway ? (trueCourse + 356) % 360 : 0;
   const closestDeviation = underway ? boat.deviationTable.reduce((closest, row) => Math.abs(row.heading - magneticCourse) < Math.abs(closest.heading - magneticCourse) ? row : closest) : undefined;
   const deviation = Number(closestDeviation?.deviation ?? 0);
   const compassCourse = underway ? (magneticCourse - deviation + 360) % 360 : 0;
@@ -236,11 +253,11 @@ function logLine(dayData: Day, waypoint: Waypoint, time: string, index: number, 
     deviation,
     magneticCourse,
     variation: underway ? 4 : 0,
-    trueCourse: underway ? dayData.course : 0,
+    trueCourse,
     windDrift: underway && !motorBoat ? 2 : 0,
-    courseThroughWater: underway ? (dayData.course + (motorBoat ? 0 : 2)) % 360 : 0,
+    courseThroughWater: underway ? (trueCourse + (motorBoat ? 0 : 2)) % 360 : 0,
     currentDrift: underway ? 1 : 0,
-    courseOverGround: underway ? dayData.course : 0,
+    courseOverGround: trueCourse,
     speedKn: index === count - 1 ? 0 : motorBoat ? 9.2 : 6.1,
     logNm: distance,
     sailMiles: motorBoat || index === 0 ? 0 : index === count - 1 ? Math.min(2, legDistance) : legDistance,
@@ -255,9 +272,10 @@ function logLine(dayData: Day, waypoint: Waypoint, time: string, index: number, 
 function createSheet(dayData: Day, boat: Boat, memberIds: string[], index: number): LogSheet {
   const people = sheetCrew(memberIds, dayData.from, dayData.to, dayData.date);
   const lineCount = 7;
+  const waypoints = Array.from({ length: lineCount }, (_, lineIndex) => interpolateWaypoint(dayData, lineIndex / (lineCount - 1)));
   const lines = Array.from({ length: lineCount }, (_, lineIndex) => {
     const fraction = lineIndex / (lineCount - 1);
-    return logLine(dayData, interpolateWaypoint(dayData, fraction), interpolateTime(dayData.date, dayData.departure, dayData.arrival, fraction), lineIndex, lineCount, boat);
+    return logLine(dayData, waypoints[lineIndex], waypoints[lineIndex + 1], interpolateTime(dayData.date, dayData.departure, dayData.arrival, fraction), lineIndex, lineCount, boat);
   });
   const motorBoat = boat.type === "Motor";
   return {

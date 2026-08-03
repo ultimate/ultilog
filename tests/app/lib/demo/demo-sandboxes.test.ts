@@ -68,7 +68,7 @@ describe("demo sandboxes", () => {
     const rows = (await getDatabase().query<{ template_version: number; expires_at: string }>("select template_version, expires_at from demo_sandboxes")).rows;
 
     expect(rows).toHaveLength(1);
-    expect(rows[0].template_version).toBe(1);
+    expect(rows[0].template_version).toBe(2);
     expect(new Date(rows[0].expires_at).getTime()).toBeGreaterThanOrEqual(before + (2 * 60 * 60 * 1000));
     expect(login.expiresAt).toBe(rows[0].expires_at);
   });
