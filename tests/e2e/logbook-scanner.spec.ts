@@ -5,7 +5,7 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
   const createdSheetId = "11111111-2222-4333-8444-555555555555";
   let scannerRequestReceived = false;
 
-  await loginWithSeededDemoData(page);
+  await loginWithSeededRegisteredData(page);
   await openModule(page, "Logbook list", "+ New sheet");
 
   const currentLogbookResponse = await page.request.get("/api/logbook");
@@ -80,12 +80,20 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
   expect(scannerRequestReceived).toBeTruthy();
 });
 
-async function loginWithSeededDemoData(page: Page) {
+async function loginWithSeededRegisteredData(page: Page) {
+  const unique = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  const email = `scanner-${unique}@example.test`;
+  const password = "correct horse battery staple";
+
+  const registerResponse = await page.request.post("/api/register", {
+    data: { name: `Scanner Tester ${unique}`, email, password },
+  });
+  expect(registerResponse.ok()).toBeTruthy();
+
   await page.goto("/login");
-  const demoLogin = page.getByRole("button", { name: "Try the demo" });
-  await expect(demoLogin).toBeVisible();
-  await expect(demoLogin).toBeEnabled();
-  await demoLogin.click();
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Password", { exact: true }).fill(password);
+  await page.getByRole("button", { name: "Log in" }).click();
   await expect(page.getByRole("button", { name: "Logout" })).toBeVisible({ timeout: 30_000 });
   const seedResponse = await page.request.put("/api/logbook", {
     data: { boats: sampleBoats, crewMembers: crewProfilesFromSheets(sampleLogSheets), sheets: sampleLogSheets },
