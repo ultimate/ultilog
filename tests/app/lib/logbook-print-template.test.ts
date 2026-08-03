@@ -5,6 +5,7 @@ import {
   LOG_SHEET_PRINT_TEMPLATE_REVISION,
   logSheetPrintTemplate,
 } from "../../../app/domain/logbook/print-template";
+import { locales, t } from "../../../app/lib/i18n/translations";
 
 describe("log sheet print template", () => {
   it("has a stable, versioned identity", () => {
@@ -46,5 +47,18 @@ describe("log sheet print template", () => {
     for (const column of logSheetPrintTemplate.columns) {
       expect(column.sourceFields, column.id).not.toHaveLength(0);
     }
+  });
+
+  it("localizes every column heading in each supported locale", () => {
+    for (const locale of locales) {
+      for (const column of logSheetPrintTemplate.columns) {
+        expect(t(locale, column.headingKey), `${locale}.${column.id}`).not.toHaveLength(0);
+      }
+    }
+
+    const germanCourseHeadings = getPrintLogColumns("full")
+      .filter((column) => column.className === "print-col-course")
+      .map((column) => t("de", column.headingKey));
+    expect(germanCourseHeadings).toEqual(["MgK", "Abl", "mwK", "Mw", "rwK", "BW", "KdW", "BS", "KüG"]);
   });
 });

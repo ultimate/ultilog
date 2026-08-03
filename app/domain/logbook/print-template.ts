@@ -1,4 +1,5 @@
 import type { LogLine } from "../../models/logbook";
+import type { TranslationKey } from "../../lib/i18n/translations";
 
 export const LOG_SHEET_PRINT_TEMPLATE_ID = "ultilog-logsheet";
 export const LOG_SHEET_PRINT_TEMPLATE_REVISION = 1;
@@ -30,7 +31,7 @@ export type PrintLogColumnId =
 
 export type PrintLogColumn = {
   id: PrintLogColumnId;
-  heading: string;
+  headingKey: TranslationKey;
   sourceFields: readonly (keyof LogLine)[];
   expectedValue: "text" | "number" | "degrees" | "signed-degrees" | "composite";
   className: string;
@@ -49,28 +50,28 @@ export const logSheetPrintTemplate = {
   id: LOG_SHEET_PRINT_TEMPLATE_ID,
   revision: LOG_SHEET_PRINT_TEMPLATE_REVISION,
   columns: [
-    column("time", "Time", ["time"], "text", "print-col-time", 4, 4),
-    column("position", "Pos.", ["position", "latitude", "longitude"], "composite", "print-col-position", 9, 11),
-    column("weather", "Wx", ["weather", "weatherRemark"], "composite", "print-col-weather", 6, 8),
-    column("temperature", "Temp", ["temperature", "temperatureUnit"], "composite", "print-col-temp", 3.5, 3.5),
-    column("barometer", "Baro", ["barometer"], "number", "print-col-baro", 3.5, 3.5),
-    column("wind", "Wind", ["windDirection", "windStrength", "windUnit"], "composite", "print-col-wind", 6, 8),
-    column("waves", "Sea", ["waves", "seaUnit"], "composite", "print-col-sea", 4, 5),
-    column("tide", "Tide", ["tide", "tideUnit"], "composite", "print-col-tide", 3, 3.5),
-    column("compassCourse", "CC", ["compassCourse"], "degrees", "print-col-course", 2.5, 2.5),
-    column("deviation", "Dev", ["deviation"], "signed-degrees", "print-col-course", 2.5, 0, fullVariant),
-    column("magneticCourse", "MC", ["magneticCourse"], "degrees", "print-col-course", 2.5, 0, fullVariant),
-    column("variation", "Var", ["variation"], "signed-degrees", "print-col-course", 2.5, 0, fullVariant),
-    column("trueCourse", "TC", ["trueCourse"], "degrees", "print-col-course", 2.5, 0, fullVariant),
-    column("windDrift", "WD", ["windDrift"], "signed-degrees", "print-col-course", 2.5, 0, fullVariant),
-    column("courseThroughWater", "CTW", ["courseThroughWater"], "degrees", "print-col-course", 2.5, 0, fullVariant),
-    column("currentDrift", "CD", ["currentDrift"], "signed-degrees", "print-col-course", 2.5, 0, fullVariant),
-    column("courseOverGround", "COG", ["courseOverGround"], "degrees", "print-col-course", 2.5, 2.5),
-    column("speedKn", "Spd", ["speedKn"], "number", "print-col-speed", 3, 3),
-    column("logNm", "Log", ["logNm"], "number", "print-col-log", 3, 3),
-    column("sailMiles", "Sail", ["sailMiles"], "number", "print-col-sail", 3, 3),
-    column("motor", "Mot", ["motorMiles", "motorHours"], "composite", "print-col-motor", 4, 4),
-    column("remarks", "Remarks", ["remarks"], "text", "print-col-remarks", 17.5, 32),
+    column("time", "print.column.time", ["time"], "text", "print-col-time", 4, 4),
+    column("position", "print.column.position", ["position", "latitude", "longitude"], "composite", "print-col-position", 9, 11),
+    column("weather", "print.column.weather", ["weather", "weatherRemark"], "composite", "print-col-weather", 6, 8),
+    column("temperature", "print.column.temperature", ["temperature", "temperatureUnit"], "composite", "print-col-temp", 3.5, 3.5),
+    column("barometer", "print.column.barometer", ["barometer"], "number", "print-col-baro", 3.5, 3.5),
+    column("wind", "print.column.wind", ["windDirection", "windStrength", "windUnit"], "composite", "print-col-wind", 6, 8),
+    column("waves", "print.column.sea", ["waves", "seaUnit"], "composite", "print-col-sea", 4, 5),
+    column("tide", "print.column.tide", ["tide", "tideUnit"], "composite", "print-col-tide", 3, 3.5),
+    column("compassCourse", "print.column.compassCourse", ["compassCourse"], "degrees", "print-col-course", 2.5, 2.5),
+    column("deviation", "print.column.deviation", ["deviation"], "signed-degrees", "print-col-course", 2.5, 0, fullVariant),
+    column("magneticCourse", "print.column.magneticCourse", ["magneticCourse"], "degrees", "print-col-course", 2.5, 0, fullVariant),
+    column("variation", "print.column.variation", ["variation"], "signed-degrees", "print-col-course", 2.5, 0, fullVariant),
+    column("trueCourse", "print.column.trueCourse", ["trueCourse"], "degrees", "print-col-course", 2.5, 0, fullVariant),
+    column("windDrift", "print.column.windDrift", ["windDrift"], "signed-degrees", "print-col-course", 2.5, 0, fullVariant),
+    column("courseThroughWater", "print.column.courseThroughWater", ["courseThroughWater"], "degrees", "print-col-course", 2.5, 0, fullVariant),
+    column("currentDrift", "print.column.currentDrift", ["currentDrift"], "signed-degrees", "print-col-course", 2.5, 0, fullVariant),
+    column("courseOverGround", "print.column.courseOverGround", ["courseOverGround"], "degrees", "print-col-course", 2.5, 2.5),
+    column("speedKn", "print.column.speed", ["speedKn"], "number", "print-col-speed", 4.5, 4.5),
+    column("logNm", "print.column.log", ["logNm"], "number", "print-col-log", 3.5, 3.5),
+    column("sailMiles", "print.column.sail", ["sailMiles"], "number", "print-col-sail", 4, 4),
+    column("motor", "print.column.motor", ["motorMiles", "motorHours"], "composite", "print-col-motor", 4, 4),
+    column("remarks", "print.column.remarks", ["remarks"], "text", "print-col-remarks", 14.5, 29),
   ],
 } as const satisfies { id: string; revision: number; columns: readonly PrintLogColumn[] };
 
@@ -80,7 +81,7 @@ export function getPrintLogColumns(variant: LogSheetPrintVariant): readonly Prin
 
 function column(
   id: PrintLogColumnId,
-  heading: string,
+  headingKey: TranslationKey,
   sourceFields: readonly (keyof LogLine)[],
   expectedValue: PrintLogColumn["expectedValue"],
   className: string,
@@ -90,7 +91,7 @@ function column(
 ): PrintLogColumn {
   return {
     id,
-    heading,
+    headingKey,
     sourceFields,
     expectedValue,
     className,
