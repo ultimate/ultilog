@@ -237,7 +237,10 @@ describe("logbook scanner endpoint", () => {
     expect(response.status).toBe(200);
     const body = await response.json();
     expect(body.sheetId).toEqual(expect.any(String));
-    expect(mockedScanner).toHaveBeenCalledWith({ files: [{ name: "sheet.png", type: "image/png", buffer: expect.any(Buffer) }] });
+    expect(mockedScanner).toHaveBeenCalledWith({
+      languageHint: "en",
+      files: [{ name: "sheet.png", type: "image/png", buffer: expect.any(Buffer) }],
+    });
     expect(mockedWriteLogbook).toHaveBeenCalledWith(expect.objectContaining({
       sheets: [expect.objectContaining({
         id: body.sheetId,

@@ -1,4 +1,6 @@
 import type { ScannerResult } from "../../models/logbook-scanner";
+import { localeLabels, locales, type Locale } from "../i18n/translations";
+import { criticalCourseScannerFields, scannerFieldAliases } from "./field-aliases";
 import type { ScannerProviderInput } from "./provider";
 
 const DEFAULT_MODEL = "gpt-4.1-mini";
@@ -144,7 +146,7 @@ Do not invent values. Preserve original units and text when unsure, except numer
 Add a warning for every missing, illegible, conflicting, or ambiguous sheet-level field and for any row where important navigation fields are unclear.
 Never include raw image data, file names, or unrelated commentary in the response.`;
 
-const userPrompt = `Extract a logbook draft from these image(s). The JSON must match ScannerResult:
+const extractionInstructions = `Extract a logbook draft from these image(s). The JSON must match ScannerResult:
 - draft.title: sheet title if visible, otherwise empty string.
 - draft.dateRange: visible date or date range, otherwise empty string.
 - draft.route.from/to/departed/arrived: visible route information, otherwise empty strings.
@@ -155,6 +157,35 @@ const userPrompt = `Extract a logbook draft from these image(s). The JSON must m
 - Expected row data types are strings in the JSON schema. Transcribe numeric values as strings for numeric fields such as temperature, barometer, waves, compassCourse, magneticCourse, windDrift, speedKn, and logNm.
 - Include explicit units when visible for windUnit, seaUnit, tideUnit, and temperatureUnit; leave them empty only when no unit is shown.
 - warnings: concise human-readable warnings for missing or ambiguous fields.`;
+
+const documentInterpretationInstructions = `Interpret the document before transcribing its rows:
+- Detect the language from the printed sheet headings. The sheet may use English, German, French, Italian, international abbreviations, or a mixture of languages.
+- Identify the header row and map each visible column heading to exactly one canonical JSON field by nautical meaning and position.
+- Establish one header-to-field mapping for a table and apply it consistently to every row. Do not remap a column based on an individual cell value.
+- The user's interface language, when supplied below, is only a weak hint for ambiguous headings. Never exclude terminology from another language because of it.
+- Similar or shared abbreviations can be ambiguous. Resolve them using the full header, neighboring columns, units, and the table structure; warn instead of guessing when those signals conflict.
+- Course-conversion columns commonly follow this semantic sequence: ${criticalCourseScannerFields.join(" -> ")}. A sheet may contain only a subset, and its printed headings and spatial alignment always take precedence.
+- Use the course sequence only to map columns. Never calculate, copy, or invent a missing course value to make the sequence complete or arithmetically consistent.
+- Preserve signed correction values, including explicit + and - signs.`;
+
+export function buildScannerUserPrompt(languageHint?: Locale) {
+  const hint = languageHint
+    ? `User interface language hint: ${localeLabels[languageHint]} (${languageHint}). This is a preference only; detect the sheet's actual language independently.`
+    : "User interface language hint: none. Detect the sheet language from the document.";
+
+  return `${extractionInstructions}\n\n${documentInterpretationInstructions}\n\n${hint}\n\nMultilingual field terminology:\n${formatScannerFieldAliases()}`;
+}
+
+export function formatScannerFieldAliases() {
+  return Object.entries(scannerFieldAliases)
+    .map(([field, aliasesByLocale]) => {
+      const localizedAliases = locales
+        .map((locale) => `${locale}=[${aliasesByLocale[locale].join(" | ")}]`)
+        .join("; ");
+      return `- ${field}: ${localizedAliases}`;
+    })
+    .join("\n");
+}
 
 export function isOpenAiScannerProviderConfigured() {
   return Boolean(process.env.OPENAI_API_KEY);
@@ -184,7 +215,7 @@ export async function extractLogbookDraft(input: ScannerProviderInput): Promise<
         {
           role: "user",
           content: [
-            { type: "input_text", text: userPrompt },
+            { type: "input_text", text: buildScannerUserPrompt(input.languageHint) },
             ...input.files.map((file) => ({
               type: "input_image",
               image_url: `data:${file.type || "image/jpeg"};base64,${file.buffer.toString("base64")}`,
