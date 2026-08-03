@@ -66,6 +66,7 @@ export async function POST(request: Request) {
   let scannerResult;
   try {
     scannerResult = await openAiScannerProvider.extractLogbookDraft({
+      languageHint: user?.language,
       files: await Promise.all(uploadedFiles.map(fileToScannerInput)),
     });
   } catch (error) {
