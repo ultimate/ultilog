@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { DEMO_LOGBOOK_TEMPLATE, DEMO_TEMPLATE_VERSION, DEMO_WEATHER_PROVENANCE } from "../../../../app/lib/demo/demo-template";
+import { DEMO_LOGBOOK_TEMPLATE, DEMO_ROUTE_PROVENANCE, DEMO_TEMPLATE_VERSION, DEMO_WEATHER_PROVENANCE } from "../../../../app/lib/demo/demo-template";
 
 describe("immutable demo logbook template", () => {
   it("contains two boats, five reusable crew members, and two four-day cruises", () => {
-    expect(DEMO_TEMPLATE_VERSION).toBe(1);
+    expect(DEMO_TEMPLATE_VERSION).toBe(2);
     expect(DEMO_LOGBOOK_TEMPLATE.boats.map((boat) => boat.type).sort()).toEqual(["Motor", "Sail"]);
     expect(DEMO_LOGBOOK_TEMPLATE.crewMembers).toHaveLength(5);
     expect(DEMO_LOGBOOK_TEMPLATE.sheets).toHaveLength(8);
@@ -64,5 +64,16 @@ describe("immutable demo logbook template", () => {
     expect(Object.isFrozen(DEMO_LOGBOOK_TEMPLATE.sheets[0].lines[0])).toBe(true);
     expect(DEMO_WEATHER_PROVENANCE.url).toContain("historical-weather-api");
     expect(DEMO_LOGBOOK_TEMPLATE.sheets.every((sheet) => sheet.verificationNote?.includes("not certified ship observations"))).toBe(true);
+  });
+
+  it("documents the coastline audit and uses leg-specific courses", () => {
+    expect(DEMO_ROUTE_PROVENANCE.source).toContain("1:10m Land");
+    expect(DEMO_ROUTE_PROVENANCE.note).toContain("straight connection");
+
+    for (const sheet of DEMO_LOGBOOK_TEMPLATE.sheets) {
+      const underwayCourses = sheet.lines.slice(0, -1).map((line) => line.trueCourse);
+      expect(new Set(underwayCourses).size).toBeGreaterThan(1);
+      expect(sheet.lines.every((line) => Number.isFinite(line.latitude) && Number.isFinite(line.longitude))).toBe(true);
+    }
   });
 });
