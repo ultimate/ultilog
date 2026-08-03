@@ -3,7 +3,7 @@ import { useI18n } from "../../lib/i18n";
 import { paginatePrintLogLines, PRINT_LOG_ROWS_PER_PAGE } from "./print-pagination";
 import type { LogSheetMetrics } from "../../domain/logbook/sheet-metrics";
 import { calculateLogSheetMetrics, formatLogSheetDuration } from "../../domain/logbook/sheet-metrics";
-import { formatMiles } from "../../lib/format-number";
+import { getPrintLogColumns, type LogSheetPrintVariant, type PrintLogColumn } from "../../domain/logbook/print-template";
 
 export type LogSheetPrintSummary = LogSheetMetrics | {
   motorMiles: number;
@@ -35,6 +35,8 @@ export type LogSheetPrintViewProps =
 export function LogSheetPrintView(props: LogSheetPrintViewProps) {
   const { t } = useI18n();
   const showCourseColumns = props.showCourseColumns ?? true;
+  const templateVariant: LogSheetPrintVariant = showCourseColumns ? "full" : "compact";
+  const logColumns = getPrintLogColumns(templateVariant);
   const linesPerPage = Math.max(1, props.linesPerPage ?? PRINT_LOG_ROWS_PER_PAGE);
   const sheet = props.sheet;
   const sourceLines = props.mode === "filled" ? props.sheet.lines : [];
@@ -68,70 +70,26 @@ export function LogSheetPrintView(props: LogSheetPrintViewProps) {
               <PrintField label="Home" value={props.boat?.homePort} />
             </aside>
             <aside className="print-summary" aria-label="Summary">
-              <PrintField label="Total" value={`${formatMiles(summary.totalMiles)} nm`} />
-              <PrintField label="Sail" value={`${formatMiles(summary.sailMiles)} nm`} />
-              <PrintField label="Motor" value={`${formatMiles(summary.motorMiles)} nm`} />
+              <PrintField label="Total" value={formatNumber(summary.totalMiles, " nm")} />
+              <PrintField label="Sail" value={formatNumber(summary.sailMiles, " nm")} />
+              <PrintField label="Motor" value={formatNumber(summary.motorMiles, " nm")} />
               <PrintField label="Dur" value={summary.duration} />
             </aside>
           </header>
 
           <table className={showCourseColumns ? "print-log-table print-loglines with-course-columns" : "print-log-table print-loglines compact-course"}>
             <colgroup>
-              <col className="print-col-time" />
-              <col className="print-col-position" />
-              <col className="print-col-weather" />
-              <col className="print-col-temp" />
-              <col className="print-col-baro" />
-              <col className="print-col-wind" />
-              <col className="print-col-sea" />
-              <col className="print-col-tide" />
-              <col className="print-col-course" />
-              {showCourseColumns ? (
-                <>
-                  <col className="print-col-course" />
-                  <col className="print-col-course" />
-                  <col className="print-col-course" />
-                  <col className="print-col-course" />
-                  <col className="print-col-course" />
-                </>
-              ) : null}
-              <col className="print-col-course" />
-              <col className="print-col-speed" />
-              <col className="print-col-log" />
-              <col className="print-col-sail" />
-              <col className="print-col-motor" />
-              <col className="print-col-remarks" />
+              {logColumns.map((column) => (
+                <col className={column.className} key={column.id} style={{ width: `${column.width[templateVariant]}%` }} />
+              ))}
             </colgroup>
             <thead>
               <tr>
-                <th>Time</th>
-                <th>Pos.</th>
-                <th>Wx</th>
-                <th>Temp</th>
-                <th>Baro</th>
-                <th>Wind</th>
-                <th>Sea</th>
-                <th>Tide</th>
-                <th>CC</th>
-                {showCourseColumns ? (
-                  <>
-                    <th>Dev</th>
-                    <th>MC</th>
-                    <th>Var</th>
-                    <th>TC</th>
-                    <th>CTW</th>
-                  </>
-                ) : null}
-                <th>COG</th>
-                <th>Spd</th>
-                <th>Log</th>
-                <th>Sail</th>
-                <th>Mot</th>
-                <th>Remarks</th>
+                {logColumns.map((column) => <th key={column.id}>{column.heading}</th>)}
               </tr>
             </thead>
             <tbody>
-              {page.lines.map((line, index) => renderLogRow(line, index, showCourseColumns))}
+              {page.lines.map((line, index) => renderLogRow(line, index, logColumns))}
             </tbody>
           </table>
 
@@ -159,35 +117,43 @@ function getSummary(summary: LogSheetPrintSummary | undefined, sheet: LogSheet |
   };
 }
 
-function renderLogRow(line: LogLine | undefined, index: number, showCourseColumns: boolean) {
+function renderLogRow(line: LogLine | undefined, index: number, columns: readonly PrintLogColumn[]) {
   return (
     <tr key={index}>
-      <td>{line?.time}</td>
-      <td>{line?.position || formatLatLon(line)}</td>
-      <td>{joinValues(line?.weather, line?.weatherRemark)}</td>
-      <td>{formatNumber(line?.temperature, line?.temperatureUnit)}</td>
-      <td>{formatNumber(line?.barometer)}</td>
-      <td>{joinValues(line?.windDirection, formatNumber(line?.windStrength, line?.windUnit))}</td>
-      <td>{formatNumber(line?.waves, line?.seaUnit)}</td>
-      <td>{formatNumber(line?.tide, line?.tideUnit)}</td>
-      <td>{formatDegrees(line?.compassCourse)}</td>
-      {showCourseColumns ? (
-        <>
-          <td>{formatSigned(line?.deviation)}</td>
-          <td>{formatDegrees(line?.magneticCourse)}</td>
-          <td>{formatSigned(line?.variation)}</td>
-          <td>{formatDegrees(line?.trueCourse)}</td>
-          <td>{formatDegrees(line?.courseThroughWater)}</td>
-        </>
-      ) : null}
-      <td>{formatDegrees(line?.courseOverGround)}</td>
-      <td>{formatNumber(line?.speedKn)}</td>
-      <td>{formatNumber(line?.logNm)}</td>
-      <td>{formatNumber(line?.sailMiles)}</td>
-      <td>{formatMotor(line)}</td>
-      <td className="print-remarks-cell"><span className={remarkSizeClass(line?.remarks ?? "")}>{line?.remarks}</span></td>
+      {columns.map((column) => renderLogCell(column, line))}
     </tr>
   );
+}
+
+function renderLogCell(column: PrintLogColumn, line: LogLine | undefined) {
+  const value = (() => {
+    switch (column.id) {
+      case "time": return line?.time;
+      case "position": return line?.position || formatLatLon(line);
+      case "weather": return joinValues(line?.weather, line?.weatherRemark);
+      case "temperature": return formatNumber(line?.temperature, line?.temperatureUnit);
+      case "barometer": return formatNumber(line?.barometer);
+      case "wind": return joinValues(line?.windDirection, formatNumber(line?.windStrength, line?.windUnit));
+      case "waves": return formatNumber(line?.waves, line?.seaUnit);
+      case "tide": return formatNumber(line?.tide, line?.tideUnit);
+      case "compassCourse": return formatDegrees(line?.compassCourse);
+      case "deviation": return formatSigned(line?.deviation);
+      case "magneticCourse": return formatDegrees(line?.magneticCourse);
+      case "variation": return formatSigned(line?.variation);
+      case "trueCourse": return formatDegrees(line?.trueCourse);
+      case "windDrift": return formatSigned(line?.windDrift);
+      case "courseThroughWater": return formatDegrees(line?.courseThroughWater);
+      case "currentDrift": return formatSigned(line?.currentDrift);
+      case "courseOverGround": return formatDegrees(line?.courseOverGround);
+      case "speedKn": return formatNumber(line?.speedKn);
+      case "logNm": return formatNumber(line?.logNm);
+      case "sailMiles": return formatNumber(line?.sailMiles);
+      case "motor": return formatMotor(line);
+      case "remarks": return <span className={remarkSizeClass(line?.remarks ?? "")}>{line?.remarks}</span>;
+    }
+  })();
+
+  return <td className={column.id === "remarks" ? "print-remarks-cell" : undefined} key={column.id}>{value}</td>;
 }
 
 function hasTruncatedRemark(lines: Array<LogLine | undefined>) {
@@ -272,18 +238,6 @@ const printStyles = `
 .print-field { min-width: 0; border-bottom: 0.2mm solid #000; }
 .print-field strong { display: block; min-height: 11pt; overflow: hidden; font-size: 8pt; line-height: 1.15; text-overflow: ellipsis; white-space: nowrap; }
 .print-log-table { box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; height: 100%; border-collapse: collapse; table-layout: fixed; font-size: 6.6pt; line-height: 1.05; }
-.print-log-table col.print-col-time { width: 4%; }
-.print-log-table col.print-col-position { width: 10%; }
-.print-log-table col.print-col-weather, .print-log-table col.print-col-wind { width: 7%; }
-.print-log-table col.print-col-temp, .print-log-table col.print-col-baro, .print-log-table col.print-col-tide { width: 3.5%; }
-.print-log-table col.print-col-sea { width: 5%; }
-.print-log-table col.print-col-course { width: 2.5%; }
-.print-log-table col.print-col-speed, .print-log-table col.print-col-log, .print-log-table col.print-col-sail { width: 3%; }
-.print-log-table col.print-col-motor { width: 4%; }
-.print-log-table col.print-col-remarks { width: 22.5%; }
-.print-log-table.compact-course col.print-col-position { width: 11%; }
-.print-log-table.compact-course col.print-col-weather, .print-log-table.compact-course col.print-col-wind { width: 8%; }
-.print-log-table.compact-course col.print-col-remarks { width: 32%; }
 .print-log-table tr { height: 6mm; max-height: 6mm; }
 .print-log-table th, .print-log-table td { box-sizing: border-box; height: 6mm; max-height: 6mm; overflow: hidden; border: 0.2mm solid #000; padding: .55mm; text-align: left; vertical-align: top; background: #fff; color: #000; }
 .print-log-table th { font-size: 6.4pt; font-weight: 700; text-transform: uppercase; white-space: normal; overflow-wrap: anywhere; }
