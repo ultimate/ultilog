@@ -94,13 +94,21 @@ async function loginWithSeededRegisteredData(page: Page) {
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Log in" }).click();
-  await expect(page.getByRole("button", { name: "Logout" })).toBeVisible({ timeout: 30_000 });
+  await expectLoggedIn(page);
   const seedResponse = await page.request.put("/api/logbook", {
     data: { boats: sampleBoats, crewMembers: crewProfilesFromSheets(sampleLogSheets), sheets: sampleLogSheets },
   });
   expect(seedResponse.ok()).toBeTruthy();
   await page.reload();
-  await expect(page.getByRole("button", { name: "Logout" })).toBeVisible({ timeout: 30_000 });
+  await expectLoggedIn(page);
+}
+
+async function expectLoggedIn(page: Page) {
+  await expect(async () => {
+    const continueToApp = page.getByRole("button", { name: "Continue to app" });
+    if (await continueToApp.isVisible({ timeout: 500 }).catch(() => false)) await continueToApp.click();
+    await expect(page.getByRole("button", { name: "Logout" })).toBeVisible({ timeout: 1_000 });
+  }).toPass({ timeout: 30_000 });
 }
 
 function crewProfilesFromSheets(sheets: typeof sampleLogSheets) {
