@@ -9,8 +9,7 @@ import type { LogSheetPrintVariant } from "../../../app/domain/logbook/print-tem
 
 const fixturesRoot = path.join(process.cwd(), "tests/fixtures/logbook-scanner");
 const expectedFileName = "logsheet-expected.json";
-const encodedImageSuffix = ".base64.txt";
-const imagePattern = /\.(jpe?g|png|webp)(?:\.base64\.txt)?$/i;
+const imagePattern = /\.(jpe?g|png|webp)$/i;
 const liveScannerEnabled = process.env.RUN_LIVE_SCANNER_TESTS === "true" && Boolean(process.env.OPENAI_API_KEY);
 
 type ExpectedFixtureLine = Record<string, string | number | undefined>;
@@ -24,6 +23,7 @@ type ExpectedFixture = {
     revision: number;
     variant: LogSheetPrintVariant;
     locale: Locale;
+    images: string[];
   };
 };
 
@@ -44,7 +44,7 @@ describe("logbook scanner image fixtures", () => {
   it.each(fixtureCases)("validates fixture files for $name", ({ directory, images, expected }) => {
     expect(images.length).toBeGreaterThan(0);
     for (const image of images) {
-      const decodedImage = readFixtureImage(path.join(directory, image));
+      const decodedImage = readFileSync(path.join(directory, image));
       expect(decodedImage.length, image).toBeGreaterThan(0);
       expect(isSupportedImageBuffer(decodedImage), image).toBe(true);
     }
@@ -57,7 +57,9 @@ describe("logbook scanner image fixtures", () => {
         revision: 1,
         variant: expect.stringMatching(/^(full|compact)$/),
         locale: expect.stringMatching(/^(en|de|fr|it)$/),
+        images: expect.arrayContaining([expect.stringMatching(/\.(png|jpe?g|webp)$/i)]),
       }));
+      if (images.length > 0) expect([...images].sort()).toEqual([...expected.template.images].sort());
     }
   });
 
@@ -65,7 +67,7 @@ describe("logbook scanner image fixtures", () => {
     const templateFixtures = fixtureCases.filter(({ expected }) => expected.template);
     expect(new Set(templateFixtures.map(({ expected }) => expected.template?.locale))).toEqual(new Set(locales));
     expect(new Set(templateFixtures.map(({ expected }) => expected.template?.variant))).toEqual(new Set(["full", "compact"]));
-    expect(templateFixtures.some(({ images }) => images.some((image) => /rotated|shadow/i.test(image)))).toBe(true);
+    expect(templateFixtures.some(({ expected }) => expected.template?.images.some((image) => /rotated|shadow/i.test(image)))).toBe(true);
     expect(fixtureCases.some(({ expected }) => !expected.template)).toBe(true);
   });
 
@@ -108,7 +110,7 @@ describe.skipIf(!liveScannerEnabled)("live logbook scanner image fixtures", () =
     async ({ directory, image, expected }) => {
       const imagePath = path.join(directory, image);
       const scannerResult = await openAiScannerProvider.extractLogbookDraft({
-        files: [{ name: logicalImageName(image), type: mimeTypeForImage(image), buffer: readFixtureImage(imagePath) }],
+        files: [{ name: image, type: mimeTypeForImage(image), buffer: readFileSync(imagePath) }],
       });
 
       expect(scannerResult.draft.title).toBe(expected.title);
@@ -257,20 +259,9 @@ function numericPrecision(field: string) {
 }
 
 function mimeTypeForImage(fileName: string) {
-  const logicalName = logicalImageName(fileName);
-  if (/\.png$/i.test(logicalName)) return "image/png";
-  if (/\.webp$/i.test(logicalName)) return "image/webp";
+  if (/\.png$/i.test(fileName)) return "image/png";
+  if (/\.webp$/i.test(fileName)) return "image/webp";
   return "image/jpeg";
-}
-
-function logicalImageName(fileName: string) {
-  return fileName.endsWith(encodedImageSuffix) ? fileName.slice(0, -encodedImageSuffix.length) : fileName;
-}
-
-function readFixtureImage(imagePath: string) {
-  if (!imagePath.endsWith(encodedImageSuffix)) return readFileSync(imagePath);
-  const encoded = readFileSync(imagePath, "utf8").replace(/\s/g, "");
-  return Buffer.from(encoded, "base64");
 }
 
 function isSupportedImageBuffer(buffer: Buffer) {

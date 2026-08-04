@@ -36,6 +36,7 @@
     "id": "ultilog-logsheet",
     "revision": 1,
     "variant": "compact",
-    "locale": "it"
+    "locale": "it",
+    "images": ["scanned.png"]
   }
 }
