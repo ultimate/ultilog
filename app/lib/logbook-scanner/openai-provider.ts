@@ -1,5 +1,11 @@
 import type { ScannerResult } from "../../models/logbook-scanner";
-import { localeLabels, locales, type Locale } from "../i18n/translations";
+import {
+  getPrintLogColumns,
+  LOG_SHEET_PRINT_TEMPLATE_ID,
+  LOG_SHEET_PRINT_TEMPLATE_REVISION,
+  type LogSheetPrintVariant,
+} from "../../domain/logbook/print-template";
+import { localeLabels, locales, t, type Locale } from "../i18n/translations";
 import { criticalCourseScannerFields, scannerFieldAliases } from "./field-aliases";
 import type { ScannerProviderInput } from "./provider";
 
@@ -173,7 +179,7 @@ export function buildScannerUserPrompt(languageHint?: Locale) {
     ? `User interface language hint: ${localeLabels[languageHint]} (${languageHint}). This is a preference only; detect the sheet's actual language independently.`
     : "User interface language hint: none. Detect the sheet language from the document.";
 
-  return `${extractionInstructions}\n\n${documentInterpretationInstructions}\n\n${hint}\n\nMultilingual field terminology:\n${formatScannerFieldAliases()}`;
+  return `${extractionInstructions}\n\n${documentInterpretationInstructions}\n\n${formatTemplateRecognitionInstructions()}\n\n${hint}\n\nMultilingual field terminology:\n${formatScannerFieldAliases()}`;
 }
 
 export function formatScannerFieldAliases() {
@@ -185,6 +191,29 @@ export function formatScannerFieldAliases() {
       return `- ${field}: ${localizedAliases}`;
     })
     .join("\n");
+}
+
+export function formatTemplateRecognitionInstructions() {
+  const variants = (["full", "compact"] as const)
+    .map((variant) => `- ${variant}: ${formatTemplateColumns(variant)}`)
+    .join("\n");
+
+  return `UltiLog template recognition:
+- Look for a marker formatted as ULTILOG:<template-id>:v<revision>:<variant>:<locale>.
+- The supported marker is ULTILOG:${LOG_SHEET_PRINT_TEMPLATE_ID}:v${LOG_SHEET_PRINT_TEMPLATE_REVISION}:<variant>:<locale>.
+- Only apply the fixed template mapping when that marker and the visible table structure agree. Otherwise use multilingual header mapping.
+- For a recognized template, correct for rotation and perspective, locate its grid, and map cells by the following canonical column order:
+${variants}
+- Printed headings vary with the marker locale (${locales.join(", ")}); use the locale-specific headings and field terminology together.
+- Add a warning if an UltiLog marker has an unsupported revision or unknown variant, then fall back to visible headings.
+- Add a warning if a recognized page has a cropped header, table edge, row region, or populated-looking cell that cannot be read reliably.
+- Template geometry is evidence for cell mapping, never permission to invent blank or illegible values.`;
+}
+
+function formatTemplateColumns(variant: LogSheetPrintVariant) {
+  return getPrintLogColumns(variant)
+    .map((column) => `${column.id} (${locales.map((locale) => t(locale, column.headingKey)).join("/")})`)
+    .join(" -> ");
 }
 
 export function isOpenAiScannerProviderConfigured() {
@@ -288,7 +317,7 @@ function parseScannerResult(payload: OpenAIResponsePayload): ScannerResult {
   return JSON.parse(outputText) as ScannerResult;
 }
 
-function findLocalWarnings(result: ScannerResult): string[] {
+export function findLocalWarnings(result: ScannerResult): string[] {
   const warnings = new Set<string>();
   const route = result.draft.route;
 
@@ -305,9 +334,69 @@ function findLocalWarnings(result: ScannerResult): string[] {
     if (missingFields.length > 0) {
       warnings.add(`Row ${index + 1} is missing or unclear: ${missingFields.join(", ")}.`);
     }
+
+    for (const warning of findCourseWarnings(line, index + 1)) warnings.add(warning);
   });
 
   return [...warnings].filter((warning) => !result.warnings.includes(warning));
+}
+
+const courseRelations = [
+  ["compassCourse", "deviation", "magneticCourse"],
+  ["magneticCourse", "variation", "trueCourse"],
+  ["trueCourse", "windDrift", "courseThroughWater"],
+  ["courseThroughWater", "currentDrift", "courseOverGround"],
+] as const;
+
+function findCourseWarnings(line: ScannerResult["draft"]["lines"][number], rowNumber: number) {
+  const warnings: string[] = [];
+  const populatedIndexes = criticalCourseScannerFields
+    .map((field, index) => line[field]?.trim() ? index : -1)
+    .filter((index) => index >= 0);
+
+  const isCompactEndpointPair = populatedIndexes.length === 2
+    && populatedIndexes[0] === 0
+    && populatedIndexes[1] === criticalCourseScannerFields.length - 1;
+  if (populatedIndexes.length >= 2 && !isCompactEndpointPair) {
+    const first = populatedIndexes[0];
+    const last = populatedIndexes[populatedIndexes.length - 1];
+    const missingInteriorFields = criticalCourseScannerFields
+      .slice(first + 1, last)
+      .filter((field) => !line[field]?.trim());
+    if (missingInteriorFields.length > 0) {
+      warnings.push(`Row ${rowNumber} has an incomplete course chain: ${missingInteriorFields.join(", ")} is missing or unclear.`);
+    }
+  }
+
+  for (const [fromField, correctionField, resultField] of courseRelations) {
+    const from = parseScannedNumber(line[fromField]);
+    const correction = parseScannedNumber(line[correctionField]);
+    const actual = parseScannedNumber(line[resultField]);
+    if (from === undefined || correction === undefined || actual === undefined) continue;
+
+    const expected = normalizeCourse(from + correction);
+    if (angularDifference(expected, normalizeCourse(actual)) > 1.5) {
+      warnings.push(`Row ${rowNumber} has inconsistent course conversion: ${fromField} + ${correctionField} does not match ${resultField}.`);
+    }
+  }
+
+  return warnings;
+}
+
+function parseScannedNumber(value: string | undefined) {
+  const numericText = value?.trim().replace(",", ".").match(/[+-]?\d+(?:\.\d+)?/)?.[0];
+  if (!numericText) return undefined;
+  const parsed = Number(numericText);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function normalizeCourse(value: number) {
+  return ((value % 360) + 360) % 360;
+}
+
+function angularDifference(first: number, second: number) {
+  const difference = Math.abs(first - second) % 360;
+  return Math.min(difference, 360 - difference);
 }
 
 type OpenAIResponsePayload = {
