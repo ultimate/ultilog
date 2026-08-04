@@ -43,6 +43,7 @@
     "id": "ultilog-logsheet",
     "revision": 1,
     "variant": "full",
-    "locale": "en"
+    "locale": "en",
+    "images": ["scanned.png"]
   }
 }
