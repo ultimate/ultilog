@@ -1,7 +1,7 @@
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 
 import type { PersistedLogbook } from "../../models/logbook";
-import { getDatabase, readLogbook, writeLogbook } from "../logbook-store";
+import { getDatabase, writeLogbook } from "../logbook-store";
 import { findUserById, type AppUser } from "../users";
 import { DEMO_LOGBOOK_TEMPLATE, DEMO_TEMPLATE_VERSION } from "./demo-template";
 
@@ -108,9 +108,9 @@ export async function resetDemoSandbox(userId: string): Promise<PersistedLogbook
   if (!sandbox) return null;
 
   const logbook = writableDemoTemplate();
-  await writeLogbook(logbook, userId);
+  const resetLogbook = await writeLogbook(logbook, userId);
   await db.query(`update demo_sandboxes set last_accessed_at = ${db.placeholder(1)}, template_version = ${db.placeholder(2)} where user_id = ${db.placeholder(3)}`, [now, DEMO_TEMPLATE_VERSION, userId]);
-  return readLogbook(userId);
+  return resetLogbook;
 }
 
 export type DemoSandboxCleanupResult = {
