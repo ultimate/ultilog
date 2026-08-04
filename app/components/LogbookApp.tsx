@@ -291,10 +291,11 @@ export function LogbookApp({
   async function logout() {
     setSaveError(null);
     setIsLoggingOut(true);
-    await persistLogbook(logbookRef.current).catch(() => undefined);
+    if (hasUnsavedLogbookChangesRef.current) {
+      await persistLogbook(logbookRef.current).catch(() => undefined);
+    }
     await signOut({ redirect: false });
-    router.push("/login");
-    router.refresh();
+    window.location.assign("/login");
   }
 
   const preferredBoatId = resolvePreferredBoatId(logbook, preferences);
@@ -553,7 +554,7 @@ export function LogbookApp({
   }, [activeModule, adminUsers.length, loadAdminUsers, userGroups]);
 
   useEffect(() => {
-    if (!isBackendReady) return;
+    if (!isBackendReady || !hasUnsavedLogbookChangesRef.current) return;
     const controller = new AbortController();
     const timeout = window.setTimeout(() => {
       persistLogbook(logbook, { signal: controller.signal }).catch(

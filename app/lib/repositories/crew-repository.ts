@@ -126,11 +126,18 @@ export class CrewRepository {
   }
 
   async insert(sheetId: string, sortOrder: number, crew: SheetCrewMember, ownerId: string) {
-    const crewMemberId = scopedId(ownerId, crew.id);
     await this.insertProfile(crew, ownerId);
+    await this.insertAssignments([{ sheetId, sortOrder, crew }], ownerId);
+  }
+
+  async insertAssignments(entries: { sheetId: string; sortOrder: number; crew: SheetCrewMember }[], ownerId: string) {
+    if (!entries.length) return;
+    const values = entries.flatMap(({ sheetId, sortOrder, crew }) => [scopedId(ownerId, sheetId), scopedId(ownerId, crew.id), sortOrder, crew.embarkationPosition, crew.disembarkationPosition, crew.embarkationDateTime, crew.embarkationPosition, crew.disembarkationDateTime, crew.disembarkationPosition]);
+    const columnCount = 9;
+    const rows = entries.map((_, rowIndex) => `(${this.values(columnCount, (rowIndex * columnCount) + 1)})`).join(", ");
     await this.db.query(
-      `insert into sheet_crew_members (sheet_id, crew_member_id, sort_order, embarkation, disembarkation, embarkation_datetime, embarkation_position, disembarkation_datetime, disembarkation_position) values (${this.values(9)})`,
-      [scopedId(ownerId, sheetId), crewMemberId, sortOrder, crew.embarkationPosition, crew.disembarkationPosition, crew.embarkationDateTime, crew.embarkationPosition, crew.disembarkationDateTime, crew.disembarkationPosition],
+      `insert into sheet_crew_members (sheet_id, crew_member_id, sort_order, embarkation, disembarkation, embarkation_datetime, embarkation_position, disembarkation_datetime, disembarkation_position) values ${rows}`,
+      values,
     );
   }
 
@@ -159,7 +166,7 @@ export class CrewRepository {
     return isEncryptedCrewFieldValue(value) ? decryptCrewField(ownerId, crewMemberId, fieldName, value) : value;
   }
 
-  private values(count: number) {
-    return Array.from({ length: count }, (_, index) => this.db.placeholder(index + 1)).join(", ");
+  private values(count: number, start = 1) {
+    return Array.from({ length: count }, (_, index) => this.db.placeholder(start + index)).join(", ");
   }
 }

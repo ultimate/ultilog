@@ -68,7 +68,7 @@ export function ModuleTabs({ activeModule, onSelectModule, onOpenProfile, theme,
         <LocaleSelect className="sidebar-control-row locale-select" />
         <div className="sidebar-control-row"><button className="theme-toggle" type="button" onClick={onToggleTheme}><span className="theme-icon" aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span><span>{theme === "dark" ? t("nav.light") : t("nav.dark")}</span></button></div>
         <button className={`profile-card ${activeModule === "profile" ? "active" : ""}`} type="button" onClick={onOpenProfile}><span><Image className="nav-svg-icon" src="/icons/icon_profile.svg" alt="" width={24} height={24} /></span><strong>{userName ?? t("nav.profile")}</strong><small>{userEmail ?? t("nav.noEmail")}</small></button>
-        <button className="logout-chip" type="button" onClick={onLogout} disabled={isLoggingOut} aria-label={t("nav.logout")}>{isLoggingOut ? t("nav.saving") : t("nav.logout")}</button>
+        <button className="logout-chip" type="button" onClick={onLogout} disabled={isLoggingOut} aria-label={t("nav.logout")}>{isLoggingOut ? t("nav.signingOut") : t("nav.logout")}</button>
       </aside>
       <nav className={`mobile-bottom-nav ${isAdmin ? "has-admin-tab" : ""}`} aria-label={t("nav.primary")}>
         <NavigationItems activeModule={activeModule} isAdmin={isAdmin} onSelectModule={onSelectModule} />

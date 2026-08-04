@@ -51,6 +51,21 @@ describe("LogLinesRepository", () => {
     expect(db.calls[0].sql).toContain("insert into log_lines");
     expect(db.calls[0].values).toEqual([`repository-user:${sheet.id}`, 0, line.time, line.position, line.latitude, line.longitude, line.logNm, line.compassCourse, line.waves, line.barometer, line.weather, line.weatherRemark, line.temperature, line.temperatureUnit, line.sailNote, line.motorNote, line.windDirection, line.windStrength, line.windUnit, line.seaUnit, line.tide, line.tideUnit, line.moon, line.deviation, line.magneticCourse, line.variation, line.trueCourse, line.windDrift, line.courseThroughWater, line.currentDrift, line.courseOverGround, line.speedKn, line.sailMiles, line.sailNote, line.motorMiles, line.motorHours, line.motorNote, line.remarks]);
   });
+
+  it("inserts multiple log lines with one database round trip", async () => {
+    const db = new MockDatabase();
+    const secondLine = sheet.lines[1];
+
+    await new LogLinesRepository(db).insertMany([
+      { sheetId: sheet.id, sortOrder: 0, line },
+      { sheetId: sheet.id, sortOrder: 1, line: secondLine },
+    ], "repository-user");
+
+    expect(db.calls).toHaveLength(1);
+    expect(db.calls[0].sql).toContain("$38), ($39");
+    expect(db.calls[0].values).toHaveLength(76);
+    expect(db.calls[0].values?.[38]).toBe(`repository-user:${sheet.id}`);
+  });
 });
 
 function logLineRow(): LogLineRow {

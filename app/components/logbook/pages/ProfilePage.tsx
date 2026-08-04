@@ -78,8 +78,8 @@ export function ProfilePage(props: ProfilePageProps) {
           <h1>{t("profile.title")}</h1>
           <p>{t("profile.subtitle")}</p>
         </div>
-        <button className="secondary-action" type="button" onClick={logout}>
-          {isLoggingOut ? t("nav.saving") : t("nav.logout")}
+        <button className="secondary-action" type="button" onClick={logout} disabled={isLoggingOut}>
+          {isLoggingOut ? t("nav.signingOut") : t("nav.logout")}
         </button>
       </div>
       <section className="profile-grid">
