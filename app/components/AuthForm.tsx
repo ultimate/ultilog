@@ -11,25 +11,30 @@ export function AuthForm({ mode, footer }: Props) {
   const { t } = useI18n();
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPreparingDemo, setIsPreparingDemo] = useState(false);
 
   async function demoLogin() {
     setError(null);
     setIsSubmitting(true);
+    setIsPreparingDemo(true);
     const response = await fetch("/api/demo-login", { method: "POST" });
     if (!response.ok) {
       const payload = await response.json().catch(() => ({})) as { error?: string };
       setError(payload.error ?? t("auth.demoError"));
       setIsSubmitting(false);
+      setIsPreparingDemo(false);
       return;
     }
     const payload = await response.json() as { token?: string };
     if (!payload.token) {
       setError(t("auth.demoError"));
       setIsSubmitting(false);
+      setIsPreparingDemo(false);
       return;
     }
     const result = await signIn("credentials", { demoToken: payload.token, redirect: false });
     setIsSubmitting(false);
+    setIsPreparingDemo(false);
     if (result?.error) {
       setError(t("auth.demoError"));
       return;
@@ -98,8 +103,8 @@ export function AuthForm({ mode, footer }: Props) {
         <PasswordField label={t("auth.password")} name="password" required minLength={8} />
         {mode === "register" && <PasswordField label={t("auth.confirm")} name="confirmPassword" required minLength={8} />}
         {error && <p className="auth-error">{error}</p>}
-        <button disabled={isSubmitting} type="submit">{isSubmitting ? t("auth.pleaseWait") : mode === "login" ? t("auth.login") : t("auth.register")}</button>
-        {mode === "login" && <button className="demo-login-button" disabled={isSubmitting} type="button" onClick={demoLogin}>{t("auth.tryDemo")}</button>}
+        <button disabled={isSubmitting} type="submit">{isSubmitting && !isPreparingDemo ? t("auth.pleaseWait") : mode === "login" ? t("auth.login") : t("auth.register")}</button>
+        {mode === "login" && <button className="demo-login-button" disabled={isSubmitting} type="button" onClick={demoLogin}>{isPreparingDemo ? t("auth.preparingDemo") : t("auth.tryDemo")}</button>}
         {mode === "login" && <button className="secondary-auth-button" disabled={isSubmitting} type="button" onClick={() => window.location.assign("/forgot-password")}>{t("auth.forgotPassword")}</button>}
         <div className="auth-footer">{footer}</div>
       </form>

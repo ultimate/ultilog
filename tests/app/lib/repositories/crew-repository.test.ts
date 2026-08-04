@@ -125,6 +125,20 @@ describe("CrewRepository", () => {
     expect(db.calls[1].values).toEqual([`repository-user:${sheet.id}`, "repository-user:luca-frei-swiss", 0, crew.embarkationPosition, crew.disembarkationPosition, crew.embarkationDateTime, crew.embarkationPosition, crew.disembarkationDateTime, crew.disembarkationPosition]);
   });
 
+  it("inserts multiple sheet assignments with one database round trip", async () => {
+    const db = new MockDatabase();
+
+    await new CrewRepository(db).insertAssignments([
+      { sheetId: sheet.id, sortOrder: 0, crew },
+      { sheetId: sheet.id, sortOrder: 1, crew: { ...crew, id: "second-crew" } },
+    ], "repository-user");
+
+    expect(db.calls).toHaveLength(1);
+    expect(db.calls[0].sql).toContain("$9), ($10");
+    expect(db.calls[0].values).toHaveLength(18);
+    expect(db.calls[0].values?.[10]).toBe("repository-user:second-crew");
+  });
+
   it("encrypts crew image payloads while leaving display metadata available", async () => {
     const db = new MockDatabase();
     const image = { data: "base64-crew-private-face", mimeType: "image/jpeg", width: 320, height: 240 };
