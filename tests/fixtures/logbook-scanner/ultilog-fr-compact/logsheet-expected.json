@@ -1,0 +1,41 @@
+{
+  "title": "Template recognition passage",
+  "dateRange": "04 Aug 2026",
+  "route": {
+    "from": "Kiel",
+    "to": "Laboe",
+    "departed": "04 Aug 2026, 08:00",
+    "arrived": "04 Aug 2026, 10:00"
+  },
+  "lines": [
+    {
+      "time": "08:30",
+      "latitude": 54.35,
+      "longitude": 10.15,
+      "weather": "clear",
+      "temperature": 18,
+      "temperatureUnit": "°C",
+      "barometer": 1018,
+      "windDirection": "NE",
+      "windStrength": 3,
+      "windUnit": "bft",
+      "waves": 0.5,
+      "seaUnit": "m",
+      "tide": 0.2,
+      "tideUnit": "m",
+      "compassCourse": 100,
+      "courseOverGround": 104,
+      "speedKn": 6.2,
+      "logNm": 12.4,
+      "sailMiles": 6.2,
+      "motorMiles": 0,
+      "remarks": "Course check"
+    }
+  ],
+  "template": {
+    "id": "ultilog-logsheet",
+    "revision": 1,
+    "variant": "compact",
+    "locale": "fr"
+  }
+}
