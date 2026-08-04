@@ -3,7 +3,14 @@ import { useI18n } from "../../lib/i18n";
 import { paginatePrintLogLines, PRINT_LOG_ROWS_PER_PAGE } from "./print-pagination";
 import type { LogSheetMetrics } from "../../domain/logbook/sheet-metrics";
 import { calculateLogSheetMetrics, formatLogSheetDuration } from "../../domain/logbook/sheet-metrics";
-import { getPrintLogColumns, type LogSheetPrintVariant, type PrintLogColumn } from "../../domain/logbook/print-template";
+import {
+  formatLogSheetPrintTemplateMarker,
+  getPrintLogColumns,
+  LOG_SHEET_PRINT_TEMPLATE_ID,
+  LOG_SHEET_PRINT_TEMPLATE_REVISION,
+  type LogSheetPrintVariant,
+  type PrintLogColumn,
+} from "../../domain/logbook/print-template";
 
 export type LogSheetPrintSummary = LogSheetMetrics | {
   motorMiles: number;
@@ -33,10 +40,11 @@ export type LogSheetPrintViewProps =
 
 
 export function LogSheetPrintView(props: LogSheetPrintViewProps) {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const showCourseColumns = props.showCourseColumns ?? true;
   const templateVariant: LogSheetPrintVariant = showCourseColumns ? "full" : "compact";
   const logColumns = getPrintLogColumns(templateVariant);
+  const templateMarker = formatLogSheetPrintTemplateMarker(templateVariant, locale);
   const linesPerPage = Math.max(1, props.linesPerPage ?? PRINT_LOG_ROWS_PER_PAGE);
   const sheet = props.sheet;
   const sourceLines = props.mode === "filled" ? props.sheet.lines : [];
@@ -48,7 +56,15 @@ export function LogSheetPrintView(props: LogSheetPrintViewProps) {
       <p className="print-layout-hint screen-only no-print">{t("print.a4LandscapeHint")}</p>
       <style>{printStyles}</style>
       {pages.map((page) => (
-        <section className="log-sheet-print-page print-page" key={page.pageIndex} aria-label={`Log sheet print page ${page.pageIndex + 1} of ${page.pageCount}`}>
+        <section
+          className="log-sheet-print-page print-page"
+          key={page.pageIndex}
+          aria-label={`Log sheet print page ${page.pageIndex + 1} of ${page.pageCount}`}
+          data-template-id={LOG_SHEET_PRINT_TEMPLATE_ID}
+          data-template-locale={locale}
+          data-template-revision={LOG_SHEET_PRINT_TEMPLATE_REVISION}
+          data-template-variant={templateVariant}
+        >
           <header className="print-header">
             <div className="print-title-block">
               <p className="print-kicker">{props.mode === "filled" ? t("print.filledSheet") : t("print.emptySheet")}</p>
@@ -100,6 +116,7 @@ export function LogSheetPrintView(props: LogSheetPrintViewProps) {
             <section className="print-remarks-box"><h2>{t("print.footer.remarksSignature")}</h2>{hasTruncatedRemark(page.lines) ? <small>{t("print.truncated")}</small> : null}</section>
             <span className="print-page-number">{formatPageOf(t("print.pageOf"), page.pageIndex + 1, page.pageCount)}</span>
           </footer>
+          <span className="print-template-marker" aria-label="UltiLog print template marker">{templateMarker}</span>
         </section>
       ))}
     </div>
@@ -227,7 +244,7 @@ function valueOrBlank(value: string | number | undefined | null, fallback = "—
 
 const printStyles = `
 .log-sheet-print-view { color: #000; background: #fff; font-family: Arial, Helvetica, sans-serif; }
-.log-sheet-print-page { box-sizing: border-box; display: grid; grid-template-rows: 32mm 1fr 40mm; gap: 2mm; width: 297mm; height: 210mm; padding: 6mm; border: 0.3mm solid #000; page-break-after: always; break-after: page; background: #fff; color: #000; }
+.log-sheet-print-page { position: relative; box-sizing: border-box; display: grid; grid-template-rows: 32mm 1fr 40mm; gap: 2mm; width: 297mm; height: 210mm; padding: 6mm; border: 0.3mm solid #000; page-break-after: always; break-after: page; background: #fff; color: #000; }
 .log-sheet-print-page:last-child { page-break-after: auto; break-after: auto; }
 .print-header, .print-footer { box-sizing: border-box; display: grid; gap: 2mm; width: 100%; min-width: 0; max-width: 100%; }
 .print-header { grid-template-columns: 1fr 46mm 46mm; border: 0.25mm solid #000; padding: 1.2mm; }
@@ -253,5 +270,6 @@ const printStyles = `
 .print-crew-box ul, .print-tech-box ul { margin: 0; padding-left: 3.5mm; font-size: 7pt; }
 .print-writing-lines { height: 21mm; background: repeating-linear-gradient(to bottom, transparent 0, transparent 7mm, #000 7.2mm); }
 .print-page-number { position: absolute; right: 1.5mm; bottom: 1mm; font-size: 7pt; font-weight: 700; }
+.print-template-marker { position: absolute; left: 1.5mm; bottom: .8mm; font-family: monospace; font-size: 4.5pt; font-weight: 400; letter-spacing: 0; white-space: nowrap; }
 @media print { body { margin: 0; } @page { size: A4 landscape; size: 297mm 210mm; page-orientation: landscape; margin: 8mm; } .log-sheet-print-view { width: 281mm; min-width: 281mm; max-width: none; } .log-sheet-print-page { width: 281mm; min-width: 281mm; height: 194mm; min-height: 194mm; padding: 0; } .print-header, .print-footer { width: 281mm; } .print-log-table { width: 281mm !important; min-width: 0 !important; max-width: 281mm !important; } }
 `;

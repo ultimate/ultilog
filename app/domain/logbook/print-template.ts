@@ -1,5 +1,5 @@
 import type { LogLine } from "../../models/logbook";
-import type { TranslationKey } from "../../lib/i18n/translations";
+import type { Locale, TranslationKey } from "../../lib/i18n/translations";
 
 export const LOG_SHEET_PRINT_TEMPLATE_ID = "ultilog-logsheet";
 export const LOG_SHEET_PRINT_TEMPLATE_REVISION = 1;
@@ -77,6 +77,11 @@ export const logSheetPrintTemplate = {
 
 export function getPrintLogColumns(variant: LogSheetPrintVariant): readonly PrintLogColumn[] {
   return logSheetPrintTemplate.columns.filter((candidate) => candidate.variants.includes(variant));
+}
+
+/** Stable, privacy-safe marker printed on every page for template recognition. */
+export function formatLogSheetPrintTemplateMarker(variant: LogSheetPrintVariant, locale: Locale) {
+  return `ULTILOG:${LOG_SHEET_PRINT_TEMPLATE_ID}:v${LOG_SHEET_PRINT_TEMPLATE_REVISION}:${variant}:${locale}`;
 }
 
 function column(

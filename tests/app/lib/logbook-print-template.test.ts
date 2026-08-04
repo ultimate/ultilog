@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   getPrintLogColumns,
+  formatLogSheetPrintTemplateMarker,
   LOG_SHEET_PRINT_TEMPLATE_ID,
   LOG_SHEET_PRINT_TEMPLATE_REVISION,
   logSheetPrintTemplate,
@@ -13,6 +14,12 @@ describe("log sheet print template", () => {
     expect(logSheetPrintTemplate.revision).toBe(LOG_SHEET_PRINT_TEMPLATE_REVISION);
     expect(LOG_SHEET_PRINT_TEMPLATE_ID).toBe("ultilog-logsheet");
     expect(LOG_SHEET_PRINT_TEMPLATE_REVISION).toBe(1);
+  });
+
+  it("formats a stable privacy-safe marker for each template variant and locale", () => {
+    expect(formatLogSheetPrintTemplateMarker("full", "de")).toBe("ULTILOG:ultilog-logsheet:v1:full:de");
+    expect(formatLogSheetPrintTemplateMarker("compact", "it")).toBe("ULTILOG:ultilog-logsheet:v1:compact:it");
+    expect(formatLogSheetPrintTemplateMarker("full", "en")).not.toMatch(/user|boat|route/i);
   });
 
   it("defines the complete course-conversion sequence for the full template", () => {

@@ -30,6 +30,11 @@ test("prints empty sheets with fixed blank rows and print-only layout", async ({
   await expect(printPage.locator(".print-header")).toHaveCount(1);
   await expect(printPage.locator(".print-footer")).toHaveCount(1);
   await expect(printPage.locator(".print-page-number")).toHaveText("Page 1 of 1");
+  await expect(printPage.locator(".print-template-marker")).toHaveText("ULTILOG:ultilog-logsheet:v1:full:en");
+  await expect(printPage).toHaveAttribute("data-template-id", "ultilog-logsheet");
+  await expect(printPage).toHaveAttribute("data-template-revision", "1");
+  await expect(printPage).toHaveAttribute("data-template-variant", "full");
+  await expect(printPage).toHaveAttribute("data-template-locale", "en");
   await expect(printPage.locator("tbody tr")).toHaveCount(18);
   await expectPrintContentWithinPage(printPage);
   await expect(page.getByRole("navigation", { name: "Primary modules" })).toBeHidden();
@@ -81,6 +86,7 @@ test("splits filled sheets that exceed one A4 landscape page", async ({ page }) 
   await expect(printPages.locator(".print-footer")).toHaveCount(2);
   await expect(printPages.nth(0).locator(".print-page-number")).toHaveText("Page 1 of 2");
   await expect(printPages.nth(1).locator(".print-page-number")).toHaveText("Page 2 of 2");
+  await expect(printPages.locator(".print-template-marker")).toHaveCount(2);
   await expect(printPages.nth(0).locator("tbody tr")).toHaveCount(18);
   await expect(printPages.nth(1).locator("tbody tr")).toHaveCount(18);
   await expect(printPages.nth(0).locator(".print-remark-small, .print-remark-tiny")).toHaveCount(1);
