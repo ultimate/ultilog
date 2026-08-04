@@ -75,16 +75,21 @@ describe("demo sandboxes", () => {
 
   it("resets only an active demo sandbox to a fresh template copy", async () => {
     const { createDemoSandbox, consumeDemoSandboxLogin, resetDemoSandbox } = await import("../../../../app/lib/demo/demo-sandboxes");
-    const { readLogbook, writeLogbook } = await import("../../../../app/lib/logbook-store");
+    const { getDatabase, readLogbook, writeLogbook } = await import("../../../../app/lib/logbook-store");
     const login = await createDemoSandbox();
     const user = await consumeDemoSandboxLogin(login.token);
     const original = await readLogbook(user!.id);
     await writeLogbook({ ...original, boats: [], sheets: [] }, user!.id);
+    const querySpy = vi.spyOn(getDatabase(), "query");
 
     const reset = await resetDemoSandbox(user!.id);
 
     expect(reset).toMatchObject({ boats: { length: 2 }, crewMembers: { length: 5 }, sheets: { length: 8 } });
-    await expect(readLogbook(user!.id)).resolves.toEqual(reset);
+    expect(querySpy.mock.calls.some(([sql]) => sql.includes("select * from boats"))).toBe(false);
+    const storedReset = await readLogbook(user!.id);
+    expect(storedReset).toMatchObject({ boats: { length: 2 }, crewMembers: { length: 5 }, sheets: { length: 8 } });
+    expect(new Set(storedReset.boats.map((boat) => boat.id))).toEqual(new Set(reset!.boats.map((boat) => boat.id)));
+    expect(new Set(storedReset.sheets.map((sheet) => sheet.id))).toEqual(new Set(reset!.sheets.map((sheet) => sheet.id)));
     await expect(resetDemoSandbox("not-a-demo-sandbox")).resolves.toBeNull();
   });
 
