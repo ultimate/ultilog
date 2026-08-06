@@ -1,0 +1,9 @@
+alter table crew_members add column given_names text not null default '';
+alter table crew_members add column family_name text not null default '';
+alter table crew_members add column date_of_birth text not null default '';
+alter table crew_members add column place_of_birth text not null default '';
+alter table crew_members add column gender text not null default '';
+alter table crew_members add column identity_document_type text not null default '';
+alter table crew_members add column identity_document_number text not null default '';
+alter table crew_members add column identity_document_issuing_date text not null default '';
+alter table crew_members add column identity_document_expiry_date text not null default '';
