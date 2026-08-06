@@ -2,7 +2,7 @@ export type CoordinateFormat = "decimal" | "dms";
 export type CoordinateAxis = "lat" | "lon";
 export type DmsParts = { degrees: string; minutes: string; seconds: string };
 
-const dmsPattern = /^\s*([+-])?(\d+(?:\.\d+)?)\s*(?:°|deg|d)?\s*(?:(\d+(?:\.\d+)?)\s*(?:'|′|m|min)?)?\s*(?:(\d+(?:\.\d+)?)\s*(?:"|″|s|sec)?)?\s*([NSEW])?\s*$/i;
+const dmsPattern = /^\s*([NSEW])?\s*([+-])?(\d+(?:\.\d+)?)\s*(?:°|deg|d)?\s*(?:(\d+(?:\.\d+)?)\s*(?:'|′|m|min)?)?\s*(?:(\d+(?:\.\d+)?)\s*(?:"|″|s|sec)?)?\s*([NSEW])?\s*$/i;
 
 export function decimalToDms(value: number, axis: CoordinateAxis) {
   const direction = value < 0 ? (axis === "lat" ? "S" : "W") : axis === "lat" ? "N" : "E";
@@ -65,7 +65,8 @@ export function parseCoordinate(value: string) {
   if (Number.isFinite(decimal) && /^\s*[+-]?\d+(?:\.\d+)?\s*$/.test(trimmed)) return decimal;
   const match = trimmed.match(dmsPattern);
   if (!match) return 0;
-  const [, sign, deg, min = "0", sec = "0", hemisphere] = match;
+  const [, leadingHemisphere, sign, deg, min = "0", sec = "0", trailingHemisphere] = match;
+  const hemisphere = leadingHemisphere || trailingHemisphere;
   const absolute = Number(deg) + Number(min) / 60 + Number(sec) / 3600;
   const negative = sign === "-" || /[SW]/i.test(hemisphere ?? "");
   return negative ? -absolute : absolute;
