@@ -11,6 +11,7 @@ import type {
   WindUnit,
 } from "../../models/logbook";
 import type { UserPreferences } from "../users";
+import { normalizeScannedWeather } from "./weather";
 
 type CurrentUserCrew = Partial<CrewMember> & Pick<CrewMember, "name">;
 
@@ -151,6 +152,7 @@ function scannedLineToLogLine(scannedLine: ScannerResult["draft"]["lines"][numbe
     ...scannerUnitDefaults(userPreferences),
     ...scannedLine,
     time: normalizedTime,
+    weather: normalizeScannedWeather(scannedLine.weather),
     ...missingScannerUnitDefaults(scannedLine, userPreferences),
   });
 }
