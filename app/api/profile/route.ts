@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "../../../auth";
-import { deleteUserAccount, findUserById, updateUserComplianceRead, updateUserEmail, updateUserName, updateUserOnboardingCompletedTasks, updateUserPassword, updateUserViewPreferences } from "../../lib/users";
+import { deleteUserAccount, findUserById, updateUserAvatar, updateUserComplianceRead, updateUserEmail, updateUserName, updateUserOnboardingCompletedTasks, updateUserPassword, updateUserViewPreferences } from "../../lib/users";
 
 export async function GET() {
   const session = await auth();
@@ -12,6 +12,7 @@ export async function GET() {
     name: user.name,
     email: user.email,
     emailVerified: user.emailVerified,
+    avatar: user.avatar,
     groups: user.groups,
     onboardingCompletedTasks: user.onboardingCompletedTasks,
     preferences: {
@@ -38,7 +39,11 @@ export async function PATCH(request: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
-    const body = await request.json() as { action?: string; name?: string; email?: string; currentPassword?: string; newPassword?: string; onboardingCompletedTasks?: unknown; preferences?: Record<string, unknown>; theme?: unknown; isNavSlim?: unknown; showCourseConversionTable?: unknown };
+    const body = await request.json() as { action?: string; name?: string; email?: string; avatarData?: string; avatarMimeType?: string; currentPassword?: string; newPassword?: string; onboardingCompletedTasks?: unknown; preferences?: Record<string, unknown>; theme?: unknown; isNavSlim?: unknown; showCourseConversionTable?: unknown };
+    if (body.action === "avatar") {
+      const avatar = await updateUserAvatar(session.user.id, { data: body.avatarData ?? "", mimeType: body.avatarMimeType ?? "" });
+      return NextResponse.json({ avatar });
+    }
     if (body.action === "name") {
       const user = await updateUserName(session.user.id, { name: body.name ?? "", currentPassword: body.currentPassword ?? "" });
       return NextResponse.json({ name: user.name });
