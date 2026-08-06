@@ -3,6 +3,7 @@
 import type React from "react";
 import { useMemo, useState, type ReactNode } from "react";
 import { useI18n } from "../lib/i18n";
+import { formatMiles } from "../lib/format-number";
 
 type TimelinePoint = { label: string; totalNm: number; sailNm: number; motorNm: number; overallMinutes: number; motionMinutes: number; motorMinutes: number };
 export type DashboardStats = { totalNm: number; sailNm: number; motorNm: number; durationMinutes: number; motionDurationMinutes: number; motorHours: number; sheets: number; boats: number; timeline: TimelinePoint[]; boatDistribution: { boatName: string; totalNm: number }[]; };
@@ -47,9 +48,9 @@ export function DashboardPanel({ stats, onboardingChecklist }: DashboardPanelPro
       </div>
       {onboardingChecklist}
       <div className="stat-grid" aria-label={t("dashboard.personalStats")}>
-        <article><i>⛵</i><span>{t("dashboard.totalMiles")}</span><strong>{stats.totalNm.toLocaleString()} nm</strong><small>{t("dashboard.allTime")}</small></article>
-        <article><i>△</i><span>{t("dashboard.sailMiles")}</span><strong>{stats.sailNm.toLocaleString()} nm</strong><small>{sailPct}% {t("dashboard.ofTotal")}</small></article>
-        <article><i>✚</i><span>{t("dashboard.motorMiles")}</span><strong>{stats.motorNm.toLocaleString()} nm</strong><small>{motorPct}% {t("dashboard.ofTotal")}</small></article>
+        <article><i>⛵</i><span>{t("dashboard.totalMiles")}</span><strong>{formatMiles(stats.totalNm)} nm</strong><small>{t("dashboard.allTime")}</small></article>
+        <article><i>△</i><span>{t("dashboard.sailMiles")}</span><strong>{formatMiles(stats.sailNm)} nm</strong><small>{sailPct}% {t("dashboard.ofTotal")}</small></article>
+        <article><i>✚</i><span>{t("dashboard.motorMiles")}</span><strong>{formatMiles(stats.motorNm)} nm</strong><small>{motorPct}% {t("dashboard.ofTotal")}</small></article>
         <article><i>⏱</i><span>{t("dashboard.overallDuration")}</span><strong>{formatDuration(stats.durationMinutes)}</strong><small>{t("dashboard.allTime")}</small></article>
         <article><i>↬</i><span>{t("dashboard.motionDuration")}</span><strong>{formatDuration(stats.motionDurationMinutes)}</strong><small>{t("dashboard.inMotion")}</small></article>
         <article><i>⚙</i><span>{t("dashboard.motorHours")}</span><strong>{formatDuration(stats.motorHours * 60)}</strong><small>{t("dashboard.allTime")}</small></article>
@@ -84,7 +85,7 @@ export function DashboardPanel({ stats, onboardingChecklist }: DashboardPanelPro
           <div className="dashboard-pies">
             <div className="dashboard-pie" style={{ "--first": `${sailPct}%` } as React.CSSProperties}><strong>{sailPct}%</strong><span>{t("dashboard.sailMiles")}</span></div>
             <div className="dashboard-boat-pie" aria-hidden="true"><svg viewBox="0 0 180 180">{boatPieSegments.map((item) => <circle key={item.boatName} cx="90" cy="90" r="70" pathLength="100" style={{ stroke: item.color, strokeDasharray: `${item.percent} ${100 - item.percent}`, strokeDashoffset: item.offset }} />)}</svg></div>
-            <dl>{boatPieSegments.map((item) => <div key={item.boatName}><dt><span style={{ background: item.color }} />{item.boatName}</dt><dd>{Math.round(item.percent)}% · {item.totalNm.toLocaleString()} nm</dd></div>)}</dl>
+            <dl>{boatPieSegments.map((item) => <div key={item.boatName}><dt><span style={{ background: item.color }} />{item.boatName}</dt><dd>{Math.round(item.percent)}% · {formatMiles(item.totalNm)} nm</dd></div>)}</dl>
           </div>
         </article>
       </div>

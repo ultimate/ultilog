@@ -3,6 +3,7 @@ import { useI18n } from "../../lib/i18n";
 import { paginatePrintLogLines, PRINT_LOG_ROWS_PER_PAGE } from "./print-pagination";
 import type { LogSheetMetrics } from "../../domain/logbook/sheet-metrics";
 import { calculateLogSheetMetrics, formatLogSheetDuration } from "../../domain/logbook/sheet-metrics";
+import { formatMiles } from "../../lib/format-number";
 
 export type LogSheetPrintSummary = LogSheetMetrics | {
   motorMiles: number;
@@ -67,9 +68,9 @@ export function LogSheetPrintView(props: LogSheetPrintViewProps) {
               <PrintField label="Home" value={props.boat?.homePort} />
             </aside>
             <aside className="print-summary" aria-label="Summary">
-              <PrintField label="Total" value={formatNumber(summary.totalMiles, " nm")} />
-              <PrintField label="Sail" value={formatNumber(summary.sailMiles, " nm")} />
-              <PrintField label="Motor" value={formatNumber(summary.motorMiles, " nm")} />
+              <PrintField label="Total" value={`${formatMiles(summary.totalMiles)} nm`} />
+              <PrintField label="Sail" value={`${formatMiles(summary.sailMiles)} nm`} />
+              <PrintField label="Motor" value={`${formatMiles(summary.motorMiles)} nm`} />
               <PrintField label="Dur" value={summary.duration} />
             </aside>
           </header>

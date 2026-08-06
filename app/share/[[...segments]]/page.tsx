@@ -3,6 +3,7 @@ import { readSharedLogSheet } from "../../lib/logbook-store";
 import { EntityImage } from "../../components/logbook/EntityImage";
 import { LogLinesMapView } from "../../components/logbook/OpenSeaMapView";
 import { formatLogSheetDuration } from "../../domain/logbook/sheet-metrics";
+import { formatMiles } from "../../lib/format-number";
 
 export default async function SharedLogbookPage({ params }: { params: Promise<{ segments?: string[] }> }) {
   const { segments = [] } = await params;
@@ -53,9 +54,9 @@ export default async function SharedLogbookPage({ params }: { params: Promise<{ 
 
         {hasMetrics ? (
           <section className="entry-metrics logbook-section" aria-label="Shared logbook summary">
-            <article><span>Motor miles</span><strong>{metrics?.motorMiles ?? 0} nm</strong></article>
-            <article><span>Sail miles</span><strong>{metrics?.sailMiles ?? 0} nm</strong></article>
-            <article><span>Total miles</span><strong>{metrics?.totalMiles ?? 0} nm</strong></article>
+            <article><span>Motor miles</span><strong>{formatMiles(metrics?.motorMiles ?? 0)} nm</strong></article>
+            <article><span>Sail miles</span><strong>{formatMiles(metrics?.sailMiles ?? 0)} nm</strong></article>
+            <article><span>Total miles</span><strong>{formatMiles(metrics?.totalMiles ?? 0)} nm</strong></article>
             <article><span>Duration</span><strong>{formatLogSheetDuration(metrics?.durationMinutes)}</strong></article>
           </section>
         ) : null}
