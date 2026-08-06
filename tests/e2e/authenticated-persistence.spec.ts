@@ -27,7 +27,7 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   await openModule(page, "Crew manager", "New crew");
   await clickButton(page, "New crew");
   const crewForm = page.locator("form").filter({ hasText: "New crew" });
-  await crewForm.getByLabel("Name").fill(crewName);
+  await crewForm.getByLabel("Name", { exact: true }).fill(crewName);
   await crewForm.getByLabel("Nationality").fill("Swiss");
   await crewForm.getByLabel("Role").fill("Navigator");
   const crewSave = waitForLogbookSave(page);
