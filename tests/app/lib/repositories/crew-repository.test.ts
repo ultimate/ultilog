@@ -117,7 +117,7 @@ describe("CrewRepository", () => {
     expect(db.calls[0].sql).toContain("insert into crew_members");
     expect(db.calls[0].values?.[0]).toBe("repository-user:luca-frei-swiss");
     expect(db.calls[0].values?.slice(6, 12)).toEqual([crew.isPrimary ? 1 : 0, null, null, null, null, "repository-user"]);
-    expect(db.calls[0].values?.slice(12)).toHaveLength(9);
+    expect(db.calls[0].values?.slice(12)).toHaveLength(7);
     for (const [index, plaintext] of [crew.name, crew.nationality, crew.role, crew.address ?? "", crew.certificate ?? ""].entries()) {
       expect(db.calls[0].values?.[index + 1]).not.toBe(plaintext);
       expect(db.calls[0].values?.[index + 1]).toEqual(expect.stringMatching(/^\{"v":1,"alg":"AES-256-GCM","kid":"crew-pii-v1",/));

@@ -119,19 +119,12 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
             <label>
               {t("common.name")}
               <input
+                required
                 value={crewForm.name}
                 onChange={(e) =>
                   setCrewForm({ ...crewForm, name: e.target.value })
                 }
               />
-            </label>
-            <label>
-              {t("crew.givenNames")}
-              <input value={crewForm.givenNames ?? ""} autoComplete="given-name" onChange={(e) => setCrewForm({ ...crewForm, givenNames: e.target.value })} />
-            </label>
-            <label>
-              {t("crew.familyName")}
-              <input value={crewForm.familyName ?? ""} autoComplete="family-name" onChange={(e) => setCrewForm({ ...crewForm, familyName: e.target.value })} />
             </label>
             <label>
               {t("crew.nationality")}

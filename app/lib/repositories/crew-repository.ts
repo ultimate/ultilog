@@ -8,7 +8,7 @@ export class CrewRepository {
 
   async findProfiles(ownerId: string) {
     return (await this.db.query<CrewMemberRow>(`
-      select id as crew_member_id, name, nationality, role, address, certificate, given_names, family_name, date_of_birth, place_of_birth, gender, identity_document_type, identity_document_number, identity_document_issuing_date, identity_document_expiry_date, is_primary, image_data, image_mime_type, image_width, image_height
+      select id as crew_member_id, name, nationality, role, address, certificate, date_of_birth, place_of_birth, gender, identity_document_type, identity_document_number, identity_document_issuing_date, identity_document_expiry_date, is_primary, image_data, image_mime_type, image_width, image_height
       from crew_members
       where owner_id = ${this.db.placeholder(1)}
       order by is_primary desc
@@ -27,8 +27,6 @@ export class CrewRepository {
         crew_members.role,
         crew_members.address,
         crew_members.certificate,
-        crew_members.given_names,
-        crew_members.family_name,
         crew_members.date_of_birth,
         crew_members.place_of_birth,
         crew_members.gender,
@@ -65,8 +63,6 @@ export class CrewRepository {
         crew_members.role,
         crew_members.address,
         crew_members.certificate,
-        crew_members.given_names,
-        crew_members.family_name,
         crew_members.date_of_birth,
         crew_members.place_of_birth,
         crew_members.gender,
@@ -98,7 +94,7 @@ export class CrewRepository {
   async insertProfile(crew: CrewMember, ownerId: string) {
     const crewMemberId = scopedId(ownerId, crew.id);
     await this.db.query(
-      `insert into crew_members (id, name, nationality, role, address, certificate, is_primary, image_data, image_mime_type, image_width, image_height, owner_id, given_names, family_name, date_of_birth, place_of_birth, gender, identity_document_type, identity_document_number, identity_document_issuing_date, identity_document_expiry_date) values (${this.values(21)}) on conflict(id) do update set name = excluded.name, nationality = excluded.nationality, role = excluded.role, address = excluded.address, certificate = excluded.certificate, given_names = excluded.given_names, family_name = excluded.family_name, date_of_birth = excluded.date_of_birth, place_of_birth = excluded.place_of_birth, gender = excluded.gender, identity_document_type = excluded.identity_document_type, identity_document_number = excluded.identity_document_number, identity_document_issuing_date = excluded.identity_document_issuing_date, identity_document_expiry_date = excluded.identity_document_expiry_date, is_primary = excluded.is_primary, image_data = excluded.image_data, image_mime_type = excluded.image_mime_type, image_width = excluded.image_width, image_height = excluded.image_height`,
+      `insert into crew_members (id, name, nationality, role, address, certificate, is_primary, image_data, image_mime_type, image_width, image_height, owner_id, date_of_birth, place_of_birth, gender, identity_document_type, identity_document_number, identity_document_issuing_date, identity_document_expiry_date) values (${this.values(19)}) on conflict(id) do update set name = excluded.name, nationality = excluded.nationality, role = excluded.role, address = excluded.address, certificate = excluded.certificate, date_of_birth = excluded.date_of_birth, place_of_birth = excluded.place_of_birth, gender = excluded.gender, identity_document_type = excluded.identity_document_type, identity_document_number = excluded.identity_document_number, identity_document_issuing_date = excluded.identity_document_issuing_date, identity_document_expiry_date = excluded.identity_document_expiry_date, is_primary = excluded.is_primary, image_data = excluded.image_data, image_mime_type = excluded.image_mime_type, image_width = excluded.image_width, image_height = excluded.image_height`,
       [
         crewMemberId,
         encryptCrewField(ownerId, crewMemberId, "name", this.plainCrewField(ownerId, crewMemberId, "name", crew.name)),
@@ -109,7 +105,7 @@ export class CrewRepository {
         crew.isPrimary ? 1 : 0,
         ...this.encryptedImageValues(ownerId, crewMemberId, crew.image),
         ownerId,
-        ...([ ["given_names", crew.givenNames], ["family_name", crew.familyName], ["date_of_birth", crew.dateOfBirth], ["place_of_birth", crew.placeOfBirth], ["gender", crew.gender], ["identity_document_type", crew.identityDocumentType], ["identity_document_number", crew.identityDocumentNumber], ["identity_document_issuing_date", crew.identityDocumentIssuingDate], ["identity_document_expiry_date", crew.identityDocumentExpiryDate] ] as const).map(([field, value]) => encryptCrewField(ownerId, crewMemberId, field, this.plainCrewField(ownerId, crewMemberId, field, value ?? ""))),
+        ...([ ["date_of_birth", crew.dateOfBirth], ["place_of_birth", crew.placeOfBirth], ["gender", crew.gender], ["identity_document_type", crew.identityDocumentType], ["identity_document_number", crew.identityDocumentNumber], ["identity_document_issuing_date", crew.identityDocumentIssuingDate], ["identity_document_expiry_date", crew.identityDocumentExpiryDate] ] as const).map(([field, value]) => encryptCrewField(ownerId, crewMemberId, field, this.plainCrewField(ownerId, crewMemberId, field, value ?? ""))),
       ],
     );
   }
@@ -160,7 +156,7 @@ export class CrewRepository {
     );
   }
 
-  private decryptCrewRow<Row extends Pick<CrewMemberRow, "crew_member_id" | "name" | "nationality" | "role" | "address" | "certificate" | "given_names" | "family_name" | "date_of_birth" | "place_of_birth" | "gender" | "identity_document_type" | "identity_document_number" | "identity_document_issuing_date" | "identity_document_expiry_date" | "image_data">>(row: Row, ownerId: string): Row {
+  private decryptCrewRow<Row extends Pick<CrewMemberRow, "crew_member_id" | "name" | "nationality" | "role" | "address" | "certificate" | "date_of_birth" | "place_of_birth" | "gender" | "identity_document_type" | "identity_document_number" | "identity_document_issuing_date" | "identity_document_expiry_date" | "image_data">>(row: Row, ownerId: string): Row {
     return {
       ...row,
       name: decryptCrewField(ownerId, row.crew_member_id, "name", row.name),
@@ -168,8 +164,6 @@ export class CrewRepository {
       role: decryptCrewField(ownerId, row.crew_member_id, "role", row.role),
       address: decryptCrewField(ownerId, row.crew_member_id, "address", row.address ?? ""),
       certificate: decryptCrewField(ownerId, row.crew_member_id, "certificate", row.certificate ?? ""),
-      ...(row.given_names === undefined ? {} : { given_names: decryptCrewField(ownerId, row.crew_member_id, "given_names", row.given_names) }),
-      ...(row.family_name === undefined ? {} : { family_name: decryptCrewField(ownerId, row.crew_member_id, "family_name", row.family_name) }),
       ...(row.date_of_birth === undefined ? {} : { date_of_birth: decryptCrewField(ownerId, row.crew_member_id, "date_of_birth", row.date_of_birth) }),
       ...(row.place_of_birth === undefined ? {} : { place_of_birth: decryptCrewField(ownerId, row.crew_member_id, "place_of_birth", row.place_of_birth) }),
       ...(row.gender === undefined ? {} : { gender: decryptCrewField(ownerId, row.crew_member_id, "gender", row.gender) }),

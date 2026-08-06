@@ -36,7 +36,7 @@ describe("SqliteLogbookDatabase", () => {
 
     await expect(new SqliteLogbookDatabase(databasePath).forUser("new-user").readLogbook()).resolves.toEqual({
       boats: [],
-      crewMembers: [{ id: "me", name: "New User", nationality: "", role: "Owner", address: "", certificate: "", givenNames: "", familyName: "", dateOfBirth: "", placeOfBirth: "", gender: "", identityDocumentType: "", identityDocumentNumber: "", identityDocumentIssuingDate: "", identityDocumentExpiryDate: "", isPrimary: true }],
+      crewMembers: [{ id: "me", name: "New User", nationality: "", role: "Owner", address: "", certificate: "", dateOfBirth: "", placeOfBirth: "", gender: "", identityDocumentType: "", identityDocumentNumber: "", identityDocumentIssuingDate: "", identityDocumentExpiryDate: "", isPrimary: true }],
       sheets: [],
     });
   });
@@ -48,7 +48,7 @@ describe("SqliteLogbookDatabase", () => {
     await db.query("insert into users (id, name, email, password_hash) values (?, ?, ?, ?)", ["new-user", "New User", "new@example.test", ""]);
     const emptyUserLogbook = {
       boats: [],
-      crewMembers: [{ id: "me", name: "New User", nationality: "", role: "", address: "", certificate: "", givenNames: "", familyName: "", dateOfBirth: "", placeOfBirth: "", gender: "", identityDocumentType: "", identityDocumentNumber: "", identityDocumentIssuingDate: "", identityDocumentExpiryDate: "", isPrimary: true }],
+      crewMembers: [{ id: "me", name: "New User", nationality: "", role: "", address: "", certificate: "", dateOfBirth: "", placeOfBirth: "", gender: "", identityDocumentType: "", identityDocumentNumber: "", identityDocumentIssuingDate: "", identityDocumentExpiryDate: "", isPrimary: true }],
       sheets: [],
     };
 
