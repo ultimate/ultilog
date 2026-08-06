@@ -12,6 +12,14 @@ afterEach(async () => {
 });
 
 describe("users preferences", () => {
+  it("builds a Gravatar fallback from a normalized SHA-256 email hash", async () => {
+    const { gravatarAvatarUrl } = await importUsersWithTempDatabase();
+
+    expect(gravatarAvatarUrl("  Sailor@Example.COM ")).toBe(
+      "https://www.gravatar.com/avatar/c9f866bbdbc2ee575094e2ac4039c0d6ba20153b025ea723affb8abc152219b3?s=256&d=mp",
+    );
+  });
+
   it("returns defaults for a newly registered user", async () => {
     const { registerUser } = await importUsersWithTempDatabase();
 

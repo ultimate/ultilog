@@ -29,13 +29,20 @@ type UserRow = Omit<AppUser, "avatar" | "groups" | "onboardingCompletedTasks" | 
 type GroupRow = { user_id?: string; name: string };
 type PasswordResetTokenRow = { id: string; user_id: string; token_hash: string; expires_at: string; used_at: string | null };
 type EmailVerificationTokenRow = PasswordResetTokenRow;
-type DirectoryUserRow = { id: string; username: string; avatar_data: string | null; avatar_mime_type: string | null; sail_miles: number | string | null; motor_miles: number | string | null; logbook_sheets: number | string | null; boats: number | string | null };
+type DirectoryUserRow = { id: string; username: string; email: string; avatar_data: string | null; avatar_mime_type: string | null; sail_miles: number | string | null; motor_miles: number | string | null; logbook_sheets: number | string | null; boats: number | string | null };
 
 const USER_COLUMNS = "id, name, email, avatar_data, avatar_mime_type, password_hash, onboarding_completed_tasks, theme, nav_slim, has_read_compliance, country_code, language, wind_unit, water_height_unit, temperature_unit, coordinate_format, distance_display_unit, default_boat_id, default_crew_member_ids, show_course_conversion_table, motion_stationary_threshold_nm, email_verified_at";
 
-function avatarFromRow(row: { avatar_data?: string | null; avatar_mime_type?: string | null }) {
-  if (!row.avatar_data || !row.avatar_mime_type) return undefined;
-  return `data:${row.avatar_mime_type};base64,${decryptWithEnvelope(row.avatar_data)}`;
+export function gravatarAvatarUrl(email: string) {
+  const emailHash = createHash("sha256").update(normalizeEmail(email)).digest("hex");
+  return `https://www.gravatar.com/avatar/${emailHash}?s=256&d=mp`;
+}
+
+function avatarFromRow(row: { email: string; avatar_data?: string | null; avatar_mime_type?: string | null }) {
+  if (row.avatar_data && row.avatar_mime_type) {
+    return `data:${row.avatar_mime_type};base64,${decryptWithEnvelope(row.avatar_data)}`;
+  }
+  return gravatarAvatarUrl(row.email);
 }
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
@@ -443,7 +450,7 @@ export async function listUsersForDirectory(): Promise<DirectoryUserListItem[]> 
   const rows = (await db.query<DirectoryUserRow>(`
     select
       users.id,
-      users.name as username, users.avatar_data, users.avatar_mime_type,
+      users.name as username, users.email, users.avatar_data, users.avatar_mime_type,
       coalesce(sheet_totals.sail_miles, 0) as sail_miles,
       coalesce(sheet_totals.motor_miles, 0) as motor_miles,
       coalesce(sheet_totals.logbook_sheets, 0) as logbook_sheets,
