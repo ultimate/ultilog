@@ -22,6 +22,35 @@ describe("scanned log-line dates", () => {
     expect(createSheet(result).lines[0].time).toBe("2026-07-02T10:15");
   });
 
+  it("advances the inferred date when sorted time-only rows cross midnight", () => {
+    const sheet = createSheet(scannerResult({ dateRange: "2026-07-01 - 2026-07-03", times: ["23:00", "01:00", "22:00", "00:30"] }));
+
+    expect(sheet.lines.map((line) => line.time)).toEqual([
+      "2026-07-01T23:00",
+      "2026-07-02T01:00",
+      "2026-07-02T22:00",
+      "2026-07-03T00:30",
+    ]);
+  });
+
+  it("uses an explicitly dated row as the anchor for following time-only rows", () => {
+    const sheet = createSheet(scannerResult({ dateRange: "2026-07-01 - 2026-07-03", times: ["2026-07-02T23:30", "00:15"] }));
+
+    expect(sheet.lines.map((line) => line.time)).toEqual(["2026-07-02T23:30", "2026-07-03T00:15"]);
+  });
+
+  it("caps inferred rollovers at the sheet end date and adds a verification warning", () => {
+    const sheet = createSheet(scannerResult({ dateRange: "2026-07-01 - 2026-07-02", times: ["23:00", "01:00", "23:30", "00:30"] }));
+
+    expect(sheet.lines.map((line) => line.time)).toEqual([
+      "2026-07-01T23:00",
+      "2026-07-02T01:00",
+      "2026-07-02T23:30",
+      "2026-07-02T00:30",
+    ]);
+    expect(sheet.scannerWarnings).toContain("A log-line date rollover would exceed the sheet end date; the inferred date was capped at the end date.");
+  });
+
   it("preserves already dated values and time-only values without an extracted master date", () => {
     const dated = createSheet(scannerResult({ dateRange: "2026-07-01", times: ["2026-07-02T00:15:00+02:00"] }));
     const undated = createSheet(scannerResult({ dateRange: "", times: ["11:30"] }));
