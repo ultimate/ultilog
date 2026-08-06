@@ -31,6 +31,9 @@ describe("logbook scanner prompt", () => {
     const prompt = buildScannerUserPrompt();
 
     expect(prompt).toContain(criticalCourseScannerFields.join(" -> "));
+    expect(prompt).toContain("A missing intermediate course column never shifts the meaning of later columns");
+    expect(prompt).toContain("MgK / Cc, Abl / d, Mw / D, rwK / Cv maps to compassCourse, deviation, variation, trueCourse");
+    expect(prompt).toContain("leave magneticCourse empty");
     expect(prompt).toContain("Never calculate, copy, or invent a missing course value");
     expect(prompt).toContain("User interface language hint: none");
   });
