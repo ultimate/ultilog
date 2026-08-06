@@ -69,7 +69,7 @@ const lineFieldDescriptions = {
   position: "Named position, waypoint, or place description for map context; keep this field even when coordinates are present.",
   latitude: "Latitude as visible text in decimal degrees, DMS, or DDM (degrees and decimal minutes); preserve a visible N/S hemisphere prefix or suffix.",
   longitude: "Longitude as visible text in decimal degrees, DMS, or DDM (degrees and decimal minutes); preserve a visible E/W hemisphere prefix or suffix.",
-  weather: "Short weather code or condition text.",
+  weather: "Weather as one canonical UI emoji: ☀️, 🌤️, ⛅, 🌥️, ☁️, 🌦️, 🌧️, ⛈️, 🌨️, 🌩️, 🌪️, 🌫️, ❄️, or ⭐.",
   weatherRemark: "Free-text weather remark or visibility/horizon note.",
   temperature: "Air temperature as numeric text when visible.",
   temperatureUnit: "Air temperature unit when visible; expected values are °C or °F (c/f also accepted), otherwise empty string.",
@@ -163,6 +163,7 @@ const extractionInstructions = `Extract a logbook draft from these image(s). The
 - When one Position/Standort cell contains a coordinate pair, split it into latitude and longitude. DDM is common in nautical logs; for example, N49°27.3346' W2°32.0386' maps to latitude=N49°27.3346' and longitude=W2°32.0386'.
 - Expected row data types are strings in the JSON schema. Transcribe numeric values as strings for numeric fields such as temperature, barometer, waves, compassCourse, magneticCourse, windDrift, speedKn, and logNm.
 - Include explicit units when visible for windUnit, seaUnit, tideUnit, and temperatureUnit; leave them empty only when no unit is shown.
+- Convert written weather conditions in any language to the closest canonical weather emoji. Interpret meteorological cloud-cover circles by their filled fraction (oktas): 0/8=☀️, 1–2/8=🌤️, 3–4/8=⛅, 5–7/8=🌥️, and 8/8=☁️. Use precipitation, thunderstorm, snow, fog, and other specific weather emojis when those marks or words are visible.
 - warnings: concise human-readable warnings for missing or ambiguous fields.`;
 
 const documentInterpretationInstructions = `Interpret the document before transcribing its rows:
