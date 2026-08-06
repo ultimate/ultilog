@@ -51,4 +51,11 @@ describe("scanner field aliases", () => {
     expect(scannerFieldAliases.speedKn.de).toContain("F [kn]");
     expect(scannerFieldAliases.speedKn.de).toContain("Fahrt [kn]");
   });
+
+  it("maps German wind and current drift abbreviations", () => {
+    expect(scannerFieldAliases.windDrift.de).toContain("Windabdrift");
+    expect(scannerFieldAliases.windDrift.de).toContain("WA");
+    expect(scannerFieldAliases.currentDrift.de).toContain("Stromabdrift");
+    expect(scannerFieldAliases.currentDrift.de).toContain("SA");
+  });
 });

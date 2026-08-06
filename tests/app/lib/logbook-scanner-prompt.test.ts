@@ -42,6 +42,8 @@ describe("logbook scanner prompt", () => {
     expect(prompt).toContain("Tagesziel/Daily goal field as the title");
     expect(prompt).toContain("Standort morgens/Location morning as route.from");
     expect(prompt).toContain("Standort abends/Location evening as route.to");
+    expect(prompt).toContain("WA (Windabdrift) maps to windDrift");
+    expect(prompt).toContain("SA (Stromabdrift) maps to currentDrift");
     expect(prompt).toContain("KüG (Kurs über Grund) maps to courseOverGround");
     expect(prompt).toContain("F [kn] (Fahrt in Knoten) maps to speedKn");
   });
