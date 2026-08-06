@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findLocalWarnings } from "../../../app/lib/logbook-scanner/openai-provider";
+import { findLocalWarnings, repairShiftedMissingMagneticCourse } from "../../../app/lib/logbook-scanner/openai-provider";
 import type { ScannerResult } from "../../../app/models/logbook-scanner";
 
 describe("logbook scanner course diagnostics", () => {
@@ -41,16 +41,57 @@ describe("logbook scanner course diagnostics", () => {
   });
 });
 
+describe("missing magnetic-course column repair", () => {
+  it("moves consistently shifted variation and true-course values without inventing magnetic course", () => {
+    const result = scannerResult([
+      { compassCourse: "61", deviation: "6", magneticCourse: "1", variation: "68", trueCourse: "" },
+      { compassCourse: "81", deviation: "8", magneticCourse: "1", variation: "90", trueCourse: "" },
+      { compassCourse: "35", deviation: "4", magneticCourse: "1", variation: "40", trueCourse: "" },
+    ]);
+
+    expect(repairShiftedMissingMagneticCourse(result)).toBe(true);
+    expect(result.draft.lines).toEqual([
+      expect.objectContaining({ magneticCourse: "", variation: "1", trueCourse: "68" }),
+      expect.objectContaining({ magneticCourse: "", variation: "1", trueCourse: "90" }),
+      expect.objectContaining({ magneticCourse: "", variation: "1", trueCourse: "40" }),
+    ]);
+    expect(result.warnings).toContain("Detected a missing magnetic-course column and remapped the following variation and true-course columns.");
+  });
+
+  it("does not alter a complete course chain", () => {
+    const result = scannerResult([
+      { compassCourse: "61", deviation: "6", magneticCourse: "67", variation: "1", trueCourse: "68" },
+      { compassCourse: "81", deviation: "8", magneticCourse: "89", variation: "1", trueCourse: "90" },
+    ]);
+
+    expect(repairShiftedMissingMagneticCourse(result)).toBe(false);
+    expect(result.draft.lines[0]).toEqual(expect.objectContaining({ magneticCourse: "67", variation: "1", trueCourse: "68" }));
+  });
+
+  it("does not repair an isolated or arithmetically inconsistent row", () => {
+    const result = scannerResult([
+      { compassCourse: "61", deviation: "6", magneticCourse: "1", variation: "68", trueCourse: "" },
+    ]);
+
+    expect(repairShiftedMissingMagneticCourse(result)).toBe(false);
+    expect(result.draft.lines[0]).toEqual(expect.objectContaining({ magneticCourse: "1", variation: "68", trueCourse: "" }));
+  });
+});
+
 function courseWarnings(line: ScannerResult["draft"]["lines"][number]) {
-  const result: ScannerResult = {
+  const result = scannerResult([line]);
+
+  return findLocalWarnings(result).filter((warning) => warning.includes("course chain") || warning.includes("course conversion"));
+}
+
+function scannerResult(lines: ScannerResult["draft"]["lines"]): ScannerResult {
+  return {
     draft: {
       title: "Test",
       dateRange: "2026-08-04",
       route: { from: "A", to: "B", departed: "10:00", arrived: "11:00" },
-      lines: [{ time: "10:30", position: "At sea", speedKn: "5", logNm: "10", ...line }],
+      lines: lines.map((line) => ({ time: "10:30", position: "At sea", speedKn: "5", logNm: "10", ...line })),
     },
     warnings: [],
   };
-
-  return findLocalWarnings(result).filter((warning) => warning.includes("course chain") || warning.includes("course conversion"));
 }

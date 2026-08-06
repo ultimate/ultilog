@@ -271,12 +271,55 @@ export async function extractLogbookDraft(input: ScannerProviderInput): Promise<
 
   const payload = (await response.json()) as OpenAIResponsePayload;
   const parsed = parseScannerResult(payload);
+  repairShiftedMissingMagneticCourse(parsed);
   parsed.warnings = [...parsed.warnings, ...findLocalWarnings(parsed)];
 
   return parsed;
 }
 
 export const openAiScannerProvider = { extractLogbookDraft, isConfigured: isOpenAiScannerProviderConfigured };
+
+const shiftedCourseRepairWarning = "Detected a missing magnetic-course column and remapped the following variation and true-course columns.";
+
+/**
+ * Repairs a recurring vision-model error on sheets whose printed course chain
+ * omits magnetic course. The repair is deliberately sheet-wide and requires
+ * the shifted values to satisfy the visible course arithmetic in several rows.
+ */
+export function repairShiftedMissingMagneticCourse(result: ScannerResult) {
+  const lines = result.draft.lines;
+  if (lines.some((line) => line.trueCourse?.trim())) return false;
+
+  const candidates = lines.filter((line) =>
+    line.compassCourse?.trim()
+    && line.deviation?.trim()
+    && line.magneticCourse?.trim()
+    && line.variation?.trim(),
+  );
+  if (candidates.length < 2) return false;
+
+  const matchingRows = candidates.filter((line) => {
+    const compassCourse = parseScannedNumber(line.compassCourse);
+    const deviation = parseScannedNumber(line.deviation);
+    const shiftedVariation = parseScannedNumber(line.magneticCourse);
+    const shiftedTrueCourse = parseScannedNumber(line.variation);
+    if (compassCourse === undefined || deviation === undefined || shiftedVariation === undefined || shiftedTrueCourse === undefined) return false;
+    if (Math.abs(shiftedVariation) > 30) return false;
+
+    const expectedTrueCourse = normalizeCourse(compassCourse + deviation + shiftedVariation);
+    return angularDifference(expectedTrueCourse, normalizeCourse(shiftedTrueCourse)) <= 1.5;
+  });
+
+  if (matchingRows.length / candidates.length < 0.75) return false;
+
+  for (const line of candidates) {
+    line.trueCourse = line.variation;
+    line.variation = line.magneticCourse;
+    line.magneticCourse = "";
+  }
+  if (!result.warnings.includes(shiftedCourseRepairWarning)) result.warnings.push(shiftedCourseRepairWarning);
+  return true;
+}
 
 async function createOpenAiScannerProviderError(response: Response) {
   const responseText = await response.text();
