@@ -36,6 +36,16 @@ describe("logbook scanner prompt", () => {
     expect(prompt).toContain("longitude=W2°32.0386'");
   });
 
+  it("maps German daily-log master data and abbreviated navigation columns", () => {
+    const prompt = buildScannerUserPrompt();
+
+    expect(prompt).toContain("Tagesziel/Daily goal field as the title");
+    expect(prompt).toContain("Standort morgens/Location morning as route.from");
+    expect(prompt).toContain("Standort abends/Location evening as route.to");
+    expect(prompt).toContain("KüG (Kurs über Grund) maps to courseOverGround");
+    expect(prompt).toContain("F [kn] (Fahrt in Knoten) maps to speedKn");
+  });
+
   it("describes the course sequence without allowing calculated values", () => {
     const prompt = buildScannerUserPrompt();
 

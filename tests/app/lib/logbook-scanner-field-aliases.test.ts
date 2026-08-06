@@ -46,4 +46,9 @@ describe("scanner field aliases", () => {
     expect(scannerFieldAliases.variation.de).toContain("Mw / D");
     expect(scannerFieldAliases.trueCourse.de).toContain("rwK / Cv");
   });
+
+  it("maps the German Fahrt-in-knots speed heading", () => {
+    expect(scannerFieldAliases.speedKn.de).toContain("F [kn]");
+    expect(scannerFieldAliases.speedKn.de).toContain("Fahrt [kn]");
+  });
 });

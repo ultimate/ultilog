@@ -37,7 +37,7 @@ export const scannerFieldAliases = {
   courseThroughWater: aliases(["Course through water", "Water track", "CTW"], ["Kurs durchs Wasser", "KdW"], ["Route surface", "Cap surface", "Rs"], ["Rotta sull'acqua", "Rotta di superficie", "RA"]),
   currentDrift: aliases(["Current drift", "Current correction", "CD"], ["Beschickung durch Strom", "Stromabdrift", "BS"], ["Dérive due au courant", "Correction de courant", "Dc"], ["Deriva di corrente", "Correzione corrente", "Dc"]),
   courseOverGround: aliases(["Course over ground", "Ground track", "COG"], ["Kurs über Grund", "KüG", "Kurs ü. G."], ["Route fond", "Route sur le fond", "COG"], ["Rotta sul fondo", "Rotta rispetto al fondo", "COG"]),
-  speedKn: aliases(["Speed", "Speed over ground", "Spd", "SOG", "kn"], ["Fahrt", "Geschwindigkeit", "FüG", "kn"], ["Vitesse", "Vitesse fond", "Vit.", "SOG", "nd"], ["Velocità", "Velocità sul fondo", "Vel.", "SOG", "kn"]),
+  speedKn: aliases(["Speed", "Speed over ground", "Spd", "SOG", "kn"], ["Fahrt", "Geschwindigkeit", "FüG", "F [kn]", "Fahrt [kn]", "kn"], ["Vitesse", "Vitesse fond", "Vit.", "SOG", "nd"], ["Velocità", "Velocità sul fondo", "Vel.", "SOG", "kn"]),
   logNm: aliases(["Log", "Log distance", "Distance log", "nm"], ["Logge", "Loggestand", "Distanz", "sm"], ["Loch", "Distance loch", "Distance", "nm"], ["Solcometro", "Distanza log", "Distanza", "nm"]),
   sailMiles: aliases(["Sail miles", "Sailing distance", "Sail nm"], ["Segelmeilen", "Strecke unter Segel", "Segel sm"], ["Milles sous voile", "Distance à la voile", "Voile nm"], ["Miglia a vela", "Distanza a vela", "Vela nm"]),
   sailNote: aliases(["Sail", "Sail plan", "Sail note"], ["Segel", "Besegelung", "Segelbemerkung"], ["Voilure", "Plan de voilure", "Note voile"], ["Vele", "Piano velico", "Nota vele"]),
