@@ -38,4 +38,12 @@ describe("scanner field aliases", () => {
     expect(scannerFieldAliases.currentDrift.de).toContain("BS");
     expect(scannerFieldAliases.courseOverGround.de).toContain("KüG");
   });
+
+  it("maps bilingual compound course headings without relying on column position", () => {
+    expect(scannerFieldAliases.compassCourse.de).toContain("MgK / Cc");
+    expect(scannerFieldAliases.deviation.de).toContain("Abl / d");
+    expect(scannerFieldAliases.magneticCourse.de).toContain("mwK / Cm");
+    expect(scannerFieldAliases.variation.de).toContain("Mw / D");
+    expect(scannerFieldAliases.trueCourse.de).toContain("rwK / Cv");
+  });
 });
