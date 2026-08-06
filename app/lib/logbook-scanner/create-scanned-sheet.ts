@@ -79,11 +79,13 @@ export function createScannedSheet({
     departed: draft.route?.departed ?? "",
     arrived: draft.route?.arrived ?? "",
   };
+  const scannedDate = dateFromSheetMasterData(draft.dateRange, route);
+  const dateRange = draft.dateRange?.trim() || scannedDate || new Date().toISOString().slice(0, 10);
 
   return {
     id: createId(),
     title: draft.title?.trim() || "Scanned log sheet",
-    dateRange: draft.dateRange?.trim() || dateFromRoute(route.departed) || dateFromRoute(route.arrived) || new Date().toISOString().slice(0, 10),
+    dateRange,
     status: "Draft",
     source: "scanner",
     verificationNote,
@@ -93,12 +95,18 @@ export function createScannedSheet({
     crew: createInitialCrew({ logbook, primaryCrew, currentUser, route }),
     watchPlan: [],
     technicalChecks: [],
-    lines: draft.lines.map((line) => scannedLineToLogLine(line, userPreferences)),
+    lines: draft.lines.map((line) => scannedLineToLogLine(line, userPreferences, scannedDate)),
   };
 }
 
-function scannedLineToLogLine(scannedLine: ScannerResult["draft"]["lines"][number], userPreferences?: ScannerUnitPreferences): LogLine {
-  return lineFormToLogLine({ ...defaultLineForm, ...scannerUnitDefaults(userPreferences), ...scannedLine, ...missingScannerUnitDefaults(scannedLine, userPreferences) });
+function scannedLineToLogLine(scannedLine: ScannerResult["draft"]["lines"][number], userPreferences?: ScannerUnitPreferences, scannedDate = ""): LogLine {
+  return lineFormToLogLine({
+    ...defaultLineForm,
+    ...scannerUnitDefaults(userPreferences),
+    ...scannedLine,
+    time: dateTimeFromScannedMasterDate(scannedLine.time ?? "", scannedDate),
+    ...missingScannerUnitDefaults(scannedLine, userPreferences),
+  });
 }
 
 function scannerUnitDefaults(userPreferences?: ScannerUnitPreferences): Pick<LineForm, "windUnit" | "seaUnit" | "tideUnit" | "temperatureUnit"> {
@@ -149,8 +157,30 @@ function createId() {
   return crypto.randomUUID();
 }
 
-function dateFromRoute(value: string) {
-  return value.match(/\d{4}-\d{2}-\d{2}/)?.[0] ?? "";
+function dateFromSheetMasterData(dateRange: string | undefined, route: LogSheet["route"]) {
+  return normalizeScannedDate(dateRange ?? "") || normalizeScannedDate(route.departed) || normalizeScannedDate(route.arrived);
+}
+
+function normalizeScannedDate(value: string) {
+  const isoDate = value.match(/\b(\d{4})-(\d{2})-(\d{2})\b/);
+  if (isoDate) return `${isoDate[1]}-${isoDate[2]}-${isoDate[3]}`;
+
+  const dayFirstDate = value.match(/\b(\d{1,2})[./](\d{1,2})[./](\d{2}|\d{4})\b/);
+  if (!dayFirstDate) return "";
+  const year = dayFirstDate[3].length === 2 ? `20${dayFirstDate[3]}` : dayFirstDate[3];
+  const month = dayFirstDate[2].padStart(2, "0");
+  const day = dayFirstDate[1].padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function dateTimeFromScannedMasterDate(value: string, scannedDate: string) {
+  if (!scannedDate) return value;
+  const timeOnly = value.trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (!timeOnly) return value;
+
+  const hours = timeOnly[1].padStart(2, "0");
+  const seconds = timeOnly[3] ? `:${timeOnly[3]}` : "";
+  return `${scannedDate}T${hours}:${timeOnly[2]}${seconds}`;
 }
 
 function dateTimeLocalFromStamp(value: string) {
