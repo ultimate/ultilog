@@ -1,5 +1,6 @@
 import { EntityImage } from "../EntityImage";
 import { useI18n } from "../../../lib/i18n";
+import { formatMiles } from "../../../lib/format-number";
 import { useMemo, useRef, type Dispatch, type SetStateAction } from "react";
 import type {
   Boat,
@@ -340,9 +341,9 @@ export function LogbookListPage({
                       <td>
                         {sheet.route.from} → {sheet.route.to}
                       </td>
-                      <td>{sheetSummary.sailMiles} nm</td>
-                      <td>{sheetSummary.motorMiles} nm</td>
-                      <td>{sheetSummary.totalMiles} nm</td>
+                      <td>{formatMiles(sheetSummary.sailMiles)} nm</td>
+                      <td>{formatMiles(sheetSummary.motorMiles)} nm</td>
+                      <td>{formatMiles(sheetSummary.totalMiles)} nm</td>
                       <td>{sheetSummary.duration}</td>
                       <td>{sheetSummary.motionDuration}</td>
                       <td>{sheetSummary.motorHoursDuration}</td>

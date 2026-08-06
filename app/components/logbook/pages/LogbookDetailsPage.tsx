@@ -1,5 +1,6 @@
 import { EntityImage } from "../EntityImage";
 import { useI18n } from "../../../lib/i18n";
+import { formatMiles } from "../../../lib/format-number";
 import { useEffect, useRef, useState, type CSSProperties, type Dispatch, type FormEvent, type MouseEvent, type SetStateAction } from "react";
 import type {
   Boat,
@@ -758,15 +759,15 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
               >
                 <article>
                   <span>{t("compliance.motorMiles")}</span>
-                  <strong>{activeSheetSummary.motorMiles} nm</strong>
+                  <strong>{formatMiles(activeSheetSummary.motorMiles)} nm</strong>
                 </article>
                 <article>
                   <span>{t("compliance.sailMiles")}</span>
-                  <strong>{activeSheetSummary.sailMiles} nm</strong>
+                  <strong>{formatMiles(activeSheetSummary.sailMiles)} nm</strong>
                 </article>
                 <article>
                   <span>{t("logbooks.totalMiles")}</span>
-                  <strong>{activeSheetSummary.totalMiles} nm</strong>
+                  <strong>{formatMiles(activeSheetSummary.totalMiles)} nm</strong>
                 </article>
                 <article>
                   <span>{t("dashboard.overallDuration")}</span>
