@@ -14,6 +14,11 @@ describe("coordinate helpers", () => {
     expect(parseCoordinate("20° 45' 14.40\" W")).toBeCloseTo(-20.754, 6);
   });
 
+  it("parses nautical DDM coordinates with leading hemisphere letters", () => {
+    expect(parseCoordinate("N49°27.3346'")).toBeCloseTo(49.4555767, 6);
+    expect(parseCoordinate("W2°32.0386'")).toBeCloseTo(-2.5339767, 6);
+  });
+
   it("normalizes minute and second rollover through decimal storage", () => {
     expect(decimalToDmsParts(dmsPartsToDecimal({ degrees: "38", minutes: "59", seconds: "60" }))).toEqual({ degrees: "39", minutes: "0", seconds: "0.00" });
     expect(decimalToDmsParts(dmsPartsToDecimal({ degrees: "38", minutes: "59", seconds: "59.999" }))).toEqual({ degrees: "39", minutes: "0", seconds: "0.00" });

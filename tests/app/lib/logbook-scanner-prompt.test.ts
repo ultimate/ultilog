@@ -27,6 +27,15 @@ describe("logbook scanner prompt", () => {
     expect(prompt).toContain("mixture of languages");
   });
 
+  it("describes composite nautical DDM positions", () => {
+    const prompt = buildScannerUserPrompt();
+
+    expect(prompt).toContain("split it into latitude and longitude");
+    expect(prompt).toContain("DDM is common in nautical logs");
+    expect(prompt).toContain("latitude=N49°27.3346'");
+    expect(prompt).toContain("longitude=W2°32.0386'");
+  });
+
   it("describes the course sequence without allowing calculated values", () => {
     const prompt = buildScannerUserPrompt();
 

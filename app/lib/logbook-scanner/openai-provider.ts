@@ -67,8 +67,8 @@ const LOG_LINE_FIELDS = [
 const lineFieldDescriptions = {
   time: "Log row time as visible text.",
   position: "Named position, waypoint, or place description for map context; keep this field even when coordinates are present.",
-  latitude: "Latitude as visible text; use decimal degrees only if the sheet already uses them.",
-  longitude: "Longitude as visible text; use decimal degrees only if the sheet already uses them.",
+  latitude: "Latitude as visible text in decimal degrees, DMS, or DDM (degrees and decimal minutes); preserve a visible N/S hemisphere prefix or suffix.",
+  longitude: "Longitude as visible text in decimal degrees, DMS, or DDM (degrees and decimal minutes); preserve a visible E/W hemisphere prefix or suffix.",
   weather: "Short weather code or condition text.",
   weatherRemark: "Free-text weather remark or visibility/horizon note.",
   temperature: "Air temperature as numeric text when visible.",
@@ -160,6 +160,7 @@ const extractionInstructions = `Extract a logbook draft from these image(s). The
 - Use the renamed log line fields waves, compassCourse, magneticCourse, windDrift, weatherRemark, and temperature.
 - Do not output deprecated course or wind fields; split wind into windDirection, windStrength, and windUnit.
 - Keep position in each row for named positions or waypoint text, even when latitude and longitude are present.
+- When one Position/Standort cell contains a coordinate pair, split it into latitude and longitude. DDM is common in nautical logs; for example, N49°27.3346' W2°32.0386' maps to latitude=N49°27.3346' and longitude=W2°32.0386'.
 - Expected row data types are strings in the JSON schema. Transcribe numeric values as strings for numeric fields such as temperature, barometer, waves, compassCourse, magneticCourse, windDrift, speedKn, and logNm.
 - Include explicit units when visible for windUnit, seaUnit, tideUnit, and temperatureUnit; leave them empty only when no unit is shown.
 - warnings: concise human-readable warnings for missing or ambiguous fields.`;
