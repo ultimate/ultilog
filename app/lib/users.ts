@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { isOnboardingTaskId, type OnboardingTaskId } from "./onboarding/tasks";
 import { getDatabase, writeLogbook } from "./logbook-store";
 import { sendEmailVerificationEmail, sendPasswordResetEmail } from "./mailer";
+import { decryptWithEnvelope, encryptWithEnvelope } from "./security/envelope-encryption";
 
 export type UserTheme = "light" | "dark" | "auto";
 export type UserPreferences = {
@@ -20,17 +21,22 @@ export type UserPreferences = {
   showCourseConversionTable: boolean;
   motionStationaryThresholdNm?: number;
 };
-export type AppUser = { id: string; name: string; email: string; emailVerified?: boolean; groups: string[]; onboardingCompletedTasks: OnboardingTaskId[]; hasReadCompliance: boolean; demoSandboxExpiresAt?: string } & UserPreferences;
+export type AppUser = { id: string; name: string; email: string; emailVerified?: boolean; avatar?: string; groups: string[]; onboardingCompletedTasks: OnboardingTaskId[]; hasReadCompliance: boolean; demoSandboxExpiresAt?: string } & UserPreferences;
 export type AdminUserListItem = AppUser;
-export type DirectoryUserListItem = { id: string; username: string; sailMiles: number; motorMiles: number; logbookSheets: number; boats: number };
+export type DirectoryUserListItem = { id: string; username: string; avatar?: string; sailMiles: number; motorMiles: number; logbookSheets: number; boats: number };
 
-type UserRow = Omit<AppUser, "groups" | "onboardingCompletedTasks" | "hasReadCompliance" | "isNavSlim" | "countryCode" | "windUnit" | "waterHeightUnit" | "temperatureUnit" | "coordinateFormat" | "distanceDisplayUnit" | "defaultBoatId" | "defaultCrewMemberIds" | "showCourseConversionTable" | "motionStationaryThresholdNm" | "emailVerified"> & { password_hash: string; onboarding_completed_tasks: string; country_code: string; wind_unit: string; water_height_unit: string; temperature_unit: string; coordinate_format: string; distance_display_unit: string; default_boat_id: string; default_crew_member_ids: string; nav_slim: number | boolean; has_read_compliance: number | boolean; show_course_conversion_table: number | boolean; motion_stationary_threshold_nm: number | string | null; email_verified_at: string | null };
+type UserRow = Omit<AppUser, "avatar" | "groups" | "onboardingCompletedTasks" | "hasReadCompliance" | "isNavSlim" | "countryCode" | "windUnit" | "waterHeightUnit" | "temperatureUnit" | "coordinateFormat" | "distanceDisplayUnit" | "defaultBoatId" | "defaultCrewMemberIds" | "showCourseConversionTable" | "motionStationaryThresholdNm" | "emailVerified"> & { avatar_data: string | null; avatar_mime_type: string | null; password_hash: string; onboarding_completed_tasks: string; country_code: string; wind_unit: string; water_height_unit: string; temperature_unit: string; coordinate_format: string; distance_display_unit: string; default_boat_id: string; default_crew_member_ids: string; nav_slim: number | boolean; has_read_compliance: number | boolean; show_course_conversion_table: number | boolean; motion_stationary_threshold_nm: number | string | null; email_verified_at: string | null };
 type GroupRow = { user_id?: string; name: string };
 type PasswordResetTokenRow = { id: string; user_id: string; token_hash: string; expires_at: string; used_at: string | null };
 type EmailVerificationTokenRow = PasswordResetTokenRow;
-type DirectoryUserRow = { id: string; username: string; sail_miles: number | string | null; motor_miles: number | string | null; logbook_sheets: number | string | null; boats: number | string | null };
+type DirectoryUserRow = { id: string; username: string; avatar_data: string | null; avatar_mime_type: string | null; sail_miles: number | string | null; motor_miles: number | string | null; logbook_sheets: number | string | null; boats: number | string | null };
 
-const USER_COLUMNS = "id, name, email, password_hash, onboarding_completed_tasks, theme, nav_slim, has_read_compliance, country_code, language, wind_unit, water_height_unit, temperature_unit, coordinate_format, distance_display_unit, default_boat_id, default_crew_member_ids, show_course_conversion_table, motion_stationary_threshold_nm, email_verified_at";
+const USER_COLUMNS = "id, name, email, avatar_data, avatar_mime_type, password_hash, onboarding_completed_tasks, theme, nav_slim, has_read_compliance, country_code, language, wind_unit, water_height_unit, temperature_unit, coordinate_format, distance_display_unit, default_boat_id, default_crew_member_ids, show_course_conversion_table, motion_stationary_threshold_nm, email_verified_at";
+
+function avatarFromRow(row: { avatar_data?: string | null; avatar_mime_type?: string | null }) {
+  if (!row.avatar_data || !row.avatar_mime_type) return undefined;
+  return `data:${row.avatar_mime_type};base64,${decryptWithEnvelope(row.avatar_data)}`;
+}
 
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
 const passwordResetTokenHours = 1;
@@ -154,6 +160,7 @@ function toAppUser(user: UserRow, groups: string[]): AppUser {
     name: user.name,
     email: user.email,
     emailVerified: Boolean(user.email_verified_at),
+    avatar: avatarFromRow(user),
     groups,
     onboardingCompletedTasks: parseOnboardingCompletedTasks(user.onboarding_completed_tasks),
     theme: normalizeTheme(user.theme),
@@ -221,6 +228,17 @@ export async function findUserById(userId: string) {
   await db.migrate();
   const result = await db.query<UserRow>(`select ${USER_COLUMNS} from users where id = ${db.placeholder(1)}`, [userId]);
   return withGroups(result.rows[0]);
+}
+
+export async function updateUserAvatar(userId: string, input: { data: string; mimeType: string }) {
+  if (!/^image\/(?:jpeg|png|webp)$/.test(input.mimeType)) throw new Error("Choose a JPEG, PNG, or WebP image.");
+  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(input.data)) throw new Error("The profile picture is invalid.");
+  const bytes = Buffer.from(input.data, "base64");
+  if (!bytes.length || bytes.length > 1024 * 1024) throw new Error("Profile pictures must be 1 MB or smaller.");
+  const db = getDatabase();
+  await db.migrate();
+  await db.query(`update users set avatar_data = ${db.placeholder(1)}, avatar_mime_type = ${db.placeholder(2)} where id = ${db.placeholder(3)}`, [encryptWithEnvelope(input.data), input.mimeType, userId]);
+  return `data:${input.mimeType};base64,${input.data}`;
 }
 
 async function findUserRowByEmail(email: string) {
@@ -425,7 +443,7 @@ export async function listUsersForDirectory(): Promise<DirectoryUserListItem[]> 
   const rows = (await db.query<DirectoryUserRow>(`
     select
       users.id,
-      users.name as username,
+      users.name as username, users.avatar_data, users.avatar_mime_type,
       coalesce(sheet_totals.sail_miles, 0) as sail_miles,
       coalesce(sheet_totals.motor_miles, 0) as motor_miles,
       coalesce(sheet_totals.logbook_sheets, 0) as logbook_sheets,
@@ -447,6 +465,7 @@ export async function listUsersForDirectory(): Promise<DirectoryUserListItem[]> 
   return rows.map((row) => ({
     id: row.id,
     username: row.username,
+    avatar: avatarFromRow(row),
     sailMiles: Number(row.sail_miles) || 0,
     motorMiles: Number(row.motor_miles) || 0,
     logbookSheets: Number(row.logbook_sheets) || 0,

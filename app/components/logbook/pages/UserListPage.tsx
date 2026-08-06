@@ -1,10 +1,12 @@
 import { useMemo } from "react";
+import Image from "next/image";
 import { useI18n } from "../../../lib/i18n";
 import { ListPagination, ListSearch, SortableColumnHeader, useSortableList } from "../SortableList";
 
 type SocialUser = {
   id: string;
   username: string;
+  avatar?: string;
   sailMiles: number;
   motorMiles: number;
   logbookSheets: number;
@@ -66,7 +68,7 @@ export function UserListPage({
               {list.pageItems.map((user) => (
                 <tr key={user.id}>
                   <td>
-                    <strong>{user.username}</strong>
+                    <span className="directory-user"><span className="directory-avatar">{user.avatar ? <Image unoptimized src={user.avatar} alt="" width={36} height={36} /> : user.username.slice(0, 2).toUpperCase()}</span><strong>{user.username}</strong></span>
                   </td>
                   <td>{(user.sailMiles + user.motorMiles).toLocaleString()} nm</td>
                   <td>{user.sailMiles.toLocaleString()} nm</td>

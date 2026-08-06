@@ -141,6 +141,14 @@ h1 { margin:0 0 .45rem; font-size:1.8rem; line-height:1.1; letter-spacing:-.04em
 .profile-grid { display:grid; grid-template-columns:minmax(280px,.9fr) minmax(0,1.1fr); gap:1rem; }
 .profile-hero-card { display:flex; align-items:center; gap:1rem; border:1px solid var(--line); border-radius:18px; background:var(--surface); box-shadow:var(--design-shadow); padding:1.25rem; }
 .profile-avatar { display:grid; place-items:center; width:4rem; height:4rem; border-radius:50%; background:#0b2758; color:white; font-weight:900; }
+.user-avatar,.profile-avatar img,.directory-avatar img { width:100%; height:100%; border-radius:50%; object-fit:cover; display:block; }
+.profile-avatar-upload { position:relative; flex:0 0 4rem; cursor:pointer; overflow:visible; }
+.profile-avatar-upload>img { overflow:hidden; }
+.profile-avatar-upload input { position:absolute; width:1px; height:1px; opacity:0; }
+.profile-avatar-upload>span { position:absolute; right:-.2rem; bottom:-.2rem; display:grid; place-items:center; width:1.45rem; height:1.45rem; border-radius:50%; background:var(--blue); color:white; border:2px solid var(--surface); }
+.directory-user { display:flex; align-items:center; gap:.65rem; }
+.directory-avatar { display:grid; place-items:center; flex:0 0 2.25rem; width:2.25rem; height:2.25rem; border-radius:50%; overflow:hidden; background:#0b2758; color:white; font-size:.68rem; font-weight:900; }
+.profile-card .user-avatar,.mobile-profile-action .user-avatar { width:2rem; height:2rem; }
 @media (max-width: 1000px) {
   .mobile-nav-actions { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:.25rem; }
   .mobile-nav-actions button { min-height:0; padding:.3rem .15rem; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.22rem; border:0; border-radius:14px; background:transparent; color:var(--text); font-size:.67rem; font-weight:750; }

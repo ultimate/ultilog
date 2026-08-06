@@ -76,7 +76,7 @@ const adminUserColumns = [
   { key: "email", value: (user: AdminUser) => user.email },
   { key: "groups", value: (user: AdminUser) => user.groups },
 ];
-type SocialUser = { id: string; username: string; sailMiles: number; motorMiles: number; logbookSheets: number; boats: number };
+type SocialUser = { id: string; username: string; avatar?: string; sailMiles: number; motorMiles: number; logbookSheets: number; boats: number };
 type PrintTarget = { mode: "filled"; sheetId: string; showCourseColumns: boolean } | { mode: "empty"; showCourseColumns: boolean } | null;
 type DemoRestrictedFeature = "sharing" | "scanner" | "images";
 
@@ -230,6 +230,7 @@ export function LogbookApp({
   });
   const [profileMessage, setProfileMessage] = useState<string | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
+  const [profileAvatar, setProfileAvatar] = useState<string | undefined>();
   const [deleteForm, setDeleteForm] = useState({
     currentPassword: "",
     confirmation: "",
@@ -286,6 +287,10 @@ export function LogbookApp({
     t,
   });
   const adminList = useSortableList(adminUsers, adminUserColumns, preferences.defaultPageSize);
+
+  useEffect(() => {
+    fetch("/api/profile").then((response) => response.ok ? response.json() : {}).then((profile: { avatar?: string }) => setProfileAvatar(profile.avatar)).catch(() => undefined);
+  }, []);
 
 
   async function logout() {
@@ -1774,6 +1779,7 @@ export function LogbookApp({
         userEmail={accountEmail || userEmail}
         userName={accountName || userName}
         userGroups={userGroups}
+        userAvatar={profileAvatar}
         isNavSlim={isNavSlim}
         onToggleNavSlim={() => updatePreferences({ isNavSlim: !isNavSlim })}
         onLogout={logout}
@@ -1945,6 +1951,8 @@ export function LogbookApp({
               userGroups={userGroups}
               profileMessage={profileMessage}
               profileError={profileError}
+              avatar={profileAvatar}
+              setAvatar={setProfileAvatar}
               updateName={updateName}
               updateEmail={updateEmail}
               updatePassword={updatePassword}

@@ -1,12 +1,29 @@
 import { useState } from "react";
+import Image from "next/image";
 import { useI18n } from "../../../lib/i18n";
-import type { FormEvent, Dispatch, ReactNode, SetStateAction } from "react";
+import type { ChangeEvent, FormEvent, Dispatch, ReactNode, SetStateAction } from "react";
 import type { Boat, PersistedLogbook } from "../../../models/logbook";
 import { PasswordField } from "../../PasswordField";
 import type { ProfilePreferences } from "../../onboarding/useOnboardingProfile";
 import { pageSizeOptions, normalizePageSize } from "../PaginationControls";
 
 type ProfilePageProps = Record<string, any>;
+
+async function cropImageToSquare(file: File) {
+  if (!/^image\/(?:jpeg|png|webp)$/.test(file.type)) throw new Error("Choose a JPEG, PNG, or WebP image.");
+  const source = await createImageBitmap(file);
+  const size = Math.min(source.width, source.height);
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 256;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("This browser cannot process the picture.");
+  context.drawImage(source, (source.width - size) / 2, (source.height - size) / 2, size, size, 0, 0, 256, 256);
+  source.close();
+  const mimeType = "image/jpeg";
+  const dataUrl = canvas.toDataURL(mimeType, 0.86);
+  return { mimeType, data: dataUrl.slice(dataUrl.indexOf(",") + 1) };
+}
 
 export function ProfilePage(props: ProfilePageProps) {
   const { t, locales, localeLabels } = useI18n();
@@ -35,6 +52,7 @@ export function ProfilePage(props: ProfilePageProps) {
   const profilePreferences = preferences as ProfilePreferences;
   const [motionThresholdDraft, setMotionThresholdDraft] = useState<string | null>(null);
   const [isResettingDemo, setIsResettingDemo] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const motionThresholdValue = motionThresholdDraft ?? formatDecimalPreference(profilePreferences.motionStationaryThresholdNm);
 
   function commitMotionThresholdDraft() {
@@ -58,6 +76,26 @@ export function ProfilePage(props: ProfilePageProps) {
     currentPassword: string;
     confirmation: string;
   };
+  const avatar = props.avatar as string | undefined;
+  const setAvatar = props.setAvatar as Dispatch<SetStateAction<string | undefined>>;
+
+  async function uploadAvatar(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setIsUploadingAvatar(true);
+    try {
+      const cropped = await cropImageToSquare(file);
+      const response = await fetch("/api/profile", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "avatar", avatarData: cropped.data, avatarMimeType: cropped.mimeType }) });
+      const payload = await response.json() as { avatar?: string; error?: string };
+      if (!response.ok || !payload.avatar) throw new Error(payload.error ?? t("profile.avatarUploadError"));
+      setAvatar(payload.avatar);
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : t("profile.avatarUploadError"));
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  }
   const setNameForm = props.setNameForm as Dispatch<
     SetStateAction<typeof nameForm>
   >;
@@ -84,7 +122,11 @@ export function ProfilePage(props: ProfilePageProps) {
       </div>
       <section className="profile-grid">
         <article className="profile-hero-card">
-          <span className="profile-avatar">ME</span>
+          <label className="profile-avatar profile-avatar-upload" title={t("profile.avatarUpload")}>
+            {avatar ? <Image unoptimized src={avatar} alt={t("profile.avatarAlt")} width={64} height={64} /> : "ME"}
+            <input type="file" accept="image/png,image/jpeg,image/webp" onChange={uploadAvatar} disabled={isUploadingAvatar} />
+            <span>{isUploadingAvatar ? "…" : "＋"}</span>
+          </label>
           <div>
             <p className="eyebrow">{t("profile.userProfile")}</p>
             <h2>
