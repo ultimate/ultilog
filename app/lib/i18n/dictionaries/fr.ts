@@ -211,8 +211,6 @@ export const fr: Dictionary = {
   "crew.thisIsMe": "C’est moi",
   "crew.profile": "Profil d’équipage",
   "crew.nationality": "Nationalité",
-  "crew.givenNames": "Prénom(s)",
-  "crew.familyName": "Nom de famille",
   "crew.dateOfBirth": "Date de naissance",
   "crew.placeOfBirth": "Lieu de naissance",
   "crew.gender": "Genre",

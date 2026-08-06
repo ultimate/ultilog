@@ -3,8 +3,6 @@ import type { StoredImage } from "./stored-image";
 export type CrewMember = {
   id: string;
   name: string;
-  givenNames?: string;
-  familyName?: string;
   nationality: string;
   role: string;
   address?: string;

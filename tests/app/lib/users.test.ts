@@ -42,7 +42,7 @@ describe("users preferences", () => {
 
     await expect(readLogbook(user.id)).resolves.toEqual({
       boats: [],
-      crewMembers: [{ id: "me", name: "Fresh User", nationality: "", role: "", address: "", certificate: "", givenNames: "", familyName: "", dateOfBirth: "", placeOfBirth: "", gender: "", identityDocumentType: "", identityDocumentNumber: "", identityDocumentIssuingDate: "", identityDocumentExpiryDate: "", isPrimary: true }],
+      crewMembers: [{ id: "me", name: "Fresh User", nationality: "", role: "", address: "", certificate: "", dateOfBirth: "", placeOfBirth: "", gender: "", identityDocumentType: "", identityDocumentNumber: "", identityDocumentIssuingDate: "", identityDocumentExpiryDate: "", isPrimary: true }],
       sheets: [],
     });
   });

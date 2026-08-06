@@ -1341,17 +1341,14 @@ export function LogbookApp({
   async function saveCrew() {
     const id = selectedCrewIndex === -1 ? createId() : crewForm.id;
     const previousCrew = logbookRef.current.crewMembers.find((candidate) => candidate.id === id);
-    const separatedName = [crewForm.givenNames, crewForm.familyName].map((part) => part?.trim()).filter(Boolean).join(" ");
     const crew = {
       ...previousCrew,
       id,
-      name: separatedName || crewForm.name,
+      name: crewForm.name.trim(),
       nationality: crewForm.nationality,
       role: crewForm.role,
       address: crewForm.address,
       certificate: crewForm.certificate,
-      givenNames: crewForm.givenNames,
-      familyName: crewForm.familyName,
       dateOfBirth: crewForm.dateOfBirth,
       placeOfBirth: crewForm.placeOfBirth,
       gender: crewForm.gender,

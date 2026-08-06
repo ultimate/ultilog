@@ -148,8 +148,6 @@ create table if not exists crew_members (
   owner_id text not null references users(id) on delete cascade,
   address text not null default '',
   certificate text not null default '',
-  given_names text not null default '',
-  family_name text not null default '',
   date_of_birth text not null default '',
   place_of_birth text not null default '',
   gender text not null default '',

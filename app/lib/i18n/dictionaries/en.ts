@@ -209,8 +209,6 @@ export const en = {
   "crew.thisIsMe": "This is me",
   "crew.profile": "Crew profile",
   "crew.nationality": "Nationality",
-  "crew.givenNames": "Given name(s)",
-  "crew.familyName": "Family name",
   "crew.dateOfBirth": "Date of birth",
   "crew.placeOfBirth": "Place of birth",
   "crew.gender": "Gender",
