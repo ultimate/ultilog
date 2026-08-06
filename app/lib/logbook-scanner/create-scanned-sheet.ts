@@ -26,6 +26,7 @@ export type CreateScannedSheetInput = {
 type ScannerUnitPreferences = Pick<UserPreferences, "windUnit" | "waterHeightUnit" | "temperatureUnit">;
 
 const verificationNote = "Please verify scanned information before locking this sheet.";
+const rolloverEndDateWarning = "A log-line date rollover would exceed the sheet end date; the inferred date was capped at the end date.";
 
 const defaultLineForm: LineForm = {
   time: "",
@@ -79,8 +80,11 @@ export function createScannedSheet({
     departed: draft.route?.departed ?? "",
     arrived: draft.route?.arrived ?? "",
   };
-  const scannedDate = dateFromSheetMasterData(draft.dateRange, route);
-  const dateRange = draft.dateRange?.trim() || scannedDate || new Date().toISOString().slice(0, 10);
+  const { startDate, endDate } = dateBoundsFromSheetMasterData(draft.dateRange, route);
+  const dateRange = draft.dateRange?.trim() || startDate || new Date().toISOString().slice(0, 10);
+  const normalizedLines = scannedLinesToLogLines(draft.lines, userPreferences, startDate, endDate);
+  const scannerWarnings = [...scannerResult.warnings];
+  if (normalizedLines.rolloverExceededEndDate && !scannerWarnings.includes(rolloverEndDateWarning)) scannerWarnings.push(rolloverEndDateWarning);
 
   return {
     id: createId(),
@@ -89,22 +93,64 @@ export function createScannedSheet({
     status: "Draft",
     source: "scanner",
     verificationNote,
-    scannerWarnings: scannerResult.warnings,
+    scannerWarnings,
     boatId,
     route,
     crew: createInitialCrew({ logbook, primaryCrew, currentUser, route }),
     watchPlan: [],
     technicalChecks: [],
-    lines: draft.lines.map((line) => scannedLineToLogLine(line, userPreferences, scannedDate)),
+    lines: normalizedLines.lines,
   };
 }
 
-function scannedLineToLogLine(scannedLine: ScannerResult["draft"]["lines"][number], userPreferences?: ScannerUnitPreferences, scannedDate = ""): LogLine {
+function scannedLinesToLogLines(
+  scannedLines: ScannerResult["draft"]["lines"],
+  userPreferences: ScannerUnitPreferences | undefined,
+  startDate: string,
+  endDate: string,
+) {
+  let activeDate = startDate;
+  let previousMinutes: number | undefined;
+  let rolloverExceededEndDate = false;
+
+  const lines = scannedLines.map((scannedLine) => {
+    const scannedTime = scannedLine.time ?? "";
+    const explicitDate = normalizeScannedDate(scannedTime);
+    const timeOnly = parseTimeOnly(scannedTime);
+    const explicitMinutes = minutesFromTimestamp(scannedTime);
+
+    if (explicitDate) {
+      activeDate = explicitDate;
+      previousMinutes = explicitMinutes;
+      return scannedLineToLogLine(scannedLine, userPreferences, scannedTime);
+    }
+
+    if (timeOnly && activeDate) {
+      if (previousMinutes !== undefined && timeOnly.minutes < previousMinutes) {
+        const nextDate = addDays(activeDate, 1);
+        if (endDate && nextDate > endDate) {
+          activeDate = endDate;
+          rolloverExceededEndDate = true;
+        } else {
+          activeDate = nextDate;
+        }
+      }
+      previousMinutes = timeOnly.minutes;
+      return scannedLineToLogLine(scannedLine, userPreferences, `${activeDate}T${timeOnly.text}`);
+    }
+
+    return scannedLineToLogLine(scannedLine, userPreferences, scannedTime);
+  });
+
+  return { lines, rolloverExceededEndDate };
+}
+
+function scannedLineToLogLine(scannedLine: ScannerResult["draft"]["lines"][number], userPreferences: ScannerUnitPreferences | undefined, normalizedTime: string): LogLine {
   return lineFormToLogLine({
     ...defaultLineForm,
     ...scannerUnitDefaults(userPreferences),
     ...scannedLine,
-    time: dateTimeFromScannedMasterDate(scannedLine.time ?? "", scannedDate),
+    time: normalizedTime,
     ...missingScannerUnitDefaults(scannedLine, userPreferences),
   });
 }
@@ -157,30 +203,49 @@ function createId() {
   return crypto.randomUUID();
 }
 
-function dateFromSheetMasterData(dateRange: string | undefined, route: LogSheet["route"]) {
-  return normalizeScannedDate(dateRange ?? "") || normalizeScannedDate(route.departed) || normalizeScannedDate(route.arrived);
+function dateBoundsFromSheetMasterData(dateRange: string | undefined, route: LogSheet["route"]) {
+  const rangeDates = scannedDates(dateRange ?? "");
+  const departureDate = normalizeScannedDate(route.departed);
+  const arrivalDate = normalizeScannedDate(route.arrived);
+  return {
+    startDate: rangeDates[0] || departureDate || arrivalDate,
+    endDate: arrivalDate || (rangeDates.length > 1 ? rangeDates[rangeDates.length - 1] : ""),
+  };
 }
 
 function normalizeScannedDate(value: string) {
-  const isoDate = value.match(/\b(\d{4})-(\d{2})-(\d{2})\b/);
-  if (isoDate) return `${isoDate[1]}-${isoDate[2]}-${isoDate[3]}`;
-
-  const dayFirstDate = value.match(/\b(\d{1,2})[./](\d{1,2})[./](\d{2}|\d{4})\b/);
-  if (!dayFirstDate) return "";
-  const year = dayFirstDate[3].length === 2 ? `20${dayFirstDate[3]}` : dayFirstDate[3];
-  const month = dayFirstDate[2].padStart(2, "0");
-  const day = dayFirstDate[1].padStart(2, "0");
-  return `${year}-${month}-${day}`;
+  return scannedDates(value)[0] ?? "";
 }
 
-function dateTimeFromScannedMasterDate(value: string, scannedDate: string) {
-  if (!scannedDate) return value;
+function scannedDates(value: string) {
+  const isoDates = [...value.matchAll(/(?<!\d)(\d{4})-(\d{2})-(\d{2})(?!\d)/g)]
+    .map((match) => `${match[1]}-${match[2]}-${match[3]}`);
+  if (isoDates.length > 0) return isoDates;
+
+  return [...value.matchAll(/\b(\d{1,2})[./](\d{1,2})[./](\d{2}|\d{4})\b/g)].map((match) => {
+    const year = match[3].length === 2 ? `20${match[3]}` : match[3];
+    return `${year}-${match[2].padStart(2, "0")}-${match[1].padStart(2, "0")}`;
+  });
+}
+
+function parseTimeOnly(value: string) {
   const timeOnly = value.trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
-  if (!timeOnly) return value;
+  if (!timeOnly) return undefined;
 
   const hours = timeOnly[1].padStart(2, "0");
   const seconds = timeOnly[3] ? `:${timeOnly[3]}` : "";
-  return `${scannedDate}T${hours}:${timeOnly[2]}${seconds}`;
+  return { text: `${hours}:${timeOnly[2]}${seconds}`, minutes: Number(hours) * 60 + Number(timeOnly[2]) };
+}
+
+function minutesFromTimestamp(value: string) {
+  const time = value.match(/[T, ](\d{1,2}):(\d{2})/);
+  return time ? Number(time[1]) * 60 + Number(time[2]) : undefined;
+}
+
+function addDays(date: string, days: number) {
+  const value = new Date(`${date}T00:00:00Z`);
+  value.setUTCDate(value.getUTCDate() + days);
+  return value.toISOString().slice(0, 10);
 }
 
 function dateTimeLocalFromStamp(value: string) {
