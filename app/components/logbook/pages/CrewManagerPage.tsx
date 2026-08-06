@@ -126,6 +126,14 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
               />
             </label>
             <label>
+              {t("crew.givenNames")}
+              <input value={crewForm.givenNames ?? ""} autoComplete="given-name" onChange={(e) => setCrewForm({ ...crewForm, givenNames: e.target.value })} />
+            </label>
+            <label>
+              {t("crew.familyName")}
+              <input value={crewForm.familyName ?? ""} autoComplete="family-name" onChange={(e) => setCrewForm({ ...crewForm, familyName: e.target.value })} />
+            </label>
+            <label>
               {t("crew.nationality")}
               <input
                 value={crewForm.nationality}
@@ -160,6 +168,41 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
                   setCrewForm({ ...crewForm, certificate: e.target.value })
                 }
               />
+            </label>
+            <label>
+              {t("crew.dateOfBirth")}
+              <input type="date" value={crewForm.dateOfBirth ?? ""} onChange={(e) => setCrewForm({ ...crewForm, dateOfBirth: e.target.value })} />
+            </label>
+            <label>
+              {t("crew.placeOfBirth")}
+              <input value={crewForm.placeOfBirth ?? ""} onChange={(e) => setCrewForm({ ...crewForm, placeOfBirth: e.target.value })} />
+            </label>
+            <label>
+              {t("crew.gender")}
+              <select value={crewForm.gender ?? ""} onChange={(e) => setCrewForm({ ...crewForm, gender: e.target.value })}>
+                <option value="">{t("crew.genderUnspecified")}</option>
+                <option value="female">{t("crew.genderFemale")}</option>
+                <option value="male">{t("crew.genderMale")}</option>
+                <option value="diverse">{t("crew.genderDiverse")}</option>
+              </select>
+            </label>
+            <div />
+            <p className="eyebrow wide-field">{t("crew.identityDocument")}</p>
+            <label>
+              {t("crew.identityDocumentType")}
+              <input value={crewForm.identityDocumentType ?? ""} onChange={(e) => setCrewForm({ ...crewForm, identityDocumentType: e.target.value })} />
+            </label>
+            <label>
+              {t("crew.identityDocumentNumber")}
+              <input value={crewForm.identityDocumentNumber ?? ""} onChange={(e) => setCrewForm({ ...crewForm, identityDocumentNumber: e.target.value })} />
+            </label>
+            <label>
+              {t("crew.identityDocumentIssuingDate")}
+              <input type="date" value={crewForm.identityDocumentIssuingDate ?? ""} onChange={(e) => setCrewForm({ ...crewForm, identityDocumentIssuingDate: e.target.value })} />
+            </label>
+            <label>
+              {t("crew.identityDocumentExpiryDate")}
+              <input type="date" value={crewForm.identityDocumentExpiryDate ?? ""} onChange={(e) => setCrewForm({ ...crewForm, identityDocumentExpiryDate: e.target.value })} />
             </label>
 
             <div className="image-form-field wide-field">

@@ -53,6 +53,15 @@ export type LogSheetRow = ImageRowFields & {
 };
 
 export type CrewMemberRow = Omit<SheetCrewMember, "embarkationDateTime" | "embarkationPosition" | "disembarkationDateTime" | "disembarkationPosition" | "image"> & ImageRowFields & {
+  given_names?: string;
+  family_name?: string;
+  date_of_birth?: string;
+  place_of_birth?: string;
+  gender?: string;
+  identity_document_type?: string;
+  identity_document_number?: string;
+  identity_document_issuing_date?: string;
+  identity_document_expiry_date?: string;
   embarkation_datetime: string;
   embarkation_position: string;
   disembarkation_datetime: string;
