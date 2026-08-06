@@ -171,7 +171,7 @@ const documentInterpretationInstructions = `Interpret the document before transc
 - Establish one header-to-field mapping for a table and apply it consistently to every row. Do not remap a column based on an individual cell value.
 - The user's interface language, when supplied below, is only a weak hint for ambiguous headings. Never exclude terminology from another language because of it.
 - Similar or shared abbreviations can be ambiguous. Resolve them using the full header, neighboring columns, units, and the table structure; warn instead of guessing when those signals conflict.
-- On German nautical sheets, KüG (Kurs über Grund) maps to courseOverGround, and F [kn] (Fahrt in Knoten) maps to speedKn. Do not discard these columns merely because their headings are abbreviated.
+- On German nautical sheets, WA (Windabdrift) maps to windDrift, SA (Stromabdrift) maps to currentDrift, KüG (Kurs über Grund) maps to courseOverGround, and F [kn] (Fahrt in Knoten) maps to speedKn. Do not discard or shift these columns merely because their headings are abbreviated.
 - Course-conversion columns commonly follow this semantic sequence: ${criticalCourseScannerFields.join(" -> ")}. A sheet may contain only a subset, and its printed headings and spatial alignment always take precedence.
 - A missing intermediate course column never shifts the meaning of later columns. For example, the shortened header sequence MgK / Cc, Abl / d, Mw / D, rwK / Cv maps to compassCourse, deviation, variation, trueCourse; leave magneticCourse empty.
 - Use the course sequence only to map columns. Never calculate, copy, or invent a missing course value to make the sequence complete or arithmetically consistent.
