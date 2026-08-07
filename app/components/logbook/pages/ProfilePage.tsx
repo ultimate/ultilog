@@ -5,6 +5,7 @@ import type { ChangeEvent, FormEvent, Dispatch, ReactNode, SetStateAction } from
 import type { Boat, PersistedLogbook } from "../../../models/logbook";
 import { PasswordField } from "../../PasswordField";
 import type { ProfilePreferences } from "../../onboarding/useOnboardingProfile";
+import { dateFormats, formatStoredDate, formatStoredTime, timeFormats } from "../../../lib/date-time-format";
 import { pageSizeOptions, normalizePageSize } from "../PaginationControls";
 
 type ProfilePageProps = Record<string, any>;
@@ -399,6 +400,19 @@ export function ProfilePage(props: ProfilePageProps) {
                   {locales.map((locale) => <option key={locale} value={locale}>{localeLabels[locale]}</option>)}
                 </select>
               </label>
+              <label>
+                {t("profile.dateFormat")}
+                <select value={profilePreferences.dateFormat} onChange={(event) => updateViewPreferences({ dateFormat: event.target.value as ProfilePreferences["dateFormat"] })}>
+                  {dateFormats.map((format) => <option key={format} value={format}>{formatStoredDate("2026-08-07", format, profilePreferences.language)} ({format})</option>)}
+                </select>
+              </label>
+              <label>
+                {t("profile.timeFormat")}
+                <select value={profilePreferences.timeFormat} onChange={(event) => updateViewPreferences({ timeFormat: event.target.value as ProfilePreferences["timeFormat"] })}>
+                  {timeFormats.map((format) => <option key={format} value={format}>{formatStoredTime("2026-08-07T19:05:09+00:00", format)} ({format})</option>)}
+                </select>
+              </label>
+              <small className="field-hint">{t("profile.nativePickerHint")}</small>
             </div>
           </fieldset>
           <fieldset className="preference-group wide-field">
@@ -503,6 +517,13 @@ export function ProfilePage(props: ProfilePageProps) {
               <label>
                 {t("profile.showCourseConversionTable")}
                 <select value={profilePreferences.showCourseConversionTable ? "yes" : "no"} onChange={(event) => updateViewPreferences({ showCourseConversionTable: event.target.value === "yes" })}>
+                  <option value="yes">{t("common.yes")}</option>
+                  <option value="no">{t("common.no")}</option>
+                </select>
+              </label>
+              <label>
+                {t("profile.showAvatarOnPrint")}
+                <select value={profilePreferences.showAvatarOnPrint ? "yes" : "no"} onChange={(event) => updateViewPreferences({ showAvatarOnPrint: event.target.value === "yes" })}>
                   <option value="yes">{t("common.yes")}</option>
                   <option value="no">{t("common.no")}</option>
                 </select>

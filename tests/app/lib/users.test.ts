@@ -94,6 +94,8 @@ describe("users preferences", () => {
     const updated = await updateUserViewPreferences(user.id, {
       countryCode: " us ",
       language: "fr",
+      dateFormat: "dd.MM.yyyy",
+      timeFormat: "h:mm a",
       windUnit: "kn",
       waterHeightUnit: "ft",
       temperatureUnit: "°F",
@@ -109,6 +111,8 @@ describe("users preferences", () => {
     expect(updated).toMatchObject({
       countryCode: "US",
       language: "fr",
+      dateFormat: "dd.MM.yyyy",
+      timeFormat: "h:mm a",
       windUnit: "kn",
       waterHeightUnit: "ft",
       temperatureUnit: "°F",

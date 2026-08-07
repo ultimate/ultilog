@@ -70,6 +70,8 @@ import { OnboardingChecklist } from "./onboarding/OnboardingChecklist";
 import { useOnboardingProfile } from "./onboarding/useOnboardingProfile";
 import type { OnboardingTaskId } from "../lib/onboarding/tasks";
 import type { ProfilePreferences } from "./onboarding/useOnboardingProfile";
+import { DateTimeFormatProvider } from "../lib/DateTimeFormatProvider";
+import { formatStoredDate, formatStoredDateTime } from "../lib/date-time-format";
 
 type AdminUser = { id: string; name: string; email: string; groups: string[] };
 const adminUserColumns = [
@@ -170,13 +172,11 @@ export function LogbookApp({
   userName?: string;
   userGroups?: string[];
 }) {
-  const { t, setLocale } = useI18n();
+  const { t, locale, setLocale } = useI18n();
   const router = useRouter();
   const pathname = usePathname();
   const [logbook, setLogbook] = useState<PersistedLogbook>(defaultLogbook);
-  const [activeSheetId, setActiveSheetId] = useState(
-    defaultLogbook.sheets[0]?.id ?? "",
-  );
+  const [activeSheetId, setActiveSheetId] = useState("");
   const [isBackendReady, setIsBackendReady] = useState(false);
   const [routePath, setRoutePath] = useState(pathname);
   const [activeModule, setActiveModule] = useState<ActiveView>("dashboard");
@@ -390,17 +390,14 @@ export function LogbookApp({
         nextRoute.itemId && nextRoute.view === "boats"
           ? normalizedLogbook.boats.find((boat) => boat.id === nextRoute.itemId)
           : undefined;
-      const fallbackSheet =
-        normalizedLogbook.sheets[0] ?? emptySheet;
       const availableStoredBoats = activeBoats(normalizedLogbook.boats);
       const fallbackBoat = availableStoredBoats[0] ?? normalizedLogbook.boats[0] ?? emptyBoat;
-      const nextSheet = routedSheet ?? fallbackSheet;
       const nextBoat = routedBoat ?? fallbackBoat;
 
       logbookRef.current = normalizedLogbook;
       hasUnsavedLogbookChangesRef.current = false;
       setLogbook(normalizedLogbook);
-      setActiveSheetId(nextSheet.id);
+      setActiveSheetId(routedSheet?.id ?? "");
       setSheetForm(
         routedSheet
           ? sheetToForm(routedSheet)
@@ -844,7 +841,7 @@ export function LogbookApp({
           )
         }
       >
-        {stamp || activeSheet.dateRange}
+        {stamp ? formatStoredDateTime(stamp, preferences.dateFormat, preferences.timeFormat, locale) : formatStoredDate(activeSheet.dateRange, preferences.dateFormat, locale)}
       </button>
     );
   const technicalCheckSuggestions = useMemo(() => {
@@ -1778,7 +1775,7 @@ export function LogbookApp({
   }
 
   return (
-    <>
+    <DateTimeFormatProvider dateFormat={preferences.dateFormat} timeFormat={preferences.timeFormat}>
       <main
       className="app-shell"
       data-theme={theme}
@@ -1878,6 +1875,7 @@ export function LogbookApp({
               navigate={navigate}
               cancelSheetEdit={cancelSheetEdit}
               activeSheet={activeSheet}
+              hasSelectedSheet={logbook.sheets.some((sheet) => sheet.id === activeSheetId)}
               userId={userId}
               renderInlineTextField={renderInlineTextField}
               isActiveSheetLocked={isActiveSheetLocked}
@@ -2189,12 +2187,12 @@ export function LogbookApp({
       )}
       <div className="print-only print-root" aria-hidden={!printTarget}>
         {printTarget?.mode === "empty" ? (
-          <LogSheetPrintView mode="empty" boat={printBoat} showCourseColumns={printTarget?.showCourseColumns ?? preferences.showCourseConversionTable} />
+          <LogSheetPrintView mode="empty" boat={printBoat} avatar={preferences.showAvatarOnPrint ? profileAvatar : undefined} showCourseColumns={printTarget?.showCourseColumns ?? preferences.showCourseConversionTable} />
         ) : printSheet ? (
-          <LogSheetPrintView mode="filled" sheet={printSheet} boat={printBoat} summary={printSummary} showCourseColumns={printTarget?.showCourseColumns ?? preferences.showCourseConversionTable} />
+          <LogSheetPrintView mode="filled" sheet={printSheet} boat={printBoat} summary={printSummary} avatar={preferences.showAvatarOnPrint ? profileAvatar : undefined} showCourseColumns={printTarget?.showCourseColumns ?? preferences.showCourseConversionTable} />
         ) : null}
       </div>
-    </>
+    </DateTimeFormatProvider>
   );
 }
 

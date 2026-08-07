@@ -1,6 +1,7 @@
 import { EntityImage } from "../EntityImage";
 import { flagGroups, flagOptionEmoji } from "../../../lib/flags";
 import { useI18n } from "../../../lib/i18n";
+import { useDateTimeFormat } from "../../../lib/DateTimeFormatProvider";
 import { useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { windDriftSailSettings, type Boat, type BoatEngineRole, type BoatForm, type BoatType, type PersistedLogbook } from "../../../models/logbook";
 import { boatToForm, defaultBoatForm } from "../forms";
@@ -18,6 +19,7 @@ function nonNegativeInputValue(value: string) {
 
 export function BoatManagerPage(props: BoatManagerPageProps) {
   const { t } = useI18n();
+  const { formatDate } = useDateTimeFormat();
   const {
     showBoatManager,
     saveBoat,
@@ -441,7 +443,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                 {selectedBoatSheets.map((sheet) => (
                   <li key={sheet.id}>
                     <strong>{sheet.title}</strong>
-                    <small>{sheet.dateRange}</small>
+                    <small>{formatDate(sheet.dateRange)}</small>
                   </li>
                 ))}
               </ul>
