@@ -291,7 +291,7 @@ function createSheet(dayData: Day, boat: Boat, memberIds: string[], index: numbe
     route: { from: dayData.from.name, to: dayData.to.name, departed: `${dayData.date}T${dayData.departure}`, arrived: `${dayData.date}T${dayData.arrival}` },
     crew: people,
     watchPlan: motorBoat ? [`${dayData.departure}–12:00: Mara / Nina`, `12:00–${dayData.arrival}: Nina / ${index % 2 ? "Jonas" : "Luca"}`] : [`${dayData.departure}–12:00: Nina / Jonas`, `12:00–16:00: Luca / Sofia`, `16:00–${dayData.arrival}: Sofia / Nina`],
-    technicalChecks: motorBoat ? ["Engine oil and coolant checked", "Fuel valves and raw-water seacocks open", "Bilges dry", "Steering and trim tabs tested", "VHF radio check completed"] : ["Engine oil and cooling water checked", "Rig and running rigging inspected", "Bilges dry", "Navigation lights and VHF tested", "Water and fuel levels logged"],
+    technicalChecks: (motorBoat ? ["Engine oil and coolant checked", "Fuel valves and raw-water seacocks open", "Bilges dry", "Steering and trim tabs tested", "VHF radio check completed"] : ["Engine oil and cooling water checked", "Rig and running rigging inspected", "Bilges dry", "Navigation lights and VHF tested", "Water and fuel levels logged"]).map((text) => ({ status: "✅", text })),
     lines,
   };
 }

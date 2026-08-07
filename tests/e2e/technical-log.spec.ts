@@ -11,6 +11,9 @@ test("edits technical log entries and suggests previous checks", async ({ page }
   await expect(page.getByText("08-12: Luca / Jonas")).toHaveCount(0);
   await expect(page.getByRole("combobox", { name: "Technical log entry 1" })).toHaveValue("Engine oil checked");
   await expect(page.locator('datalist#technical-log-suggestions option[value="Fuel valves open"]')).toHaveCount(1);
+  await expect(page.getByRole("combobox", { name: "Check status 1" })).toHaveValue("⌛");
+  await page.getByRole("combobox", { name: "Check status 1" }).selectOption("✅");
+  await expect(page.getByRole("combobox", { name: "Check status 1" })).toHaveValue("✅");
 
   await page.getByRole("combobox", { name: "New technical log entry" }).fill("✅ Generator belt inspected");
   await page.getByRole("button", { name: "Add technical log entry" }).click();

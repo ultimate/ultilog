@@ -17,6 +17,7 @@ import {
   type PersistedLogbook,
   type SheetForm,
 } from "../models/logbook";
+import { createTechnicalChecks } from "../domain/logbook/technical-log";
 import {
   boatToForm,
   crewToForm,
@@ -849,7 +850,7 @@ export function LogbookApp({
     const suggestions: string[] = [];
     for (const sheet of logbook.sheets) {
       for (const item of sheet.technicalChecks) {
-        const suggestion = item.trim();
+        const suggestion = item.text.trim();
         const key = suggestion.toLocaleLowerCase();
         if (!suggestion || seen.has(key)) continue;
         seen.add(key);
@@ -1015,7 +1016,7 @@ export function LogbookApp({
       route,
       crew: existingSheet?.crew ?? initialCrew,
       watchPlan: existingSheet?.watchPlan ?? [],
-      technicalChecks: existingSheet?.technicalChecks ?? [],
+      technicalChecks: existingSheet?.technicalChecks ?? createTechnicalChecks(preferences.language, preferences.technicalLogTemplate),
       lines: existingSheet?.lines ?? [],
       image: sheetForm.image,
     };
@@ -1317,13 +1318,13 @@ export function LogbookApp({
       ...currentLogbook,
       sheets: currentLogbook.sheets.map((sheet) =>
         sheet.id === activeSheet.id
-          ? { ...sheet, technicalChecks: [...sheet.technicalChecks, technicalCheck] }
+          ? { ...sheet, technicalChecks: [...sheet.technicalChecks, { status: "⌛", text: technicalCheck }] }
           : sheet,
       ),
     });
   }
 
-  async function updateTechnicalCheck(indexToUpdate: number, value: string) {
+  async function updateTechnicalCheck(indexToUpdate: number, value: string, status?: string) {
     if (activeSheet.status === "Locked") return;
     const technicalCheck = value.trim();
     const currentLogbook = logbookRef.current;
@@ -1334,8 +1335,8 @@ export function LogbookApp({
         return {
           ...sheet,
           technicalChecks: sheet.technicalChecks
-            .map((item, index) => (index === indexToUpdate ? technicalCheck : item))
-            .filter(Boolean),
+            .map((item, index) => (index === indexToUpdate ? { ...item, text: technicalCheck, status: status ?? item.status } : item))
+            .filter((item) => item.text),
         };
       }),
     });

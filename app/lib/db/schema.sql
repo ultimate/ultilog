@@ -19,6 +19,7 @@ create table if not exists users (
   distance_display_unit text not null default 'off',
   default_boat_id text not null default '',
   default_crew_member_ids text not null default '[]',
+  technical_log_template text not null default '[]',
   show_course_conversion_table integer not null default 1,
   motion_stationary_threshold_nm real not null default 0.1,
   email_verified_at text

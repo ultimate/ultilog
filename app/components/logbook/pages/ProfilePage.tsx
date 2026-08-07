@@ -6,6 +6,7 @@ import type { Boat, PersistedLogbook } from "../../../models/logbook";
 import { PasswordField } from "../../PasswordField";
 import type { ProfilePreferences } from "../../onboarding/useOnboardingProfile";
 import { dateFormats, formatStoredDate, formatStoredTime, timeFormats } from "../../../lib/date-time-format";
+import { standardTechnicalLogTemplate } from "../../../domain/logbook/technical-log";
 import { pageSizeOptions, normalizePageSize } from "../PaginationControls";
 
 type ProfilePageProps = Record<string, any>;
@@ -486,6 +487,16 @@ export function ProfilePage(props: ProfilePageProps) {
                 />
               </label>
             </div>
+          </fieldset>
+          <fieldset className="preference-group wide-field">
+            <legend>{t("profile.technicalLogTemplate")}</legend>
+            <p><strong>{t("profile.standardTechnicalChecks")}</strong></p>
+            <ul className="stack-list">{standardTechnicalLogTemplate(profilePreferences.language).map((line) => <li key={line}>⌛ {line}</li>)}</ul>
+            <label>
+              {t("profile.additionalTechnicalChecks")}
+              <textarea rows={6} value={profilePreferences.technicalLogTemplate.join("\n")} onChange={(event) => updateViewPreferences({ technicalLogTemplate: event.target.value.split("\n").map((line) => line.trim()).filter(Boolean) })} />
+              <small>{t("profile.technicalLogTemplateHelp")}</small>
+            </label>
           </fieldset>
           <fieldset className="preference-group wide-field">
             <legend>{t("profile.displaySettings")}</legend>
