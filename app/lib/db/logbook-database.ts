@@ -5,6 +5,7 @@ import { LogLinesRepository } from "../repositories/log-lines-repository";
 import { scopedId } from "../repositories/boats-repository";
 import { LogSheetsRepository } from "../repositories/log-sheets-repository";
 import { backfillCrewMemberEncryption } from "./encryption-backfill";
+import { createHash } from "node:crypto";
 
 export type QueryResult<Row> = { rows: Row[] };
 
@@ -68,7 +69,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
     return logbook;
   }
 
-  async readSharedSheet(sheetId: string, isAuthenticated: boolean, ownerId?: string): Promise<{ sheet: LogSheet; boatName: string } | undefined> {
+  async readSharedSheet(sheetId: string, isAuthenticated: boolean, ownerId?: string): Promise<{ sheet: LogSheet; boatName: string; ownerAvatar?: string; showOwnerAvatarOnPrint?: boolean } | undefined> {
     await this.ensureSchemaAndBackfill();
     const sharedRow = ownerId
       ? await this.sheets.findSharedByScopedId(scopedId(ownerId, sheetId))
@@ -88,7 +89,17 @@ export abstract class LogbookDatabase implements QueryableDatabase {
     const sheet = logbook.sheets[0];
     if (!sheet) return undefined;
     const boat = logbook.boats.find((candidate) => candidate.id === sheet.boatId);
-    return { sheet: filterSharedSheet(sheet, visibility), boatName: visibility.masterData ? boat?.name ?? "" : "" };
+    const owner = (await this.query<{ email: string; avatar_data: string | null; avatar_mime_type: string | null; show_avatar_on_print: number | boolean }>(
+      `select email, avatar_data, avatar_mime_type, show_avatar_on_print from users where id = ${this.placeholder(1)}`,
+      [sharedRow.owner_id],
+    )).rows[0];
+    const showOwnerAvatarOnPrint = owner ? Boolean(owner.show_avatar_on_print) : false;
+    const ownerAvatar = owner && showOwnerAvatarOnPrint
+      ? owner.avatar_data && owner.avatar_mime_type
+        ? `data:${owner.avatar_mime_type};base64,${owner.avatar_data}`
+        : `https://www.gravatar.com/avatar/${createHash("sha256").update(owner.email.trim().toLowerCase()).digest("hex")}?s=256&d=mp`
+      : undefined;
+    return { sheet: filterSharedSheet(sheet, visibility), boatName: visibility.masterData ? boat?.name ?? "" : "", ownerAvatar, showOwnerAvatarOnPrint };
   }
 
   protected async readTables(): Promise<PersistedLogbook> {

@@ -1,5 +1,6 @@
 import { EntityImage } from "../EntityImage";
 import { useI18n } from "../../../lib/i18n";
+import { useDateTimeFormat } from "../../../lib/DateTimeFormatProvider";
 import { formatMiles } from "../../../lib/format-number";
 import { useMemo, useRef, type Dispatch, type SetStateAction } from "react";
 import type {
@@ -75,6 +76,7 @@ export function LogbookListPage({
   onDemoFeatureBlocked: (feature: "scanner") => void;
 }) {
   const { t } = useI18n();
+  const { formatDate } = useDateTimeFormat();
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
   const availableBoats = useMemo(() => logbook.boats.filter((boat) => !boat.archived), [logbook.boats]);
@@ -325,7 +327,7 @@ export function LogbookListPage({
                 {list.pageItems.map(({ sheet, boat, summary: sheetSummary }) => {
                   return (
                     <tr key={sheet.id}>
-                      <td>{sheet.dateRange}</td>
+                      <td>{formatDate(sheet.dateRange)}</td>
                       <td>
                         <button
                           className="table-title-button"

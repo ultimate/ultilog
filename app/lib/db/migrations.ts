@@ -1,8 +1,10 @@
 import type { QueryableDatabase } from "./logbook-database";
+import { normalizeIsoDate } from "../iso-date";
 
 type RouteRow = { id: string; route: unknown };
 type TimedRow = { sheet_id: string; sort_order: number; time: string };
 type CrewAssignmentRow = { sheet_id: string; crew_member_id: string; sort_order: number; embarkation_datetime: string; disembarkation_datetime: string };
+type LogSheetDateRow = { id: string; date_range: string; route: unknown };
 import { readMigrations } from "./schema";
 
 export async function runMigrations(db: QueryableDatabase) {
@@ -29,6 +31,11 @@ async function applyMigration(db: QueryableDatabase, id: string, sql: string) {
     return;
   }
 
+  if (id === "030_iso_log_sheet_dates") {
+    await normalizeStoredLogSheetDates(db);
+    return;
+  }
+
   if (id !== "009_log_line_column_types") {
     await db.query(sql);
     return;
@@ -40,6 +47,19 @@ async function applyMigration(db: QueryableDatabase, id: string, sql: string) {
     } catch (error) {
       if (!isDuplicateColumnError(error)) throw error;
     }
+  }
+}
+
+async function normalizeStoredLogSheetDates(db: QueryableDatabase) {
+  const result = await db.query<LogSheetDateRow>("select id, date_range, route from log_sheets");
+  for (const row of result.rows) {
+    const route = parseRoute(row.route);
+    const normalized = normalizeIsoDate(row.date_range)
+      ?? normalizeIsoDate(route.departed)
+      ?? normalizeIsoDate(route.arrived);
+    if (!normalized) throw new Error(`Log sheet ${row.id} has no date that can be converted to ISO format.`);
+    if (normalized === row.date_range) continue;
+    await db.query(`update log_sheets set date_range = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [normalized, row.id]);
   }
 }
 

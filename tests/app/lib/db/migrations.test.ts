@@ -66,6 +66,26 @@ class IsoDatetimeMigrationDatabase implements QueryableDatabase {
   }
 }
 
+
+class IsoLogSheetDateMigrationDatabase implements QueryableDatabase {
+  calls: Array<{ sql: string; params?: unknown[] }> = [];
+  placeholder(index: number) {
+    return `$${index}`;
+  }
+  async query<Row>(sql: string, params?: unknown[]): Promise<QueryResult<Row>> {
+    this.calls.push({ sql, params });
+    if (sql.includes("select id from schema_migrations")) return { rows: [] };
+    if (sql === "select id, date_range, route from log_sheets") {
+      return { rows: [
+        { id: "legacy", date_range: "14 May 2026", route: "{}" },
+        { id: "route-fallback", date_range: "Spring passage", route: JSON.stringify({ departed: "2026-06-03T08:00:00+02:00" }) },
+        { id: "already-iso", date_range: "2026-07-01", route: "{}" },
+      ] as Row[] };
+    }
+    return { rows: [] };
+  }
+}
+
 describe("runMigrations", () => {
   it("marks the log line column migration applied after duplicate columns from a partial prior run", async () => {
     const db = new DuplicateColumnDatabase();
@@ -92,5 +112,15 @@ describe("runMigrations", () => {
       sql: "update sheet_crew_members set embarkation_datetime = $1, disembarkation_datetime = $2 where sheet_id = $3 and crew_member_id = $4 and sort_order = $5",
       params: ["2026-07-21T08:00:00+00:00", "", "sheet-1", "crew-1", 0],
     }));
+  });
+
+  it("migrates legacy log sheet master dates to ISO date strings", async () => {
+    const db = new IsoLogSheetDateMigrationDatabase();
+
+    await expect(runMigrations(db)).resolves.toBeUndefined();
+
+    expect(db.calls).toContainEqual({ sql: "update log_sheets set date_range = $1 where id = $2", params: ["2026-05-14", "legacy"] });
+    expect(db.calls).toContainEqual({ sql: "update log_sheets set date_range = $1 where id = $2", params: ["2026-06-03", "route-fallback"] });
+    expect(db.calls).not.toContainEqual(expect.objectContaining({ params: [expect.anything(), "already-iso"] }));
   });
 });

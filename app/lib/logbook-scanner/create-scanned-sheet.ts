@@ -11,6 +11,7 @@ import type {
   WindUnit,
 } from "../../models/logbook";
 import type { UserPreferences } from "../users";
+import { normalizeIsoDate } from "../iso-date";
 import { normalizeScannedWeather } from "./weather";
 
 type CurrentUserCrew = Partial<CrewMember> & Pick<CrewMember, "name">;
@@ -82,7 +83,7 @@ export function createScannedSheet({
     arrived: draft.route?.arrived ?? "",
   };
   const { startDate, endDate } = dateBoundsFromSheetMasterData(draft.dateRange, route);
-  const dateRange = draft.dateRange?.trim() || startDate || new Date().toISOString().slice(0, 10);
+  const dateRange = startDate || new Date().toISOString().slice(0, 10);
   const normalizedLines = scannedLinesToLogLines(draft.lines, userPreferences, startDate, endDate);
   const scannerWarnings = [...scannerResult.warnings];
   if (normalizedLines.rolloverExceededEndDate && !scannerWarnings.includes(rolloverEndDateWarning)) scannerWarnings.push(rolloverEndDateWarning);
@@ -223,6 +224,9 @@ function scannedDates(value: string) {
   const isoDates = [...value.matchAll(/(?<!\d)(\d{4})-(\d{2})-(\d{2})(?!\d)/g)]
     .map((match) => `${match[1]}-${match[2]}-${match[3]}`);
   if (isoDates.length > 0) return isoDates;
+
+  const normalizedDate = normalizeIsoDate(value);
+  if (normalizedDate) return [normalizedDate];
 
   return [...value.matchAll(/\b(\d{1,2})[./](\d{1,2})[./](\d{2}|\d{4})\b/g)].map((match) => {
     const year = match[3].length === 2 ? `20${match[3]}` : match[3];
