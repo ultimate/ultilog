@@ -68,12 +68,12 @@ describe("profile endpoint", () => {
 
   it("returns the signed-in user profile", async () => {
     mockedAuth.mockResolvedValueOnce(session);
-    mockedFindUserById.mockResolvedValueOnce(appUser({ onboardingCompletedTasks: ["create_first_boat"], theme: "dark", isNavSlim: true, hasReadCompliance: true }));
+    mockedFindUserById.mockResolvedValueOnce(appUser({ avatar: "https://www.gravatar.com/avatar/hash?s=256&d=mp", onboardingCompletedTasks: ["create_first_boat"], theme: "dark", isNavSlim: true, hasReadCompliance: true }));
 
     const response = await GET();
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ id: "user-1", name: "User", email: "user@example.test", emailVerified: true, groups: [], onboardingCompletedTasks: ["create_first_boat"], preferences: { ...defaultPreferences, theme: "dark", isNavSlim: true }, theme: "dark", isNavSlim: true, hasReadCompliance: true });
+    await expect(response.json()).resolves.toEqual({ id: "user-1", name: "User", email: "user@example.test", emailVerified: true, avatar: "https://www.gravatar.com/avatar/hash?s=256&d=mp", groups: [], onboardingCompletedTasks: ["create_first_boat"], preferences: { ...defaultPreferences, theme: "dark", isNavSlim: true }, theme: "dark", isNavSlim: true, hasReadCompliance: true });
     expect(mockedFindUserById).toHaveBeenCalledWith("user-1");
   });
 
