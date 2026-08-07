@@ -241,8 +241,8 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
               <p>{t("boats.enginesHelp")}</p>
               {boatForm.engines.map((engine, index) => (
                 <div className="engine-manager-row" key={engine.id}>
-                  <input aria-label={t("boats.engineName")} required value={engine.name} onChange={(event) => setBoatForm({ ...boatForm, engines: boatForm.engines.map((candidate, candidateIndex) => candidateIndex === index ? { ...candidate, name: event.target.value } : candidate) })} />
-                  <input aria-label={t("boats.engineLabel")} required value={engine.label} onChange={(event) => setBoatForm({ ...boatForm, engines: boatForm.engines.map((candidate, candidateIndex) => candidateIndex === index ? { ...candidate, label: event.target.value } : candidate) })} />
+                  <input aria-label={t("boats.engineName")} required  placeholder={t("boats.engineName")} value={engine.name} onChange={(event) => setBoatForm({ ...boatForm, engines: boatForm.engines.map((candidate, candidateIndex) => candidateIndex === index ? { ...candidate, name: event.target.value } : candidate) })} />
+                  <input aria-label={t("boats.engineLabel")} required  placeholder={t("boats.engineLabel")} value={engine.label} onChange={(event) => setBoatForm({ ...boatForm, engines: boatForm.engines.map((candidate, candidateIndex) => candidateIndex === index ? { ...candidate, label: event.target.value } : candidate) })} />
                   <select aria-label={t("boats.engineRole")} value={engine.role} onChange={(event) => setBoatForm({ ...boatForm, engines: boatForm.engines.map((candidate, candidateIndex) => candidateIndex === index ? { ...candidate, role: event.target.value as BoatEngineRole } : candidate) })}>
                     <option value="propulsion">{t("boats.engineRole.propulsion")}</option><option value="generator">{t("boats.engineRole.generator")}</option><option value="auxiliary">{t("boats.engineRole.auxiliary")}</option>
                   </select>
