@@ -1,6 +1,6 @@
 import type { LogLine } from "../../models/logbook";
 
-export const PRINT_LOG_ROWS_PER_PAGE = 19;
+export const PRINT_LOG_ROWS_PER_PAGE = 20;
 
 export type PrintLogPage = {
   lines: Array<LogLine | undefined>;

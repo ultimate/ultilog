@@ -35,7 +35,7 @@ test("prints empty sheets with fixed blank rows and print-only layout", async ({
   await expect(printPage).toHaveAttribute("data-template-revision", "1");
   await expect(printPage).toHaveAttribute("data-template-variant", "full");
   await expect(printPage).toHaveAttribute("data-template-locale", "en");
-  await expect(printPage.locator("tbody tr")).toHaveCount(19);
+  await expect(printPage.locator("tbody tr")).toHaveCount(20);
   await expectPrintContentWithinPage(printPage);
   await expect(page.getByRole("navigation", { name: "Primary modules" })).toBeHidden();
 });
@@ -59,7 +59,7 @@ test("prints filled sheets with filler rows, repeated header/footer, and page nu
   await expectPrintHeaderFieldsAligned(printPage);
   await expect(printPage.locator(".print-footer")).toHaveCount(1);
   await expect(printPage.locator(".print-page-number")).toHaveText("Page 1 of 1");
-  await expect(printPage.locator("tbody tr")).toHaveCount(19);
+  await expect(printPage.locator("tbody tr")).toHaveCount(20);
   await expect(printPage.locator("tbody tr").nth(demoSheet.lines.length)).toBeVisible();
 });
 
@@ -91,8 +91,8 @@ test("splits filled sheets that exceed one A4 landscape page", async ({ page }) 
   await expect(printPages.nth(0).locator(".print-page-number")).toHaveText("Page 1 of 2");
   await expect(printPages.nth(1).locator(".print-page-number")).toHaveText("Page 2 of 2");
   await expect(printPages.locator(".print-template-marker")).toHaveCount(2);
-  await expect(printPages.nth(0).locator("tbody tr")).toHaveCount(19);
-  await expect(printPages.nth(1).locator("tbody tr")).toHaveCount(19);
+  await expect(printPages.nth(0).locator("tbody tr")).toHaveCount(20);
+  await expect(printPages.nth(1).locator("tbody tr")).toHaveCount(20);
   await expect(printPages.nth(0).locator(".print-remark-small, .print-remark-tiny")).toHaveCount(1);
 });
 
@@ -115,17 +115,25 @@ async function expectPrintContentWithinPage(printPage: Locator) {
 
 async function expectPrintHeaderFieldsAligned(printPage: Locator) {
   const heights = await printPage.evaluate((pageElement) => {
-    const height = (selector: string) => pageElement.querySelector(selector)?.getBoundingClientRect().height ?? 0;
+    const box = (selector: string) => pageElement.querySelector(selector)?.getBoundingClientRect();
+    const voyage = box(".print-master-grid .print-field");
+    const boatSecondRow = box(".print-boat .print-field:nth-child(4)");
+    const summarySecondRow = box(".print-summary .print-field:nth-child(3)");
     return {
-      voyage: height(".print-master-grid .print-field"),
-      boat: height(".print-boat .print-field"),
-      summary: height(".print-summary .print-field"),
+      voyageHeight: voyage?.height ?? 0,
+      boatHeight: boatSecondRow?.height ?? 0,
+      summaryHeight: summarySecondRow?.height ?? 0,
+      voyageTop: voyage?.top ?? 0,
+      boatTop: boatSecondRow?.top ?? 0,
+      summaryTop: summarySecondRow?.top ?? 0,
     };
   });
 
-  expect(heights.voyage).toBeGreaterThan(0);
-  expect(Math.abs(heights.boat - heights.voyage)).toBeLessThanOrEqual(1);
-  expect(Math.abs(heights.summary - heights.voyage)).toBeLessThanOrEqual(1);
+  expect(heights.voyageHeight).toBeGreaterThan(0);
+  expect(Math.abs(heights.boatHeight - heights.voyageHeight)).toBeLessThanOrEqual(1);
+  expect(Math.abs(heights.summaryHeight - heights.voyageHeight)).toBeLessThanOrEqual(1);
+  expect(Math.abs(heights.boatTop - heights.voyageTop)).toBeLessThanOrEqual(1);
+  expect(Math.abs(heights.summaryTop - heights.voyageTop)).toBeLessThanOrEqual(1);
 }
 
 async function loginWithSeededDemoData(page: Page, sheets = sampleLogSheets) {
