@@ -1,8 +1,10 @@
 import type { QueryableDatabase } from "./logbook-database";
+import { normalizeIsoDate } from "../iso-date";
 
 type RouteRow = { id: string; route: unknown };
 type TimedRow = { sheet_id: string; sort_order: number; time: string };
 type CrewAssignmentRow = { sheet_id: string; crew_member_id: string; sort_order: number; embarkation_datetime: string; disembarkation_datetime: string };
+type LegacyLogSheetDateRow = { id: string; date_range: string; route: unknown };
 type LegacyBoatEngineRow = { boat_id: string; yacht_data: unknown; engine_id: string; model: string };
 import { readMigrations } from "./schema";
 
@@ -32,6 +34,11 @@ async function applyMigration(db: QueryableDatabase, id: string, sql: string) {
 
   if (id === "030_move_legacy_boat_engine") {
     await moveLegacyBoatEngine(db);
+    return;
+  }
+
+  if (id === "031_remove_log_sheet_date_range") {
+    await removeLegacyLogSheetDateRange(db);
     return;
   }
 
@@ -77,6 +84,24 @@ function parseYachtData(value: unknown): Record<string, unknown> {
   } catch {
     return {};
   }
+}
+
+export async function removeLegacyLogSheetDateRange(db: QueryableDatabase) {
+  const result = await db.query<LegacyLogSheetDateRow>("select id, date_range, route from log_sheets");
+  for (const row of result.rows) {
+    const route = parseRoute(row.route);
+    const date = normalizeIsoDate(row.date_range);
+    if (!date && (!route.departed || !route.arrived)) throw new Error(`Log sheet ${row.id} has no date that can be migrated to its route.`);
+    const nextRoute = {
+      ...route,
+      departed: route.departed || `${date}T00:00:00+00:00`,
+      arrived: route.arrived || `${date}T00:00:00+00:00`,
+    };
+    if (nextRoute.departed !== route.departed || nextRoute.arrived !== route.arrived) {
+      await db.query(`update log_sheets set route = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [JSON.stringify(nextRoute), row.id]);
+    }
+  }
+  await db.query("alter table log_sheets drop column date_range");
 }
 
 function isDuplicateColumnError(error: unknown) {

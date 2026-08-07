@@ -14,7 +14,7 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
   const scannedSheet = {
     id: createdSheetId,
     title: "Scanned marina departure",
-    dateRange: "04 Jul 2026",
+    dateText: "04 Jul 2026",
     status: "Draft",
     source: "scanner",
     verificationNote: "Please verify scanned information before locking this sheet.",

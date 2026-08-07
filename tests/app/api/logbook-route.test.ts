@@ -70,7 +70,7 @@ describe("logbook endpoint", () => {
     const imageLogbook: PersistedLogbook = {
       boats: [{ id: "boat-1", name: "Aurora", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [], image }],
       crewMembers: [{ id: "crew-1", name: "Luca", nationality: "CH", role: "Skipper", address: "", certificate: "", isPrimary: true, image }],
-      sheets: [{ id: "sheet-1", title: "Trip", status: "Draft", dateRange: "2026-07-03", boatId: "boat-1", route: { from: "A", to: "B", departed: "", arrived: "" }, crew: [{ id: "crew-1", name: "Luca", nationality: "CH", role: "Skipper", address: "", certificate: "", isPrimary: true, embarkationDateTime: "", embarkationPosition: "", disembarkationDateTime: "", disembarkationPosition: "", image }], watchPlan: [], technicalChecks: [], image, lines: [] }],
+      sheets: [{ id: "sheet-1", title: "Trip", status: "Draft", boatId: "boat-1", route: { from: "A", to: "B", departed: "", arrived: "" }, crew: [{ id: "crew-1", name: "Luca", nationality: "CH", role: "Skipper", address: "", certificate: "", isPrimary: true, embarkationDateTime: "", embarkationPosition: "", disembarkationDateTime: "", disembarkationPosition: "", image }], watchPlan: [], technicalChecks: [], image, lines: [] }],
     };
     mockedAuth.mockResolvedValueOnce(session);
     mockedWriteLogbook.mockResolvedValueOnce(imageLogbook);
@@ -101,7 +101,7 @@ describe("logbook endpoint", () => {
 
   it("rejects deleting a boat that is referenced by a persisted logsheet", async () => {
     const boat = { id: "boat-1", archived: false, name: "Aurora", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [] };
-    const sheet = { id: "sheet-1", title: "Trip", status: "Draft" as const, dateRange: "2026-07-03", boatId: boat.id, route: { from: "A", to: "B", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] };
+    const sheet = { id: "sheet-1", title: "Trip", status: "Draft" as const, boatId: boat.id, route: { from: "A", to: "B", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] };
     mockedAuth.mockResolvedValueOnce(session);
     mockedReadLogbook.mockResolvedValueOnce({ boats: [boat], crewMembers: [], sheets: [sheet] });
 
@@ -117,7 +117,7 @@ describe("logbook endpoint", () => {
 
   it("allows legacy boat and logsheet IDs to be normalized without treating the boat as deleted", async () => {
     const boat = { id: "legacy-boat", archived: false, name: "Aurora", type: "Sail" as const, registration: "CH-1", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [] };
-    const sheet = { id: "legacy-sheet", title: "Trip", status: "Draft" as const, dateRange: "2026-07-03", boatId: boat.id, route: { from: "A", to: "B", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] };
+    const sheet = { id: "legacy-sheet", title: "Trip", status: "Draft" as const, boatId: boat.id, route: { from: "A", to: "B", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] };
     const normalized = { boats: [{ ...boat, id: "9adc47f1-0cd6-4298-b68a-80d6600e481b" }], crewMembers: [], sheets: [{ ...sheet, id: "95ed6e76-d127-4e9e-a653-b1fe28a29345", boatId: "9adc47f1-0cd6-4298-b68a-80d6600e481b" }] };
     mockedAuth.mockResolvedValueOnce(session);
     mockedReadLogbook.mockResolvedValueOnce({ boats: [boat], crewMembers: [], sheets: [sheet] });
@@ -131,7 +131,7 @@ describe("logbook endpoint", () => {
 
   it("allows archiving and restoring a referenced boat", async () => {
     const boat = { id: "boat-1", archived: false, name: "Aurora", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [] };
-    const sheet = { id: "sheet-1", title: "Trip", status: "Draft" as const, dateRange: "2026-07-03", boatId: boat.id, route: { from: "A", to: "B", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] };
+    const sheet = { id: "sheet-1", title: "Trip", status: "Draft" as const, boatId: boat.id, route: { from: "A", to: "B", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] };
     const current = { boats: [boat], crewMembers: [], sheets: [sheet] };
     const archived = { ...current, boats: [{ ...boat, archived: true }] };
     mockedAuth.mockResolvedValue(session);
@@ -144,7 +144,7 @@ describe("logbook endpoint", () => {
 
   it("rejects assigning an archived boat to a new logsheet", async () => {
     const boat = { id: "boat-1", archived: true, name: "Aurora", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [] };
-    const next = { boats: [boat], crewMembers: [], sheets: [{ id: "sheet-1", title: "Trip", status: "Draft" as const, dateRange: "", boatId: boat.id, route: { from: "", to: "", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] }] };
+    const next = { boats: [boat], crewMembers: [], sheets: [{ id: "sheet-1", title: "Trip", status: "Draft" as const, boatId: boat.id, route: { from: "", to: "", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] }] };
     mockedAuth.mockResolvedValueOnce(session);
     mockedReadLogbook.mockResolvedValueOnce({ boats: [boat], crewMembers: [], sheets: [] });
 
@@ -158,7 +158,7 @@ describe("logbook endpoint", () => {
     const demoLogbook: PersistedLogbook = {
       boats: [{ id: "boat-1", name: "Aurora", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [], image }],
       crewMembers: [{ id: "crew-1", name: "Luca", nationality: "CH", role: "Skipper", image }],
-      sheets: [{ id: "sheet-1", title: "Trip", status: "Draft", dateRange: "", boatId: "boat-1", route: { from: "", to: "", departed: "", arrived: "" }, crew: [{ id: "crew-1", name: "Luca", nationality: "CH", role: "Skipper", embarkationDateTime: "", embarkationPosition: "", disembarkationDateTime: "", disembarkationPosition: "", image }], watchPlan: [], technicalChecks: [], image, lines: [], share: { masterData: "public", picture: "public", logLines: "public", metrics: "public", technicalLog: "public", skipper: "public", crew: "public" } }],
+      sheets: [{ id: "sheet-1", title: "Trip", status: "Draft", boatId: "boat-1", route: { from: "", to: "", departed: "", arrived: "" }, crew: [{ id: "crew-1", name: "Luca", nationality: "CH", role: "Skipper", embarkationDateTime: "", embarkationPosition: "", disembarkationDateTime: "", disembarkationPosition: "", image }], watchPlan: [], technicalChecks: [], image, lines: [], share: { masterData: "public", picture: "public", logLines: "public", metrics: "public", technicalLog: "public", skipper: "public", crew: "public" } }],
     };
     mockedAuth.mockResolvedValueOnce(session);
     mockedIsActiveDemoSandbox.mockResolvedValueOnce(true);

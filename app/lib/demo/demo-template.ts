@@ -284,7 +284,6 @@ function createSheet(dayData: Day, boat: Boat, memberIds: string[], index: numbe
   return {
     id: `demo-sheet-${dayData.id}`,
     title: dayData.title,
-    dateRange: new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(`${dayData.date}T00:00:00Z`)),
     status: index === 3 ? "Draft" : "Locked",
     source: "manual",
     verificationNote: `Demo record. ${DEMO_WEATHER_PROVENANCE.note}`,

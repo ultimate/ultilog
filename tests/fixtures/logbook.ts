@@ -62,7 +62,6 @@ export const sampleLogSheets: LogSheet[] = [
   {
     id: "7d3a7602-5f3a-4b3d-81f3-4e973a8bb3a8",
     title: "Ionian training passage · Day 3",
-    dateRange: "14 May 2026",
     status: "Draft",
     boatId: "4bff7b1f-ff73-40ed-9a97-800a4e3bf3c0",
     route: {
@@ -89,7 +88,6 @@ export const sampleLogSheets: LogSheet[] = [
   {
     id: "2a2ac899-7f26-433c-a557-d89cd7b1181f",
     title: "Adriatic transfer watch",
-    dateRange: "03 Jun 2026",
     status: "Draft",
     boatId: "d63fa02f-54d2-47d6-a826-96d0bbd28991",
     route: {

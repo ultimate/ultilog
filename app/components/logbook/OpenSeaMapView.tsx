@@ -85,7 +85,7 @@ function logLinesToRoute(logLines: LogLine[], labels: { weather: string; wind: s
   };
 }
 
-function logSheetToRoute(sheet: LogSheet, labels: { weather: string; wind: string }, formatDate: (value?: string | null) => string, formatTime: (value?: string | null) => string): MapRoute {
+function logSheetToRoute(sheet: LogSheet, labels: { weather: string; wind: string }, formatDateRange: (from?: string | null, to?: string | null) => string, formatTime: (value?: string | null) => string): MapRoute {
   const points = sheet.lines
     .filter(isValidCoordinate)
     .map((line, index) => lineToPoint(line, index, sheet.id, labels, formatTime));
@@ -93,7 +93,7 @@ function logSheetToRoute(sheet: LogSheet, labels: { weather: string; wind: strin
   return {
     id: sheet.id,
     title: sheet.title,
-    subtitle: `${formatDate(sheet.dateRange)} · ${sheet.route.from} → ${sheet.route.to}`,
+    subtitle: `${formatDateRange(sheet.route.departed, sheet.route.arrived)} · ${sheet.route.from} → ${sheet.route.to}`,
     points,
     detailLevel: "summary",
     sheet,
@@ -110,7 +110,7 @@ export function LogLinesMapView({
   const { t } = useI18n();
   const { formatTime } = useDateTimeFormat();
   const mapLabels = useMemo(() => ({ weather: t("details.weather"), wind: t("details.wind"), logLinePositions: t("map.logLinePositions") }), [t]);
-  const routes = useMemo(() => [logLinesToRoute(logLines, mapLabels, formatTime)], [logLines, mapLabels]);
+  const routes = useMemo(() => [logLinesToRoute(logLines, mapLabels, formatTime)], [formatTime, logLines, mapLabels]);
   return (
     <OpenSeaMapLeaflet
       ariaLabel={ariaLabel ?? t("map.routePositionsAria")}
@@ -131,9 +131,9 @@ export function LogSheetsMapView({
   showRouteTargets = true,
 }: LogSheetsMapViewProps) {
   const { t } = useI18n();
-  const { formatDate, formatTime } = useDateTimeFormat();
+  const { formatDateRange, formatTime } = useDateTimeFormat();
   const mapLabels = useMemo(() => ({ weather: t("details.weather"), wind: t("details.wind") }), [t]);
-  const routes = useMemo(() => sheets.map((sheet) => logSheetToRoute(sheet, mapLabels, formatDate, formatTime)), [sheets, mapLabels]);
+  const routes = useMemo(() => sheets.map((sheet) => logSheetToRoute(sheet, mapLabels, formatDateRange, formatTime)), [formatDateRange, formatTime, mapLabels, sheets]);
   const mappedRoutes = routes.filter(
     (route) => route.sheet && route.points.length > 0,
   );

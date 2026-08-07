@@ -38,7 +38,7 @@ const logbook = { boats: [boat], crewMembers: [], sheets: [] };
 const partialScannerResult = {
   draft: {
     title: "",
-    dateRange: "2026-07-03",
+    dateText: "2026-07-03",
     route: { from: "A", to: "", departed: "2026-07-03, 10:00", arrived: "" },
     lines: [{ time: "2026-07-03T10:30", latitude: "47° 30.000' N", remarks: "Smudged row" }],
   },
@@ -222,7 +222,7 @@ describe("logbook scanner endpoint", () => {
     mockedAuth.mockResolvedValueOnce(session);
     mockedReadLogbook.mockResolvedValueOnce(logbook);
     mockedScanner.mockResolvedValueOnce({
-      draft: { title: "", dateRange: "", route: { from: "", to: "", departed: "", arrived: "" }, lines: [] },
+      draft: { title: "", dateText: "", route: { from: "", to: "", departed: "", arrived: "" }, lines: [] },
       warnings: ["No logbook rows were detected."],
     });
     const formData = new FormData();
@@ -279,7 +279,7 @@ describe("logbook scanner endpoint", () => {
     mockedScanner.mockResolvedValueOnce({
       draft: {
         title: "",
-        dateRange: "2026-07-03",
+        dateText: "2026-07-03",
         route: { from: "A", to: "B", departed: "2026-07-03, 10:00", arrived: "2026-07-03, 11:00" },
         lines: [{ time: "2026-07-03T10:30", windStrength: "12", windUnit: "", waves: "2", seaUnit: "", tide: "1", tideUnit: "", temperature: "70", temperatureUnit: "" }],
       },
@@ -304,7 +304,7 @@ describe("logbook scanner endpoint", () => {
     mockedScanner.mockResolvedValueOnce({
       draft: {
         title: "",
-        dateRange: "2026-07-03",
+        dateText: "2026-07-03",
         route: { from: "A", to: "B", departed: "2026-07-03, 10:00", arrived: "2026-07-03, 11:00" },
         lines: [{ time: "2026-07-03T10:30", windStrength: "4", windUnit: "bft", waves: "0.5", seaUnit: "m", tide: "0.2", tideUnit: "m", temperature: "18", temperatureUnit: "°C" }],
       },

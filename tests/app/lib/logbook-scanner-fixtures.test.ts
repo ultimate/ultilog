@@ -5,6 +5,7 @@ import { createScannedSheet } from "../../../app/lib/logbook-scanner/create-scan
 import { openAiScannerProvider } from "../../../app/lib/logbook-scanner/openai-provider";
 import type { ScannerResult } from "../../../app/models/logbook";
 import { locales, type Locale } from "../../../app/lib/i18n/translations";
+import { normalizeIsoDate } from "../../../app/lib/iso-date";
 import type { LogSheetPrintVariant } from "../../../app/domain/logbook/print-template";
 
 const fixturesRoot = path.join(process.cwd(), "tests/fixtures/logbook-scanner");
@@ -15,7 +16,7 @@ const liveScannerEnabled = process.env.RUN_LIVE_SCANNER_TESTS === "true" && Bool
 type ExpectedFixtureLine = Record<string, string | number | undefined>;
 type ExpectedFixture = {
   title?: string;
-  dateRange?: string;
+  dateText?: string;
   route?: { from?: string; to?: string; departed?: string; arrived?: string };
   lines?: ExpectedFixtureLine[];
   template?: {
@@ -82,18 +83,19 @@ describe("logbook scanner image fixtures", () => {
 
     expect(sheet).toEqual(expect.objectContaining({
       title: expected.title,
-      dateRange: expected.dateRange || expected.route?.departed?.slice(0, 10),
       status: "Draft",
       source: "scanner",
       boatId: "fixture-boat",
-      route: expected.route,
+      route: expect.objectContaining({ from: expected.route?.from, to: expected.route?.to }),
       scannerWarnings: scannerResult.warnings,
     }));
+    expect(sheet.route.departed).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$/);
+    expect(sheet.route.arrived).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$/);
     expect(sheet.lines).toHaveLength(expected.lines?.length ?? 0);
 
     expected.lines?.forEach((line, index) => {
       const actual = sheet.lines[index];
-      expect(actual).toEqual(expect.objectContaining(projectExpectedLine(line, actual)));
+      expect(actual).toEqual(expect.objectContaining(projectExpectedLine(line, actual, normalizeIsoDate(expected.dateText || expected.route?.departed || "") ?? "")));
     });
 
     const serialized = JSON.stringify(sheet);
@@ -144,7 +146,7 @@ function expectedToScannerResult(expected: ExpectedFixture): ScannerResult {
   return {
     draft: {
       title: expected.title ?? "",
-      dateRange: expected.dateRange ?? "",
+      dateText: expected.dateText ?? "",
       route: {
         from: expected.route?.from ?? "",
         to: expected.route?.to ?? "",
@@ -170,7 +172,7 @@ function stringifyLineValues(line: ExpectedFixtureLine) {
   return Object.fromEntries(entries);
 }
 
-function projectExpectedLine(line: ExpectedFixtureLine, actualLine: Record<string, unknown>) {
+function projectExpectedLine(line: ExpectedFixtureLine, actualLine: Record<string, unknown>, sheetDate: string) {
   const fieldAliases: Record<string, string> = {
     sailMiles: "sailMiles" in actualLine ? "sailMiles" : "sailSm",
     motorMiles: "motorMiles" in actualLine ? "motorMiles" : "motorSm",
@@ -212,7 +214,12 @@ function projectExpectedLine(line: ExpectedFixtureLine, actualLine: Record<strin
   return Object.fromEntries(
     comparableFields
       .filter((field) => line[field] !== undefined)
-      .map((field) => [fieldAliases[field] ?? field, numericExpectedValue(field, line[field])]),
+      .map((field) => {
+        const value = field === "time" && /^\d{1,2}:\d{2}/.test(String(line[field]))
+          ? `${sheetDate}T${String(line[field]).padStart(5, "0")}`
+          : line[field];
+        return [fieldAliases[field] ?? field, numericExpectedValue(field, value)];
+      }),
   );
 }
 

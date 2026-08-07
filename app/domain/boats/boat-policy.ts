@@ -26,7 +26,8 @@ export function validateLogbookMutation(
       next.sheets.some((candidate) =>
         candidate.boatId === replacement.id
         && candidate.title === sheet.title
-        && candidate.dateRange === sheet.dateRange
+        && candidate.route.departed === sheet.route.departed
+        && candidate.route.arrived === sheet.route.arrived
         && candidate.route.from === sheet.route.from
         && candidate.route.to === sheet.route.to,
       ),
@@ -50,7 +51,8 @@ export function validateLogbookMutation(
       return priorBoat?.name === boat.name
         && priorBoat.registration === boat.registration
         && candidate.title === sheet.title
-        && candidate.dateRange === sheet.dateRange
+        && candidate.route.departed === sheet.route.departed
+        && candidate.route.arrived === sheet.route.arrived
         && candidate.route.from === sheet.route.from
         && candidate.route.to === sheet.route.to;
     });

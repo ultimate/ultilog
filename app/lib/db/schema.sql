@@ -102,7 +102,6 @@ create table if not exists boats (
 create table if not exists log_sheets (
   id text primary key,
   title text not null,
-  date_range text not null,
   status text not null,
   boat_id text not null references boats(id) on delete cascade,
   skipper text not null,

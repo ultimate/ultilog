@@ -1,3 +1,5 @@
+import { normalizeIsoDate } from "./iso-date";
+
 export const dateFormats = ["dd/MM/yyyy", "MM/dd/yyyy", "yyyy-MM-dd", "dd.MM.yyyy", "dd-MM-yyyy", "d MMM yyyy", "MMM d, yyyy"] as const;
 export const timeFormats = ["HH:mm", "h:mm a", "HH:mm:ss", "h:mm:ss a"] as const;
 
@@ -15,12 +17,12 @@ export function isTimeFormat(value: unknown): value is TimeFormat {
   return typeof value === "string" && (timeFormats as readonly string[]).includes(value);
 }
 
-/** Formats an ISO-like stored value without changing its date, time, or offset. */
+/** Formats a stored ISO date or the legacy `dd MMM yyyy` log-sheet date without changing storage. */
 export function formatStoredDate(value: string | undefined | null, format: DateFormat, locale = "en"): string {
   if (!value) return "";
-  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (!match) return value;
-  const [, year, month, day] = match;
+  const normalized = normalizeIsoDate(value);
+  if (!normalized) return value;
+  const [year, month, day] = normalized.split("-");
   const shortMonth = new Intl.DateTimeFormat(locale, { month: "short", timeZone: "UTC" }).format(new Date(Date.UTC(Number(year), Number(month) - 1, Number(day))));
   switch (format) {
     case "MM/dd/yyyy": return `${month}/${day}/${year}`;
@@ -49,4 +51,12 @@ export function formatStoredDateTime(value: string | undefined | null, dateForma
   const date = formatStoredDate(value, dateFormat, locale);
   const time = formatStoredTime(value, timeFormat);
   return time && time !== value ? `${date}, ${time}` : date;
+}
+
+export function formatStoredDateRange(from: string | undefined | null, to: string | undefined | null, dateFormat: DateFormat, locale = "en") {
+  const start = formatStoredDate(from, dateFormat, locale);
+  const end = formatStoredDate(to, dateFormat, locale);
+  if (!start) return end;
+  if (!end || end === start) return start;
+  return `${start} – ${end}`;
 }

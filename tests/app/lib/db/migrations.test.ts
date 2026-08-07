@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { runMigrations } from "../../../../app/lib/db/migrations";
+import { removeLegacyLogSheetDateRange, runMigrations } from "../../../../app/lib/db/migrations";
 import type { QueryableDatabase, QueryResult } from "../../../../app/lib/db/logbook-database";
 
 class DuplicateColumnDatabase implements QueryableDatabase {
@@ -84,6 +84,17 @@ class LegacyBoatEngineMigrationDatabase implements QueryableDatabase {
   }
 }
 
+
+class RemoveDateRangeDatabase implements QueryableDatabase {
+  calls: Array<{ sql: string; params?: unknown[] }> = [];
+  placeholder(index: number) { return `$${index}`; }
+  async query<Row>(sql: string, params?: unknown[]): Promise<QueryResult<Row>> {
+    this.calls.push({ sql, params });
+    if (sql === "select id, date_range, route from log_sheets") return { rows: [{ id: "legacy-sheet", date_range: "14 May 2026", route: JSON.stringify({ from: "A", to: "B", departed: "", arrived: "" }) }] as Row[] };
+    return { rows: [] };
+  }
+}
+
 describe("runMigrations", () => {
   it("marks the log line column migration applied after duplicate columns from a partial prior run", async () => {
     const db = new DuplicateColumnDatabase();
@@ -122,4 +133,12 @@ describe("runMigrations", () => {
     expect(db.calls).toContainEqual({ sql: "update boats set yacht_data = $1 where id = $2", params: [JSON.stringify({ Manufacturer: "Yard" }), "boat-1"] });
     expect(db.calls).toContainEqual({ sql: "update boats set yacht_data = $1 where id = $2", params: [JSON.stringify({ Safety: "EPIRB" }), "boat-2"] });
   });
+
+  it("moves the legacy sheet date into route timestamps before dropping the duplicate column", async () => {
+    const db = new RemoveDateRangeDatabase();
+    await removeLegacyLogSheetDateRange(db);
+    expect(db.calls).toContainEqual({ sql: "update log_sheets set route = $1 where id = $2", params: [JSON.stringify({ from: "A", to: "B", departed: "2026-05-14T00:00:00+00:00", arrived: "2026-05-14T00:00:00+00:00" }), "legacy-sheet"] });
+    expect(db.calls.at(-1)).toEqual({ sql: "alter table log_sheets drop column date_range", params: undefined });
+  });
+
 });

@@ -71,7 +71,7 @@ import { useOnboardingProfile } from "./onboarding/useOnboardingProfile";
 import type { OnboardingTaskId } from "../lib/onboarding/tasks";
 import type { ProfilePreferences } from "./onboarding/useOnboardingProfile";
 import { DateTimeFormatProvider } from "../lib/DateTimeFormatProvider";
-import { formatStoredDate, formatStoredDateTime } from "../lib/date-time-format";
+import { formatStoredDateTime } from "../lib/date-time-format";
 
 type AdminUser = { id: string; name: string; email: string; groups: string[] };
 const adminUserColumns = [
@@ -131,7 +131,7 @@ function createDefaultLineForm(preferences: LineFormPreferences): LineForm {
 }
 
 function monthLabelForSheet(sheet: LogSheet) {
-  const source = sheet.route.departed || sheet.dateRange;
+  const source = sheet.route.departed || sheet.route.arrived;
   const isoMatch = source.match(/(\d{4})-(\d{2})/);
   if (isoMatch) return `${isoMatch[1]}-${isoMatch[2]}`;
   const parsed = Date.parse(source.replace(",", ""));
@@ -139,7 +139,7 @@ function monthLabelForSheet(sheet: LogSheet) {
     const date = new Date(parsed);
     return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
   }
-  return sheet.dateRange;
+  return "";
 }
 
 function withCalculatedSheetMetrics(sheet: LogSheet, motionStationaryThresholdNm: number): LogSheet {
@@ -841,7 +841,7 @@ export function LogbookApp({
           )
         }
       >
-        {stamp ? formatStoredDateTime(stamp, preferences.dateFormat, preferences.timeFormat, locale) : formatStoredDate(activeSheet.dateRange, preferences.dateFormat, locale)}
+        {stamp ? formatStoredDateTime(stamp, preferences.dateFormat, preferences.timeFormat, locale) : "—"}
       </button>
     );
   const technicalCheckSuggestions = useMemo(() => {
@@ -890,7 +890,7 @@ export function LogbookApp({
     const motionDurationMinutes = sheetsWithMetrics.reduce((sum, item) => sum + item.metrics.motionDurationMinutes, 0);
     const motorHours = sheetsWithMetrics.reduce((sum, item) => sum + item.metrics.motorHours, 0);
     const timeline = sheetsWithMetrics
-      .slice().sort((a, b) => a.sheet.dateRange.localeCompare(b.sheet.dateRange))
+      .slice().sort((a, b) => a.sheet.route.departed.localeCompare(b.sheet.route.departed))
       .map((item) => ({ label: monthLabelForSheet(item.sheet), totalNm: item.metrics.totalMiles, sailNm: item.metrics.sailMiles, motorNm: item.metrics.motorMiles, overallMinutes: item.metrics.overallDurationMinutes ?? item.metrics.durationMinutes ?? 0, motionMinutes: item.metrics.motionDurationMinutes, motorMinutes: item.metrics.motorHours * 60 }));
     const boatDistribution = logbook.boats.map((boat) => ({
       boatName: boat.name,
@@ -975,8 +975,8 @@ export function LogbookApp({
     const route = {
       from: sheetForm.from,
       to: sheetForm.to,
-      departed: routeStamp(sheetForm.dateRange, sheetForm.fromTime, sheetForm.fromTimezone),
-      arrived: routeStamp(sheetForm.dateRange, sheetForm.toTime, sheetForm.toTimezone),
+      departed: routeStamp(sheetForm.fromDate, sheetForm.fromTime, sheetForm.fromTimezone),
+      arrived: routeStamp(sheetForm.toDate, sheetForm.toTime, sheetForm.toTimezone),
     };
     const currentUserCrew = currentLogbook.crewMembers.find(
       (crew) => crew.isPrimary,
@@ -1010,7 +1010,6 @@ export function LogbookApp({
       ...base,
       id,
       title: sheetForm.title || "Untitled sheet",
-      dateRange: sheetForm.dateRange,
       status: sheetForm.status,
       boatId: sheetForm.boatId,
       route,
@@ -1135,10 +1134,8 @@ export function LogbookApp({
         if (field === "to")
           return { ...sheet, route: { ...sheet.route, to: value } };
         if (field === "departed") {
-          const { date } = splitDateTimeLocal(value);
           return {
             ...sheet,
-            dateRange: date || sheet.dateRange,
             route: {
               ...sheet.route,
               departed:
@@ -1146,10 +1143,8 @@ export function LogbookApp({
             },
           };
         }
-        const { date } = splitDateTimeLocal(value);
         return {
           ...sheet,
-          dateRange: sheet.dateRange || date,
           route: {
             ...sheet.route,
             arrived: routeStampFromDateTimeLocal(value, sheetInlineTimezoneDraft) || sheet.route.arrived,

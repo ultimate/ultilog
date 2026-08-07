@@ -48,7 +48,7 @@ describe("BoatManagerPage archiving", () => {
     const logbook: PersistedLogbook = {
       boats: [boat],
       crewMembers: [],
-      sheets: [{ id: "sheet-1", title: "Passage", dateRange: "2026-08-01", status: "Draft", boatId: boat.id, route: { from: "A", to: "B", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] }],
+      sheets: [{ id: "sheet-1", title: "Passage", status: "Draft", boatId: boat.id, route: { from: "A", to: "B", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] }],
     };
 
     const markup = renderManager(logbook, boat);

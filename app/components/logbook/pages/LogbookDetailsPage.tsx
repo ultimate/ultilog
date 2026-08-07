@@ -476,14 +476,14 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                     aria-label={t("details.fromDateTime")}
                     type="datetime-local"
                     value={dateTimeLocalFromParts(
-                      sheetForm.dateRange,
+                      sheetForm.fromDate,
                       sheetForm.fromTime,
                     )}
                     onChange={(e) => {
                       const { date, time } = splitDateTimeLocal(e.target.value);
                       setSheetForm({
                         ...sheetForm,
-                        dateRange: date || sheetForm.dateRange,
+                        fromDate: date || sheetForm.fromDate,
                         fromTime: time,
                         fromTimezone: sheetForm.fromTimezone,
                       });
@@ -506,14 +506,14 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                     aria-label={t("details.toDateTime")}
                     type="datetime-local"
                     value={dateTimeLocalFromParts(
-                      sheetForm.dateRange,
+                      sheetForm.toDate,
                       sheetForm.toTime,
                     )}
                     onChange={(e) => {
                       const { date, time } = splitDateTimeLocal(e.target.value);
                       setSheetForm({
                         ...sheetForm,
-                        dateRange: date || sheetForm.dateRange,
+                        toDate: date || sheetForm.toDate,
                         toTime: time,
                         toTimezone: sheetForm.toTimezone,
                       });

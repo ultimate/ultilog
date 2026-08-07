@@ -11,6 +11,7 @@ import type {
   WindUnit,
 } from "../../models/logbook";
 import type { UserPreferences } from "../users";
+import { normalizeIsoDate } from "../iso-date";
 import { normalizeScannedWeather } from "./weather";
 
 type CurrentUserCrew = Partial<CrewMember> & Pick<CrewMember, "name">;
@@ -76,14 +77,19 @@ export function createScannedSheet({
   userPreferences,
 }: CreateScannedSheetInput): LogSheet {
   const draft = scannerResult.draft;
-  const route = {
+  const extractedRoute = {
     from: draft.route?.from ?? "",
     to: draft.route?.to ?? "",
     departed: draft.route?.departed ?? "",
     arrived: draft.route?.arrived ?? "",
   };
-  const { startDate, endDate } = dateBoundsFromSheetMasterData(draft.dateRange, route);
-  const dateRange = draft.dateRange?.trim() || startDate || new Date().toISOString().slice(0, 10);
+  const { startDate, endDate } = dateBoundsFromSheetMasterData(draft.dateText, extractedRoute);
+  const fallbackDate = startDate || new Date().toISOString().slice(0, 10);
+  const route = {
+    ...extractedRoute,
+    departed: normalizeScannerRouteStamp(extractedRoute.departed, fallbackDate),
+    arrived: normalizeScannerRouteStamp(extractedRoute.arrived, endDate || fallbackDate),
+  };
   const normalizedLines = scannedLinesToLogLines(draft.lines, userPreferences, startDate, endDate);
   const scannerWarnings = [...scannerResult.warnings];
   if (normalizedLines.rolloverExceededEndDate && !scannerWarnings.includes(rolloverEndDateWarning)) scannerWarnings.push(rolloverEndDateWarning);
@@ -91,7 +97,6 @@ export function createScannedSheet({
   return {
     id: createId(),
     title: draft.title?.trim() || "Scanned log sheet",
-    dateRange,
     status: "Draft",
     source: "scanner",
     verificationNote,
@@ -206,8 +211,8 @@ function createId() {
   return crypto.randomUUID();
 }
 
-function dateBoundsFromSheetMasterData(dateRange: string | undefined, route: LogSheet["route"]) {
-  const rangeDates = scannedDates(dateRange ?? "");
+function dateBoundsFromSheetMasterData(dateText: string | undefined, route: LogSheet["route"]) {
+  const rangeDates = scannedDates(dateText ?? "");
   const departureDate = normalizeScannedDate(route.departed);
   const arrivalDate = normalizeScannedDate(route.arrived);
   return {
@@ -217,13 +222,25 @@ function dateBoundsFromSheetMasterData(dateRange: string | undefined, route: Log
 }
 
 function normalizeScannedDate(value: string) {
-  return scannedDates(value)[0] ?? "";
+  return scannedDates(value)[0] ?? normalizeIsoDate(value.split(",")[0]) ?? "";
+}
+
+function normalizeScannerRouteStamp(value: string, fallbackDate: string) {
+  if (!value.trim()) return `${fallbackDate}T00:00:00+00:00`;
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?(?:Z|[+-]\d{2}:\d{2})$/.test(value.trim())) return value.trim();
+  const date = normalizeScannedDate(value) || fallbackDate;
+  const time = value.match(/(?:T|,?\s)(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if (!time) return `${date}T00:00:00+00:00`;
+  return `${date}T${time[1].padStart(2, "0")}:${time[2]}:${time[3] ?? "00"}+00:00`;
 }
 
 function scannedDates(value: string) {
   const isoDates = [...value.matchAll(/(?<!\d)(\d{4})-(\d{2})-(\d{2})(?!\d)/g)]
     .map((match) => `${match[1]}-${match[2]}-${match[3]}`);
   if (isoDates.length > 0) return isoDates;
+
+  const normalizedDate = normalizeIsoDate(value);
+  if (normalizedDate) return [normalizedDate];
 
   return [...value.matchAll(/\b(\d{1,2})[./](\d{1,2})[./](\d{2}|\d{4})\b/g)].map((match) => {
     const year = match[3].length === 2 ? `20${match[3]}` : match[3];

@@ -313,6 +313,8 @@ export const en = {
   "logbooks.mapHelp": "Click a route section to open the corresponding logsheet.",
   "logbooks.mapAria": "Overview map of all log sheets",
   "logbooks.date": "Date",
+  "logbooks.startDate": "Start date",
+  "logbooks.endDate": "End date",
   "logbooks.entry": "Entry",
   "logbooks.vessel": "Vessel",
   "logbooks.fromTo": "From → To",

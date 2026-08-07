@@ -133,7 +133,7 @@ function scannerError(code: ScannerErrorCode, error: string, status: number) {
 function hasReadableLogbookData(scannerResult: Awaited<ReturnType<typeof openAiScannerProvider.extractLogbookDraft>>) {
   const draft = scannerResult.draft;
   const routeValues = Object.values(draft.route ?? {});
-  const sheetValues = [draft.title, draft.dateRange, ...routeValues];
+  const sheetValues = [draft.title, draft.dateText, ...routeValues];
   const lineValues = draft.lines.flatMap((line) => Object.values(line));
 
   return [...sheetValues, ...lineValues].some((value) => typeof value === "string" && value.trim().length > 0);

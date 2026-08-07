@@ -23,7 +23,6 @@ export type BoatRow = Omit<Boat, "archived" | "flagState" | "homePort" | "yachtD
 export type LogSheetRow = ImageRowFields & {
   id: string;
   title: string;
-  date_range: string;
   status: LogSheet["status"];
   source?: LogSheet["source"] | null;
   verification_note?: string | null;
