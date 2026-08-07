@@ -2,10 +2,13 @@
 
 import { FormEvent, ReactNode, useState } from "react";
 import { signIn } from "next-auth/react";
+import Image from "next/image";
 import { LocaleSelect, useI18n } from "../lib/i18n";
 import { PasswordField } from "./PasswordField";
 
 type Props = { mode: "login" | "register"; footer: ReactNode };
+
+const featureIcons = ["∞", "◇", "♟", "▧", "✦"];
 
 export function AuthForm({ mode, footer }: Props) {
   const { t } = useI18n();
@@ -88,8 +91,7 @@ export function AuthForm({ mode, footer }: Props) {
     window.location.assign("/");
   }
 
-  return (
-    <main className="auth-shell">
+  const form = (
       <form onSubmit={submit} className="auth-card">
         <div className="brand-mark"><span className="sail-logo">◢</span><strong>ultilog</strong></div>
         <LocaleSelect className="auth-locale-select" />
@@ -108,6 +110,48 @@ export function AuthForm({ mode, footer }: Props) {
         {mode === "login" && <button className="secondary-auth-button" disabled={isSubmitting} type="button" onClick={() => window.location.assign("/forgot-password")}>{t("auth.forgotPassword")}</button>}
         <div className="auth-footer">{footer}</div>
       </form>
+  );
+
+  if (mode === "register") {
+    return <main className="auth-shell">{form}</main>;
+  }
+
+  const features = [
+    ["landing.featureLogbookTitle", "landing.featureLogbookText"],
+    ["landing.featureBoatsTitle", "landing.featureBoatsText"],
+    ["landing.featureCrewTitle", "landing.featureCrewText"],
+    ["landing.featureScanTitle", "landing.featureScanText"],
+    ["landing.featureSmartTitle", "landing.featureSmartText"],
+  ] as const;
+
+  return (
+    <main className="landing-shell">
+      <section className="landing-layout">
+        <div className="landing-story">
+          <div className="landing-hero">
+            <p className="eyebrow">{t("landing.eyebrow")}</p>
+            <h1>{t("landing.headline")}</h1>
+            <p className="landing-lead">{t("landing.lead")}</p>
+            <div className="landing-promise"><span aria-hidden="true">≈</span><p><strong>{t("landing.promiseTitle")}</strong>{t("landing.promiseText")}</p></div>
+          </div>
+          <div className="landing-feature-track" aria-label={t("landing.featuresLabel")}>
+            {features.map(([title, text], index) => (
+              <article className="landing-feature" key={title}>
+                <span aria-hidden="true">{featureIcons[index]}</span>
+                <div><h2>{t(title)}</h2><p>{t(text)}</p></div>
+              </article>
+            ))}
+          </div>
+          <p className="landing-swipe-hint">{t("landing.swipeHint")}</p>
+        </div>
+        <aside className="landing-login" aria-label={t("auth.login")}>{form}</aside>
+      </section>
+      <section className="partner-banner" aria-label={t("landing.partnerLabel")}>
+        <p><span>{t("landing.partnerEyebrow")}</span><strong>{t("landing.partnerTitle")}</strong></p>
+        <a href="https://respocean.ch/" target="_blank" rel="noreferrer" aria-label="Respocean">
+          <Image src="/partners/respocean.svg" alt="Respocean" width={340} height={72} unoptimized />
+        </a>
+      </section>
     </main>
   );
 }
