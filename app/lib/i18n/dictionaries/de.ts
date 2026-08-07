@@ -307,6 +307,7 @@ export const de: Dictionary = {
   "logbooks.totalMiles": "Gesamtmeilen",
   "details.loadingAria": "Logblatt wird geladen",
   "details.loading": "Blatt wird geladen",
+  "details.selectSheet": "Bitte wähle ein Logblatt aus der Liste aus.",
   "details.jumpToBoat": "Zum Boot springen",
   "details.fromDateTime": "Von Datum/Uhrzeit",
   "details.fromPosition": "Von Position",

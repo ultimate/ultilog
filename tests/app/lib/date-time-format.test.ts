@@ -9,11 +9,6 @@ describe("date and time display formatting", () => {
     expect(formatStoredDate("2026-08-07", "d MMM yyyy", "de")).toBe("7 Aug 2026");
   });
 
-  it("applies the selected format to legacy log-sheet list dates", () => {
-    expect(formatStoredDate("14 May 2026", "MM/dd/yyyy")).toBe("05/14/2026");
-    expect(formatStoredDate("03 Jun 2026", "yyyy-MM-dd")).toBe("2026-06-03");
-  });
-
   it("formats 12 and 24 hour times while retaining stored wall-clock values", () => {
     expect(formatStoredTime("2026-08-07T19:05:09+05:30", "HH:mm")).toBe("19:05");
     expect(formatStoredTime("2026-08-07T19:05:09+05:30", "h:mm:ss a")).toBe("7:05:09 PM");

@@ -63,6 +63,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const { formatTime } = useDateTimeFormat();
   const {
     isBackendReady,
+    hasSelectedSheet,
     showNewSheet,
     editingSheetId,
     saveSheet,
@@ -402,7 +403,13 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
         </section>
       )}
 
-      {isBackendReady && (
+      {isBackendReady && !hasSelectedSheet && !showNewSheet && !editingSheetId && (
+        <section className="sheet-detail" aria-label={t("details.selectSheet")}>
+          <p className="empty-state">{t("details.selectSheet")}</p>
+        </section>
+      )}
+
+      {isBackendReady && (hasSelectedSheet || showNewSheet || editingSheetId) && (
         <section className="sheet-detail" aria-labelledby="sheet-title">
           {showNewSheet || editingSheetId ? (
             <form
