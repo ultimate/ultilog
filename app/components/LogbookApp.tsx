@@ -175,9 +175,7 @@ export function LogbookApp({
   const router = useRouter();
   const pathname = usePathname();
   const [logbook, setLogbook] = useState<PersistedLogbook>(defaultLogbook);
-  const [activeSheetId, setActiveSheetId] = useState(
-    defaultLogbook.sheets[0]?.id ?? "",
-  );
+  const [activeSheetId, setActiveSheetId] = useState("");
   const [isBackendReady, setIsBackendReady] = useState(false);
   const [routePath, setRoutePath] = useState(pathname);
   const [activeModule, setActiveModule] = useState<ActiveView>("dashboard");
@@ -391,17 +389,14 @@ export function LogbookApp({
         nextRoute.itemId && nextRoute.view === "boats"
           ? normalizedLogbook.boats.find((boat) => boat.id === nextRoute.itemId)
           : undefined;
-      const fallbackSheet =
-        normalizedLogbook.sheets[0] ?? emptySheet;
       const availableStoredBoats = activeBoats(normalizedLogbook.boats);
       const fallbackBoat = availableStoredBoats[0] ?? normalizedLogbook.boats[0] ?? emptyBoat;
-      const nextSheet = routedSheet ?? fallbackSheet;
       const nextBoat = routedBoat ?? fallbackBoat;
 
       logbookRef.current = normalizedLogbook;
       hasUnsavedLogbookChangesRef.current = false;
       setLogbook(normalizedLogbook);
-      setActiveSheetId(nextSheet.id);
+      setActiveSheetId(routedSheet?.id ?? "");
       setSheetForm(
         routedSheet
           ? sheetToForm(routedSheet)
@@ -1879,6 +1874,7 @@ export function LogbookApp({
               navigate={navigate}
               cancelSheetEdit={cancelSheetEdit}
               activeSheet={activeSheet}
+              hasSelectedSheet={logbook.sheets.some((sheet) => sheet.id === activeSheetId)}
               userId={userId}
               renderInlineTextField={renderInlineTextField}
               isActiveSheetLocked={isActiveSheetLocked}
