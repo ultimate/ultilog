@@ -20,6 +20,15 @@ describe("users preferences", () => {
     );
   });
 
+  it("returns the Gravatar fallback as the user's profile avatar", async () => {
+    const { findUserById, gravatarAvatarUrl, registerUser } = await importUsersWithTempDatabase();
+    const user = await registerUser({ name: "Avatar User", email: "avatar@example.test", password: "password123" });
+
+    await expect(findUserById(user.id)).resolves.toMatchObject({
+      avatar: gravatarAvatarUrl("avatar@example.test"),
+    });
+  });
+
   it("returns defaults for a newly registered user", async () => {
     const { registerUser } = await importUsersWithTempDatabase();
 

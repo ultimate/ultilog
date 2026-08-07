@@ -45,6 +45,7 @@ export type ProfileApiPreferences = Partial<ProfilePreferences> & {
 };
 
 export type ProfilePayload = {
+  avatar?: string;
   name?: string;
   email?: string;
   emailVerified?: boolean;
@@ -97,6 +98,7 @@ function preferencesFromPayload(payload: ProfilePayload, fallback: ProfilePrefer
 export function useOnboardingProfile({ activeModule, initialEmail, initialName, logbook, onProfileError, onProfileMessage, onLocaleChange, onCourseConversionPreferenceChange, t }: UseOnboardingProfileOptions) {
   const [accountName, setAccountName] = useState(initialName ?? "");
   const [accountEmail, setAccountEmail] = useState(initialEmail ?? "");
+  const [profileAvatar, setProfileAvatar] = useState<string | undefined>();
   const [isAccountEmailVerified, setIsAccountEmailVerified] = useState(false);
   const [preferences, setPreferences] = useState<ProfilePreferences>(defaultPreferences);
   const [onboardingCompletedTasks, setOnboardingCompletedTasks] = useState<OnboardingTaskId[]>([]);
@@ -125,6 +127,7 @@ export function useOnboardingProfile({ activeModule, initialEmail, initialName, 
       if (!isMounted) return;
       if (payload.name) setAccountName(payload.name);
       if (payload.email) setAccountEmail(payload.email);
+      if (payload.avatar) setProfileAvatar(payload.avatar);
       if (typeof payload.emailVerified === "boolean") setIsAccountEmailVerified(payload.emailVerified);
       if (Array.isArray(payload.onboardingCompletedTasks)) setOnboardingCompletedTasks(payload.onboardingCompletedTasks);
       const nextPreferences = preferencesFromPayload(payload, defaultPreferences);
@@ -211,9 +214,11 @@ export function useOnboardingProfile({ activeModule, initialEmail, initialName, 
     onboardingCompletedTasks,
     onboardingCompletion,
     preferences,
+    profileAvatar,
     setAccountEmail,
     setIsAccountEmailVerified,
     setAccountName,
+    setProfileAvatar,
     theme,
     updateOnboardingCompletedTasks,
     updatePreferences,

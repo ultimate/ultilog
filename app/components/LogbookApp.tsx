@@ -230,7 +230,6 @@ export function LogbookApp({
   });
   const [profileMessage, setProfileMessage] = useState<string | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
-  const [profileAvatar, setProfileAvatar] = useState<string | undefined>();
   const [deleteForm, setDeleteForm] = useState({
     currentPassword: "",
     confirmation: "",
@@ -270,9 +269,11 @@ export function LogbookApp({
     onboardingCompletedTasks,
     onboardingCompletion,
     preferences,
+    profileAvatar,
     setAccountEmail,
     setIsAccountEmailVerified,
     setAccountName,
+    setProfileAvatar,
     theme,
     updateOnboardingCompletedTasks,
     updatePreferences,
@@ -287,11 +288,6 @@ export function LogbookApp({
     t,
   });
   const adminList = useSortableList(adminUsers, adminUserColumns, preferences.defaultPageSize);
-
-  useEffect(() => {
-    fetch("/api/profile").then((response) => response.ok ? response.json() : {}).then((profile: { avatar?: string }) => setProfileAvatar(profile.avatar)).catch(() => undefined);
-  }, []);
-
 
   async function logout() {
     setSaveError(null);
