@@ -4,10 +4,13 @@ import type { PersistedLogbook } from "../../models/logbook";
 import { detectOnboardingCompletion } from "../../lib/onboarding/detect";
 import type { OnboardingTaskId } from "../../lib/onboarding/tasks";
 import type { Locale } from "../../lib/i18n";
+import type { DateFormat, TimeFormat } from "../../lib/date-time-format";
 
 export type ProfilePreferences = {
   countryCode: string;
   language: Locale;
+  dateFormat: DateFormat;
+  timeFormat: TimeFormat;
   windUnit: "bft" | "kn" | "km/h" | "mp/h" | "m/s";
   waterHeightUnit: "m" | "ft";
   temperatureUnit: "°C" | "°F";
@@ -25,6 +28,8 @@ export type ProfilePreferences = {
 const defaultPreferences: ProfilePreferences = {
   countryCode: "",
   language: "en",
+  dateFormat: "dd/MM/yyyy",
+  timeFormat: "HH:mm",
   windUnit: "bft",
   waterHeightUnit: "m",
   temperatureUnit: "°C",

@@ -35,6 +35,8 @@ const session = { user: { id: "user-1", name: "User", email: "user@example.test"
 const defaultPreferences = {
   countryCode: "",
   language: "en" as const,
+  dateFormat: "dd/MM/yyyy" as const,
+  timeFormat: "HH:mm" as const,
   windUnit: "bft" as const,
   waterHeightUnit: "m" as const,
   temperatureUnit: "°C" as const,
@@ -155,12 +157,12 @@ describe("profile endpoint", () => {
 
     const response = await PATCH(new Request("https://ultilog.test/api/profile", {
       method: "PATCH",
-      body: JSON.stringify({ action: "preferences", preferences: { countryCode: "US", language: "de", windUnit: "kn", waterHeightUnit: "ft", temperatureUnit: "f", coordinateFormat: "dms", distanceDisplayUnit: "mi", defaultBoatId: "boat-1", defaultCrewMemberIds: ["crew-1"], theme: "dark", isNavSlim: true, showCourseConversionTable: false } }),
+      body: JSON.stringify({ action: "preferences", preferences: { countryCode: "US", language: "de", dateFormat: "dd/MM/yyyy", timeFormat: "HH:mm", windUnit: "kn", waterHeightUnit: "ft", temperatureUnit: "f", coordinateFormat: "dms", distanceDisplayUnit: "mi", defaultBoatId: "boat-1", defaultCrewMemberIds: ["crew-1"], theme: "dark", isNavSlim: true, showCourseConversionTable: false } }),
     }));
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ preferences: { countryCode: "US", language: "de", windUnit: "kn", waterHeightUnit: "ft", temperatureUnit: "f", coordinateFormat: "dms", distanceDisplayUnit: "mi", defaultBoatId: "boat-1", defaultCrewMemberIds: ["crew-1"], theme: "dark", isNavSlim: true, showCourseConversionTable: false }, theme: "dark", isNavSlim: true });
-    expect(mockedUpdateUserViewPreferences).toHaveBeenCalledWith("user-1", { countryCode: "US", language: "de", windUnit: "kn", waterHeightUnit: "ft", temperatureUnit: "f", coordinateFormat: "dms", distanceDisplayUnit: "mi", defaultBoatId: "boat-1", defaultCrewMemberIds: ["crew-1"], theme: "dark", isNavSlim: true, showCourseConversionTable: false });
+    await expect(response.json()).resolves.toEqual({ preferences: { countryCode: "US", language: "de", dateFormat: "dd/MM/yyyy", timeFormat: "HH:mm", windUnit: "kn", waterHeightUnit: "ft", temperatureUnit: "f", coordinateFormat: "dms", distanceDisplayUnit: "mi", defaultBoatId: "boat-1", defaultCrewMemberIds: ["crew-1"], theme: "dark", isNavSlim: true, showCourseConversionTable: false }, theme: "dark", isNavSlim: true });
+    expect(mockedUpdateUserViewPreferences).toHaveBeenCalledWith("user-1", { countryCode: "US", language: "de", dateFormat: "dd/MM/yyyy", timeFormat: "HH:mm", windUnit: "kn", waterHeightUnit: "ft", temperatureUnit: "f", coordinateFormat: "dms", distanceDisplayUnit: "mi", defaultBoatId: "boat-1", defaultCrewMemberIds: ["crew-1"], theme: "dark", isNavSlim: true, showCourseConversionTable: false });
   });
 
   it("marks compliance information as read", async () => {

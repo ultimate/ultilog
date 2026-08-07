@@ -3,11 +3,14 @@ import bcrypt from "bcryptjs";
 import { isOnboardingTaskId, type OnboardingTaskId } from "./onboarding/tasks";
 import { getDatabase, writeLogbook } from "./logbook-store";
 import { sendEmailVerificationEmail, sendPasswordResetEmail } from "./mailer";
+import { dateFormats, defaultDateFormat, defaultTimeFormat, timeFormats, type DateFormat, type TimeFormat } from "./date-time-format";
 
 export type UserTheme = "light" | "dark" | "auto";
 export type UserPreferences = {
   countryCode: string;
   language: "en" | "de" | "fr" | "it";
+  dateFormat?: DateFormat;
+  timeFormat?: TimeFormat;
   windUnit: "bft" | "kn" | "km/h" | "mp/h" | "m/s";
   waterHeightUnit: "m" | "ft";
   temperatureUnit: "°C" | "°F";
@@ -24,13 +27,13 @@ export type AppUser = { id: string; name: string; email: string; emailVerified?:
 export type AdminUserListItem = AppUser;
 export type DirectoryUserListItem = { id: string; username: string; avatar?: string; sailMiles: number; motorMiles: number; logbookSheets: number; boats: number };
 
-type UserRow = Omit<AppUser, "avatar" | "hasUploadedAvatar" | "groups" | "onboardingCompletedTasks" | "hasReadCompliance" | "isNavSlim" | "countryCode" | "windUnit" | "waterHeightUnit" | "temperatureUnit" | "coordinateFormat" | "distanceDisplayUnit" | "defaultBoatId" | "defaultCrewMemberIds" | "showCourseConversionTable" | "motionStationaryThresholdNm" | "emailVerified"> & { avatar_data: string | null; avatar_mime_type: string | null; password_hash: string; onboarding_completed_tasks: string; country_code: string; wind_unit: string; water_height_unit: string; temperature_unit: string; coordinate_format: string; distance_display_unit: string; default_boat_id: string; default_crew_member_ids: string; nav_slim: number | boolean; has_read_compliance: number | boolean; show_course_conversion_table: number | boolean; motion_stationary_threshold_nm: number | string | null; email_verified_at: string | null };
+type UserRow = Omit<AppUser, "avatar" | "hasUploadedAvatar" | "groups" | "onboardingCompletedTasks" | "hasReadCompliance" | "isNavSlim" | "countryCode" | "dateFormat" | "timeFormat" | "windUnit" | "waterHeightUnit" | "temperatureUnit" | "coordinateFormat" | "distanceDisplayUnit" | "defaultBoatId" | "defaultCrewMemberIds" | "showCourseConversionTable" | "motionStationaryThresholdNm" | "emailVerified"> & { avatar_data: string | null; avatar_mime_type: string | null; password_hash: string; onboarding_completed_tasks: string; country_code: string; date_format: string; time_format: string; wind_unit: string; water_height_unit: string; temperature_unit: string; coordinate_format: string; distance_display_unit: string; default_boat_id: string; default_crew_member_ids: string; nav_slim: number | boolean; has_read_compliance: number | boolean; show_course_conversion_table: number | boolean; motion_stationary_threshold_nm: number | string | null; email_verified_at: string | null };
 type GroupRow = { user_id?: string; name: string };
 type PasswordResetTokenRow = { id: string; user_id: string; token_hash: string; expires_at: string; used_at: string | null };
 type EmailVerificationTokenRow = PasswordResetTokenRow;
 type DirectoryUserRow = { id: string; username: string; email: string; avatar_data: string | null; avatar_mime_type: string | null; sail_miles: number | string | null; motor_miles: number | string | null; logbook_sheets: number | string | null; boats: number | string | null };
 
-const USER_COLUMNS = "id, name, email, avatar_data, avatar_mime_type, password_hash, onboarding_completed_tasks, theme, nav_slim, has_read_compliance, country_code, language, wind_unit, water_height_unit, temperature_unit, coordinate_format, distance_display_unit, default_boat_id, default_crew_member_ids, show_course_conversion_table, motion_stationary_threshold_nm, email_verified_at";
+const USER_COLUMNS = "id, name, email, avatar_data, avatar_mime_type, password_hash, onboarding_completed_tasks, theme, nav_slim, has_read_compliance, country_code, language, date_format, time_format, wind_unit, water_height_unit, temperature_unit, coordinate_format, distance_display_unit, default_boat_id, default_crew_member_ids, show_course_conversion_table, motion_stationary_threshold_nm, email_verified_at";
 
 export function gravatarAvatarUrl(email: string) {
   const emailHash = createHash("sha256").update(normalizeEmail(email)).digest("hex");
@@ -138,6 +141,8 @@ function normalizeUserPreferences(input: Partial<Record<keyof UserPreferences, u
   return {
     countryCode: input.countryCode === undefined ? currentUser?.countryCode ?? "" : normalizeCountryCode(input.countryCode),
     language: normalizeEnum(input.language, ["en", "de", "fr", "it"] as const, currentUser?.language ?? "en", "Language", strict),
+    dateFormat: normalizeEnum(input.dateFormat, dateFormats, currentUser?.dateFormat ?? defaultDateFormat, "Date format", strict),
+    timeFormat: normalizeEnum(input.timeFormat, timeFormats, currentUser?.timeFormat ?? defaultTimeFormat, "Time format", strict),
     windUnit: normalizeEnum(input.windUnit, ["bft", "kn", "km/h", "mp/h", "m/s"] as const, currentUser?.windUnit ?? "bft", "Wind unit", strict),
     waterHeightUnit: normalizeEnum(input.waterHeightUnit, ["m", "ft"] as const, currentUser?.waterHeightUnit ?? "m", "Water height unit", strict),
     temperatureUnit: normalizeEnum(input.temperatureUnit, ["°C", "°F"] as const, currentUser?.temperatureUnit ?? "°C", "Temperature unit", strict),
@@ -175,6 +180,8 @@ function toAppUser(user: UserRow, groups: string[]): AppUser {
     hasReadCompliance: normalizeBooleanFlag(user.has_read_compliance),
     countryCode: user.country_code ?? "",
     language: normalizeEnum(user.language, ["en", "de", "fr", "it"] as const, "en", "Language"),
+    dateFormat: normalizeEnum(user.date_format, dateFormats, defaultDateFormat, "Date format"),
+    timeFormat: normalizeEnum(user.time_format, timeFormats, defaultTimeFormat, "Time format"),
     windUnit: normalizeEnum(user.wind_unit, ["bft", "kn", "km/h", "mp/h", "m/s"] as const, "bft", "Wind unit"),
     waterHeightUnit: normalizeEnum(user.water_height_unit, ["m", "ft"] as const, "m", "Water height unit"),
     temperatureUnit: normalizeEnum(user.temperature_unit, ["°C", "°F"] as const, "°C", "Temperature unit"),
@@ -530,8 +537,8 @@ export async function updateUserViewPreferences(userId: string, input: Partial<R
   if (!current) throw new Error("User not found.");
   const preferences = normalizeUserPreferences(input, current, true);
   await db.query(
-    `update users set country_code = ${db.placeholder(1)}, language = ${db.placeholder(2)}, wind_unit = ${db.placeholder(3)}, water_height_unit = ${db.placeholder(4)}, temperature_unit = ${db.placeholder(5)}, coordinate_format = ${db.placeholder(6)}, distance_display_unit = ${db.placeholder(7)}, default_boat_id = ${db.placeholder(8)}, default_crew_member_ids = ${db.placeholder(9)}, theme = ${db.placeholder(10)}, nav_slim = ${db.placeholder(11)}, show_course_conversion_table = ${db.placeholder(12)}, motion_stationary_threshold_nm = ${db.placeholder(13)} where id = ${db.placeholder(14)}`,
-    [preferences.countryCode, preferences.language, preferences.windUnit, preferences.waterHeightUnit, preferences.temperatureUnit, preferences.coordinateFormat, preferences.distanceDisplayUnit, preferences.defaultBoatId, JSON.stringify(preferences.defaultCrewMemberIds), preferences.theme, preferences.isNavSlim ? 1 : 0, preferences.showCourseConversionTable ? 1 : 0, preferences.motionStationaryThresholdNm, userId],
+    `update users set country_code = ${db.placeholder(1)}, language = ${db.placeholder(2)}, date_format = ${db.placeholder(3)}, time_format = ${db.placeholder(4)}, wind_unit = ${db.placeholder(5)}, water_height_unit = ${db.placeholder(6)}, temperature_unit = ${db.placeholder(7)}, coordinate_format = ${db.placeholder(8)}, distance_display_unit = ${db.placeholder(9)}, default_boat_id = ${db.placeholder(10)}, default_crew_member_ids = ${db.placeholder(11)}, theme = ${db.placeholder(12)}, nav_slim = ${db.placeholder(13)}, show_course_conversion_table = ${db.placeholder(14)}, motion_stationary_threshold_nm = ${db.placeholder(15)} where id = ${db.placeholder(16)}`,
+    [preferences.countryCode, preferences.language, preferences.dateFormat, preferences.timeFormat, preferences.windUnit, preferences.waterHeightUnit, preferences.temperatureUnit, preferences.coordinateFormat, preferences.distanceDisplayUnit, preferences.defaultBoatId, JSON.stringify(preferences.defaultCrewMemberIds), preferences.theme, preferences.isNavSlim ? 1 : 0, preferences.showCourseConversionTable ? 1 : 0, preferences.motionStationaryThresholdNm, userId],
   );
   return {
     ...toAppUser(current, await manualGroupsForUser(userId)),

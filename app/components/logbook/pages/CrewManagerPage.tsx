@@ -1,5 +1,6 @@
 import { EntityImage } from "../EntityImage";
 import { useI18n } from "../../../lib/i18n";
+import { useDateTimeFormat } from "../../../lib/DateTimeFormatProvider";
 import { useMemo, useRef, type Dispatch, type SetStateAction } from "react";
 import type {
   CrewForm,
@@ -20,6 +21,7 @@ type CrewManagerPageProps = Record<string, any>;
 
 export function CrewManagerPage(props: CrewManagerPageProps) {
   const { t } = useI18n();
+  const { formatDate } = useDateTimeFormat();
   const {
     selectedCrewIndex,
     lastCrewIndex,
@@ -251,7 +253,7 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
                       {isSkipper ? `⭐ ${t("crew.skipper")} · ` : `${t("crew.label")} · `}
                       {sheet.title}
                     </strong>
-                    <small>{sheet.dateRange}</small>
+                    <small>{formatDate(sheet.dateRange)}</small>
                   </li>
                 ))}
               </ul>

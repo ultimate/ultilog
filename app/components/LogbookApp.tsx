@@ -70,6 +70,8 @@ import { OnboardingChecklist } from "./onboarding/OnboardingChecklist";
 import { useOnboardingProfile } from "./onboarding/useOnboardingProfile";
 import type { OnboardingTaskId } from "../lib/onboarding/tasks";
 import type { ProfilePreferences } from "./onboarding/useOnboardingProfile";
+import { DateTimeFormatProvider } from "../lib/DateTimeFormatProvider";
+import { formatStoredDate, formatStoredDateTime } from "../lib/date-time-format";
 
 type AdminUser = { id: string; name: string; email: string; groups: string[] };
 const adminUserColumns = [
@@ -169,7 +171,7 @@ export function LogbookApp({
   userName?: string;
   userGroups?: string[];
 }) {
-  const { t, setLocale } = useI18n();
+  const { t, locale, setLocale } = useI18n();
   const router = useRouter();
   const pathname = usePathname();
   const [logbook, setLogbook] = useState<PersistedLogbook>(defaultLogbook);
@@ -843,7 +845,7 @@ export function LogbookApp({
           )
         }
       >
-        {stamp || activeSheet.dateRange}
+        {stamp ? formatStoredDateTime(stamp, preferences.dateFormat, preferences.timeFormat, locale) : formatStoredDate(activeSheet.dateRange, preferences.dateFormat, locale)}
       </button>
     );
   const technicalCheckSuggestions = useMemo(() => {
@@ -1777,7 +1779,7 @@ export function LogbookApp({
   }
 
   return (
-    <>
+    <DateTimeFormatProvider dateFormat={preferences.dateFormat} timeFormat={preferences.timeFormat}>
       <main
       className="app-shell"
       data-theme={theme}
@@ -2193,7 +2195,7 @@ export function LogbookApp({
           <LogSheetPrintView mode="filled" sheet={printSheet} boat={printBoat} summary={printSummary} showCourseColumns={printTarget?.showCourseColumns ?? preferences.showCourseConversionTable} />
         ) : null}
       </div>
-    </>
+    </DateTimeFormatProvider>
   );
 }
 

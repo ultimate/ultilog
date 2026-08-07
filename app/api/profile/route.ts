@@ -19,6 +19,8 @@ export async function GET() {
     preferences: {
       countryCode: user.countryCode,
       language: user.language,
+      dateFormat: user.dateFormat,
+      timeFormat: user.timeFormat,
       windUnit: user.windUnit,
       waterHeightUnit: user.waterHeightUnit,
       temperatureUnit: user.temperatureUnit,
@@ -72,6 +74,8 @@ export async function PATCH(request: Request) {
         preferences: {
           countryCode: user.countryCode,
           language: user.language,
+          dateFormat: user.dateFormat,
+          timeFormat: user.timeFormat,
           windUnit: user.windUnit,
           waterHeightUnit: user.waterHeightUnit,
           temperatureUnit: user.temperatureUnit,

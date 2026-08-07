@@ -10,6 +10,8 @@ create table if not exists users (
   has_read_compliance integer not null default 0,
   country_code text not null default '',
   language text not null default 'en',
+  date_format text not null default 'dd/MM/yyyy',
+  time_format text not null default 'HH:mm',
   wind_unit text not null default 'bft',
   water_height_unit text not null default 'm',
   temperature_unit text not null default '°C',
