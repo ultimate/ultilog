@@ -248,7 +248,7 @@ const printStyles = `
 .print-kicker, .print-field span { margin: 0; font-size: 7pt; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
 .print-title-block h1 { margin: 0 0 1mm; font-size: 13pt; line-height: 1.05; }
 .print-master-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1mm; }
-.print-boat, .print-summary { display: grid; gap: 1mm; border-left: 0.25mm solid #000; padding-left: 1.2mm; }
+.print-boat, .print-summary { display: grid; grid-auto-rows: min-content; align-content: end; gap: 1mm; border-left: 0.25mm solid #000; padding-left: 1.2mm; }
 .print-boat { grid-template-columns: repeat(3, 1fr); }
 .print-summary { grid-template-columns: repeat(2, 1fr); }
 .print-field { min-width: 0; border-bottom: 0.2mm solid #000; }
