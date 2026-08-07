@@ -1,4 +1,5 @@
 import type { Boat, LogLine, LogSheet } from "../../models/logbook";
+import Image from "next/image";
 import { useI18n } from "../../lib/i18n";
 import { paginatePrintLogLines, PRINT_LOG_ROWS_PER_PAGE } from "./print-pagination";
 import type { LogSheetMetrics } from "../../domain/logbook/sheet-metrics";
@@ -28,6 +29,7 @@ export type LogSheetPrintViewProps =
       summary?: LogSheetPrintSummary;
       linesPerPage?: number;
       showCourseColumns?: boolean;
+      avatar?: string;
     }
   | {
       mode: "empty";
@@ -36,6 +38,7 @@ export type LogSheetPrintViewProps =
       summary?: LogSheetPrintSummary;
       linesPerPage?: number;
       showCourseColumns?: boolean;
+      avatar?: string;
     };
 
 
@@ -113,7 +116,7 @@ export function LogSheetPrintView(props: LogSheetPrintViewProps) {
             <section className="print-crew-box"><h2>{t("crew.list")}</h2>{renderCrew(sheet)}</section>
             <section className="print-tech-box"><h2>{t("print.footer.techLog")}</h2>{renderList(sheet?.technicalChecks, t("print.truncated"))}</section>
             <section className="print-route-box"><h2>{t("print.footer.routeMap")}</h2></section>
-            <section className="print-remarks-box"><h2>{t("print.footer.remarksSignature")}</h2>{hasTruncatedRemark(page.lines) ? <small>{t("print.truncated")}</small> : null}</section>
+            <section className="print-remarks-box"><h2>{t("print.footer.remarksSignature")}</h2>{hasTruncatedRemark(page.lines) ? <small>{t("print.truncated")}</small> : null}{props.avatar ? <Image className="print-owner-avatar" src={props.avatar} alt="" width={68} height={68} unoptimized /> : null}</section>
             <span className="print-page-number">{formatPageOf(t("print.pageOf"), page.pageIndex + 1, page.pageCount)}</span>
           </footer>
           <span className="print-template-marker" aria-label="UltiLog print template marker">{templateMarker}</span>
@@ -267,6 +270,8 @@ const printStyles = `
 .print-footer section { min-width: 0; border: 0.25mm solid #000; padding: 1.2mm; background: #fff; color: #000; }
 .print-footer h2 { margin: 0 0 2mm; font-size: 8pt; text-transform: uppercase; }
 .print-route-box { background: #fff; }
+.print-remarks-box { position: relative; }
+.print-owner-avatar { position: absolute; right: 3mm; bottom: 3mm; width: 18mm; height: 18mm; border: .25mm solid #000; border-radius: 50%; object-fit: cover; }
 .print-crew-box ul, .print-tech-box ul { margin: 0; padding-left: 3.5mm; font-size: 7pt; }
 .print-writing-lines { height: 21mm; background: repeating-linear-gradient(to bottom, transparent 0, transparent 7mm, #000 7.2mm); }
 .print-page-number { position: absolute; right: 1.5mm; bottom: 1mm; font-size: 7pt; font-weight: 700; }

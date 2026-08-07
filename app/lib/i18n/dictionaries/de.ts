@@ -440,6 +440,7 @@ export const de: Dictionary = {
   "profile.sidebarSlim": "Slim",
   "profile.sidebarWide": "Wide",
   "profile.showCourseConversionTable": "Show course conversion table by default",
+  "profile.showAvatarOnPrint": "Mein Profilbild auf gedruckten Logblättern anzeigen",
   "profile.savePreferences": "Save preferences",
   "profile.deleteAccount": "Konto löschen",
   "profile.deleteHelp": "Dadurch werden dein Konto und alle Logbücher, Boote, Crewmitglieder und Logzeilen dauerhaft gelöscht.",

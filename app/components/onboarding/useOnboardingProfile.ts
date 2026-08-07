@@ -18,6 +18,7 @@ export type ProfilePreferences = {
   theme: "light" | "dark" | "auto";
   isNavSlim: boolean;
   showCourseConversionTable: boolean;
+  showAvatarOnPrint: boolean;
   defaultPageSize: 5 | 10 | 25 | 50 | 100;
   motionStationaryThresholdNm: number;
 };
@@ -35,6 +36,7 @@ const defaultPreferences: ProfilePreferences = {
   theme: "light",
   isNavSlim: false,
   showCourseConversionTable: true,
+  showAvatarOnPrint: true,
   defaultPageSize: 10,
   motionStationaryThresholdNm: 0.1,
 };
