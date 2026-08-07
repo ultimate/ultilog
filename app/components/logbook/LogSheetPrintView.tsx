@@ -114,7 +114,7 @@ export function LogSheetPrintView(props: LogSheetPrintViewProps) {
 
           <footer className="print-footer">
             <section className="print-crew-box"><h2>{t("crew.list")}</h2>{renderCrew(sheet)}</section>
-            <section className="print-tech-box"><h2>{t("print.footer.techLog")}</h2>{renderList(sheet?.technicalChecks, t("print.truncated"))}</section>
+            <section className="print-tech-box"><h2>{t("print.footer.techLog")}</h2>{renderList(sheet?.technicalChecks.map((item) => `${item.status} ${item.text}`), t("print.truncated"))}</section>
             <section className="print-route-box"><h2>{t("print.footer.routeMap")}</h2></section>
             <section className="print-remarks-box"><h2>{t("print.footer.remarksSignature")}</h2>{hasTruncatedRemark(page.lines) ? <small>{t("print.truncated")}</small> : null}{props.avatar ? <Image className="print-owner-avatar" src={props.avatar} alt="" width={68} height={68} unoptimized /> : null}</section>
             <span className="print-page-number">{formatPageOf(t("print.pageOf"), page.pageIndex + 1, page.pageCount)}</span>

@@ -25,6 +25,8 @@ export const defaultLogSheetShareSettings: LogSheetShareSettings = {
   crew: "private",
 };
 
+export type TechnicalCheck = { status: string; text: string };
+
 export type LogSheet = {
   id: string;
   title: string;
@@ -41,7 +43,7 @@ export type LogSheet = {
   };
   crew: SheetCrewMember[];
   watchPlan: string[];
-  technicalChecks: string[];
+  technicalChecks: TechnicalCheck[];
   image?: StoredImage;
   lines: LogLine[];
   metrics?: LogSheetMetrics;

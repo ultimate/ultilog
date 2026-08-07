@@ -1,3 +1,4 @@
+import { normalizeTechnicalCheck } from "../../domain/logbook/technical-log";
 import { calculateLogSheetMetrics } from "../../domain/logbook/sheet-metrics";
 import { defaultLogSheetShareSettings, normalizeDeviationTable, normalizeWindDriftTable, type Boat, type BoatRow, type CrewMemberRow, type LogLine, type LogLineRow, type LogSheet, type LogSheetRow, type PersistedLogbook, type StoredLogSheet } from "../../models/logbook";
 import type { QueryableDatabase } from "../db/logbook-database";
@@ -130,7 +131,7 @@ function mapStoredSheet(sheet: LogSheetRow): StoredLogSheet {
     boatId: unscopedId(sheet.boat_id),
     route: parseJson<LogSheet["route"]>(sheet.route),
     watchPlan: parseJson<string[]>(sheet.watch_plan),
-    technicalChecks: parseJson<string[]>(sheet.technical_checks),
+    technicalChecks: parseJson<unknown[]>(sheet.technical_checks).map(normalizeTechnicalCheck).filter((item): item is NonNullable<typeof item> => Boolean(item)),
     ...(imageFromRow(sheet) ? { image: imageFromRow(sheet) } : {}),
     metrics: {
       motorMiles: Number(sheet.motor_miles) || 0,

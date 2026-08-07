@@ -469,6 +469,8 @@ td { color: #28384b; line-height: 1.45; }
 
 .card-title-row, .inline-edit-actions { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; }
 .inline-edit-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
+.technical-check-row { display: grid; grid-template-columns: 4.5rem minmax(0, 1fr) auto; gap: .5rem; align-items: center; }
+.technical-check-row select { font-size: 1.15rem; }
 .inline-edit-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; width: 100%; }
 .inline-edit-grid .eyebrow, .inline-edit-grid .wide-field { grid-column: 1 / -1; }
 .inline-edit-grid label { display: grid; gap: 0.25rem; color: var(--primary-dark); font-size: 0.78rem; font-weight: 900; letter-spacing: 0.04em; text-transform: uppercase; }
