@@ -458,6 +458,7 @@ export const en = {
   "profile.sidebarSlim": "Slim",
   "profile.sidebarWide": "Wide",
   "profile.showCourseConversionTable": "Show course conversion table by default",
+  "profile.showAvatarOnPrint": "Show my avatar on printed log sheets",
   "profile.savePreferences": "Save preferences",
   "profile.deleteAccount": "Delete account",
   "profile.deleteHelp": "This permanently deletes your account and all logbooks, boats, crew members, and log lines.",

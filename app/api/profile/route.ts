@@ -29,6 +29,7 @@ export async function GET() {
       theme: user.theme,
       isNavSlim: user.isNavSlim,
       showCourseConversionTable: user.showCourseConversionTable,
+      showAvatarOnPrint: user.showAvatarOnPrint,
     },
     theme: user.theme,
     isNavSlim: user.isNavSlim,
@@ -40,7 +41,7 @@ export async function PATCH(request: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
-    const body = await request.json() as { action?: string; name?: string; email?: string; avatarData?: string; avatarMimeType?: string; currentPassword?: string; newPassword?: string; onboardingCompletedTasks?: unknown; preferences?: Record<string, unknown>; theme?: unknown; isNavSlim?: unknown; showCourseConversionTable?: unknown };
+    const body = await request.json() as { action?: string; name?: string; email?: string; avatarData?: string; avatarMimeType?: string; currentPassword?: string; newPassword?: string; onboardingCompletedTasks?: unknown; preferences?: Record<string, unknown>; theme?: unknown; isNavSlim?: unknown; showCourseConversionTable?: unknown; showAvatarOnPrint?: unknown };
     if (body.action === "avatar") {
       const avatar = await updateUserAvatar(session.user.id, { data: body.avatarData ?? "", mimeType: body.avatarMimeType ?? "" });
       return NextResponse.json({ avatar, hasUploadedAvatar: true });
@@ -82,6 +83,7 @@ export async function PATCH(request: Request) {
           theme: user.theme,
           isNavSlim: user.isNavSlim,
           showCourseConversionTable: user.showCourseConversionTable,
+          showAvatarOnPrint: user.showAvatarOnPrint,
         },
         theme: user.theme,
         isNavSlim: user.isNavSlim,

@@ -45,6 +45,7 @@ const defaultPreferences = {
   theme: "light" as const,
   isNavSlim: false,
   showCourseConversionTable: true,
+  showAvatarOnPrint: true,
 };
 
 function appUser(overrides = {}) {
