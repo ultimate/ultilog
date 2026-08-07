@@ -89,7 +89,6 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     activeSheetSummary,
     showCourseColumns,
     startAddingLine,
-    startAddingLineHereNow,
     startAddingLineAtCoordinates,
     startAddingSmartLine,
     smartLineStatus,
@@ -809,8 +808,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                     <button type="button" onClick={() => onCoordinateFormatChange(coordinateFormat === "decimal" ? "dms" : "decimal")}>{t("details.coordinates")}: {coordinateFormat === "decimal" ? t("details.decimal") : "DMS"}</button>
                     <button type="button" onClick={() => onShowCourseColumnsChange(!showCourseColumns)}>{showCourseColumns ? t("details.hide") : t("details.show")} {t("details.courseColumns")}</button>
                     <button type="button" disabled={isActiveSheetLocked} onClick={startAddingLine}>{t("details.addLine")}</button>
-                    <button type="button" disabled={isActiveSheetLocked} onClick={startAddingLineHereNow}>{t("details.addLineHereNow")}</button>
-                    <button type="button" disabled={isActiveSheetLocked || smartLineStatus === "loading"} onClick={startAddingSmartLine}>{smartLineStatus === "loading" ? t("details.addSmartLineLoading") : t("details.addSmartLine")}</button>
+                    <button type="button" disabled={isActiveSheetLocked || smartLineStatus === "loading"} onClick={startAddingSmartLine}>{smartLineStatus === "loading" ? t("details.addSmartLineLoading") : t("details.addLineHereNow")}</button>
                   </div>
                 </div>
                 <div className="table-scroll">

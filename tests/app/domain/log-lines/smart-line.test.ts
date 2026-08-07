@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateSmartNavigationFields, previousSheetEngineHours } from "../../../../app/domain/log-lines/smart-line";
+import { calculateSmartNavigationFields, previousSheetLogMiles } from "../../../../app/domain/log-lines/smart-line";
 import type { LogLine, LogSheet } from "../../../../app/models/logbook";
 
 const line = (values: Partial<LogLine> = {}) => ({
@@ -24,12 +24,12 @@ describe("smart log-line defaults", () => {
     expect(fields).toEqual({ logNm: "72", courseOverGround: "0", speedKn: "6" });
   });
 
-  it("takes engine counters from the final line of the previous sheet for the same boat", () => {
-    const previous = sheet({ id: "previous", route: { from: "", to: "", departed: "2026-08-06T00:00:00Z", arrived: "" }, lines: [line({ engineHours: { port: 123.4 } })] });
-    expect(previousSheetEngineHours([previous], sheet())).toEqual({ port: "123.4" });
+  it("takes the log counter from the final line of the previous sheet for the same boat", () => {
+    const previous = sheet({ id: "previous", route: { from: "", to: "", departed: "2026-08-06T00:00:00Z", arrived: "" }, lines: [line({ logNm: 123.4 })] });
+    expect(previousSheetLogMiles([previous], sheet())).toBe("123.4");
   });
 
   it("does not carry counters into a sheet that already has lines", () => {
-    expect(previousSheetEngineHours([], sheet({ lines: [line()] }))).toEqual({});
+    expect(previousSheetLogMiles([], sheet({ lines: [line()] }))).toBe("");
   });
 });

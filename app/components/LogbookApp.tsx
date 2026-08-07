@@ -52,7 +52,7 @@ import { courseConversionColumns } from "../domain/nautical/course-conversion";
 import { calculateLogSheetMetrics, formatLogSheetDuration } from "../domain/logbook/sheet-metrics";
 import { activeBoats } from "../domain/boats/boat-policy";
 import { lineFormToLogLine } from "../domain/log-lines/log-line-form";
-import { calculateSmartNavigationFields, previousSheetEngineHours } from "../domain/log-lines/smart-line";
+import { calculateSmartNavigationFields, previousSheetLogMiles } from "../domain/log-lines/smart-line";
 import type { MeteoLogLineAutofill, MeteoSourceRemarkPart } from "../domain/meteo";
 import { ModuleTabs, type ActiveView } from "../templates/ModuleTabs";
 import { useI18n, type TranslationKey } from "../lib/i18n";
@@ -1212,22 +1212,6 @@ export function LogbookApp({
     setShowAddLine((show) => !show);
   }
 
-  function startAddingLineHereNow() {
-    if (activeSheet.status === "Locked") return;
-    const now = new Date();
-    const time = dateTimeLocalFromDate(now);
-    setEditingLineIndex(null);
-    setLineForm({ ...lineDefaultsForActiveSheet(), time });
-    setShowAddLine(true);
-    navigator.geolocation?.getCurrentPosition((position) => {
-      setLineForm((current) => ({
-        ...current,
-        latitude: String(position.coords.latitude),
-        longitude: String(position.coords.longitude),
-      }));
-    });
-  }
-
   async function startAddingLineAtCoordinates(coordinate: { latitude: number; longitude: number }, selectedTime?: string) {
     const sheetDate = dateTimeLocalFromStamp(activeSheet.route.departed || activeSheet.route.arrived).slice(0, 10);
     await startAddingSmartLine(coordinate, selectedTime && sheetDate ? `${sheetDate}T${selectedTime}` : undefined);
@@ -1298,7 +1282,7 @@ export function LogbookApp({
   function lineDefaultsForActiveSheet(): LineForm {
     return {
       ...lineDefaults,
-      engineHours: previousSheetEngineHours(logbookRef.current.sheets, activeSheet),
+      logNm: previousSheetLogMiles(logbookRef.current.sheets, activeSheet),
     };
   }
 
@@ -1898,7 +1882,6 @@ export function LogbookApp({
               onCoordinateFormatChange={updateCoordinateFormatPreference}
               onShowCourseColumnsChange={updateShowCourseColumnsDisplay}
               startAddingLine={startAddingLine}
-              startAddingLineHereNow={startAddingLineHereNow}
               startAddingLineAtCoordinates={startAddingLineAtCoordinates}
               startAddingSmartLine={startAddingSmartLine}
               smartLineStatus={smartLineStatus}

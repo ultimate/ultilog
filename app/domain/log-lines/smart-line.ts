@@ -17,17 +17,16 @@ export function calculateSmartNavigationFields(lines: LogLine[], coordinate: Coo
   };
 }
 
-export function previousSheetEngineHours(sheets: LogSheet[], activeSheet: LogSheet): Record<string, string> {
-  if (activeSheet.lines.length) return {};
+export function previousSheetLogMiles(sheets: LogSheet[], activeSheet: LogSheet): string {
+  if (activeSheet.lines.length) return "";
   const activeStart = sheetStart(activeSheet);
   const previous = sheets
     .filter((sheet) => sheet.id !== activeSheet.id && sheet.boatId === activeSheet.boatId && sheet.lines.length && sheetStart(sheet) <= activeStart)
     .sort((a, b) => sheetStart(a) - sheetStart(b))
     .at(-1);
   const lastLine = previous ? [...previous.lines].sort((a, b) => Date.parse(a.time) - Date.parse(b.time)).at(-1) : undefined;
-  if (!lastLine) return {};
-  if (Object.keys(lastLine.engineHours ?? {}).length) return Object.fromEntries(Object.entries(lastLine.engineHours ?? {}).map(([id, hours]) => [id, String(hours)]));
-  return lastLine.motorHours > 0 ? { "main-engine": String(lastLine.motorHours) } : {};
+  if (!lastLine || !Number.isFinite(lastLine.logNm)) return "";
+  return String(lastLine.logNm);
 }
 
 function hasCoordinates(line: LogLine) {

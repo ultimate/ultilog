@@ -175,11 +175,6 @@ function MapContextMenu({
           event.stopPropagation();
           addLogLine();
         }}
-        onPointerDown={(event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          addLogLine();
-        }}
       >
         {t("map.addLogLineHereNow")}
       </button>
