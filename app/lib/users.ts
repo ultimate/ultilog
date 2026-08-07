@@ -3,7 +3,6 @@ import bcrypt from "bcryptjs";
 import { isOnboardingTaskId, type OnboardingTaskId } from "./onboarding/tasks";
 import { getDatabase, writeLogbook } from "./logbook-store";
 import { sendEmailVerificationEmail, sendPasswordResetEmail } from "./mailer";
-import { decryptWithEnvelope, encryptWithEnvelope } from "./security/envelope-encryption";
 
 export type UserTheme = "light" | "dark" | "auto";
 export type UserPreferences = {
@@ -40,7 +39,7 @@ export function gravatarAvatarUrl(email: string) {
 
 function avatarFromRow(row: { email: string; avatar_data?: string | null; avatar_mime_type?: string | null }) {
   if (row.avatar_data && row.avatar_mime_type) {
-    return `data:${row.avatar_mime_type};base64,${decryptWithEnvelope(row.avatar_data)}`;
+    return `data:${row.avatar_mime_type};base64,${row.avatar_data}`;
   }
   return gravatarAvatarUrl(row.email);
 }
@@ -244,7 +243,7 @@ export async function updateUserAvatar(userId: string, input: { data: string; mi
   if (!bytes.length || bytes.length > 1024 * 1024) throw new Error("Profile pictures must be 1 MB or smaller.");
   const db = getDatabase();
   await db.migrate();
-  await db.query(`update users set avatar_data = ${db.placeholder(1)}, avatar_mime_type = ${db.placeholder(2)} where id = ${db.placeholder(3)}`, [encryptWithEnvelope(input.data), input.mimeType, userId]);
+  await db.query(`update users set avatar_data = ${db.placeholder(1)}, avatar_mime_type = ${db.placeholder(2)} where id = ${db.placeholder(3)}`, [input.data, input.mimeType, userId]);
   return `data:${input.mimeType};base64,${input.data}`;
 }
 

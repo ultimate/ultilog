@@ -29,6 +29,20 @@ describe("users preferences", () => {
     });
   });
 
+  it("stores uploaded profile pictures without encryption", async () => {
+    const { findUserById, registerUser, updateUserAvatar } = await importUsersWithTempDatabase();
+    const { getDatabase } = await import("../../../app/lib/logbook-store");
+    const user = await registerUser({ name: "Picture User", email: "picture@example.test", password: "password123" });
+    const avatarData = Buffer.from("avatar bytes").toString("base64");
+
+    await updateUserAvatar(user.id, { data: avatarData, mimeType: "image/jpeg" });
+
+    await expect(getDatabase().query<{ avatar_data: string; avatar_mime_type: string }>("select avatar_data, avatar_mime_type from users where id = ?", [user.id])).resolves.toMatchObject({
+      rows: [{ avatar_data: avatarData, avatar_mime_type: "image/jpeg" }],
+    });
+    await expect(findUserById(user.id)).resolves.toMatchObject({ avatar: `data:image/jpeg;base64,${avatarData}` });
+  });
+
   it("returns defaults for a newly registered user", async () => {
     const { registerUser } = await importUsersWithTempDatabase();
 
