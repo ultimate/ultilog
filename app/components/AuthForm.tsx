@@ -150,7 +150,7 @@ export function AuthForm({ mode, footer }: Props) {
         <p><span>{t("landing.partnerEyebrow")}</span><strong>{t("landing.partnerTitle")}</strong></p>
         <a href="https://respocean.ch/" target="_blank" rel="noreferrer" aria-label="Respocean">
           <Image
-            src="/public/partners/respocean.png"
+            src="/partners/respocean.png"
             alt="Respocean"
             width={1429}
             height={248}
