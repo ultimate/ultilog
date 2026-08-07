@@ -56,6 +56,7 @@ test("prints filled sheets with filler rows, repeated header/footer, and page nu
   await expect(printPage.locator(".print-header .print-field span", { hasText: /^Date$/ })).toHaveCount(0);
   await expect(printPage.locator(".print-header .print-field span", { hasText: /^Skipper$/ })).toHaveCount(0);
   await expect(printPage.locator(".print-crew-box")).toContainText(`⭐ ${demoSheet.crew[0].name}`);
+  await expectPrintHeaderFieldsAligned(printPage);
   await expect(printPage.locator(".print-footer")).toHaveCount(1);
   await expect(printPage.locator(".print-page-number")).toHaveText("Page 1 of 1");
   await expect(printPage.locator("tbody tr")).toHaveCount(19);
@@ -110,6 +111,21 @@ async function expectPrintContentWithinPage(printPage: Locator) {
 
   expect(bounds.logTableRight).toBeLessThanOrEqual(bounds.pageRight + 1);
   expect(bounds.footerRight).toBeLessThanOrEqual(bounds.pageRight + 1);
+}
+
+async function expectPrintHeaderFieldsAligned(printPage: Locator) {
+  const heights = await printPage.evaluate((pageElement) => {
+    const height = (selector: string) => pageElement.querySelector(selector)?.getBoundingClientRect().height ?? 0;
+    return {
+      voyage: height(".print-master-grid .print-field"),
+      boat: height(".print-boat .print-field"),
+      summary: height(".print-summary .print-field"),
+    };
+  });
+
+  expect(heights.voyage).toBeGreaterThan(0);
+  expect(Math.abs(heights.boat - heights.voyage)).toBeLessThanOrEqual(1);
+  expect(Math.abs(heights.summary - heights.voyage)).toBeLessThanOrEqual(1);
 }
 
 async function loginWithSeededDemoData(page: Page, sheets = sampleLogSheets) {
