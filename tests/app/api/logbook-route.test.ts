@@ -65,6 +65,18 @@ describe("logbook endpoint", () => {
     expect(mockedWriteLogbook).not.toHaveBeenCalled();
   });
 
+  it("rejects an empty write body without throwing", async () => {
+    mockedAuth.mockResolvedValueOnce(session);
+
+    const response = await PUT(new Request("https://ultilog.test/api/logbook", {
+      method: "PUT",
+    }));
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: "Invalid logbook payload" });
+    expect(mockedWriteLogbook).not.toHaveBeenCalled();
+  });
+
 
   it("preserves image payloads when writing the current user's logbook", async () => {
     const imageLogbook: PersistedLogbook = {

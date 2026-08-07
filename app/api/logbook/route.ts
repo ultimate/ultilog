@@ -15,8 +15,8 @@ export async function GET() {
 export async function PUT(request: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const logbook = await request.json() as PersistedLogbook;
-  if (!Array.isArray(logbook.boats) || !Array.isArray(logbook.crewMembers) || !Array.isArray(logbook.sheets)) {
+  const logbook = await request.json().catch(() => null) as PersistedLogbook | null;
+  if (!logbook || !Array.isArray(logbook.boats) || !Array.isArray(logbook.crewMembers) || !Array.isArray(logbook.sheets)) {
     return NextResponse.json({ error: "Invalid logbook payload" }, { status: 400 });
   }
   const persistedLogbook = await isActiveDemoSandbox(session.user.id) ? applyDemoLogbookRestrictions(logbook) : logbook;
