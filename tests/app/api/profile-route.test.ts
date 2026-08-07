@@ -7,6 +7,7 @@ vi.mock("../../../auth", () => ({
 vi.mock("../../../app/lib/users", () => ({
   deleteUserAccount: vi.fn(),
   findUserById: vi.fn(),
+  removeUserAvatar: vi.fn(),
   updateUserComplianceRead: vi.fn(),
   updateUserEmail: vi.fn(),
   updateUserName: vi.fn(),
@@ -22,6 +23,7 @@ const { DELETE, GET, PATCH } = await import("../../../app/api/profile/route");
 const mockedAuth = auth as unknown as Mock;
 const mockedDeleteUserAccount = vi.mocked(users.deleteUserAccount);
 const mockedFindUserById = vi.mocked(users.findUserById);
+const mockedRemoveUserAvatar = vi.mocked(users.removeUserAvatar);
 const mockedUpdateUserComplianceRead = vi.mocked(users.updateUserComplianceRead);
 const mockedUpdateUserEmail = vi.mocked(users.updateUserEmail);
 const mockedUpdateUserName = vi.mocked(users.updateUserName);
@@ -46,7 +48,7 @@ const defaultPreferences = {
 };
 
 function appUser(overrides = {}) {
-  return { id: "user-1", name: "User", email: "user@example.test", emailVerified: true, groups: [], onboardingCompletedTasks: [], hasReadCompliance: false, ...defaultPreferences, ...overrides };
+  return { id: "user-1", name: "User", email: "user@example.test", emailVerified: true, hasUploadedAvatar: false, groups: [], onboardingCompletedTasks: [], hasReadCompliance: false, ...defaultPreferences, ...overrides };
 }
 
 describe("profile endpoint", () => {
@@ -73,8 +75,22 @@ describe("profile endpoint", () => {
     const response = await GET();
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ id: "user-1", name: "User", email: "user@example.test", emailVerified: true, avatar: "https://www.gravatar.com/avatar/hash?s=256&d=mp", groups: [], onboardingCompletedTasks: ["create_first_boat"], preferences: { ...defaultPreferences, theme: "dark", isNavSlim: true }, theme: "dark", isNavSlim: true, hasReadCompliance: true });
+    await expect(response.json()).resolves.toEqual({ id: "user-1", name: "User", email: "user@example.test", emailVerified: true, avatar: "https://www.gravatar.com/avatar/hash?s=256&d=mp", hasUploadedAvatar: false, groups: [], onboardingCompletedTasks: ["create_first_boat"], preferences: { ...defaultPreferences, theme: "dark", isNavSlim: true }, theme: "dark", isNavSlim: true, hasReadCompliance: true });
     expect(mockedFindUserById).toHaveBeenCalledWith("user-1");
+  });
+
+  it("removes the signed-in user's uploaded avatar", async () => {
+    mockedAuth.mockResolvedValueOnce(session);
+    mockedRemoveUserAvatar.mockResolvedValueOnce("https://www.gravatar.com/avatar/hash?s=256&d=mp");
+
+    const response = await PATCH(new Request("https://ultilog.test/api/profile", {
+      method: "PATCH",
+      body: JSON.stringify({ action: "avatar-remove" }),
+    }));
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ avatar: "https://www.gravatar.com/avatar/hash?s=256&d=mp", hasUploadedAvatar: false });
+    expect(mockedRemoveUserAvatar).toHaveBeenCalledWith("user-1");
   });
 
   it("updates the signed-in user's name", async () => {

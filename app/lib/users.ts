@@ -20,11 +20,11 @@ export type UserPreferences = {
   showCourseConversionTable: boolean;
   motionStationaryThresholdNm?: number;
 };
-export type AppUser = { id: string; name: string; email: string; emailVerified?: boolean; avatar?: string; groups: string[]; onboardingCompletedTasks: OnboardingTaskId[]; hasReadCompliance: boolean; demoSandboxExpiresAt?: string } & UserPreferences;
+export type AppUser = { id: string; name: string; email: string; emailVerified?: boolean; avatar?: string; hasUploadedAvatar?: boolean; groups: string[]; onboardingCompletedTasks: OnboardingTaskId[]; hasReadCompliance: boolean; demoSandboxExpiresAt?: string } & UserPreferences;
 export type AdminUserListItem = AppUser;
 export type DirectoryUserListItem = { id: string; username: string; avatar?: string; sailMiles: number; motorMiles: number; logbookSheets: number; boats: number };
 
-type UserRow = Omit<AppUser, "avatar" | "groups" | "onboardingCompletedTasks" | "hasReadCompliance" | "isNavSlim" | "countryCode" | "windUnit" | "waterHeightUnit" | "temperatureUnit" | "coordinateFormat" | "distanceDisplayUnit" | "defaultBoatId" | "defaultCrewMemberIds" | "showCourseConversionTable" | "motionStationaryThresholdNm" | "emailVerified"> & { avatar_data: string | null; avatar_mime_type: string | null; password_hash: string; onboarding_completed_tasks: string; country_code: string; wind_unit: string; water_height_unit: string; temperature_unit: string; coordinate_format: string; distance_display_unit: string; default_boat_id: string; default_crew_member_ids: string; nav_slim: number | boolean; has_read_compliance: number | boolean; show_course_conversion_table: number | boolean; motion_stationary_threshold_nm: number | string | null; email_verified_at: string | null };
+type UserRow = Omit<AppUser, "avatar" | "hasUploadedAvatar" | "groups" | "onboardingCompletedTasks" | "hasReadCompliance" | "isNavSlim" | "countryCode" | "windUnit" | "waterHeightUnit" | "temperatureUnit" | "coordinateFormat" | "distanceDisplayUnit" | "defaultBoatId" | "defaultCrewMemberIds" | "showCourseConversionTable" | "motionStationaryThresholdNm" | "emailVerified"> & { avatar_data: string | null; avatar_mime_type: string | null; password_hash: string; onboarding_completed_tasks: string; country_code: string; wind_unit: string; water_height_unit: string; temperature_unit: string; coordinate_format: string; distance_display_unit: string; default_boat_id: string; default_crew_member_ids: string; nav_slim: number | boolean; has_read_compliance: number | boolean; show_course_conversion_table: number | boolean; motion_stationary_threshold_nm: number | string | null; email_verified_at: string | null };
 type GroupRow = { user_id?: string; name: string };
 type PasswordResetTokenRow = { id: string; user_id: string; token_hash: string; expires_at: string; used_at: string | null };
 type EmailVerificationTokenRow = PasswordResetTokenRow;
@@ -167,6 +167,7 @@ function toAppUser(user: UserRow, groups: string[]): AppUser {
     email: user.email,
     emailVerified: Boolean(user.email_verified_at),
     avatar: avatarFromRow(user),
+    hasUploadedAvatar: Boolean(user.avatar_data && user.avatar_mime_type),
     groups,
     onboardingCompletedTasks: parseOnboardingCompletedTasks(user.onboarding_completed_tasks),
     theme: normalizeTheme(user.theme),
@@ -247,6 +248,15 @@ export async function updateUserAvatar(userId: string, input: { data: string; mi
   return `data:${input.mimeType};base64,${input.data}`;
 }
 
+export async function removeUserAvatar(userId: string) {
+  const db = getDatabase();
+  await db.migrate();
+  await db.query(`update users set avatar_data = null, avatar_mime_type = null where id = ${db.placeholder(1)}`, [userId]);
+  const user = await findUserById(userId);
+  if (!user) throw new Error("User not found.");
+  return user.avatar;
+}
+
 async function findUserRowByEmail(email: string) {
   const db = getDatabase();
   await db.migrate();
@@ -280,7 +290,7 @@ export async function registerUser(input: { name: string; email: string; passwor
   if (await findUserByEmail(email)) throw new Error("An account with this email already exists.");
   if (await findUserByName(name)) throw new Error("An account with this name already exists.");
 
-  const user: AppUser = { id: randomUUID(), name, email, emailVerified: false, groups: [], onboardingCompletedTasks: [], hasReadCompliance: false, ...normalizeUserPreferences({}) };
+  const user: AppUser = { id: randomUUID(), name, email, emailVerified: false, hasUploadedAvatar: false, groups: [], onboardingCompletedTasks: [], hasReadCompliance: false, ...normalizeUserPreferences({}) };
   const passwordHash = await bcrypt.hash(input.password, 10);
   const db = getDatabase();
   await db.query(

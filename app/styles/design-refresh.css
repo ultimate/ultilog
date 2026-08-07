@@ -910,3 +910,5 @@ h3 { margin-block:.25rem .55rem; }
     max-width: 100%;
   }
 }
+.avatar-remove-action { margin:.2rem .5rem .2rem 0; border:0; background:transparent; color:var(--danger,#b42318); padding:.25rem 0; font-weight:750; text-decoration:underline; text-underline-offset:.2rem; }
+.avatar-remove-action:disabled { opacity:.6; }
