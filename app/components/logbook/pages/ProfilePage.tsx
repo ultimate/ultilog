@@ -70,6 +70,7 @@ export function ProfilePage(props: ProfilePageProps) {
   const [motionThresholdDraft, setMotionThresholdDraft] = useState<string | null>(null);
   const [isResettingDemo, setIsResettingDemo] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isRemovingAvatar, setIsRemovingAvatar] = useState(false);
   const [avatarCrop, setAvatarCrop] = useState<AvatarCrop | null>(null);
   const motionThresholdValue = motionThresholdDraft ?? formatDecimalPreference(profilePreferences.motionStationaryThresholdNm);
 
@@ -96,6 +97,8 @@ export function ProfilePage(props: ProfilePageProps) {
   };
   const avatar = props.avatar as string | undefined;
   const setAvatar = props.setAvatar as Dispatch<SetStateAction<string | undefined>>;
+  const hasUploadedAvatar = props.hasUploadedAvatar as boolean;
+  const setHasUploadedAvatar = props.setHasUploadedAvatar as Dispatch<SetStateAction<boolean>>;
 
   const avatarCropUrl = avatarCrop?.url;
   useEffect(() => () => {
@@ -133,11 +136,28 @@ export function ProfilePage(props: ProfilePageProps) {
       const payload = await response.json() as { avatar?: string; error?: string };
       if (!response.ok || !payload.avatar) throw new Error(payload.error ?? t("profile.avatarUploadError"));
       setAvatar(payload.avatar);
+      setHasUploadedAvatar(true);
       closeAvatarCrop();
     } catch (error) {
       window.alert(error instanceof Error ? error.message : t("profile.avatarUploadError"));
     } finally {
       setIsUploadingAvatar(false);
+    }
+  }
+
+  async function removeAvatar() {
+    if (!window.confirm(t("profile.avatarRemoveConfirm"))) return;
+    setIsRemovingAvatar(true);
+    try {
+      const response = await fetch("/api/profile", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "avatar-remove" }) });
+      const payload = await response.json() as { avatar?: string; error?: string };
+      if (!response.ok) throw new Error(payload.error ?? t("profile.avatarRemoveError"));
+      setAvatar(payload.avatar);
+      setHasUploadedAvatar(false);
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : t("profile.avatarRemoveError"));
+    } finally {
+      setIsRemovingAvatar(false);
     }
   }
   const setNameForm = props.setNameForm as Dispatch<
@@ -208,6 +228,7 @@ export function ProfilePage(props: ProfilePageProps) {
                 <span>{t("profile.noGroups")}</span>
               )}
             </p>
+            {hasUploadedAvatar && <button type="button" className="avatar-remove-action" onClick={removeAvatar} disabled={isRemovingAvatar}>{isRemovingAvatar ? t("profile.avatarRemoving") : t("profile.avatarRemove")}</button>}
             <button
               type="button"
               className="edit-chip"

@@ -43,6 +43,15 @@ describe("users preferences", () => {
     await expect(findUserById(user.id)).resolves.toMatchObject({ avatar: `data:image/jpeg;base64,${avatarData}` });
   });
 
+  it("removes an uploaded picture and restores the Gravatar fallback", async () => {
+    const { findUserById, gravatarAvatarUrl, registerUser, removeUserAvatar, updateUserAvatar } = await importUsersWithTempDatabase();
+    const user = await registerUser({ name: "Remove Picture", email: "remove-picture@example.test", password: "password123" });
+    await updateUserAvatar(user.id, { data: Buffer.from("avatar bytes").toString("base64"), mimeType: "image/jpeg" });
+
+    await expect(removeUserAvatar(user.id)).resolves.toBe(gravatarAvatarUrl(user.email));
+    await expect(findUserById(user.id)).resolves.toMatchObject({ avatar: gravatarAvatarUrl(user.email), hasUploadedAvatar: false });
+  });
+
   it("returns defaults for a newly registered user", async () => {
     const { registerUser } = await importUsersWithTempDatabase();
 

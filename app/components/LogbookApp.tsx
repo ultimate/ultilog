@@ -270,10 +270,12 @@ export function LogbookApp({
     onboardingCompletion,
     preferences,
     profileAvatar,
+    hasUploadedAvatar,
     setAccountEmail,
     setIsAccountEmailVerified,
     setAccountName,
     setProfileAvatar,
+    setHasUploadedAvatar,
     theme,
     updateOnboardingCompletedTasks,
     updatePreferences,
@@ -1949,6 +1951,8 @@ export function LogbookApp({
               profileError={profileError}
               avatar={profileAvatar}
               setAvatar={setProfileAvatar}
+              hasUploadedAvatar={hasUploadedAvatar}
+              setHasUploadedAvatar={setHasUploadedAvatar}
               updateName={updateName}
               updateEmail={updateEmail}
               updatePassword={updatePassword}

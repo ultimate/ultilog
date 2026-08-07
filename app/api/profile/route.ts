@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "../../../auth";
-import { deleteUserAccount, findUserById, updateUserAvatar, updateUserComplianceRead, updateUserEmail, updateUserName, updateUserOnboardingCompletedTasks, updateUserPassword, updateUserViewPreferences } from "../../lib/users";
+import { deleteUserAccount, findUserById, removeUserAvatar, updateUserAvatar, updateUserComplianceRead, updateUserEmail, updateUserName, updateUserOnboardingCompletedTasks, updateUserPassword, updateUserViewPreferences } from "../../lib/users";
 
 export async function GET() {
   const session = await auth();
@@ -13,6 +13,7 @@ export async function GET() {
     email: user.email,
     emailVerified: user.emailVerified,
     avatar: user.avatar,
+    hasUploadedAvatar: user.hasUploadedAvatar,
     groups: user.groups,
     onboardingCompletedTasks: user.onboardingCompletedTasks,
     preferences: {
@@ -42,7 +43,11 @@ export async function PATCH(request: Request) {
     const body = await request.json() as { action?: string; name?: string; email?: string; avatarData?: string; avatarMimeType?: string; currentPassword?: string; newPassword?: string; onboardingCompletedTasks?: unknown; preferences?: Record<string, unknown>; theme?: unknown; isNavSlim?: unknown; showCourseConversionTable?: unknown };
     if (body.action === "avatar") {
       const avatar = await updateUserAvatar(session.user.id, { data: body.avatarData ?? "", mimeType: body.avatarMimeType ?? "" });
-      return NextResponse.json({ avatar });
+      return NextResponse.json({ avatar, hasUploadedAvatar: true });
+    }
+    if (body.action === "avatar-remove") {
+      const avatar = await removeUserAvatar(session.user.id);
+      return NextResponse.json({ avatar, hasUploadedAvatar: false });
     }
     if (body.action === "name") {
       const user = await updateUserName(session.user.id, { name: body.name ?? "", currentPassword: body.currentPassword ?? "" });
