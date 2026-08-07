@@ -31,12 +31,24 @@ async function loginWithSeededDemoData(page: Page) {
   await expect(demoLogin).toBeEnabled();
   await demoLogin.click();
   await expect(page.getByRole("button", { name: "Logout" })).toBeVisible({ timeout: 30_000 });
+  await page.waitForLoadState("networkidle");
+  await removeDemoLogsheets(page);
   const seedResponse = await page.request.put("/api/logbook", {
     data: { boats: sampleBoats, crewMembers: crewProfilesFromSheets(sampleLogSheets), sheets: sampleLogSheets },
   });
-  expect(seedResponse.ok()).toBeTruthy();
+  expect(seedResponse.ok(), await seedResponse.text()).toBeTruthy();
   await page.reload();
   await expect(page.getByRole("button", { name: "Logout" })).toBeVisible({ timeout: 30_000 });
+}
+
+async function removeDemoLogsheets(page: Page) {
+  const currentResponse = await page.request.get("/api/logbook");
+  expect(currentResponse.ok()).toBeTruthy();
+  const currentLogbook = await currentResponse.json();
+  const clearResponse = await page.request.put("/api/logbook", {
+    data: { ...currentLogbook, sheets: [] },
+  });
+  expect(clearResponse.ok(), await clearResponse.text()).toBeTruthy();
 }
 
 function crewProfilesFromSheets(sheets: typeof sampleLogSheets) {
