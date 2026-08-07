@@ -944,7 +944,6 @@ export function LogbookApp({
         Draft: previousBoat?.yachtData.Draft ?? "—",
         Displacement: previousBoat?.yachtData.Displacement ?? "—",
         "Rig / sail area": boatForm.type === "Sail" ? "To be completed" : "n/a",
-        Engine: boatForm.engine || "—",
         Propeller: previousBoat?.yachtData.Propeller ?? "—",
         Electronics: previousBoat?.yachtData.Electronics ?? "To be completed",
         Safety: boatForm.safety || "To be completed",

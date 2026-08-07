@@ -66,6 +66,24 @@ class IsoDatetimeMigrationDatabase implements QueryableDatabase {
   }
 }
 
+class LegacyBoatEngineMigrationDatabase implements QueryableDatabase {
+  calls: Array<{ sql: string; params?: unknown[] }> = [];
+  placeholder(index: number) { return `$${index}`; }
+  async query<Row>(sql: string, params?: unknown[]): Promise<QueryResult<Row>> {
+    this.calls.push({ sql, params });
+    if (sql.includes("select id from schema_migrations")) {
+      return { rows: [{ id: "029_multi_engine_hours" }] as Row[] };
+    }
+    if (sql.includes("select boats.id as boat_id")) {
+      return { rows: [
+        { boat_id: "boat-1", yacht_data: JSON.stringify({ Manufacturer: "Yard", Engine: "Volvo Penta D2-55" }), engine_id: "boat-1:main-engine", model: "" },
+        { boat_id: "boat-2", yacht_data: { Engine: "Legacy engine", Safety: "EPIRB" }, engine_id: "boat-2:main-engine", model: "Modern model" },
+      ] as Row[] };
+    }
+    return { rows: [] };
+  }
+}
+
 describe("runMigrations", () => {
   it("marks the log line column migration applied after duplicate columns from a partial prior run", async () => {
     const db = new DuplicateColumnDatabase();
@@ -92,5 +110,16 @@ describe("runMigrations", () => {
       sql: "update sheet_crew_members set embarkation_datetime = $1, disembarkation_datetime = $2 where sheet_id = $3 and crew_member_id = $4 and sort_order = $5",
       params: ["2026-07-21T08:00:00+00:00", "", "sheet-1", "crew-1", 0],
     }));
+  });
+
+  it("moves the obsolete boat engine value to the first engine model", async () => {
+    const db = new LegacyBoatEngineMigrationDatabase();
+
+    await runMigrations(db);
+
+    expect(db.calls).toContainEqual({ sql: "update engines set model = $1 where id = $2", params: ["Volvo Penta D2-55", "boat-1:main-engine"] });
+    expect(db.calls).not.toContainEqual(expect.objectContaining({ params: ["Legacy engine", "boat-2:main-engine"] }));
+    expect(db.calls).toContainEqual({ sql: "update boats set yacht_data = $1 where id = $2", params: [JSON.stringify({ Manufacturer: "Yard" }), "boat-1"] });
+    expect(db.calls).toContainEqual({ sql: "update boats set yacht_data = $1 where id = $2", params: [JSON.stringify({ Safety: "EPIRB" }), "boat-2"] });
   });
 });

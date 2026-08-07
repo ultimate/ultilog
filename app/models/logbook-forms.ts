@@ -6,7 +6,6 @@ export type BoatForm = Pick<Boat, "name" | "registration" | "flagState" | "homeP
   type: BoatType;
   manufacturer: string;
   mmsi: string;
-  engine: string;
   safety: string;
   deviationTable: Boat["deviationTable"];
   windDriftTable: NonNullable<Boat["windDriftTable"]>;

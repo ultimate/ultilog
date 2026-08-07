@@ -234,15 +234,6 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                 }
               />
             </label>
-            <label>
-              {t("boats.engine")}
-              <input
-                value={boatForm.engine}
-                onChange={(e) =>
-                  setBoatForm({ ...boatForm, engine: e.target.value })
-                }
-              />
-            </label>
             <fieldset className="wide-field engine-manager">
               <legend className="eyebrow">{t("boats.engines")}</legend>
               <p>{t("boats.enginesHelp")}</p>

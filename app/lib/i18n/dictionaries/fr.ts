@@ -205,7 +205,6 @@ export const fr: Dictionary = {
   "boats.dimensions": "Dimensions",
   "boats.logfactor": "Facteur de loch",
   "boats.manufacturer": "Fabricant",
-  "boats.engine": "Moteur",
   "boats.engines": "Moteurs",
   "boats.enginesHelp": "Configurez des identifiants moteur stables. Les moteurs utilisés peuvent être archivés, mais pas supprimés.",
   "boats.engineName": "Nom du moteur",
