@@ -518,6 +518,8 @@ export const en = {
   "map.routeMapAria": "OpenSeaMap route map",
   "map.noPositions": "No valid positions are available for this map yet.",
   "map.addLogLineHere": "Add log-line here",
+  "map.addLogLineHereNow": "Add here now",
+  "map.addLogLineAtTime": "Add at sheet time",
   "map.contextCoordinates": "Coordinates",
   "admin.aria": "Admin page",
   "admin.title": "Admin",

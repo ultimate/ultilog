@@ -1611,3 +1611,14 @@ img.entity-image--preview {
 .manager-list-sort { display: flex; align-items: center; justify-content: flex-end; gap: .5rem; margin: .75rem 0; }
 .manager-list-sort label { display: flex; align-items: center; gap: .5rem; font-weight: 700; }
 .manager-list-sort select { border: 1px solid var(--border); border-radius: .65rem; padding: .4rem .55rem; background: var(--surface, white); color: var(--foreground); }
+.open-seamap-context-menu-time {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.open-seamap-context-menu-time input {
+  min-width: 8rem;
+}

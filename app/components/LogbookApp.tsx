@@ -52,6 +52,7 @@ import { courseConversionColumns } from "../domain/nautical/course-conversion";
 import { calculateLogSheetMetrics, formatLogSheetDuration } from "../domain/logbook/sheet-metrics";
 import { activeBoats } from "../domain/boats/boat-policy";
 import { lineFormToLogLine } from "../domain/log-lines/log-line-form";
+import { calculateSmartNavigationFields, previousSheetEngineHours } from "../domain/log-lines/smart-line";
 import type { MeteoLogLineAutofill, MeteoSourceRemarkPart } from "../domain/meteo";
 import { ModuleTabs, type ActiveView } from "../templates/ModuleTabs";
 import { useI18n, type TranslationKey } from "../lib/i18n";
@@ -1207,7 +1208,7 @@ export function LogbookApp({
   function startAddingLine() {
     if (activeSheet.status === "Locked") return;
     setEditingLineIndex(null);
-    setLineForm(lineDefaults);
+    setLineForm(lineDefaultsForActiveSheet());
     setShowAddLine((show) => !show);
   }
 
@@ -1216,7 +1217,7 @@ export function LogbookApp({
     const now = new Date();
     const time = dateTimeLocalFromDate(now);
     setEditingLineIndex(null);
-    setLineForm({ ...lineDefaults, time });
+    setLineForm({ ...lineDefaultsForActiveSheet(), time });
     setShowAddLine(true);
     navigator.geolocation?.getCurrentPosition((position) => {
       setLineForm((current) => ({
@@ -1227,17 +1228,21 @@ export function LogbookApp({
     });
   }
 
-  async function startAddingLineAtCoordinates(coordinate: { latitude: number; longitude: number }) {
-    await startAddingSmartLine(coordinate);
+  async function startAddingLineAtCoordinates(coordinate: { latitude: number; longitude: number }, selectedTime?: string) {
+    const sheetDate = dateTimeLocalFromStamp(activeSheet.route.departed || activeSheet.route.arrived).slice(0, 10);
+    await startAddingSmartLine(coordinate, selectedTime && sheetDate ? `${sheetDate}T${selectedTime}` : undefined);
   }
 
-  async function startAddingSmartLine(coordinate?: { latitude: number; longitude: number }) {
+  async function startAddingSmartLine(coordinate?: { latitude: number; longitude: number }, requestedTime?: string) {
     if (activeSheet.status === "Locked" || smartLineStatus === "loading") return;
     const now = new Date();
-    const time = dateTimeLocalFromDate(now);
+    const time = requestedTime ?? dateTimeLocalFromDate(now);
+    const timestamp = isoDateTimeWithTimezone(time, timezoneOffsetFromStamp(activeSheet.route.departed));
+    const initialFields = coordinate ? calculateSmartNavigationFields(activeSheet.lines, coordinate, timestamp) : {};
     setEditingLineIndex(null);
     setLineForm({
-      ...lineDefaults,
+      ...lineDefaultsForActiveSheet(),
+      ...initialFields,
       time,
       ...(coordinate
         ? {
@@ -1256,7 +1261,8 @@ export function LogbookApp({
       const longitude = linePosition.longitude;
       const latitudeValue = String(Number(latitude.toFixed(6)));
       const longitudeValue = String(Number(longitude.toFixed(6)));
-      setLineForm((current) => ({ ...current, latitude: latitudeValue, longitude: longitudeValue }));
+      const navigationFields = calculateSmartNavigationFields(activeSheet.lines, linePosition, timestamp);
+      setLineForm((current) => ({ ...current, ...navigationFields, latitude: latitudeValue, longitude: longitudeValue }));
 
       const response = await fetch("/api/meteo/log-line-autofill", {
         method: "POST",
@@ -1264,7 +1270,7 @@ export function LogbookApp({
         body: JSON.stringify({
           latitude,
           longitude,
-          timestamp: now.toISOString(),
+          timestamp,
           temperatureUnit: preferences.temperatureUnit,
           windUnit: preferences.windUnit,
           seaUnit: preferences.waterHeightUnit,
@@ -1287,6 +1293,13 @@ export function LogbookApp({
       setSmartLineStatus("error");
       setSaveError(t("details.addSmartLineError"));
     }
+  }
+
+  function lineDefaultsForActiveSheet(): LineForm {
+    return {
+      ...lineDefaults,
+      engineHours: previousSheetEngineHours(logbookRef.current.sheets, activeSheet),
+    };
   }
 
   async function deleteLine(indexToDelete: number) {

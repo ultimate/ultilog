@@ -43,7 +43,7 @@ type OpenSeaMapLeafletProps = {
   className?: string;
   emptyMessage?: string;
   onRouteClick?: (route: MapRoute) => void;
-  onAddLogLineAt?: (coordinate: Coordinate) => void;
+  onAddLogLineAt?: (coordinate: Coordinate, time?: string) => void;
 };
 
 const defaultCenter: LatLngExpression = [54.5, 10.25];
@@ -118,7 +118,7 @@ type MapContextMenuState = Coordinate & {
 function MapContextMenu({
   onAddLogLineAt,
 }: {
-  onAddLogLineAt?: (coordinate: Coordinate) => void;
+  onAddLogLineAt?: (coordinate: Coordinate, time?: string) => void;
 }) {
   const { t } = useI18n();
   const [menu, setMenu] = useState<MapContextMenuState | null>(null);
@@ -147,8 +147,8 @@ function MapContextMenu({
 
   if (!menu) return null;
 
-  const addLogLine = () => {
-    onAddLogLineAt?.({ latitude: menu.latitude, longitude: menu.longitude });
+  const addLogLine = (time?: string) => {
+    onAddLogLineAt?.({ latitude: menu.latitude, longitude: menu.longitude }, time);
     setMenu(null);
   };
 
@@ -181,8 +181,19 @@ function MapContextMenu({
           addLogLine();
         }}
       >
-        {t("map.addLogLineHere")}
+        {t("map.addLogLineHereNow")}
       </button>
+      <label className="open-seamap-context-menu-time">
+        <span>{t("map.addLogLineAtTime")}</span>
+        <input
+          type="time"
+          onClick={(event) => event.stopPropagation()}
+          onChange={(event) => {
+            if (!event.target.value) return;
+            addLogLine(event.target.value);
+          }}
+        />
+      </label>
     </div>
   );
 }

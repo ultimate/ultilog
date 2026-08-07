@@ -520,6 +520,8 @@ export const de: Dictionary = {
   "map.routeMapAria": "OpenSeaMap-Routenkarte",
   "map.noPositions": "Für diese Karte sind noch keine gültigen Positionen verfügbar.",
   "map.addLogLineHere": "Logzeile hier hinzufügen",
+  "map.addLogLineHereNow": "Jetzt hier hinzufügen",
+  "map.addLogLineAtTime": "Zur Logblattzeit hinzufügen",
   "map.contextCoordinates": "Koordinaten",
   "admin.aria": "Admin-Seite",
   "admin.title": "Admin",

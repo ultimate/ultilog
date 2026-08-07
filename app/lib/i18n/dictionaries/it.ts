@@ -520,6 +520,8 @@ export const it: Dictionary = {
   "map.routeMapAria": "Mappa rotta OpenSeaMap",
   "map.noPositions": "Non sono ancora disponibili posizioni valide per questa mappa.",
   "map.addLogLineHere": "Aggiungi riga di log qui",
+  "map.addLogLineHereNow": "Aggiungi qui ora",
+  "map.addLogLineAtTime": "Aggiungi all’ora del foglio",
   "map.contextCoordinates": "Coordinate",
   "admin.aria": "Pagina admin",
   "admin.title": "Admin",

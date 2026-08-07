@@ -12,7 +12,7 @@ type LogLinesMapViewProps = {
   ariaLabel?: string;
   className?: string;
   emptyMessage?: string;
-  onAddLogLineAt?: (coordinate: { latitude: number; longitude: number }) => void;
+  onAddLogLineAt?: (coordinate: { latitude: number; longitude: number }, time?: string) => void;
 };
 
 type LogSheetsMapViewProps = {
