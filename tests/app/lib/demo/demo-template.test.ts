@@ -21,7 +21,8 @@ describe("immutable demo logbook template", () => {
     expect(sailboat.homePort).toBe("Basel");
 
     for (const boat of DEMO_LOGBOOK_TEMPLATE.boats) {
-      expect(Object.keys(boat.yachtData).sort()).toEqual(["Engine", "MMSI", "Manufacturer", "Safety"]);
+      expect(Object.keys(boat.yachtData).sort()).toEqual(["MMSI", "Manufacturer", "Safety"]);
+      expect(boat.engines?.length).toBeGreaterThan(0);
       const deviations = boat.deviationTable.map((row) => Number(row.deviation));
       expect(Math.min(...deviations)).toBeLessThanOrEqual(-14);
       expect(Math.max(...deviations)).toBeGreaterThanOrEqual(14);

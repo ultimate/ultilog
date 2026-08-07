@@ -63,6 +63,7 @@ const defaultLineForm: LineForm = {
   sailNote: "",
   motorMiles: "",
   motorHours: "",
+  engineHours: {},
   motorNote: "",
   remarks: "",
 };

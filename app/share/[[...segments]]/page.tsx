@@ -57,6 +57,8 @@ export default async function SharedLogbookPage({ params }: { params: Promise<{ 
             <article><span>Sail miles</span><strong>{formatMiles(metrics?.sailMiles ?? 0)} nm</strong></article>
             <article><span>Total miles</span><strong>{formatMiles(metrics?.totalMiles ?? 0)} nm</strong></article>
             <article><span>Duration</span><strong>{formatLogSheetDuration(metrics?.durationMinutes)}</strong></article>
+            <article><span>Total engine-hours</span><strong>{formatLogSheetDuration((metrics?.motorHours ?? 0) * 60)}</strong></article>
+            <article><span>Propulsion duration</span><strong>{formatLogSheetDuration(metrics?.propulsionDurationMinutes)}</strong></article>
           </section>
         ) : null}
 

@@ -56,6 +56,7 @@ export class LogSheetsRepository {
       logfactor: Number(boat.logfactor) > 0 ? Number(boat.logfactor) : 1,
       yachtData: parseJson<Record<string, string>>(boat.yacht_data),
       deviationTable: normalizeDeviationTable(parseJson<Boat["deviationTable"]>(boat.deviation_table ?? [])),
+      ...(boat.engines?.length ? { engines: boat.engines } : {}),
       ...(boat.wind_drift_table == null ? {} : { windDriftTable: normalizeWindDriftTable(parseJson<NonNullable<Boat["windDriftTable"]>>(boat.wind_drift_table)) }),
       ...(imageFromRow(boat) ? { image: imageFromRow(boat) } : {}),
     }));
@@ -64,7 +65,7 @@ export class LogSheetsRepository {
     const sheets: LogSheet[] = sheetRows.map((sheet) => ({
       ...mapStoredSheet(sheet),
       crew: (crewBySheet.get(sheet.id) ?? []).map(({ sheet_id, crew_member_id, sort_order, is_primary, embarkation_datetime, embarkation_position, disembarkation_datetime, disembarkation_position, image_data, image_mime_type, image_width, image_height, date_of_birth, place_of_birth, identity_document_type, identity_document_number, identity_document_issuing_date, identity_document_expiry_date, ...crew }) => ({ ...crew, ...(date_of_birth === undefined ? {} : { dateOfBirth: date_of_birth }), ...(place_of_birth === undefined ? {} : { placeOfBirth: place_of_birth }), ...(identity_document_type === undefined ? {} : { identityDocumentType: identity_document_type }), ...(identity_document_number === undefined ? {} : { identityDocumentNumber: identity_document_number }), ...(identity_document_issuing_date === undefined ? {} : { identityDocumentIssuingDate: identity_document_issuing_date }), ...(identity_document_expiry_date === undefined ? {} : { identityDocumentExpiryDate: identity_document_expiry_date }), id: unscopedId(crew_member_id), isPrimary: Boolean(is_primary), embarkationDateTime: embarkation_datetime, embarkationPosition: embarkation_position, disembarkationDateTime: disembarkation_datetime, disembarkationPosition: disembarkation_position, ...(imageFromRow({ image_data, image_mime_type, image_width, image_height }) ? { image: imageFromRow({ image_data, image_mime_type, image_width, image_height }) } : {}) })),
-      lines: (linesBySheet.get(sheet.id) ?? []).map(({ sheet_id, sort_order, position_name, weather_remark, log_nm, wind_direction, wind_strength, wind_unit, temperature_unit, waves, sea_unit, tide_unit, compass_course, magnetic_course, true_course, wind_drift, course_through_water, current_drift, course_over_ground, speed_kn, sail_miles, sail_note, motor_miles, motor_hours, motor_note, ...line }) => ({
+      lines: (linesBySheet.get(sheet.id) ?? []).map(({ sheet_id, sort_order, position_name, weather_remark, log_nm, wind_direction, wind_strength, wind_unit, temperature_unit, waves, sea_unit, tide_unit, compass_course, magnetic_course, true_course, wind_drift, course_through_water, current_drift, course_over_ground, speed_kn, sail_miles, sail_note, motor_miles, motor_hours, engineHours, motor_note, ...line }) => ({
         ...line,
         barometer: Number(line.barometer) || 0,
         weatherRemark: weather_remark ?? "",
@@ -89,7 +90,8 @@ export class LogSheetsRepository {
         sailMiles: Number(sail_miles) || 0,
         sailNote: sail_note,
         motorMiles: Number(motor_miles) || 0,
-        motorHours: Number(motor_hours) || 0,
+        ...(Object.keys(engineHours ?? {}).length ? { engineHours } : {}),
+        motorHours: Object.keys(engineHours ?? {}).length ? Object.values(engineHours ?? {}).reduce((sum, hours) => sum + Number(hours), 0) : Number(motor_hours) || 0,
         motorNote: motor_note,
       })),
     }));

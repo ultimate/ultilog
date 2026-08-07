@@ -66,7 +66,23 @@ class IsoDatetimeMigrationDatabase implements QueryableDatabase {
   }
 }
 
-
+class LegacyBoatEngineMigrationDatabase implements QueryableDatabase {
+  calls: Array<{ sql: string; params?: unknown[] }> = [];
+  placeholder(index: number) { return `$${index}`; }
+  async query<Row>(sql: string, params?: unknown[]): Promise<QueryResult<Row>> {
+    this.calls.push({ sql, params });
+    if (sql.includes("select id from schema_migrations")) {
+      return { rows: [{ id: "029_multi_engine_hours" }] as Row[] };
+    }
+    if (sql.includes("select boats.id as boat_id")) {
+      return { rows: [
+        { boat_id: "boat-1", yacht_data: JSON.stringify({ Manufacturer: "Yard", Engine: "Volvo Penta D2-55" }), engine_id: "boat-1:main-engine", model: "" },
+        { boat_id: "boat-2", yacht_data: { Engine: "Legacy engine", Safety: "EPIRB" }, engine_id: "boat-2:main-engine", model: "Modern model" },
+      ] as Row[] };
+    }
+    return { rows: [] };
+  }
+}
 
 
 class RemoveDateRangeDatabase implements QueryableDatabase {
@@ -74,9 +90,7 @@ class RemoveDateRangeDatabase implements QueryableDatabase {
   placeholder(index: number) { return `$${index}`; }
   async query<Row>(sql: string, params?: unknown[]): Promise<QueryResult<Row>> {
     this.calls.push({ sql, params });
-    if (sql === "select id, date_range, route from log_sheets") {
-      return { rows: [{ id: "legacy-sheet", date_range: "14 May 2026", route: JSON.stringify({ from: "A", to: "B", departed: "", arrived: "" }) }] as Row[] };
-    }
+    if (sql === "select id, date_range, route from log_sheets") return { rows: [{ id: "legacy-sheet", date_range: "14 May 2026", route: JSON.stringify({ from: "A", to: "B", departed: "", arrived: "" }) }] as Row[] };
     return { rows: [] };
   }
 }
@@ -109,16 +123,21 @@ describe("runMigrations", () => {
     }));
   });
 
+  it("moves the obsolete boat engine value to the first engine model", async () => {
+    const db = new LegacyBoatEngineMigrationDatabase();
+
+    await runMigrations(db);
+
+    expect(db.calls).toContainEqual({ sql: "update engines set model = $1 where id = $2", params: ["Volvo Penta D2-55", "boat-1:main-engine"] });
+    expect(db.calls).not.toContainEqual(expect.objectContaining({ params: ["Legacy engine", "boat-2:main-engine"] }));
+    expect(db.calls).toContainEqual({ sql: "update boats set yacht_data = $1 where id = $2", params: [JSON.stringify({ Manufacturer: "Yard" }), "boat-1"] });
+    expect(db.calls).toContainEqual({ sql: "update boats set yacht_data = $1 where id = $2", params: [JSON.stringify({ Safety: "EPIRB" }), "boat-2"] });
+  });
 
   it("moves the legacy sheet date into route timestamps before dropping the duplicate column", async () => {
     const db = new RemoveDateRangeDatabase();
-
     await removeLegacyLogSheetDateRange(db);
-
-    expect(db.calls).toContainEqual({
-      sql: "update log_sheets set route = $1 where id = $2",
-      params: [JSON.stringify({ from: "A", to: "B", departed: "2026-05-14T00:00:00+00:00", arrived: "2026-05-14T00:00:00+00:00" }), "legacy-sheet"],
-    });
+    expect(db.calls).toContainEqual({ sql: "update log_sheets set route = $1 where id = $2", params: [JSON.stringify({ from: "A", to: "B", departed: "2026-05-14T00:00:00+00:00", arrived: "2026-05-14T00:00:00+00:00" }), "legacy-sheet"] });
     expect(db.calls.at(-1)).toEqual({ sql: "alter table log_sheets drop column date_range", params: undefined });
   });
 

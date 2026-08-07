@@ -78,4 +78,15 @@ describe("calculateLogSheetMetrics", () => {
     expect(calculateLogSheetMetrics(lines, undefined, { stationaryDistanceThresholdNm: 0.1 }).motionDurationMinutes).toBe(60);
     expect(calculateLogSheetMetrics(lines, undefined, { stationaryDistanceThresholdNm: 1 }).motionDurationMinutes).toBe(0);
   });
+
+  it("sums engine-hours without double-counting simultaneous propulsion duration", () => {
+    const metrics = calculateLogSheetMetrics([
+      { ...baseLine, engineHours: { port: 1, starboard: 1 }, motorHours: 2 },
+      { ...baseLine, time: "01:00", engineHours: { port: 0.5 }, motorHours: 0.5 },
+    ]);
+
+    expect(metrics.engineHours).toEqual({ port: 1.5, starboard: 1 });
+    expect(metrics.motorHours).toBe(2.5);
+    expect(metrics.propulsionDurationMinutes).toBe(90);
+  });
 });

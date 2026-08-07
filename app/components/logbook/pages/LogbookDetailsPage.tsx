@@ -41,6 +41,11 @@ type CourseColumn = {
   isOptional: boolean;
 };
 
+function nonNegativeInputValue(value: string) {
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) && parsed < 0 ? "0" : value;
+}
+
 const signedCourseInput = { min: -180, max: 180 } as const;
 const unsignedCourseInput = { min: 0, max: 359 } as const;
 
@@ -127,6 +132,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const [courseTooltipPosition, setCourseTooltipPosition] = useState({ left: 0, top: 0 });
   const technicalCheckDrafts = technicalCheckDraftState.sheetId === activeSheet.id ? technicalCheckDraftState.drafts : {};
   const scannerWarnings = activeSheet.scannerWarnings ?? [];
+  const logLineEngines = (activeBoat.engines ?? []).filter((engine) => engine.role === "propulsion" && (!engine.archived || activeSheet.lines.some((line) => Number(line.engineHours?.[engine.id]) > 0)));
   const share = activeSheet.share ?? defaultLogSheetShareSettings;
   const shareDraft = shareDraftState.sheetId === activeSheet.id ? shareDraftState.share : share;
   const sharePath = sharingOwnerId ? `/share/${encodeURIComponent(sharingOwnerId)}/${encodeURIComponent(activeSheet.id)}` : `/share/${encodeURIComponent(activeSheet.id)}`;
@@ -205,15 +211,15 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     };
   }, [openCourseTooltip]);
 
-  const renderNumberInput = (field: keyof LineForm, options?: { min?: number; max?: number; step?: string }) => (
+  const renderNumberInput = (field: Exclude<keyof LineForm, "engineHours">, options?: { min?: number; max?: number; step?: string }) => (
     <input type="number" min={options?.min} max={options?.max} step={options?.step ?? "1"} value={lineForm[field]} onChange={(e) => setLineForm({ ...lineForm, [field]: e.target.value })} />
   );
-  const renderTextInput = (field: keyof LineForm, label?: string) => (
+  const renderTextInput = (field: Exclude<keyof LineForm, "engineHours">, label?: string) => (
     <input aria-label={label} value={lineForm[field]} onChange={(e) => setLineForm({ ...lineForm, [field]: e.target.value })} />
   );
 
 
-  const updateLineFormField = (field: keyof LineForm, value: string) => {
+  const updateLineFormField = (field: Exclude<keyof LineForm, "engineHours">, value: string) => {
     const sequence = courseConversionSequence.current + 1;
     courseConversionSequence.current = sequence;
     const updated = updateLogLineFormForInput(lineForm, { field, value }, { boat: activeBoat });
@@ -225,7 +231,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
       .catch(() => setLineForm({ ...lineForm, [field]: value }));
   };
 
-  const renderCourseInput = (field: keyof LineForm, options: { min?: number; max?: number }) => (
+  const renderCourseInput = (field: Exclude<keyof LineForm, "engineHours">, options: { min?: number; max?: number }) => (
     <input
       type="number"
       min={options.min}
@@ -351,7 +357,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
         </td>
       ))}<td>{renderNumberInput("speedKn", { step: "0.1" })}</td><td>{renderNumberInput("logNm", { step: "0.1" })}</td>
       <td><div className="compound-inputs labeled-inputs"><label><span>[nm]</span>{renderNumberInput("sailMiles", { step: "0.1" })}</label><label><span>[note]</span>{renderTextInput("sailNote", t("details.sailNote"))}</label></div></td>
-      <td><div className="compound-inputs labeled-inputs"><label><span>[nm]</span>{renderNumberInput("motorMiles", { step: "0.1" })}</label><label><span>[h]</span>{renderNumberInput("motorHours", { step: "0.1" })}</label><label><span>[note]</span>{renderTextInput("motorNote", t("details.motorNote"))}</label></div></td>
+      <td><div className="compound-inputs labeled-inputs"><label><span>[nm]</span>{renderNumberInput("motorMiles", { step: "0.1" })}</label>{logLineEngines.map((engine) => <label key={engine.id}><span>{engine.label} [h]</span><input aria-label={`${engine.name} ${t("details.engineRuntime")}`} type="number" min="0" step="0.1" value={lineForm.engineHours?.[engine.id] ?? ""} onChange={(event) => setLineForm({ ...lineForm, engineHours: { ...lineForm.engineHours, [engine.id]: nonNegativeInputValue(event.target.value) } })} /></label>)}<label><span>[note]</span>{renderTextInput("motorNote", t("details.motorNote"))}</label></div></td>
       <td>{renderTextInput("remarks")}</td><td colSpan={2}><div className="table-actions"><button type="button" onClick={saveLineFromFields}>{editingLineIndex === null ? t("details.saveLine") : "💾"}</button><button type="button" className="ghost-button" onClick={cancelLineEdit}>{t("common.cancel")}</button></div></td>
     </tr>
   );
@@ -787,8 +793,12 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                   <strong>{activeSheetSummary.motionDuration}</strong>
                 </article>
                 <article>
-                  <span>{t("dashboard.motorHours")}</span>
+                  <span>{t("dashboard.totalEngineHours")}</span>
                   <strong>{activeSheetSummary.motorHoursDuration}</strong>
+                </article>
+                <article>
+                  <span>{t("dashboard.propulsionDuration")}</span>
+                  <strong>{activeSheetSummary.propulsionDuration}</strong>
                 </article>
               </section>
 
@@ -819,9 +829,9 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                         <tr key={`${line.time}-${line.position}-${index}`}>
                           <td>{formatTime(line.time)}</td><td>{coordinateToInput(line.latitude, "lat", coordinateFormat)}</td><td>{coordinateToInput(line.longitude, "lon", coordinateFormat)}</td><td>{line.weather}</td><td>{renderClampedLogText(t("details.weatherRemark"), line.weatherRemark)}</td><td>{line.temperature} {line.temperatureUnit}</td><td>{line.barometer}</td><td>{line.windDirection} {line.windStrength} {line.windUnit}</td><td>{line.waves} {line.seaUnit}</td><td>{line.tide} {line.tideUnit}</td><td>{line.moon}</td>
                           {courseConversionColumns.map((column) => (!column.isOptional || showCourseColumns) && (
-                            <td className={column.isOptional ? "optional-course-cell" : undefined} key={`${line.time}-${index}-${column.field}`}>{line[column.field as keyof LogLine]}</td>
+                            <td className={column.isOptional ? "optional-course-cell" : undefined} key={`${line.time}-${index}-${column.field}`}>{line[column.field]}</td>
                           ))}
-                          <td>{line.speedKn}</td><td>{line.logNm}</td><td><span className="log-line-distance-summary">{line.sailMiles} nm</span>{renderClampedLogText(t("details.sailNote"), line.sailNote)}</td><td><span className="log-line-distance-summary">{line.motorMiles} nm · {line.motorHours} h</span>{renderClampedLogText(t("details.motorNote"), line.motorNote)}</td><td>{renderClampedLogText(t("details.remarksEvent"), line.remarks)}</td>
+                          <td>{line.speedKn}</td><td>{line.logNm}</td><td><span className="log-line-distance-summary">{line.sailMiles} nm</span>{renderClampedLogText(t("details.sailNote"), line.sailNote)}</td><td><span className="log-line-distance-summary">{line.motorMiles} nm · {Object.entries(line.engineHours ?? {}).map(([id, hours]) => `${activeBoat.engines?.find((engine) => engine.id === id)?.label ?? id} ${hours} h`).join(" · ") || `${line.motorHours ?? 0} h`}</span>{renderClampedLogText(t("details.motorNote"), line.motorNote)}</td><td>{renderClampedLogText(t("details.remarksEvent"), line.remarks)}</td>
                           <td><button type="button" className="edit-chip" disabled={isActiveSheetLocked} onClick={() => startEditingLine(line, index)}>✏️</button></td>
                           <td><button type="button" className="edit-chip" disabled={isActiveSheetLocked} onClick={() => deleteLine(index)}>🗑️</button></td>
                         </tr>

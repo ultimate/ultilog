@@ -20,11 +20,11 @@ export const sampleBoats: Boat[] = [
       Draft: "1.9 m",
       Displacement: "7.8 t",
       "Rig / sail area": "Masthead sloop · 78 m²",
-      Engine: "Volvo Penta · 55 HP",
       Propeller: "3-blade folding",
       Electronics: "AIS, GPS plotter, VHF, radar",
       Safety: "Liferaft, EPIRB, jacklines",
     },
+    engines: [{ id: "main-engine", name: "Main engine", label: "Main", role: "propulsion", manufacturer: "Volvo Penta", model: "55 HP" }],
     deviationTable: defaultDeviationTable(),
   },
   {
@@ -46,11 +46,14 @@ export const sampleBoats: Boat[] = [
       Draft: "0.9 m",
       Displacement: "6.1 t",
       "Rig / sail area": "n/a",
-      Engine: "Twin diesel · 2 × 220 HP",
       Propeller: "Shaft drive",
       Electronics: "AIS, GPS plotter, VHF",
       Safety: "Liferaft, flares, lifejackets",
     },
+    engines: [
+      { id: "port-engine", name: "Port engine", label: "Port", role: "propulsion", model: "Diesel · 220 HP" },
+      { id: "starboard-engine", name: "Starboard engine", label: "Stbd", role: "propulsion", model: "Diesel · 220 HP" },
+    ],
     deviationTable: defaultDeviationTable(),
   },
 ];

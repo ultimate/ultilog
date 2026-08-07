@@ -1,4 +1,4 @@
-import type { LineForm, TemperatureUnit, WindUnit } from "../../models/logbook";
+import type { LineForm, LineFormField, TemperatureUnit, WindUnit } from "../../models/logbook";
 import type { MeteoSnapshot } from "./types";
 import { createMeteoSourceRemarkParts, type MeteoSourceRemarkPart } from "./remarks";
 
@@ -40,7 +40,7 @@ export function meteoSnapshotToLogLineAutofill(
   return { fields, remarkParts: createMeteoSourceRemarkParts(snapshot) };
 }
 
-function setField<TField extends keyof LineForm>(fields: Partial<LineForm>, field: TField, value: string | number | undefined) {
+function setField<TField extends LineFormField>(fields: Partial<LineForm>, field: TField, value: string | number | undefined) {
   if (value !== undefined && value !== "") fields[field] = String(value);
 }
 

@@ -1,15 +1,23 @@
-import type { Boat, BoatRow, StoredImage } from "../../models/logbook";
+import { defaultMainEngine, type Boat, type BoatEngine, type BoatRow, type StoredImage } from "../../models/logbook";
 import type { QueryableDatabase } from "../db/logbook-database";
 
 export class BoatsRepository {
   constructor(private db: QueryableDatabase) {}
 
   async findAll(ownerId: string) {
-    return (await this.db.query<BoatRow>(`select * from boats where owner_id = ${this.db.placeholder(1)} order by name`, [ownerId])).rows;
+    const boats = (await this.db.query<BoatRow>(`select * from boats where owner_id = ${this.db.placeholder(1)} order by name`, [ownerId])).rows;
+    const engines = (await this.db.query<EngineRow>(`select engines.* from engines join boats on boats.id = engines.boat_id where boats.owner_id = ${this.db.placeholder(1)} order by engines.boat_id, engines.sort_order`, [ownerId])).rows;
+    return boats.map((boat) => {
+      const boatEngines = engines.filter((engine) => engine.boat_id === boat.id).map(engineFromRow);
+      return boatEngines.length ? { ...boat, engines: boatEngines } : boat;
+    });
   }
 
   async findByScopedId(id: string) {
-    return (await this.db.query<BoatRow>(`select * from boats where id = ${this.db.placeholder(1)} limit 1`, [id])).rows[0];
+    const boat = (await this.db.query<BoatRow>(`select * from boats where id = ${this.db.placeholder(1)} limit 1`, [id])).rows[0];
+    if (!boat) return undefined;
+    const engines = (await this.db.query<EngineRow>(`select * from engines where boat_id = ${this.db.placeholder(1)} order by sort_order`, [id])).rows;
+    return { ...boat, engines: engines.map(engineFromRow) };
   }
 
   async deleteAll(ownerId: string) {
@@ -21,11 +29,27 @@ export class BoatsRepository {
       `insert into boats (id, archived, name, type, registration, flag_state, home_port, owner, dimensions, logfactor, yacht_data, deviation_table, wind_drift_table, image_data, image_mime_type, image_width, image_height, owner_id) values (${this.values(18)})`,
       [scopedId(ownerId, boat.id), boat.archived ? 1 : 0, boat.name, boat.type, boat.registration, boat.flagState, boat.homePort, boat.owner, boat.dimensions, boat.logfactor, JSON.stringify(boat.yachtData), JSON.stringify(boat.deviationTable), JSON.stringify(boat.windDriftTable ?? []), ...imageValues(boat.image), ownerId],
     );
+    // Replacements normally cascade through boats, but explicitly clear equipment
+    // rows as well so legacy SQLite databases with foreign keys previously disabled
+    // cannot retain stale engine sort positions.
+    await this.db.query(`delete from engines where boat_id = ${this.db.placeholder(1)}`, [scopedId(ownerId, boat.id)]);
+    for (const [sortOrder, engine] of (boat.engines?.length ? boat.engines : [defaultMainEngine()]).entries()) {
+      await this.db.query(
+        `insert into engines (id, boat_id, sort_order, name, short_label, role, archived, manufacturer, model, serial_number) values (${this.values(10)})`,
+        [`${scopedId(ownerId, boat.id)}:${engine.id}`, scopedId(ownerId, boat.id), sortOrder, engine.name, engine.label, engine.role, engine.archived ? 1 : 0, engine.manufacturer ?? "", engine.model ?? "", engine.serialNumber ?? ""],
+      );
+    }
   }
 
   private values(count: number) {
     return Array.from({ length: count }, (_, index) => this.db.placeholder(index + 1)).join(", ");
   }
+}
+
+type EngineRow = { id: string; boat_id: string; name: string; short_label: string; role: BoatEngine["role"]; archived: number | boolean; manufacturer: string; model: string; serial_number: string };
+
+function engineFromRow(row: EngineRow): BoatEngine {
+  return { id: row.id.slice(row.boat_id.length + 1), name: row.name, label: row.short_label, role: row.role, archived: Boolean(row.archived), manufacturer: row.manufacturer, model: row.model, serialNumber: row.serial_number };
 }
 
 export function imageValues(image?: StoredImage): [string | null, string | null, number | null, number | null] {
