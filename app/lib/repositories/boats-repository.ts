@@ -18,8 +18,8 @@ export class BoatsRepository {
 
   async insert(boat: Boat, ownerId: string) {
     await this.db.query(
-      `insert into boats (id, name, type, registration, flag_state, home_port, owner, dimensions, logfactor, yacht_data, deviation_table, wind_drift_table, image_data, image_mime_type, image_width, image_height, owner_id) values (${this.values(17)})`,
-      [scopedId(ownerId, boat.id), boat.name, boat.type, boat.registration, boat.flagState, boat.homePort, boat.owner, boat.dimensions, boat.logfactor, JSON.stringify(boat.yachtData), JSON.stringify(boat.deviationTable), JSON.stringify(boat.windDriftTable ?? []), ...imageValues(boat.image), ownerId],
+      `insert into boats (id, archived, name, type, registration, flag_state, home_port, owner, dimensions, logfactor, yacht_data, deviation_table, wind_drift_table, image_data, image_mime_type, image_width, image_height, owner_id) values (${this.values(18)})`,
+      [scopedId(ownerId, boat.id), boat.archived ? 1 : 0, boat.name, boat.type, boat.registration, boat.flagState, boat.homePort, boat.owner, boat.dimensions, boat.logfactor, JSON.stringify(boat.yachtData), JSON.stringify(boat.deviationTable), JSON.stringify(boat.windDriftTable ?? []), ...imageValues(boat.image), ownerId],
     );
   }
 

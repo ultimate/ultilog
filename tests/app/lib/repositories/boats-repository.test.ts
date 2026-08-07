@@ -47,8 +47,8 @@ describe("BoatsRepository", () => {
     await new BoatsRepository(db).insert(boat, "repository-user");
 
     expect(db.calls[0].sql).toContain("insert into boats");
-    expect(db.calls[0].sql).toContain("$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17");
-    expect(db.calls[0].values).toEqual([`repository-user:${boat.id}`, boat.name, boat.type, boat.registration, boat.flagState, boat.homePort, boat.owner, boat.dimensions, boat.logfactor, JSON.stringify(boat.yachtData), JSON.stringify(boat.deviationTable), JSON.stringify(boat.windDriftTable ?? []), null, null, null, null, "repository-user"]);
+    expect(db.calls[0].sql).toContain("$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18");
+    expect(db.calls[0].values).toEqual([`repository-user:${boat.id}`, boat.archived ? 1 : 0, boat.name, boat.type, boat.registration, boat.flagState, boat.homePort, boat.owner, boat.dimensions, boat.logfactor, JSON.stringify(boat.yachtData), JSON.stringify(boat.deviationTable), JSON.stringify(boat.windDriftTable ?? []), null, null, null, null, "repository-user"]);
   });
 
   it("inserts boat image metadata when present", async () => {
@@ -57,7 +57,7 @@ describe("BoatsRepository", () => {
 
     await new BoatsRepository(db).insert({ ...boat, image }, "repository-user");
 
-    expect(db.calls[0].values?.slice(12, 16)).toEqual([image.data, image.mimeType, image.width, image.height]);
+    expect(db.calls[0].values?.slice(13, 17)).toEqual([image.data, image.mimeType, image.width, image.height]);
   });
 
   it("maps loaded boat image metadata back to an image payload", () => {

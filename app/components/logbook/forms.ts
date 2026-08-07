@@ -1,6 +1,6 @@
 import { dateTimeLocalFromStamp, timezoneOffsetFromStamp } from "./date-utils";
 import { defaultDeviationTable, defaultWindDriftTable, normalizeDeviationTable, normalizeWindDriftTable, type Boat, type BoatForm, type CrewForm, type LineForm, type LogLine, type LogSheet, type PersistedLogbook, type SheetForm } from "../../models/logbook";
-export const emptyBoat: Boat = { id: "", name: "", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: { Manufacturer: "", MMSI: "", Engine: "", Safety: "" }, deviationTable: defaultDeviationTable(), windDriftTable: defaultWindDriftTable(), image: undefined };
+export const emptyBoat: Boat = { id: "", archived: false, name: "", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: { Manufacturer: "", MMSI: "", Engine: "", Safety: "" }, deviationTable: defaultDeviationTable(), windDriftTable: defaultWindDriftTable(), image: undefined };
 export const emptySheet: LogSheet = { id: "", title: "", status: "Draft", dateRange: new Date().toISOString().slice(0, 10), boatId: "", route: { from: "", to: "", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], image: undefined, lines: [] };
 export const defaultLogbook: PersistedLogbook = { boats: [], crewMembers: [], sheets: [] };
 

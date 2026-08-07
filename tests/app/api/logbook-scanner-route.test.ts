@@ -120,6 +120,19 @@ describe("logbook scanner endpoint", () => {
     expect(mockedScanner).not.toHaveBeenCalled();
   });
 
+  it("rejects archived boats", async () => {
+    mockedAuth.mockResolvedValueOnce(session);
+    mockedReadLogbook.mockResolvedValueOnce({ ...logbook, boats: [{ ...boat, archived: true }] });
+    const formData = new FormData();
+    formData.set("boatId", boat.id);
+    formData.append("files", imageFile());
+
+    const response = await POST(scannerRequest(formData));
+
+    expect(response.status).toBe(404);
+    expect(mockedScanner).not.toHaveBeenCalled();
+  });
+
 
   it("rejects oversized uploads", async () => {
     mockedAuth.mockResolvedValueOnce(session);

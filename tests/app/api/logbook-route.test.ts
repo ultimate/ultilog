@@ -28,6 +28,7 @@ describe("logbook endpoint", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockedIsActiveDemoSandbox.mockResolvedValue(false);
+    mockedReadLogbook.mockResolvedValue(logbook);
   });
 
   it("requires authentication for reads", async () => {
@@ -96,6 +97,61 @@ describe("logbook endpoint", () => {
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual(logbook);
     expect(mockedWriteLogbook).toHaveBeenCalledWith(logbook, "user-1");
+  });
+
+  it("rejects deleting a boat that is referenced by a persisted logsheet", async () => {
+    const boat = { id: "boat-1", archived: false, name: "Aurora", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [] };
+    const sheet = { id: "sheet-1", title: "Trip", status: "Draft" as const, dateRange: "2026-07-03", boatId: boat.id, route: { from: "A", to: "B", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] };
+    mockedAuth.mockResolvedValueOnce(session);
+    mockedReadLogbook.mockResolvedValueOnce({ boats: [boat], crewMembers: [], sheets: [sheet] });
+
+    const response = await PUT(new Request("https://ultilog.test/api/logbook", {
+      method: "PUT",
+      body: JSON.stringify({ boats: [], crewMembers: [], sheets: [] }),
+    }));
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toMatchObject({ code: "referenced_boat_deleted" });
+    expect(mockedWriteLogbook).not.toHaveBeenCalled();
+  });
+
+  it("allows legacy boat and logsheet IDs to be normalized without treating the boat as deleted", async () => {
+    const boat = { id: "legacy-boat", archived: false, name: "Aurora", type: "Sail" as const, registration: "CH-1", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [] };
+    const sheet = { id: "legacy-sheet", title: "Trip", status: "Draft" as const, dateRange: "2026-07-03", boatId: boat.id, route: { from: "A", to: "B", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] };
+    const normalized = { boats: [{ ...boat, id: "9adc47f1-0cd6-4298-b68a-80d6600e481b" }], crewMembers: [], sheets: [{ ...sheet, id: "95ed6e76-d127-4e9e-a653-b1fe28a29345", boatId: "9adc47f1-0cd6-4298-b68a-80d6600e481b" }] };
+    mockedAuth.mockResolvedValueOnce(session);
+    mockedReadLogbook.mockResolvedValueOnce({ boats: [boat], crewMembers: [], sheets: [sheet] });
+    mockedWriteLogbook.mockResolvedValueOnce(normalized);
+
+    const response = await PUT(new Request("https://ultilog.test/api/logbook", { method: "PUT", body: JSON.stringify(normalized) }));
+
+    expect(response.status).toBe(200);
+    expect(mockedWriteLogbook).toHaveBeenCalledWith(normalized, "user-1");
+  });
+
+  it("allows archiving and restoring a referenced boat", async () => {
+    const boat = { id: "boat-1", archived: false, name: "Aurora", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [] };
+    const sheet = { id: "sheet-1", title: "Trip", status: "Draft" as const, dateRange: "2026-07-03", boatId: boat.id, route: { from: "A", to: "B", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] };
+    const current = { boats: [boat], crewMembers: [], sheets: [sheet] };
+    const archived = { ...current, boats: [{ ...boat, archived: true }] };
+    mockedAuth.mockResolvedValue(session);
+    mockedReadLogbook.mockResolvedValueOnce(current).mockResolvedValueOnce(archived);
+    mockedWriteLogbook.mockImplementation(async (value) => value);
+
+    expect((await PUT(new Request("https://ultilog.test/api/logbook", { method: "PUT", body: JSON.stringify(archived) }))).status).toBe(200);
+    expect((await PUT(new Request("https://ultilog.test/api/logbook", { method: "PUT", body: JSON.stringify(current) }))).status).toBe(200);
+  });
+
+  it("rejects assigning an archived boat to a new logsheet", async () => {
+    const boat = { id: "boat-1", archived: true, name: "Aurora", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [] };
+    const next = { boats: [boat], crewMembers: [], sheets: [{ id: "sheet-1", title: "Trip", status: "Draft" as const, dateRange: "", boatId: boat.id, route: { from: "", to: "", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] }] };
+    mockedAuth.mockResolvedValueOnce(session);
+    mockedReadLogbook.mockResolvedValueOnce({ boats: [boat], crewMembers: [], sheets: [] });
+
+    const response = await PUT(new Request("https://ultilog.test/api/logbook", { method: "PUT", body: JSON.stringify(next) }));
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toMatchObject({ code: "archived_boat_for_new_sheet" });
   });
 
   it("removes images and public sharing from demo writes", async () => {

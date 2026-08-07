@@ -44,6 +44,7 @@ export class LogSheetsRepository {
     const linesBySheet = groupBy(lineRows, (line) => line.sheet_id);
     const boats: Boat[] = boatRows.map((boat) => ({
       id: unscopedId(boat.id),
+      archived: Boolean(boat.archived),
       name: boat.name,
       type: boat.type,
       registration: boat.registration,

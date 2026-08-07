@@ -49,7 +49,7 @@ export async function POST(request: Request) {
   }
 
   const [logbook, user] = await Promise.all([readLogbook(session.user.id), findUserById(session.user.id)]);
-  if (!logbook.boats.some((boat) => boat.id === boatId)) {
+  if (!logbook.boats.some((boat) => boat.id === boatId && !boat.archived)) {
     return scannerError("invalid_boat", "The selected boat is not available in your logbook.", 404);
   }
 
