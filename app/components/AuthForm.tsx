@@ -149,7 +149,13 @@ export function AuthForm({ mode, footer }: Props) {
       <section className="partner-banner" aria-label={t("landing.partnerLabel")}>
         <p><span>{t("landing.partnerEyebrow")}</span><strong>{t("landing.partnerTitle")}</strong></p>
         <a href="https://respocean.ch/" target="_blank" rel="noreferrer" aria-label="Respocean">
-          <Image src="/partners/respocean.svg" alt="Respocean" width={340} height={72} unoptimized />
+          <Image
+            src="https://respocean.ch/wp-content/uploads/2025/07/cropped-Respocean-Schrift-minimal.png"
+            alt="Respocean"
+            width={340}
+            height={72}
+            unoptimized
+          />
         </a>
       </section>
     </main>
