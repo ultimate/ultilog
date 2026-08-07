@@ -1,5 +1,6 @@
 import { EntityImage } from "../EntityImage";
 import { useI18n } from "../../../lib/i18n";
+import { useDateTimeFormat } from "../../../lib/DateTimeFormatProvider";
 import { formatMiles } from "../../../lib/format-number";
 import { useEffect, useRef, useState, type CSSProperties, type Dispatch, type FormEvent, type MouseEvent, type SetStateAction } from "react";
 import type {
@@ -59,6 +60,7 @@ type LogbookDetailsPageProps = Record<string, any>;
 
 export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const { t } = useI18n();
+  const { formatTime } = useDateTimeFormat();
   const {
     isBackendReady,
     hasSelectedSheet,
@@ -815,7 +817,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                       {showAddLine && renderLineEditor("new")}
                       {activeSheet.lines.map((line, index) => editingLineIndex === index ? renderLineEditor(`edit-${index}`) : (
                         <tr key={`${line.time}-${line.position}-${index}`}>
-                          <td>{line.time}</td><td>{coordinateToInput(line.latitude, "lat", coordinateFormat)}</td><td>{coordinateToInput(line.longitude, "lon", coordinateFormat)}</td><td>{line.weather}</td><td>{renderClampedLogText(t("details.weatherRemark"), line.weatherRemark)}</td><td>{line.temperature} {line.temperatureUnit}</td><td>{line.barometer}</td><td>{line.windDirection} {line.windStrength} {line.windUnit}</td><td>{line.waves} {line.seaUnit}</td><td>{line.tide} {line.tideUnit}</td><td>{line.moon}</td>
+                          <td>{formatTime(line.time)}</td><td>{coordinateToInput(line.latitude, "lat", coordinateFormat)}</td><td>{coordinateToInput(line.longitude, "lon", coordinateFormat)}</td><td>{line.weather}</td><td>{renderClampedLogText(t("details.weatherRemark"), line.weatherRemark)}</td><td>{line.temperature} {line.temperatureUnit}</td><td>{line.barometer}</td><td>{line.windDirection} {line.windStrength} {line.windUnit}</td><td>{line.waves} {line.seaUnit}</td><td>{line.tide} {line.tideUnit}</td><td>{line.moon}</td>
                           {courseConversionColumns.map((column) => (!column.isOptional || showCourseColumns) && (
                             <td className={column.isOptional ? "optional-course-cell" : undefined} key={`${line.time}-${index}-${column.field}`}>{line[column.field as keyof LogLine]}</td>
                           ))}

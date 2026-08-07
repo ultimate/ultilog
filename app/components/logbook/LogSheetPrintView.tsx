@@ -1,6 +1,7 @@
 import type { Boat, LogLine, LogSheet } from "../../models/logbook";
 import Image from "next/image";
 import { useI18n } from "../../lib/i18n";
+import { useDateTimeFormat } from "../../lib/DateTimeFormatProvider";
 import { paginatePrintLogLines, PRINT_LOG_ROWS_PER_PAGE } from "./print-pagination";
 import type { LogSheetMetrics } from "../../domain/logbook/sheet-metrics";
 import { calculateLogSheetMetrics, formatLogSheetDuration } from "../../domain/logbook/sheet-metrics";
@@ -44,6 +45,7 @@ export type LogSheetPrintViewProps =
 
 export function LogSheetPrintView(props: LogSheetPrintViewProps) {
   const { locale, t } = useI18n();
+  const { formatDateTime, formatTime } = useDateTimeFormat();
   const showCourseColumns = props.showCourseColumns ?? true;
   const templateVariant: LogSheetPrintVariant = showCourseColumns ? "full" : "compact";
   const logColumns = getPrintLogColumns(templateVariant);
@@ -73,9 +75,9 @@ export function LogSheetPrintView(props: LogSheetPrintViewProps) {
               <p className="print-kicker">{props.mode === "filled" ? t("print.filledSheet") : t("print.emptySheet")}</p>
               <h1>{valueOrBlank(sheet?.title, t("print.emptySheet"))}</h1>
               <div className="print-master-grid">
-                <PrintField label={t("print.field.departed")} value={sheet?.route.departed} />
+                <PrintField label={t("print.field.departed")} value={formatDateTime(sheet?.route.departed)} />
                 <PrintField label={t("print.field.from")} value={sheet?.route.from} />
-                <PrintField label={t("print.field.arrived")} value={sheet?.route.arrived} />
+                <PrintField label={t("print.field.arrived")} value={formatDateTime(sheet?.route.arrived)} />
                 <PrintField label={t("print.field.to")} value={sheet?.route.to} />
               </div>
             </div>
@@ -106,7 +108,7 @@ export function LogSheetPrintView(props: LogSheetPrintViewProps) {
               </tr>
             </thead>
             <tbody>
-              {page.lines.map((line, index) => renderLogRow(line, index, logColumns))}
+              {page.lines.map((line, index) => renderLogRow(line, index, logColumns, formatTime))}
             </tbody>
           </table>
 
@@ -135,18 +137,18 @@ function getSummary(summary: LogSheetPrintSummary | undefined, sheet: LogSheet |
   };
 }
 
-function renderLogRow(line: LogLine | undefined, index: number, columns: readonly PrintLogColumn[]) {
+function renderLogRow(line: LogLine | undefined, index: number, columns: readonly PrintLogColumn[], formatTime: (value?: string | null) => string) {
   return (
     <tr key={index}>
-      {columns.map((column) => renderLogCell(column, line))}
+      {columns.map((column) => renderLogCell(column, line, formatTime))}
     </tr>
   );
 }
 
-function renderLogCell(column: PrintLogColumn, line: LogLine | undefined) {
+function renderLogCell(column: PrintLogColumn, line: LogLine | undefined, formatTime: (value?: string | null) => string) {
   const value = (() => {
     switch (column.id) {
-      case "time": return line?.time;
+      case "time": return formatTime(line?.time);
       case "position": return line?.position || formatLatLon(line);
       case "weather": return joinValues(line?.weather, line?.weatherRemark);
       case "temperature": return formatNumber(line?.temperature, line?.temperatureUnit);
