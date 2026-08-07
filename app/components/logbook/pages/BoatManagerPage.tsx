@@ -3,7 +3,7 @@ import { flagGroups, flagOptionEmoji } from "../../../lib/flags";
 import { useI18n } from "../../../lib/i18n";
 import { useDateTimeFormat } from "../../../lib/DateTimeFormatProvider";
 import { useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
-import { windDriftSailSettings, type Boat, type BoatForm, type BoatType, type PersistedLogbook } from "../../../models/logbook";
+import { windDriftSailSettings, type Boat, type BoatEngineRole, type BoatForm, type BoatType, type PersistedLogbook } from "../../../models/logbook";
 import { boatToForm, defaultBoatForm } from "../forms";
 import { modulePath } from "../persistence";
 import { ManagerShell } from "../../managers/ManagerShell";
@@ -236,15 +236,26 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                 }
               />
             </label>
-            <label>
-              {t("boats.engine")}
-              <input
-                value={boatForm.engine}
-                onChange={(e) =>
-                  setBoatForm({ ...boatForm, engine: e.target.value })
-                }
-              />
-            </label>
+            <fieldset className="wide-field engine-manager">
+              <legend className="eyebrow">{t("boats.engines")}</legend>
+              <p>{t("boats.enginesHelp")}</p>
+              {boatForm.engines.map((engine, index) => (
+                <div className="engine-manager-row" key={engine.id}>
+                  <input aria-label={t("boats.engineName")} required  placeholder={t("boats.engineName")} value={engine.name} onChange={(event) => setBoatForm({ ...boatForm, engines: boatForm.engines.map((candidate, candidateIndex) => candidateIndex === index ? { ...candidate, name: event.target.value } : candidate) })} />
+                  <input aria-label={t("boats.engineLabel")} required  placeholder={t("boats.engineLabel")} value={engine.label} onChange={(event) => setBoatForm({ ...boatForm, engines: boatForm.engines.map((candidate, candidateIndex) => candidateIndex === index ? { ...candidate, label: event.target.value } : candidate) })} />
+                  <select aria-label={t("boats.engineRole")} value={engine.role} onChange={(event) => setBoatForm({ ...boatForm, engines: boatForm.engines.map((candidate, candidateIndex) => candidateIndex === index ? { ...candidate, role: event.target.value as BoatEngineRole } : candidate) })}>
+                    <option value="propulsion">{t("boats.engineRole.propulsion")}</option><option value="generator">{t("boats.engineRole.generator")}</option><option value="auxiliary">{t("boats.engineRole.auxiliary")}</option>
+                  </select>
+                  <input aria-label={t("boats.engineManufacturer")} placeholder={t("boats.engineManufacturer")} value={engine.manufacturer ?? ""} onChange={(event) => setBoatForm({ ...boatForm, engines: boatForm.engines.map((candidate, candidateIndex) => candidateIndex === index ? { ...candidate, manufacturer: event.target.value } : candidate) })} />
+                  <input aria-label={t("boats.engineModel")} placeholder={t("boats.engineModel")} value={engine.model ?? ""} onChange={(event) => setBoatForm({ ...boatForm, engines: boatForm.engines.map((candidate, candidateIndex) => candidateIndex === index ? { ...candidate, model: event.target.value } : candidate) })} />
+                  <input aria-label={t("boats.engineSerial")} placeholder={t("boats.engineSerial")} value={engine.serialNumber ?? ""} onChange={(event) => setBoatForm({ ...boatForm, engines: boatForm.engines.map((candidate, candidateIndex) => candidateIndex === index ? { ...candidate, serialNumber: event.target.value } : candidate) })} />
+                  <button type="button" disabled={index === 0} onClick={() => setBoatForm({ ...boatForm, engines: boatForm.engines.map((candidate, candidateIndex) => candidateIndex === index - 1 ? engine : candidateIndex === index ? boatForm.engines[index - 1] : candidate) })}>↑</button>
+                  <button type="button" disabled={index === boatForm.engines.length - 1} onClick={() => setBoatForm({ ...boatForm, engines: boatForm.engines.map((candidate, candidateIndex) => candidateIndex === index + 1 ? engine : candidateIndex === index ? boatForm.engines[index + 1] : candidate) })}>↓</button>
+                  <label><input type="checkbox" checked={Boolean(engine.archived)} onChange={(event) => setBoatForm({ ...boatForm, engines: boatForm.engines.map((candidate, candidateIndex) => candidateIndex === index ? { ...candidate, archived: event.target.checked } : candidate) })} />{t("boats.engineArchived")}</label>
+                </div>
+              ))}
+              <button type="button" onClick={() => setBoatForm({ ...boatForm, engines: [...boatForm.engines, { id: crypto.randomUUID(), name: t("boats.newEngine"), label: `E${boatForm.engines.length + 1}`, role: "propulsion" }] })}>{t("boats.addEngine")}</button>
+            </fieldset>
 
             <div className="image-form-field wide-field">
               <p className="eyebrow">Image</p>

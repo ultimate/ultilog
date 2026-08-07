@@ -1,7 +1,7 @@
 import type { Locale } from "../i18n/translations";
-import type { LineForm } from "../../models/logbook-forms";
+import type { LineFormField } from "../../models/logbook-forms";
 
-export type ScannerField = keyof LineForm;
+export type ScannerField = LineFormField;
 export type ScannerFieldAliases = Readonly<Record<Locale, readonly string[]>>;
 
 /**

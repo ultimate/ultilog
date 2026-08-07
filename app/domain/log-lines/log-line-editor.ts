@@ -1,11 +1,11 @@
-import type { Boat, LineForm } from "../../models/logbook";
+import type { Boat, LineForm, LineFormField } from "../../models/logbook";
 import { calculateCourseConversion, type CourseConversionInput, type CourseConversionLookupOptions, type DeviationTable, type WindDriftTable } from "../nautical/course-conversion";
 import { normalizeCoordinate, parseCoordinate, type CoordinateAxis } from "../nautical/coordinates";
 
 type CourseFieldName = typeof courseInputFieldNames[number];
 
 export type LogLineFormUpdate = {
-  field: keyof LineForm;
+  field: LineFormField;
   value: string;
 };
 
@@ -15,7 +15,7 @@ export type LogLineFormUpdateContext = {
 };
 
 const courseInputFieldNames = ["compassCourse", "deviation", "magneticCourse", "variation", "trueCourse", "windDrift", "courseThroughWater", "currentDrift", "courseOverGround"] as const;
-const coordinateAxes: Partial<Record<keyof LineForm, CoordinateAxis>> = { latitude: "lat", longitude: "lon" };
+const coordinateAxes: Partial<Record<LineFormField, CoordinateAxis>> = { latitude: "lat", longitude: "lon" };
 
 export function updateLogLineFormForInput(form: LineForm, update: LogLineFormUpdate, context: LogLineFormUpdateContext = {}) {
   const nextForm = applyFieldUpdate(form, update);
@@ -145,7 +145,7 @@ function courseFormFromConversion(conversion: CourseConversionInput): Partial<Li
   return updates;
 }
 
-function setCourseFormValue(updates: Partial<LineForm>, field: keyof LineForm, value: number | undefined) {
+function setCourseFormValue(updates: Partial<LineForm>, field: LineFormField, value: number | undefined) {
   if (value !== undefined) updates[field] = String(Math.round(value));
 }
 

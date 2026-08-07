@@ -3,6 +3,7 @@ import type { QueryableDatabase } from "./logbook-database";
 type RouteRow = { id: string; route: unknown };
 type TimedRow = { sheet_id: string; sort_order: number; time: string };
 type CrewAssignmentRow = { sheet_id: string; crew_member_id: string; sort_order: number; embarkation_datetime: string; disembarkation_datetime: string };
+type LegacyBoatEngineRow = { boat_id: string; yacht_data: unknown; engine_id: string; model: string };
 import { readMigrations } from "./schema";
 
 export async function runMigrations(db: QueryableDatabase) {
@@ -29,6 +30,11 @@ async function applyMigration(db: QueryableDatabase, id: string, sql: string) {
     return;
   }
 
+  if (id === "030_move_legacy_boat_engine") {
+    await moveLegacyBoatEngine(db);
+    return;
+  }
+
   if (id !== "009_log_line_column_types") {
     await db.query(sql);
     return;
@@ -40,6 +46,36 @@ async function applyMigration(db: QueryableDatabase, id: string, sql: string) {
     } catch (error) {
       if (!isDuplicateColumnError(error)) throw error;
     }
+  }
+}
+
+async function moveLegacyBoatEngine(db: QueryableDatabase) {
+  const rows = await db.query<LegacyBoatEngineRow>(`
+    select boats.id as boat_id, boats.yacht_data, engines.id as engine_id, engines.model
+    from boats
+    join engines on engines.boat_id = boats.id
+    where engines.sort_order = 0
+  `);
+
+  for (const row of rows.rows) {
+    const yachtData = parseYachtData(row.yacht_data);
+    const legacyEngine = typeof yachtData.Engine === "string" ? yachtData.Engine.trim() : "";
+    delete yachtData.Engine;
+    if (legacyEngine && legacyEngine !== "—" && !row.model.trim()) {
+      await db.query(`update engines set model = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [legacyEngine, row.engine_id]);
+    }
+    await db.query(`update boats set yacht_data = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [JSON.stringify(yachtData), row.boat_id]);
+  }
+}
+
+function parseYachtData(value: unknown): Record<string, unknown> {
+  if (value && typeof value === "object" && !Array.isArray(value)) return { ...value as Record<string, unknown> };
+  if (typeof value !== "string") return {};
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed as Record<string, unknown> : {};
+  } catch {
+    return {};
   }
 }
 

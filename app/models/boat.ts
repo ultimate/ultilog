@@ -2,6 +2,27 @@ import type { StoredImage } from "./stored-image";
 
 export type BoatType = "Sail" | "Motor";
 
+export type BoatEngineRole = "propulsion" | "generator" | "auxiliary";
+
+export type BoatEngine = {
+  /** Stable identifier. It must never be changed after the engine is created. */
+  id: string;
+  name: string;
+  label: string;
+  role: BoatEngineRole;
+  archived?: boolean;
+  manufacturer?: string;
+  model?: string;
+  serialNumber?: string;
+};
+
+export const defaultMainEngine = (): BoatEngine => ({
+  id: "main-engine",
+  name: "Main engine",
+  label: "Main",
+  role: "propulsion",
+});
+
 export type DeviationTableRow = {
   heading: number;
   deviation: string;
@@ -81,5 +102,6 @@ export type Boat = {
   yachtData: Record<string, string>;
   deviationTable: DeviationTableRow[];
   windDriftTable?: WindDriftTable;
+  engines?: BoatEngine[];
   image?: StoredImage;
 };

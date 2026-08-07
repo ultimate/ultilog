@@ -6,11 +6,15 @@ export class LogLinesRepository {
   constructor(private db: QueryableDatabase) {}
 
   async findAll(ownerId: string) {
-    return (await this.db.query<LogLineRow>(`select log_lines.* from log_lines join log_sheets on log_sheets.id = log_lines.sheet_id where log_sheets.owner_id = ${this.db.placeholder(1)} order by log_lines.sheet_id, time, sort_order`, [ownerId])).rows;
+    const rows = (await this.db.query<LogLineRow>(`select log_lines.* from log_lines join log_sheets on log_sheets.id = log_lines.sheet_id where log_sheets.owner_id = ${this.db.placeholder(1)} order by log_lines.sheet_id, time, sort_order`, [ownerId])).rows;
+    const hours = (await this.db.query<EngineHoursRow>(`select h.*, e.boat_id from log_line_engine_hours h join engines e on e.id = h.engine_id join log_sheets s on s.id = h.sheet_id where s.owner_id = ${this.db.placeholder(1)}`, [ownerId])).rows;
+    return attachEngineHours(rows, hours);
   }
 
   async findForSheet(sheetScopedId: string) {
-    return (await this.db.query<LogLineRow>(`select * from log_lines where sheet_id = ${this.db.placeholder(1)} order by time, sort_order`, [sheetScopedId])).rows;
+    const rows = (await this.db.query<LogLineRow>(`select * from log_lines where sheet_id = ${this.db.placeholder(1)} order by time, sort_order`, [sheetScopedId])).rows;
+    const hours = (await this.db.query<EngineHoursRow>(`select h.*, e.boat_id from log_line_engine_hours h join engines e on e.id = h.engine_id where h.sheet_id = ${this.db.placeholder(1)}`, [sheetScopedId])).rows;
+    return attachEngineHours(rows, hours);
   }
 
   async deleteAll(ownerId: string) {
@@ -30,9 +34,29 @@ export class LogLinesRepository {
       `insert into log_lines (${columns.join(", ")}) values ${rows}`,
       values,
     );
+    for (const { sheetId, sortOrder, line } of entries) {
+      const engineHours = line.engineHours ?? {};
+      for (const [engineId, rawHours] of Object.entries(engineHours)) {
+        const hours = Math.max(0, Number(rawHours) || 0);
+        if (!hours) continue;
+        await this.db.query(
+          `insert into log_line_engine_hours (sheet_id, line_sort_order, engine_id, runtime_hours) select ${this.db.placeholder(1)}, ${this.db.placeholder(2)}, engines.id, ${this.db.placeholder(3)} from engines join log_sheets on log_sheets.boat_id = engines.boat_id where log_sheets.id = ${this.db.placeholder(1)} and engines.id = engines.boat_id || ':' || ${this.db.placeholder(4)}`,
+          [scopedId(ownerId, sheetId), sortOrder, hours, engineId],
+        );
+      }
+    }
   }
 
   private values(count: number, start = 1) {
     return Array.from({ length: count }, (_, index) => this.db.placeholder(start + index)).join(", ");
   }
+}
+
+type EngineHoursRow = { sheet_id: string; line_sort_order: number; engine_id: string; runtime_hours: number; boat_id: string };
+
+function attachEngineHours(rows: LogLineRow[], hours: EngineHoursRow[]) {
+  return rows.map((row) => {
+    const engineHours = Object.fromEntries(hours.filter((item) => item.sheet_id === row.sheet_id && Number(item.line_sort_order) === Number(row.sort_order)).map((item) => [item.engine_id.slice(item.boat_id.length + 1), Number(item.runtime_hours)]));
+    return Object.keys(engineHours).length ? { ...row, engineHours } : row;
+  });
 }

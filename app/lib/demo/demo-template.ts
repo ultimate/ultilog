@@ -85,9 +85,9 @@ const boats: DemoBoat[] = [
     yachtData: {
       Manufacturer: "Hallberg-Rassy 40",
       MMSI: "269123456",
-      Engine: "Volvo Penta D2-55 · 55 HP",
       Safety: "6-person liferaft, EPIRB, jacklines, MOB beacon",
     },
+    engines: [{ id: "main-engine", name: "Main engine", label: "Main", role: "propulsion", manufacturer: "Volvo Penta", model: "D2-55 · 55 HP" }],
     deviationTable: demoDeviationTable(40),
     windDriftTable: {
       windSpeedLimits: { fullSail: "0", secondReef: "17", stormSail: "28" },
@@ -111,9 +111,12 @@ const boats: DemoBoat[] = [
     yachtData: {
       Manufacturer: "Beneteau Antares 11",
       MMSI: "238987650",
-      Engine: "Twin Volvo Penta D4 · 2 × 220 HP",
       Safety: "6-person liferaft, EPIRB, flares, lifejackets",
     },
+    engines: [
+      { id: "port-engine", name: "Port engine", label: "Port", role: "propulsion", manufacturer: "Volvo Penta", model: "D4 · 220 HP" },
+      { id: "starboard-engine", name: "Starboard engine", label: "Stbd", role: "propulsion", manufacturer: "Volvo Penta", model: "D4 · 220 HP" },
+    ],
     deviationTable: demoDeviationTable(-70),
     windDriftTable: {
       windSpeedLimits: { fullSail: "0", secondReef: "20", stormSail: "35" },

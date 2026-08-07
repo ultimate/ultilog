@@ -137,6 +137,20 @@ create table if not exists log_sheets (
   share_crew integer not null default 0
 );
 
+create table if not exists engines (
+  id text primary key,
+  boat_id text not null references boats(id) on delete cascade,
+  sort_order integer not null,
+  name text not null,
+  short_label text not null,
+  role text not null check (role in ('propulsion', 'generator', 'auxiliary')),
+  archived integer not null default 0,
+  manufacturer text not null default '',
+  model text not null default '',
+  serial_number text not null default '',
+  unique (boat_id, sort_order)
+);
+
 create index if not exists log_sheets_share_privacy_idx on log_sheets (share_privacy);
 create index if not exists log_sheets_total_miles_idx on log_sheets (total_miles);
 create index if not exists log_sheets_duration_minutes_idx on log_sheets (duration_minutes);
@@ -218,4 +232,13 @@ create table if not exists log_lines (
   motor_note text not null default '',
   remarks text not null,
   primary key (sheet_id, sort_order)
+);
+
+create table if not exists log_line_engine_hours (
+  sheet_id text not null,
+  line_sort_order integer not null,
+  engine_id text not null references engines(id),
+  runtime_hours real not null check (runtime_hours >= 0),
+  primary key (sheet_id, line_sort_order, engine_id),
+  foreign key (sheet_id, line_sort_order) references log_lines(sheet_id, sort_order) on delete cascade
 );

@@ -27,6 +27,7 @@ export function signedCourse(value: string) {
 }
 
 export function lineFormToLogLine(lineForm: LineForm): LogLine {
+  const engineHours: Record<string, number> = Object.fromEntries((Object.keys(lineForm.engineHours ?? {}).length ? Object.entries(lineForm.engineHours ?? {}) : [["main-engine", lineForm.motorHours]]).map(([engineId, value]) => [engineId, Math.max(0, numberOrZero(value))]).filter((entry) => Number(entry[1]) > 0));
   return {
     time: lineForm.time,
     position: lineForm.position,
@@ -59,7 +60,8 @@ export function lineFormToLogLine(lineForm: LineForm): LogLine {
     sailMiles: numberOrZero(lineForm.sailMiles),
     sailNote: lineForm.sailNote,
     motorMiles: numberOrZero(lineForm.motorMiles),
-    motorHours: numberOrZero(lineForm.motorHours),
+    engineHours,
+    motorHours: Object.values(engineHours).reduce((sum, value) => sum + Number(value), 0),
     motorNote: lineForm.motorNote,
     remarks: lineForm.remarks,
   };

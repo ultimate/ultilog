@@ -2,7 +2,7 @@ import type { LogLine } from "../../models/logbook";
 import type { Locale, TranslationKey } from "../../lib/i18n/translations";
 
 export const LOG_SHEET_PRINT_TEMPLATE_ID = "ultilog-logsheet";
-export const LOG_SHEET_PRINT_TEMPLATE_REVISION = 1;
+export const LOG_SHEET_PRINT_TEMPLATE_REVISION = 2;
 
 export type LogSheetPrintVariant = "full" | "compact";
 export type PrintLogColumnId =

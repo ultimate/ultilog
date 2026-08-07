@@ -74,6 +74,7 @@ describe("lineFormToLogLine", () => {
       sailNote: "Reefed main",
       motorMiles: 4.2,
       motorHours: 1.5,
+      engineHours: { "main-engine": 1.5 },
       motorNote: "Charging",
       remarks: "Scanned row",
     });

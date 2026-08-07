@@ -34,6 +34,9 @@ export type LogLine = {
   sailMiles: number;
   sailNote: string;
   motorMiles: number;
+  /** Runtime added during this log interval, keyed by the boat engine's stable ID. */
+  engineHours?: Record<string, number>;
+  /** @deprecated Read-only compatibility for pre multi-engine data and scanners. */
   motorHours: number;
   motorNote: string;
   remarks: string;

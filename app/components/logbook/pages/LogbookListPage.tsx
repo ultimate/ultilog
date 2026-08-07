@@ -17,7 +17,7 @@ type Navigate = (
   module: "details" | "logbooks",
   itemId?: string | number,
 ) => void;
-type SheetSummary = { motorMiles: number; sailMiles: number; totalMiles: number; duration: string; motionDuration: string; motorHours: number; motorHoursDuration: string };
+type SheetSummary = { motorMiles: number; sailMiles: number; totalMiles: number; duration: string; motionDuration: string; motorHours: number; motorHoursDuration: string; propulsionDuration: string };
 type SheetListRow = { sheet: LogSheet; boat?: Boat; summary: SheetSummary };
 
 export function LogbookListPage({
@@ -319,7 +319,7 @@ export function LogbookListPage({
                   {header("totalMiles", t("logbooks.totalMiles"))}
                   {header("duration", t("dashboard.overallDuration"))}
                   {header("motionDuration", t("dashboard.motionDuration"))}
-                  {header("motorHours", t("dashboard.motorHours"))}
+                  {header("motorHours", t("dashboard.totalEngineHours"))}
                   <th></th>
                 </tr>
               </thead>

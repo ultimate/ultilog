@@ -156,6 +156,7 @@ function calculateSheetSummary(sheet: LogSheet, motionStationaryThresholdNm: num
     motionDuration: formatLogSheetDuration(metrics.motionDurationMinutes),
     motorHours: metrics.motorHours,
     motorHoursDuration: formatLogSheetDuration(metrics.motorHours * 60),
+    propulsionDuration: formatLogSheetDuration(metrics.propulsionDurationMinutes ?? 0),
   };
 }
 
@@ -929,6 +930,7 @@ export function LogbookApp({
       logfactor: boatForm.logfactor,
       deviationTable: normalizeDeviationTable(boatForm.deviationTable),
       windDriftTable: normalizeWindDriftTable(boatForm.windDriftTable),
+      engines: boatForm.engines,
       yachtData: {
         "Class / type":
           boatForm.type === "Sail" ? "Cruising yacht" : "Motor yacht",
@@ -939,7 +941,6 @@ export function LogbookApp({
         Draft: previousBoat?.yachtData.Draft ?? "—",
         Displacement: previousBoat?.yachtData.Displacement ?? "—",
         "Rig / sail area": boatForm.type === "Sail" ? "To be completed" : "n/a",
-        Engine: boatForm.engine || "—",
         Propeller: previousBoat?.yachtData.Propeller ?? "—",
         Electronics: previousBoat?.yachtData.Electronics ?? "To be completed",
         Safety: boatForm.safety || "To be completed",

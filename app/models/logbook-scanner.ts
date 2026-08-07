@@ -1,6 +1,6 @@
-import type { LineForm } from "./logbook-forms";
+import type { LineFormField } from "./logbook-forms";
 
-export type ScannedLogLine = Partial<Record<keyof LineForm, string>>;
+export type ScannedLogLine = Partial<Record<LineFormField, string>>;
 
 export type ScannedLogSheetDraft = {
   title?: string;

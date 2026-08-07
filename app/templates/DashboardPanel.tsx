@@ -53,7 +53,7 @@ export function DashboardPanel({ stats, onboardingChecklist }: DashboardPanelPro
         <article><i>✚</i><span>{t("dashboard.motorMiles")}</span><strong>{formatMiles(stats.motorNm)} nm</strong><small>{motorPct}% {t("dashboard.ofTotal")}</small></article>
         <article><i>⏱</i><span>{t("dashboard.overallDuration")}</span><strong>{formatDuration(stats.durationMinutes)}</strong><small>{t("dashboard.allTime")}</small></article>
         <article><i>↬</i><span>{t("dashboard.motionDuration")}</span><strong>{formatDuration(stats.motionDurationMinutes)}</strong><small>{t("dashboard.inMotion")}</small></article>
-        <article><i>⚙</i><span>{t("dashboard.motorHours")}</span><strong>{formatDuration(stats.motorHours * 60)}</strong><small>{t("dashboard.allTime")}</small></article>
+        <article><i>⚙</i><span>{t("dashboard.totalEngineHours")}</span><strong>{formatDuration(stats.motorHours * 60)}</strong><small>{t("dashboard.allTime")}</small></article>
         <article><i>⚓</i><span>{t("dashboard.boats")}</span><strong>{stats.boats}</strong><small>{t("dashboard.activeVessels")}</small></article>
       </div>
       <div className="dashboard-grid dashboard-grid--charts">

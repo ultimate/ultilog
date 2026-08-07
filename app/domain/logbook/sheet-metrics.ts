@@ -8,6 +8,8 @@ export type LogSheetMetrics = {
   sailMiles: number;
   totalMiles: number;
   motorHours: number;
+  engineHours?: Record<string, number>;
+  propulsionDurationMinutes?: number;
   durationMinutes: number | null;
   overallDurationMinutes: number | null;
   motionDurationMinutes: number;
@@ -19,16 +21,32 @@ export function calculateLogSheetMetrics(lines: LogLine[], route?: LogSheet["rou
   const explicitMotorMiles = chronologicalLines.some((line) => numeric(line.motorMiles) > 0);
   const motorMiles = explicitMotorMiles
     ? chronologicalLines.reduce((sum, line) => sum + numeric(line.motorMiles), 0)
-    : deltas.reduce((sum, delta, index) => sum + (numeric(chronologicalLines[index]?.motorHours) > 0 ? delta : 0), 0);
+    : deltas.reduce((sum, delta, index) => sum + (lineEngineHours(chronologicalLines[index]) > 0 ? delta : 0), 0);
   const explicitSailMiles = chronologicalLines.some((line) => numeric(line.sailMiles) > 0);
   const totalMiles = deltas.reduce((sum, delta) => sum + delta, 0);
   const sailMiles = explicitSailMiles
     ? chronologicalLines.reduce((sum, line) => sum + numeric(line.sailMiles), 0)
     : Math.max(0, totalMiles - motorMiles);
-  const motorHours = chronologicalLines.reduce((sum, line) => sum + numeric(line.motorHours), 0);
+  const engineHours = chronologicalLines.reduce<Record<string, number>>((totals, line) => {
+    for (const [engineId, hours] of Object.entries(normalizedEngineHours(line))) totals[engineId] = (totals[engineId] ?? 0) + hours;
+    return totals;
+  }, {});
+  const motorHours = Object.values(engineHours).reduce((sum, hours) => sum + hours, 0);
+  const propulsionDurationMinutes = chronologicalLines.reduce((sum, line) => sum + Math.max(0, ...Object.values(normalizedEngineHours(line))) * 60, 0);
   const motionDurationMinutes = calculateMotionDurationMinutes(chronologicalLines, options.stationaryDistanceThresholdNm ?? defaultMotionStationaryThresholdNm);
   const overallDurationMinutes = calculateOverallDurationMinutes(route);
-  return { motorMiles, sailMiles, totalMiles: Math.max(totalMiles, motorMiles + sailMiles), motorHours, durationMinutes: overallDurationMinutes, overallDurationMinutes, motionDurationMinutes };
+  return { motorMiles, sailMiles, totalMiles: Math.max(totalMiles, motorMiles + sailMiles), motorHours, engineHours, propulsionDurationMinutes, durationMinutes: overallDurationMinutes, overallDurationMinutes, motionDurationMinutes };
+}
+
+function normalizedEngineHours(line: LogLine) {
+  const entries = Object.entries(line.engineHours ?? {}).map(([id, value]) => [id, Math.max(0, numeric(value))] as const).filter(([, value]) => value > 0);
+  if (entries.length) return Object.fromEntries(entries) as Record<string, number>;
+  const legacy = Math.max(0, numeric(line.motorHours));
+  return legacy > 0 ? { "main-engine": legacy } : {};
+}
+
+function lineEngineHours(line: LogLine | undefined) {
+  return line ? Object.values(normalizedEngineHours(line)).reduce((sum, hours) => sum + hours, 0) : 0;
 }
 
 export function formatLogSheetDuration(durationMinutes: number | null | undefined) {
