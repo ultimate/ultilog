@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useI18n } from "../../../lib/i18n";
 import type { ChangeEvent, FormEvent, Dispatch, ReactNode, SetStateAction } from "react";
@@ -9,16 +9,33 @@ import { pageSizeOptions, normalizePageSize } from "../PaginationControls";
 
 type ProfilePageProps = Record<string, any>;
 
-async function cropImageToSquare(file: File) {
+type AvatarCrop = { file: File; url: string; width: number; height: number; zoom: number; x: number; y: number };
+
+function cropGeometry(width: number, height: number, outputSize: number, zoom: number, x: number, y: number) {
+  const scale = Math.max(outputSize / width, outputSize / height) * zoom;
+  const scaledWidth = width * scale;
+  const scaledHeight = height * scale;
+  const overflowX = Math.max(0, scaledWidth - outputSize);
+  const overflowY = Math.max(0, scaledHeight - outputSize);
+  return {
+    width: scaledWidth,
+    height: scaledHeight,
+    left: (outputSize - scaledWidth) / 2 + (x / 100) * (overflowX / 2),
+    top: (outputSize - scaledHeight) / 2 + (y / 100) * (overflowY / 2),
+  };
+}
+
+async function cropImageToSquare(crop: AvatarCrop) {
+  const { file, zoom, x, y } = crop;
   if (!/^image\/(?:jpeg|png|webp)$/.test(file.type)) throw new Error("Choose a JPEG, PNG, or WebP image.");
   const source = await createImageBitmap(file);
-  const size = Math.min(source.width, source.height);
   const canvas = document.createElement("canvas");
   canvas.width = 256;
   canvas.height = 256;
   const context = canvas.getContext("2d");
   if (!context) throw new Error("This browser cannot process the picture.");
-  context.drawImage(source, (source.width - size) / 2, (source.height - size) / 2, size, size, 0, 0, 256, 256);
+  const geometry = cropGeometry(source.width, source.height, 256, zoom, x, y);
+  context.drawImage(source, geometry.left, geometry.top, geometry.width, geometry.height);
   source.close();
   const mimeType = "image/jpeg";
   const dataUrl = canvas.toDataURL(mimeType, 0.86);
@@ -53,6 +70,7 @@ export function ProfilePage(props: ProfilePageProps) {
   const [motionThresholdDraft, setMotionThresholdDraft] = useState<string | null>(null);
   const [isResettingDemo, setIsResettingDemo] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [avatarCrop, setAvatarCrop] = useState<AvatarCrop | null>(null);
   const motionThresholdValue = motionThresholdDraft ?? formatDecimalPreference(profilePreferences.motionStationaryThresholdNm);
 
   function commitMotionThresholdDraft() {
@@ -79,17 +97,43 @@ export function ProfilePage(props: ProfilePageProps) {
   const avatar = props.avatar as string | undefined;
   const setAvatar = props.setAvatar as Dispatch<SetStateAction<string | undefined>>;
 
-  async function uploadAvatar(event: ChangeEvent<HTMLInputElement>) {
+  const avatarCropUrl = avatarCrop?.url;
+  useEffect(() => () => {
+    if (avatarCropUrl) URL.revokeObjectURL(avatarCropUrl);
+  }, [avatarCropUrl]);
+
+  async function chooseAvatar(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
     if (!file) return;
+    if (!/^image\/(?:jpeg|png|webp)$/.test(file.type)) {
+      window.alert(t("profile.avatarUploadError"));
+      return;
+    }
+    const bitmap = await createImageBitmap(file).catch(() => undefined);
+    if (!bitmap) {
+      window.alert(t("profile.avatarUploadError"));
+      return;
+    }
+    const nextCrop = { file, url: URL.createObjectURL(file), width: bitmap.width, height: bitmap.height, zoom: 1, x: 0, y: 0 };
+    bitmap.close();
+    setAvatarCrop(nextCrop);
+  }
+
+  function closeAvatarCrop() {
+    setAvatarCrop(null);
+  }
+
+  async function uploadAvatar() {
+    if (!avatarCrop) return;
     setIsUploadingAvatar(true);
     try {
-      const cropped = await cropImageToSquare(file);
+      const cropped = await cropImageToSquare(avatarCrop);
       const response = await fetch("/api/profile", { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ action: "avatar", avatarData: cropped.data, avatarMimeType: cropped.mimeType }) });
       const payload = await response.json() as { avatar?: string; error?: string };
       if (!response.ok || !payload.avatar) throw new Error(payload.error ?? t("profile.avatarUploadError"));
       setAvatar(payload.avatar);
+      closeAvatarCrop();
     } catch (error) {
       window.alert(error instanceof Error ? error.message : t("profile.avatarUploadError"));
     } finally {
@@ -111,6 +155,23 @@ export function ProfilePage(props: ProfilePageProps) {
 
   return (
     <section className="profile-page module-panel" aria-label={t("profile.aria")}>
+      {avatarCrop && (() => {
+        const preview = cropGeometry(avatarCrop.width, avatarCrop.height, 288, avatarCrop.zoom, avatarCrop.x, avatarCrop.y);
+        return <div className="avatar-crop-backdrop" role="presentation">
+          <section className="avatar-crop-dialog" role="dialog" aria-modal="true" aria-labelledby="avatar-crop-title">
+            <header><h2 id="avatar-crop-title">{t("profile.cropTitle")}</h2><button type="button" onClick={closeAvatarCrop} aria-label={t("profile.cropCancel")}>×</button></header>
+            <div className="avatar-crop-content">
+              <div className="avatar-crop-preview"><Image unoptimized src={avatarCrop.url} alt="" width={avatarCrop.width} height={avatarCrop.height} style={{ width: preview.width, height: preview.height, left: preview.left, top: preview.top }} /></div>
+              <div className="avatar-crop-controls">
+                <label>{t("profile.cropZoom")}<input type="range" min="1" max="3" step="0.01" value={avatarCrop.zoom} onChange={(event) => setAvatarCrop({ ...avatarCrop, zoom: Number(event.target.value) })} /></label>
+                <label>{t("profile.cropHorizontal")}<input type="range" min="-100" max="100" value={avatarCrop.x} onChange={(event) => setAvatarCrop({ ...avatarCrop, x: Number(event.target.value) })} /></label>
+                <label>{t("profile.cropVertical")}<input type="range" min="-100" max="100" value={avatarCrop.y} onChange={(event) => setAvatarCrop({ ...avatarCrop, y: Number(event.target.value) })} /></label>
+              </div>
+            </div>
+            <footer><button className="secondary-action" type="button" onClick={closeAvatarCrop}>{t("profile.cropCancel")}</button><button className="primary-action" type="button" onClick={uploadAvatar} disabled={isUploadingAvatar}>{isUploadingAvatar ? t("profile.cropSaving") : t("profile.cropSave")}</button></footer>
+          </section>
+        </div>;
+      })()}
       <div className="page-heading">
         <div>
           <h1>{t("profile.title")}</h1>
@@ -124,7 +185,7 @@ export function ProfilePage(props: ProfilePageProps) {
         <article className="profile-hero-card">
           <label className="profile-avatar profile-avatar-upload" title={t("profile.avatarUpload")}>
             {avatar ? <Image unoptimized src={avatar} alt={t("profile.avatarAlt")} width={64} height={64} /> : "ME"}
-            <input type="file" accept="image/png,image/jpeg,image/webp" onChange={uploadAvatar} disabled={isUploadingAvatar} />
+            <input type="file" accept="image/png,image/jpeg,image/webp" onChange={chooseAvatar} disabled={isUploadingAvatar} />
             <span>{isUploadingAvatar ? "…" : "＋"}</span>
           </label>
           <div>
