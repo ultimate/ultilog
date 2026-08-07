@@ -4,6 +4,7 @@ import type { PersistedLogbook } from "../../models/logbook";
 import { detectOnboardingCompletion } from "../../lib/onboarding/detect";
 import type { OnboardingTaskId } from "../../lib/onboarding/tasks";
 import type { Locale } from "../../lib/i18n";
+import { STANDARD_TECHNICAL_CHECK_IDS, type StandardTechnicalCheckId } from "../../domain/logbook/technical-log";
 import type { DateFormat, TimeFormat } from "../../lib/date-time-format";
 
 export type ProfilePreferences = {
@@ -25,6 +26,7 @@ export type ProfilePreferences = {
   defaultPageSize: 5 | 10 | 25 | 50 | 100;
   motionStationaryThresholdNm: number;
   technicalLogTemplate: string[];
+  enabledStandardTechnicalChecks: StandardTechnicalCheckId[];
 };
 
 const defaultPreferences: ProfilePreferences = {
@@ -46,6 +48,7 @@ const defaultPreferences: ProfilePreferences = {
   defaultPageSize: 10,
   motionStationaryThresholdNm: 0.1,
   technicalLogTemplate: [],
+  enabledStandardTechnicalChecks: [...STANDARD_TECHNICAL_CHECK_IDS],
 };
 
 export type ProfileApiPreferences = Partial<ProfilePreferences> & {
@@ -87,6 +90,7 @@ function mergePreferences(current: ProfilePreferences, next?: ProfileApiPreferen
     language: next?.language ?? current.language,
     defaultCrewMemberIds: Array.isArray(next?.defaultCrewMemberIds) ? next.defaultCrewMemberIds : current.defaultCrewMemberIds,
     technicalLogTemplate: Array.isArray(next?.technicalLogTemplate) ? next.technicalLogTemplate : current.technicalLogTemplate,
+    enabledStandardTechnicalChecks: Array.isArray(next?.enabledStandardTechnicalChecks) ? next.enabledStandardTechnicalChecks : current.enabledStandardTechnicalChecks,
     defaultPageSize: [5, 10, 25, 50, 100].includes(next?.defaultPageSize ?? current.defaultPageSize) ? (next?.defaultPageSize ?? current.defaultPageSize) : current.defaultPageSize,
     motionStationaryThresholdNm: normalizeMotionThreshold(next?.motionStationaryThresholdNm, current.motionStationaryThresholdNm),
   };

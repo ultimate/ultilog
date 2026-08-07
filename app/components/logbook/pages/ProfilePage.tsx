@@ -6,7 +6,7 @@ import type { Boat, PersistedLogbook } from "../../../models/logbook";
 import { PasswordField } from "../../PasswordField";
 import type { ProfilePreferences } from "../../onboarding/useOnboardingProfile";
 import { dateFormats, formatStoredDate, formatStoredTime, timeFormats } from "../../../lib/date-time-format";
-import { standardTechnicalLogTemplate } from "../../../domain/logbook/technical-log";
+import { STANDARD_TECHNICAL_CHECK_IDS, standardTechnicalLogTemplate, type StandardTechnicalCheckId } from "../../../domain/logbook/technical-log";
 import { pageSizeOptions, normalizePageSize } from "../PaginationControls";
 
 type ProfilePageProps = Record<string, any>;
@@ -70,11 +70,16 @@ export function ProfilePage(props: ProfilePageProps) {
   const activeBoat = props.activeBoat as Boat;
   const profilePreferences = preferences as ProfilePreferences;
   const [motionThresholdDraft, setMotionThresholdDraft] = useState<string | null>(null);
+  const [technicalTemplateDraft, setTechnicalTemplateDraft] = useState(() => profilePreferences.technicalLogTemplate.join("\n"));
   const [isResettingDemo, setIsResettingDemo] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isRemovingAvatar, setIsRemovingAvatar] = useState(false);
   const [avatarCrop, setAvatarCrop] = useState<AvatarCrop | null>(null);
   const motionThresholdValue = motionThresholdDraft ?? formatDecimalPreference(profilePreferences.motionStationaryThresholdNm);
+
+  useEffect(() => { setTechnicalTemplateDraft(profilePreferences.technicalLogTemplate.join("\n")); }, [profilePreferences.technicalLogTemplate]);
+
+  const technicalTemplateLines = () => technicalTemplateDraft.split("\n").map((line) => line.trim()).filter(Boolean);
 
   function commitMotionThresholdDraft() {
     if (motionThresholdDraft === null) return;
@@ -379,7 +384,7 @@ export function ProfilePage(props: ProfilePageProps) {
           className="info-card inline-edit-grid"
           onSubmit={(event: FormEvent<HTMLFormElement>) => {
             event.preventDefault();
-            updateViewPreferences(profilePreferences);
+            updateViewPreferences({ ...profilePreferences, technicalLogTemplate: technicalTemplateLines() });
           }}
         >
           <h3>{t("profile.preferences")}</h3>
@@ -491,10 +496,15 @@ export function ProfilePage(props: ProfilePageProps) {
           <fieldset className="preference-group wide-field">
             <legend>{t("profile.technicalLogTemplate")}</legend>
             <p><strong>{t("profile.standardTechnicalChecks")}</strong></p>
-            <ul className="stack-list">{standardTechnicalLogTemplate(profilePreferences.language).map((line) => <li key={line}>⌛ {line}</li>)}</ul>
+            <div className="technical-template-options">{standardTechnicalLogTemplate(profilePreferences.language).map(({ id, text }) => (
+              <label key={id}><input type="checkbox" checked={profilePreferences.enabledStandardTechnicalChecks.includes(id)} onChange={(event) => {
+                const enabled = event.target.checked ? [...profilePreferences.enabledStandardTechnicalChecks, id] : profilePreferences.enabledStandardTechnicalChecks.filter((candidate) => candidate !== id);
+                updateViewPreferences({ enabledStandardTechnicalChecks: STANDARD_TECHNICAL_CHECK_IDS.filter((candidate) => enabled.includes(candidate)) as StandardTechnicalCheckId[] });
+              }} />⌛ {text}</label>
+            ))}</div>
             <label>
               {t("profile.additionalTechnicalChecks")}
-              <textarea rows={6} value={profilePreferences.technicalLogTemplate.join("\n")} onChange={(event) => updateViewPreferences({ technicalLogTemplate: event.target.value.split("\n").map((line) => line.trim()).filter(Boolean) })} />
+              <textarea rows={6} value={technicalTemplateDraft} onChange={(event) => setTechnicalTemplateDraft(event.target.value)} onBlur={() => updateViewPreferences({ technicalLogTemplate: technicalTemplateLines() })} />
               <small>{t("profile.technicalLogTemplateHelp")}</small>
             </label>
           </fieldset>

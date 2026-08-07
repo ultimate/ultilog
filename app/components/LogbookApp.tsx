@@ -1016,7 +1016,7 @@ export function LogbookApp({
       route,
       crew: existingSheet?.crew ?? initialCrew,
       watchPlan: existingSheet?.watchPlan ?? [],
-      technicalChecks: existingSheet?.technicalChecks ?? createTechnicalChecks(preferences.language, preferences.technicalLogTemplate),
+      technicalChecks: existingSheet?.technicalChecks ?? createTechnicalChecks(preferences.language, preferences.technicalLogTemplate, preferences.enabledStandardTechnicalChecks),
       lines: existingSheet?.lines ?? [],
       image: sheetForm.image,
     };
