@@ -2190,9 +2190,9 @@ export function LogbookApp({
       )}
       <div className="print-only print-root" aria-hidden={!printTarget}>
         {printTarget?.mode === "empty" ? (
-          <LogSheetPrintView mode="empty" boat={printBoat} showCourseColumns={printTarget?.showCourseColumns ?? preferences.showCourseConversionTable} />
+          <LogSheetPrintView mode="empty" boat={printBoat} avatar={preferences.showAvatarOnPrint ? profileAvatar : undefined} showCourseColumns={printTarget?.showCourseColumns ?? preferences.showCourseConversionTable} />
         ) : printSheet ? (
-          <LogSheetPrintView mode="filled" sheet={printSheet} boat={printBoat} summary={printSummary} showCourseColumns={printTarget?.showCourseColumns ?? preferences.showCourseConversionTable} />
+          <LogSheetPrintView mode="filled" sheet={printSheet} boat={printBoat} summary={printSummary} avatar={preferences.showAvatarOnPrint ? profileAvatar : undefined} showCourseColumns={printTarget?.showCourseColumns ?? preferences.showCourseConversionTable} />
         ) : null}
       </div>
     </DateTimeFormatProvider>

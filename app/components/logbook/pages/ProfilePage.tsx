@@ -521,6 +521,13 @@ export function ProfilePage(props: ProfilePageProps) {
                   <option value="no">{t("common.no")}</option>
                 </select>
               </label>
+              <label>
+                {t("profile.showAvatarOnPrint")}
+                <select value={profilePreferences.showAvatarOnPrint ? "yes" : "no"} onChange={(event) => updateViewPreferences({ showAvatarOnPrint: event.target.value === "yes" })}>
+                  <option value="yes">{t("common.yes")}</option>
+                  <option value="no">{t("common.no")}</option>
+                </select>
+              </label>
             </div>
           </fieldset>
           <div className="inline-edit-actions">

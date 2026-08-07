@@ -463,6 +463,7 @@ export const it: Dictionary = {
   "profile.sidebarSlim": "Slim",
   "profile.sidebarWide": "Wide",
   "profile.showCourseConversionTable": "Show course conversion table by default",
+  "profile.showAvatarOnPrint": "Mostra il mio avatar sui giornali di bordo stampati",
   "profile.savePreferences": "Save preferences",
   "profile.deleteAccount": "Elimina account",
   "profile.deleteHelp": "Questo elimina definitivamente il tuo account e tutti i logbook, barche, membri dell’equipaggio e righe del log.",
