@@ -105,7 +105,7 @@ export function LogSheetPrintView(props: LogSheetPrintViewProps) {
               </tr>
             </thead>
             <tbody>
-              {page.lines.map((line, index) => renderLogRow(line, index, logColumns))}
+              {page.lines.map((line, index) => renderLogRow(line, index, logColumns, props.boat))}
             </tbody>
           </table>
 
@@ -134,15 +134,15 @@ function getSummary(summary: LogSheetPrintSummary | undefined, sheet: LogSheet |
   };
 }
 
-function renderLogRow(line: LogLine | undefined, index: number, columns: readonly PrintLogColumn[]) {
+function renderLogRow(line: LogLine | undefined, index: number, columns: readonly PrintLogColumn[], boat: Boat | undefined) {
   return (
     <tr key={index}>
-      {columns.map((column) => renderLogCell(column, line))}
+      {columns.map((column) => renderLogCell(column, line, boat))}
     </tr>
   );
 }
 
-function renderLogCell(column: PrintLogColumn, line: LogLine | undefined) {
+function renderLogCell(column: PrintLogColumn, line: LogLine | undefined, boat: Boat | undefined) {
   const value = (() => {
     switch (column.id) {
       case "time": return line?.time;
@@ -165,7 +165,7 @@ function renderLogCell(column: PrintLogColumn, line: LogLine | undefined) {
       case "speedKn": return formatNumber(line?.speedKn);
       case "logNm": return formatNumber(line?.logNm);
       case "sailMiles": return formatNumber(line?.sailMiles);
-      case "motor": return formatMotor(line);
+      case "motor": return formatMotor(line, boat);
       case "remarks": return <span className={remarkSizeClass(line?.remarks ?? "")}>{line?.remarks}</span>;
     }
   })();
@@ -216,8 +216,9 @@ function formatLatLon(line: LogLine | undefined) {
   return `${formatNumber(line.latitude)} / ${formatNumber(line.longitude)}`;
 }
 
-function formatMotor(line: LogLine | undefined) {
-  return joinValues(formatNumber(line?.motorMiles), line?.motorHours ? `${formatNumber(line.motorHours)}h` : undefined);
+function formatMotor(line: LogLine | undefined, boat: Boat | undefined) {
+  const hours = Object.entries(line?.engineHours ?? {}).map(([id, value]) => `${boat?.engines?.find((engine) => engine.id === id)?.label ?? id}: ${formatNumber(value)}h`);
+  return joinValues(formatNumber(line?.motorMiles), ...hours, !hours.length && line?.motorHours ? `${formatNumber(line.motorHours)}h` : undefined);
 }
 
 function formatDegrees(value: number | undefined) {

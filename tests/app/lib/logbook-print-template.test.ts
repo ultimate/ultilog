@@ -13,12 +13,12 @@ describe("log sheet print template", () => {
     expect(logSheetPrintTemplate.id).toBe(LOG_SHEET_PRINT_TEMPLATE_ID);
     expect(logSheetPrintTemplate.revision).toBe(LOG_SHEET_PRINT_TEMPLATE_REVISION);
     expect(LOG_SHEET_PRINT_TEMPLATE_ID).toBe("ultilog-logsheet");
-    expect(LOG_SHEET_PRINT_TEMPLATE_REVISION).toBe(1);
+    expect(LOG_SHEET_PRINT_TEMPLATE_REVISION).toBe(2);
   });
 
   it("formats a stable privacy-safe marker for each template variant and locale", () => {
-    expect(formatLogSheetPrintTemplateMarker("full", "de")).toBe("ULTILOG:ultilog-logsheet:v1:full:de");
-    expect(formatLogSheetPrintTemplateMarker("compact", "it")).toBe("ULTILOG:ultilog-logsheet:v1:compact:it");
+    expect(formatLogSheetPrintTemplateMarker("full", "de")).toBe("ULTILOG:ultilog-logsheet:v2:full:de");
+    expect(formatLogSheetPrintTemplateMarker("compact", "it")).toBe("ULTILOG:ultilog-logsheet:v2:compact:it");
     expect(formatLogSheetPrintTemplateMarker("full", "en")).not.toMatch(/user|boat|route/i);
   });
 

@@ -9,7 +9,8 @@ export type ImageRowFields = {
   image_height?: number | null;
 };
 
-export type BoatRow = Omit<Boat, "archived" | "flagState" | "homePort" | "yachtData" | "deviationTable" | "windDriftTable" | "image" | "logfactor"> & ImageRowFields & {
+export type BoatRow = Omit<Boat, "archived" | "flagState" | "homePort" | "yachtData" | "deviationTable" | "windDriftTable" | "image" | "logfactor" | "engines"> & ImageRowFields & {
+  engines?: Boat["engines"];
   archived?: number | boolean | null;
   flag_state: string;
   home_port: string;
@@ -71,7 +72,8 @@ export type CrewMemberRow = Omit<SheetCrewMember, "embarkationDateTime" | "embar
   is_primary?: number;
 };
 
-export type LogLineRow = Omit<LogLine, "position" | "weatherRemark" | "temperature" | "temperatureUnit" | "logNm" | "windDirection" | "windStrength" | "windUnit" | "waves" | "seaUnit" | "tideUnit" | "compassCourse" | "magneticCourse" | "trueCourse" | "windDrift" | "courseThroughWater" | "currentDrift" | "courseOverGround" | "speedKn" | "sailMiles" | "sailNote" | "motorMiles" | "motorHours" | "motorNote"> & {
+export type LogLineRow = Omit<LogLine, "position" | "weatherRemark" | "temperature" | "temperatureUnit" | "logNm" | "windDirection" | "windStrength" | "windUnit" | "waves" | "seaUnit" | "tideUnit" | "compassCourse" | "magneticCourse" | "trueCourse" | "windDrift" | "courseThroughWater" | "currentDrift" | "courseOverGround" | "speedKn" | "sailMiles" | "sailNote" | "motorMiles" | "motorHours" | "engineHours" | "motorNote"> & {
+  engineHours?: Record<string, number>;
   sheet_id: string;
   sort_order: number;
   position_name: string;
