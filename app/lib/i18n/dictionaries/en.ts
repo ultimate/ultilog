@@ -303,6 +303,7 @@ export const en = {
   "logbooks.totalMiles": "Total miles",
   "details.loadingAria": "Loading logbook sheet",
   "details.loading": "Loading sheet",
+  "details.selectSheet": "Please select a logsheet from the list.",
   "details.jumpToBoat": "Jump to boat",
   "details.fromDateTime": "From datetime",
   "details.fromPosition": "From position",
