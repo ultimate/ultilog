@@ -12,6 +12,7 @@ describe("scanned log-line dates", () => {
   it("normalizes a printed day-first sheet date", () => {
     const sheet = createSheet(scannerResult({ dateRange: "01.07.26", times: ["09:15"] }));
 
+    expect(sheet.dateRange).toBe("2026-07-01");
     expect(sheet.lines[0].time).toBe("2026-07-01T09:15");
   });
 

@@ -16,7 +16,7 @@ const { GET } = await import("../../../app/api/shared/logbooks/[[...segments]]/r
 const mockedAuth = auth as unknown as Mock;
 const mockedReadSharedLogSheet = vi.mocked(store.readSharedLogSheet);
 const session = { user: { id: "viewer-1", name: "Viewer", email: "viewer@example.test", groups: [] }, expires: "2099-01-01T00:00:00.000Z" };
-const sharedSheet = { sheet: { id: "sheet-1", title: "Shared passage", dateRange: "2026-07-24", status: "Draft", boatId: "boat-1", route: { from: "A", to: "B", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] } satisfies LogSheet, boatName: "Aurora" };
+const sharedSheet = { sheet: { id: "sheet-1", title: "Shared passage", dateRange: "2026-07-24", status: "Draft", boatId: "boat-1", route: { from: "A", to: "B", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] } satisfies LogSheet, boatName: "Aurora", ownerAvatar: "data:image/png;base64,b3duZXI=", showOwnerAvatarOnPrint: true };
 
 async function getWithSegments(segments?: string[]) {
   return GET(new Request("https://ultilog.test/api/shared/logbooks"), {

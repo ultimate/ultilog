@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useMemo } from "react";
 import { useI18n } from "../../lib/i18n";
+import { useDateTimeFormat } from "../../lib/DateTimeFormatProvider";
 import type { LogLine, LogSheet } from "../../models/logbook";
 import type { MapRoute } from "./OpenSeaMapLeaflet";
 
@@ -60,21 +61,21 @@ function lineDescription(line: LogLine, labels: { weather: string; wind: string 
   return details.join(" · ");
 }
 
-function lineToPoint(line: LogLine, index: number, routeId: string, labels: { weather: string; wind: string }) {
+function lineToPoint(line: LogLine, index: number, routeId: string, labels: { weather: string; wind: string }, formatTime: (value?: string | null) => string) {
   return {
     id: `${routeId}-${line.time || "line"}-${index}`,
     latitude: line.latitude,
     longitude: line.longitude,
     label: `${index + 1}`,
-    title: line.time ? `${line.time} · ${line.position}` : line.position,
+    title: line.time ? `${formatTime(line.time)} · ${line.position}` : line.position,
     description: lineDescription(line, labels),
   };
 }
 
-function logLinesToRoute(logLines: LogLine[], labels: { weather: string; wind: string; logLinePositions: string }): MapRoute {
+function logLinesToRoute(logLines: LogLine[], labels: { weather: string; wind: string; logLinePositions: string }, formatTime: (value?: string | null) => string): MapRoute {
   const points = logLines
     .filter(isValidCoordinate)
-    .map((line, index) => lineToPoint(line, index, "log-lines", labels));
+    .map((line, index) => lineToPoint(line, index, "log-lines", labels, formatTime));
 
   return {
     id: "log-lines",
@@ -84,15 +85,15 @@ function logLinesToRoute(logLines: LogLine[], labels: { weather: string; wind: s
   };
 }
 
-function logSheetToRoute(sheet: LogSheet, labels: { weather: string; wind: string }): MapRoute {
+function logSheetToRoute(sheet: LogSheet, labels: { weather: string; wind: string }, formatDate: (value?: string | null) => string, formatTime: (value?: string | null) => string): MapRoute {
   const points = sheet.lines
     .filter(isValidCoordinate)
-    .map((line, index) => lineToPoint(line, index, sheet.id, labels));
+    .map((line, index) => lineToPoint(line, index, sheet.id, labels, formatTime));
 
   return {
     id: sheet.id,
     title: sheet.title,
-    subtitle: `${sheet.dateRange} · ${sheet.route.from} → ${sheet.route.to}`,
+    subtitle: `${formatDate(sheet.dateRange)} · ${sheet.route.from} → ${sheet.route.to}`,
     points,
     detailLevel: "summary",
     sheet,
@@ -107,8 +108,9 @@ export function LogLinesMapView({
   onAddLogLineAt,
 }: LogLinesMapViewProps) {
   const { t } = useI18n();
+  const { formatTime } = useDateTimeFormat();
   const mapLabels = useMemo(() => ({ weather: t("details.weather"), wind: t("details.wind"), logLinePositions: t("map.logLinePositions") }), [t]);
-  const routes = useMemo(() => [logLinesToRoute(logLines, mapLabels)], [logLines, mapLabels]);
+  const routes = useMemo(() => [logLinesToRoute(logLines, mapLabels, formatTime)], [formatTime, logLines, mapLabels]);
   return (
     <OpenSeaMapLeaflet
       ariaLabel={ariaLabel ?? t("map.routePositionsAria")}
@@ -129,8 +131,9 @@ export function LogSheetsMapView({
   showRouteTargets = true,
 }: LogSheetsMapViewProps) {
   const { t } = useI18n();
+  const { formatDate, formatTime } = useDateTimeFormat();
   const mapLabels = useMemo(() => ({ weather: t("details.weather"), wind: t("details.wind") }), [t]);
-  const routes = useMemo(() => sheets.map((sheet) => logSheetToRoute(sheet, mapLabels)), [sheets, mapLabels]);
+  const routes = useMemo(() => sheets.map((sheet) => logSheetToRoute(sheet, mapLabels, formatDate, formatTime)), [formatDate, formatTime, mapLabels, sheets]);
   const mappedRoutes = routes.filter(
     (route) => route.sheet && route.points.length > 0,
   );
