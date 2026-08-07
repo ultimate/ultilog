@@ -73,12 +73,10 @@ export function LogSheetPrintView(props: LogSheetPrintViewProps) {
               <p className="print-kicker">{props.mode === "filled" ? t("print.filledSheet") : t("print.emptySheet")}</p>
               <h1>{valueOrBlank(sheet?.title, t("print.emptySheet"))}</h1>
               <div className="print-master-grid">
-                <PrintField label={t("print.field.date")} value={sheet?.dateRange} />
                 <PrintField label={t("print.field.departed")} value={sheet?.route.departed} />
                 <PrintField label={t("print.field.from")} value={sheet?.route.from} />
                 <PrintField label={t("print.field.arrived")} value={sheet?.route.arrived} />
                 <PrintField label={t("print.field.to")} value={sheet?.route.to} />
-                <PrintField label={t("print.field.skipper")} value={formatSkipper(sheet)} />
               </div>
             </div>
             <aside className="print-boat" aria-label="Boat">
@@ -198,7 +196,7 @@ function renderList(items: string[] | undefined, truncatedLabel: string) {
 
 function renderCrew(sheet: LogSheet | undefined) {
   if (!sheet?.crew.length) return <div className="print-writing-lines" aria-hidden="true" />;
-  return <ul>{sheet.crew.slice(0, 5).map((member, index) => <li key={`${member.id}-${index}`}>{index + 1}. {member.name} · {member.role}</li>)}</ul>;
+  return <ul>{sheet.crew.slice(0, 5).map((member, index) => <li key={`${member.id}-${index}`}>{index + 1}. {index === 0 ? "⭐ " : ""}{member.name} · {member.role}</li>)}</ul>;
 }
 
 function formatPageOf(template: string, page: number, pageCount: number) {
@@ -208,10 +206,6 @@ function formatPageOf(template: string, page: number, pageCount: number) {
 function formatCrew(sheet: LogSheet | undefined) {
   if (!sheet?.crew.length) return undefined;
   return sheet.crew.map((member) => member.name).filter(Boolean).join(", ");
-}
-
-function formatSkipper(sheet: LogSheet | undefined) {
-  return sheet?.crew.find((member) => member.role.toLowerCase().includes("skipper"))?.name;
 }
 
 function formatLatLon(line: LogLine | undefined) {
@@ -247,14 +241,16 @@ function valueOrBlank(value: string | number | undefined | null, fallback = "—
 
 const printStyles = `
 .log-sheet-print-view { color: #000; background: #fff; font-family: Arial, Helvetica, sans-serif; }
-.log-sheet-print-page { position: relative; box-sizing: border-box; display: grid; grid-template-rows: 32mm 1fr 40mm; gap: 2mm; width: 297mm; height: 210mm; padding: 6mm; border: 0.3mm solid #000; page-break-after: always; break-after: page; background: #fff; color: #000; }
+.log-sheet-print-page { position: relative; box-sizing: border-box; display: grid; grid-template-rows: 26mm 1fr 40mm; gap: 2mm; width: 297mm; height: 210mm; padding: 6mm; border: 0.3mm solid #000; page-break-after: always; break-after: page; background: #fff; color: #000; }
 .log-sheet-print-page:last-child { page-break-after: auto; break-after: auto; }
 .print-header, .print-footer { box-sizing: border-box; display: grid; gap: 2mm; width: 100%; min-width: 0; max-width: 100%; }
-.print-header { grid-template-columns: 1fr 46mm 46mm; border: 0.25mm solid #000; padding: 1.2mm; }
+.print-header { grid-template-columns: 1fr 58mm 42mm; border: 0.25mm solid #000; padding: 1.2mm; }
 .print-kicker, .print-field span { margin: 0; font-size: 7pt; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
 .print-title-block h1 { margin: 0 0 1mm; font-size: 13pt; line-height: 1.05; }
-.print-master-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1mm; }
-.print-boat, .print-summary { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1mm; border-left: 0.25mm solid #000; padding-left: 1.2mm; }
+.print-master-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1mm; }
+.print-boat, .print-summary { display: grid; gap: 1mm; border-left: 0.25mm solid #000; padding-left: 1.2mm; }
+.print-boat { grid-template-columns: repeat(3, 1fr); }
+.print-summary { grid-template-columns: repeat(2, 1fr); }
 .print-field { min-width: 0; border-bottom: 0.2mm solid #000; }
 .print-field strong { display: block; min-height: 11pt; overflow: hidden; font-size: 8pt; line-height: 1.15; text-overflow: ellipsis; white-space: nowrap; }
 .print-log-table { box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; height: 100%; border-collapse: collapse; table-layout: fixed; font-size: 6.6pt; line-height: 1.05; }

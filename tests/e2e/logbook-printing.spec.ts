@@ -35,7 +35,7 @@ test("prints empty sheets with fixed blank rows and print-only layout", async ({
   await expect(printPage).toHaveAttribute("data-template-revision", "1");
   await expect(printPage).toHaveAttribute("data-template-variant", "full");
   await expect(printPage).toHaveAttribute("data-template-locale", "en");
-  await expect(printPage.locator("tbody tr")).toHaveCount(18);
+  await expect(printPage.locator("tbody tr")).toHaveCount(19);
   await expectPrintContentWithinPage(printPage);
   await expect(page.getByRole("navigation", { name: "Primary modules" })).toBeHidden();
 });
@@ -53,9 +53,12 @@ test("prints filled sheets with filler rows, repeated header/footer, and page nu
   const printPage = page.locator(".log-sheet-print-page");
   await expect(printPage).toHaveCount(1);
   await expect(printPage.locator(".print-header")).toContainText(demoSheet.title);
+  await expect(printPage.locator(".print-header .print-field span", { hasText: /^Date$/ })).toHaveCount(0);
+  await expect(printPage.locator(".print-header .print-field span", { hasText: /^Skipper$/ })).toHaveCount(0);
+  await expect(printPage.locator(".print-crew-box")).toContainText(`⭐ ${demoSheet.crew[0].name}`);
   await expect(printPage.locator(".print-footer")).toHaveCount(1);
   await expect(printPage.locator(".print-page-number")).toHaveText("Page 1 of 1");
-  await expect(printPage.locator("tbody tr")).toHaveCount(18);
+  await expect(printPage.locator("tbody tr")).toHaveCount(19);
   await expect(printPage.locator("tbody tr").nth(demoSheet.lines.length)).toBeVisible();
 });
 
@@ -87,8 +90,8 @@ test("splits filled sheets that exceed one A4 landscape page", async ({ page }) 
   await expect(printPages.nth(0).locator(".print-page-number")).toHaveText("Page 1 of 2");
   await expect(printPages.nth(1).locator(".print-page-number")).toHaveText("Page 2 of 2");
   await expect(printPages.locator(".print-template-marker")).toHaveCount(2);
-  await expect(printPages.nth(0).locator("tbody tr")).toHaveCount(18);
-  await expect(printPages.nth(1).locator("tbody tr")).toHaveCount(18);
+  await expect(printPages.nth(0).locator("tbody tr")).toHaveCount(19);
+  await expect(printPages.nth(1).locator("tbody tr")).toHaveCount(19);
   await expect(printPages.nth(0).locator(".print-remark-small, .print-remark-tiny")).toHaveCount(1);
 });
 
