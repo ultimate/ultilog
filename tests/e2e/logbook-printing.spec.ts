@@ -30,9 +30,9 @@ test("prints empty sheets with fixed blank rows and print-only layout", async ({
   await expect(printPage.locator(".print-header")).toHaveCount(1);
   await expect(printPage.locator(".print-footer")).toHaveCount(1);
   await expect(printPage.locator(".print-page-number")).toHaveText("Page 1 of 1");
-  await expect(printPage.locator(".print-template-marker")).toHaveText("ULTILOG:ultilog-logsheet:v1:full:en");
+  await expect(printPage.locator(".print-template-marker")).toHaveText("ULTILOG:ultilog-logsheet:v2:full:en");
   await expect(printPage).toHaveAttribute("data-template-id", "ultilog-logsheet");
-  await expect(printPage).toHaveAttribute("data-template-revision", "1");
+  await expect(printPage).toHaveAttribute("data-template-revision", "2");
   await expect(printPage).toHaveAttribute("data-template-variant", "full");
   await expect(printPage).toHaveAttribute("data-template-locale", "en");
   await expect(printPage.locator("tbody tr")).toHaveCount(20);
