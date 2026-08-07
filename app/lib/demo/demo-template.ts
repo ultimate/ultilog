@@ -281,7 +281,6 @@ function createSheet(dayData: Day, boat: Boat, memberIds: string[], index: numbe
   return {
     id: `demo-sheet-${dayData.id}`,
     title: dayData.title,
-    dateRange: dayData.date,
     status: index === 3 ? "Draft" : "Locked",
     source: "manual",
     verificationNote: `Demo record. ${DEMO_WEATHER_PROVENANCE.note}`,

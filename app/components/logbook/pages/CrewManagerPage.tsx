@@ -21,7 +21,7 @@ type CrewManagerPageProps = Record<string, any>;
 
 export function CrewManagerPage(props: CrewManagerPageProps) {
   const { t } = useI18n();
-  const { formatDate } = useDateTimeFormat();
+  const { formatDateRange } = useDateTimeFormat();
   const {
     selectedCrewIndex,
     lastCrewIndex,
@@ -253,7 +253,7 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
                       {isSkipper ? `⭐ ${t("crew.skipper")} · ` : `${t("crew.label")} · `}
                       {sheet.title}
                     </strong>
-                    <small>{formatDate(sheet.dateRange)}</small>
+                    <small>{formatDateRange(sheet.route.departed, sheet.route.arrived)}</small>
                   </li>
                 ))}
               </ul>

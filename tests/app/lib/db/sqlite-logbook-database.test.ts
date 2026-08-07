@@ -65,7 +65,7 @@ describe("SqliteLogbookDatabase", () => {
     const updatedLogbook = {
       crewMembers: [],
       boats: [{ id: "boat-1", archived: true, name: "SY Repository Test", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: defaultDeviationTable() }],
-      sheets: [{ id: "sheet-1", title: "Repository integration test", dateRange: "2026-07-10", status: "Draft" as const, boatId: "boat-1", route: { from: "", to: "", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] }],
+      sheets: [{ id: "sheet-1", title: "Repository integration test", status: "Draft" as const, boatId: "boat-1", route: { from: "", to: "", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] }],
     };
 
     await firstWrapper.writeLogbook(updatedLogbook);

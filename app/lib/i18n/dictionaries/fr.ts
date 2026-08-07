@@ -299,6 +299,8 @@ export const fr: Dictionary = {
   "logbooks.mapHelp": "Cliquez sur une section de route pour ouvrir la feuille correspondante.",
   "logbooks.mapAria": "Carte d’ensemble de toutes les feuilles de journal",
   "logbooks.date": "Date",
+  "logbooks.startDate": "Date de départ",
+  "logbooks.endDate": "Date de fin",
   "logbooks.entry": "Entrée",
   "logbooks.vessel": "Bateau",
   "logbooks.fromTo": "De → À",

@@ -299,6 +299,8 @@ export const de: Dictionary = {
   "logbooks.mapHelp": "Klicke auf einen Routenabschnitt, um das zugehörige Logblatt zu öffnen.",
   "logbooks.mapAria": "Übersichtskarte aller Logblätter",
   "logbooks.date": "Datum",
+  "logbooks.startDate": "Startdatum",
+  "logbooks.endDate": "Enddatum",
   "logbooks.entry": "Eintrag",
   "logbooks.vessel": "Schiff",
   "logbooks.fromTo": "Von → Bis",

@@ -299,6 +299,8 @@ export const it: Dictionary = {
   "logbooks.mapHelp": "Fai clic su un tratto di rotta per aprire il foglio corrispondente.",
   "logbooks.mapAria": "Mappa panoramica di tutti i fogli di log",
   "logbooks.date": "Data",
+  "logbooks.startDate": "Data di inizio",
+  "logbooks.endDate": "Data di fine",
   "logbooks.entry": "Voce",
   "logbooks.vessel": "Imbarcazione",
   "logbooks.fromTo": "Da → A",

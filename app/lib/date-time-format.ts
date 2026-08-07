@@ -1,3 +1,5 @@
+import { normalizeIsoDate } from "./iso-date";
+
 export const dateFormats = ["dd/MM/yyyy", "MM/dd/yyyy", "yyyy-MM-dd", "dd.MM.yyyy", "dd-MM-yyyy", "d MMM yyyy", "MMM d, yyyy"] as const;
 export const timeFormats = ["HH:mm", "h:mm a", "HH:mm:ss", "h:mm:ss a"] as const;
 
@@ -50,4 +52,11 @@ export function formatStoredDateTime(value: string | undefined | null, dateForma
   const time = formatStoredTime(value, timeFormat);
   return time && time !== value ? `${date}, ${time}` : date;
 }
-import { normalizeIsoDate } from "./iso-date";
+
+export function formatStoredDateRange(from: string | undefined | null, to: string | undefined | null, dateFormat: DateFormat, locale = "en") {
+  const start = formatStoredDate(from, dateFormat, locale);
+  const end = formatStoredDate(to, dateFormat, locale);
+  if (!start) return end;
+  if (!end || end === start) return start;
+  return `${start} – ${end}`;
+}

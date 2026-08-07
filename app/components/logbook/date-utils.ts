@@ -43,7 +43,7 @@ export function isoDateTimeWithTimezone(dateTimeLocal: string, timezoneOffset: s
 }
 
 export function routeStamp(date: string, time: string, timezoneOffset = localTimezoneOffset()) {
-  return time ? isoDateTimeWithTimezone(`${date}T${time}`, timezoneOffset) : `${date}, time open`;
+  return isoDateTimeWithTimezone(`${date}T${time || "00:00"}`, timezoneOffset);
 }
 
 export function routeStampFromDateTimeLocal(dateTimeLocal: string, timezoneOffset = localTimezoneOffset()) {

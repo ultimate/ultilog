@@ -16,7 +16,7 @@ const liveScannerEnabled = process.env.RUN_LIVE_SCANNER_TESTS === "true" && Bool
 type ExpectedFixtureLine = Record<string, string | number | undefined>;
 type ExpectedFixture = {
   title?: string;
-  dateRange?: string;
+  dateText?: string;
   route?: { from?: string; to?: string; departed?: string; arrived?: string };
   lines?: ExpectedFixtureLine[];
   template?: {
@@ -83,18 +83,19 @@ describe("logbook scanner image fixtures", () => {
 
     expect(sheet).toEqual(expect.objectContaining({
       title: expected.title,
-      dateRange: normalizeIsoDate(expected.dateRange || expected.route?.departed || ""),
       status: "Draft",
       source: "scanner",
       boatId: "fixture-boat",
-      route: expected.route,
+      route: expect.objectContaining({ from: expected.route?.from, to: expected.route?.to }),
       scannerWarnings: scannerResult.warnings,
     }));
+    expect(sheet.route.departed).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$/);
+    expect(sheet.route.arrived).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$/);
     expect(sheet.lines).toHaveLength(expected.lines?.length ?? 0);
 
     expected.lines?.forEach((line, index) => {
       const actual = sheet.lines[index];
-      expect(actual).toEqual(expect.objectContaining(projectExpectedLine(line, actual, sheet.dateRange)));
+      expect(actual).toEqual(expect.objectContaining(projectExpectedLine(line, actual, normalizeIsoDate(expected.dateText || expected.route?.departed || "") ?? "")));
     });
 
     const serialized = JSON.stringify(sheet);
@@ -145,7 +146,7 @@ function expectedToScannerResult(expected: ExpectedFixture): ScannerResult {
   return {
     draft: {
       title: expected.title ?? "",
-      dateRange: expected.dateRange ?? "",
+      dateText: expected.dateText ?? "",
       route: {
         from: expected.route?.from ?? "",
         to: expected.route?.to ?? "",

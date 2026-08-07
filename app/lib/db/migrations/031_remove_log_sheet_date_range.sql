@@ -1,0 +1,2 @@
+-- Applied programmatically by migrations.ts to backfill route dates before the
+-- duplicate date_range column is removed on SQLite and PostgreSQL.

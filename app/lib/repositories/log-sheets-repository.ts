@@ -1,14 +1,14 @@
 import { calculateLogSheetMetrics } from "../../domain/logbook/sheet-metrics";
 import { defaultLogSheetShareSettings, normalizeDeviationTable, normalizeWindDriftTable, type Boat, type BoatRow, type CrewMemberRow, type LogLine, type LogLineRow, type LogSheet, type LogSheetRow, type PersistedLogbook, type StoredLogSheet } from "../../models/logbook";
 import type { QueryableDatabase } from "../db/logbook-database";
-import { requireIsoDate } from "../iso-date";
 import { imageFromRow, imageValues, scopedId, unscopedId } from "./boats-repository";
 
 export class LogSheetsRepository {
   constructor(private db: QueryableDatabase) {}
 
   async findAll(ownerId: string) {
-    return (await this.db.query<LogSheetRow>(`select * from log_sheets where owner_id = ${this.db.placeholder(1)} order by date_range desc, title`, [ownerId])).rows;
+    const rows = (await this.db.query<LogSheetRow>(`select * from log_sheets where owner_id = ${this.db.placeholder(1)}`, [ownerId])).rows;
+    return rows.sort((left, right) => routeStart(right).localeCompare(routeStart(left)) || left.title.localeCompare(right.title));
   }
 
   async findSharedByScopedId(scopedSheetId: string) {
@@ -26,8 +26,8 @@ export class LogSheetsRepository {
   async insert(sheet: LogSheet, ownerId: string, motionStationaryThresholdNm = 0.1) {
     const metrics = calculateLogSheetMetrics(sheet.lines, sheet.route, { stationaryDistanceThresholdNm: motionStationaryThresholdNm });
     await this.db.query(
-      `insert into log_sheets (id, title, date_range, status, source, verification_note, scanner_warnings, boat_id, skipper, route, weather_briefing, day_summary, remarks, watch_plan, technical_checks, image_data, image_mime_type, image_width, image_height, owner_id, motor_miles, sail_miles, total_miles, duration_minutes, motor_hours, overall_duration_minutes, motion_duration_minutes, share_privacy, share_master_data, share_picture, share_loglines, share_metrics, share_technical_log, share_skipper, share_crew) values (${this.values(35)})`,
-      [scopedId(ownerId, sheet.id), sheet.title, requireIsoDate(sheet.dateRange, "Log sheet date"), sheet.status, sheet.source ?? null, sheet.verificationNote ?? null, sheet.scannerWarnings ? JSON.stringify(sheet.scannerWarnings) : null, scopedId(ownerId, sheet.boatId), JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), ...imageValues(sheet.image), ownerId, metrics.motorMiles, metrics.sailMiles, metrics.totalMiles, metrics.durationMinutes, metrics.motorHours, metrics.overallDurationMinutes, metrics.motionDurationMinutes, overallPrivacy(sheet.share), privacyFor(sheet.share?.masterData), privacyFor(sheet.share?.picture), privacyFor(sheet.share?.logLines), privacyFor(sheet.share?.metrics), privacyFor(sheet.share?.technicalLog), privacyFor(sheet.share?.skipper), privacyFor(sheet.share?.crew)],
+      `insert into log_sheets (id, title, status, source, verification_note, scanner_warnings, boat_id, skipper, route, weather_briefing, day_summary, remarks, watch_plan, technical_checks, image_data, image_mime_type, image_width, image_height, owner_id, motor_miles, sail_miles, total_miles, duration_minutes, motor_hours, overall_duration_minutes, motion_duration_minutes, share_privacy, share_master_data, share_picture, share_loglines, share_metrics, share_technical_log, share_skipper, share_crew) values (${this.values(34)})`,
+      [scopedId(ownerId, sheet.id), sheet.title, sheet.status, sheet.source ?? null, sheet.verificationNote ?? null, sheet.scannerWarnings ? JSON.stringify(sheet.scannerWarnings) : null, scopedId(ownerId, sheet.boatId), JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), ...imageValues(sheet.image), ownerId, metrics.motorMiles, metrics.sailMiles, metrics.totalMiles, metrics.durationMinutes, metrics.motorHours, metrics.overallDurationMinutes, metrics.motionDurationMinutes, overallPrivacy(sheet.share), privacyFor(sheet.share?.masterData), privacyFor(sheet.share?.picture), privacyFor(sheet.share?.logLines), privacyFor(sheet.share?.metrics), privacyFor(sheet.share?.technicalLog), privacyFor(sheet.share?.skipper), privacyFor(sheet.share?.crew)],
     );
   }
 
@@ -101,6 +101,10 @@ export class LogSheetsRepository {
   }
 }
 
+function routeStart(sheet: LogSheetRow) {
+  return parseJson<Partial<LogSheet["route"]>>(sheet.route)?.departed ?? "";
+}
+
 function parseJson<T>(value: unknown): T {
   return typeof value === "string" ? JSON.parse(value) as T : value as T;
 }
@@ -117,7 +121,6 @@ function mapStoredSheet(sheet: LogSheetRow): StoredLogSheet {
   return {
     id: unscopedId(sheet.id),
     title: sheet.title,
-    dateRange: sheet.date_range,
     status: sheet.status,
     ...(sheet.source ? { source: sheet.source } : {}),
     ...(sheet.verification_note ? { verificationNote: sheet.verification_note } : {}),

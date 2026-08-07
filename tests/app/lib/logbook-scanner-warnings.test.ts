@@ -88,7 +88,7 @@ function scannerResult(lines: ScannerResult["draft"]["lines"]): ScannerResult {
   return {
     draft: {
       title: "Test",
-      dateRange: "2026-08-04",
+      dateText: "2026-08-04",
       route: { from: "A", to: "B", departed: "10:00", arrived: "11:00" },
       lines: lines.map((line) => ({ time: "10:30", position: "At sea", speedKn: "5", logNm: "10", ...line })),
     },

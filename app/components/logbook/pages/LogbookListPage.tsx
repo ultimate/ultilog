@@ -92,7 +92,8 @@ export function LogbookListPage({
     summary: calculateSheetSummary(sheet),
   })), [calculateSheetSummary, filteredSheets, logbook.boats]);
   const columns = useMemo(() => [
-    { key: "date", value: (row: SheetListRow) => row.sheet.dateRange },
+    { key: "startDate", value: (row: SheetListRow) => row.sheet.route.departed },
+    { key: "endDate", value: (row: SheetListRow) => row.sheet.route.arrived },
     { key: "entry", value: (row: SheetListRow) => row.sheet.title },
     { key: "vessel", value: (row: SheetListRow) => row.boat?.name },
     { key: "route", value: (row: SheetListRow) => [row.sheet.route.from, row.sheet.route.to] },
@@ -310,7 +311,8 @@ export function LogbookListPage({
             <table className="logbook-table">
               <thead>
                 <tr>
-                  {header("date", t("logbooks.date"))}
+                  {header("startDate", t("logbooks.startDate"))}
+                  {header("endDate", t("logbooks.endDate"))}
                   {header("entry", t("logbooks.entry"))}
                   {header("vessel", t("logbooks.vessel"))}
                   {header("route", t("logbooks.fromTo"))}
@@ -327,7 +329,8 @@ export function LogbookListPage({
                 {list.pageItems.map(({ sheet, boat, summary: sheetSummary }) => {
                   return (
                     <tr key={sheet.id}>
-                      <td>{formatDate(sheet.dateRange)}</td>
+                      <td>{formatDate(sheet.route.departed)}</td>
+                      <td>{formatDate(sheet.route.arrived)}</td>
                       <td>
                         <button
                           className="table-title-button"

@@ -19,7 +19,7 @@ function nonNegativeInputValue(value: string) {
 
 export function BoatManagerPage(props: BoatManagerPageProps) {
   const { t } = useI18n();
-  const { formatDate } = useDateTimeFormat();
+  const { formatDateRange } = useDateTimeFormat();
   const {
     showBoatManager,
     saveBoat,
@@ -432,7 +432,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                 {selectedBoatSheets.map((sheet) => (
                   <li key={sheet.id}>
                     <strong>{sheet.title}</strong>
-                    <small>{formatDate(sheet.dateRange)}</small>
+                    <small>{formatDateRange(sheet.route.departed, sheet.route.arrived)}</small>
                   </li>
                 ))}
               </ul>

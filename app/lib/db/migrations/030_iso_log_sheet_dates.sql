@@ -1,2 +1,0 @@
--- Applied programmatically by migrations.ts so SQLite and PostgreSQL use the
--- same strict date parser when converting legacy log-sheet master dates.

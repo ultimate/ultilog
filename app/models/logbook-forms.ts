@@ -1,6 +1,6 @@
 import type { Boat, BoatType, CrewMember, LogLine, LogSheet } from "./logbook";
 
-export type SheetForm = Pick<LogSheet, "title" | "dateRange" | "boatId" | "status" | "image"> & Pick<LogSheet["route"], "from" | "to"> & { fromTime: string; toTime: string; fromTimezone: string; toTimezone: string };
+export type SheetForm = Pick<LogSheet, "title" | "boatId" | "status" | "image"> & Pick<LogSheet["route"], "from" | "to"> & { fromDate: string; toDate: string; fromTime: string; toTime: string; fromTimezone: string; toTimezone: string };
 
 export type BoatForm = Pick<Boat, "name" | "registration" | "flagState" | "homePort" | "owner" | "dimensions" | "logfactor" | "image"> & {
   type: BoatType;

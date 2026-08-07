@@ -41,7 +41,6 @@ export default async function SharedLogbookPage({ params }: { params: Promise<{ 
           <div className="sheet-master-title">
             <p className="eyebrow">Shared logbook</p>
             <h1>{sheet.title}</h1>
-            <p>{sheet.dateRange}</p>
           </div>
           {(boatName || sheet.route.from || sheet.route.to) && (
             <div className="paper-header header-table">

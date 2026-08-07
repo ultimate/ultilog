@@ -4,7 +4,7 @@ export type ScannedLogLine = Partial<Record<keyof LineForm, string>>;
 
 export type ScannedLogSheetDraft = {
   title?: string;
-  dateRange?: string;
+  dateText?: string;
   route?: {
     from?: string;
     to?: string;

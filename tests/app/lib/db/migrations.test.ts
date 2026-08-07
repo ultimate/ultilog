@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { runMigrations } from "../../../../app/lib/db/migrations";
+import { removeLegacyLogSheetDateRange, runMigrations } from "../../../../app/lib/db/migrations";
 import type { QueryableDatabase, QueryResult } from "../../../../app/lib/db/logbook-database";
 
 class DuplicateColumnDatabase implements QueryableDatabase {
@@ -67,20 +67,15 @@ class IsoDatetimeMigrationDatabase implements QueryableDatabase {
 }
 
 
-class IsoLogSheetDateMigrationDatabase implements QueryableDatabase {
+
+
+class RemoveDateRangeDatabase implements QueryableDatabase {
   calls: Array<{ sql: string; params?: unknown[] }> = [];
-  placeholder(index: number) {
-    return `$${index}`;
-  }
+  placeholder(index: number) { return `$${index}`; }
   async query<Row>(sql: string, params?: unknown[]): Promise<QueryResult<Row>> {
     this.calls.push({ sql, params });
-    if (sql.includes("select id from schema_migrations")) return { rows: [] };
     if (sql === "select id, date_range, route from log_sheets") {
-      return { rows: [
-        { id: "legacy", date_range: "14 May 2026", route: "{}" },
-        { id: "route-fallback", date_range: "Spring passage", route: JSON.stringify({ departed: "2026-06-03T08:00:00+02:00" }) },
-        { id: "already-iso", date_range: "2026-07-01", route: "{}" },
-      ] as Row[] };
+      return { rows: [{ id: "legacy-sheet", date_range: "14 May 2026", route: JSON.stringify({ from: "A", to: "B", departed: "", arrived: "" }) }] as Row[] };
     }
     return { rows: [] };
   }
@@ -114,13 +109,17 @@ describe("runMigrations", () => {
     }));
   });
 
-  it("migrates legacy log sheet master dates to ISO date strings", async () => {
-    const db = new IsoLogSheetDateMigrationDatabase();
 
-    await expect(runMigrations(db)).resolves.toBeUndefined();
+  it("moves the legacy sheet date into route timestamps before dropping the duplicate column", async () => {
+    const db = new RemoveDateRangeDatabase();
 
-    expect(db.calls).toContainEqual({ sql: "update log_sheets set date_range = $1 where id = $2", params: ["2026-05-14", "legacy"] });
-    expect(db.calls).toContainEqual({ sql: "update log_sheets set date_range = $1 where id = $2", params: ["2026-06-03", "route-fallback"] });
-    expect(db.calls).not.toContainEqual(expect.objectContaining({ params: [expect.anything(), "already-iso"] }));
+    await removeLegacyLogSheetDateRange(db);
+
+    expect(db.calls).toContainEqual({
+      sql: "update log_sheets set route = $1 where id = $2",
+      params: [JSON.stringify({ from: "A", to: "B", departed: "2026-05-14T00:00:00+00:00", arrived: "2026-05-14T00:00:00+00:00" }), "legacy-sheet"],
+    });
+    expect(db.calls.at(-1)).toEqual({ sql: "alter table log_sheets drop column date_range", params: undefined });
   });
+
 });

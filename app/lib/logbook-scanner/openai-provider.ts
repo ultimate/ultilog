@@ -113,10 +113,10 @@ const scannerResultJsonSchema = {
     draft: {
       type: "object",
       additionalProperties: false,
-      required: ["title", "dateRange", "route", "lines"],
+      required: ["title", "dateText", "route", "lines"],
       properties: {
         title: { type: "string" },
-        dateRange: { type: "string" },
+        dateText: { type: "string" },
         route: {
           type: "object",
           additionalProperties: false,
@@ -154,7 +154,7 @@ Never include raw image data, file names, or unrelated commentary in the respons
 
 const extractionInstructions = `Extract a logbook draft from these image(s). The JSON must match ScannerResult:
 - draft.title: sheet title if visible. If there is no dedicated title, use the value of a Tagesziel/Daily goal field as the title; otherwise use an empty string.
-- draft.dateRange: visible date or date range, otherwise empty string.
+- draft.dateText: visible date or date range, otherwise empty string.
 - draft.route.from/to/departed/arrived: visible route information, otherwise empty strings. Treat Standort morgens/Location morning as route.from and Standort abends/Location evening as route.to.
 - draft.lines: one object per logbook row using only the schema's log line fields.
 - Use the renamed log line fields waves, compassCourse, magneticCourse, windDrift, weatherRemark, and temperature.
@@ -226,7 +226,7 @@ export function isOpenAiScannerProviderConfigured() {
 
 export async function extractLogbookDraft(input: ScannerProviderInput): Promise<ScannerResult> {
   if (input.files.length === 0) {
-    return { draft: { title: "", dateRange: "", route: { from: "", to: "", departed: "", arrived: "" }, lines: [] }, warnings: ["No images were provided for scanning."] };
+    return { draft: { title: "", dateText: "", route: { from: "", to: "", departed: "", arrived: "" }, lines: [] }, warnings: ["No images were provided for scanning."] };
   }
 
   if (!isOpenAiScannerProviderConfigured()) {
@@ -369,7 +369,7 @@ export function findLocalWarnings(result: ScannerResult): string[] {
   const route = result.draft.route;
 
   if (!result.draft.title) warnings.add("Missing or unclear sheet title.");
-  if (!result.draft.dateRange) warnings.add("Missing or unclear sheet date range.");
+  if (!result.draft.dateText) warnings.add("Missing or unclear sheet date range.");
   if (!route?.from) warnings.add("Missing or unclear route origin.");
   if (!route?.to) warnings.add("Missing or unclear route destination.");
   if (!route?.departed) warnings.add("Missing or unclear departure time.");

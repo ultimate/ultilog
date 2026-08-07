@@ -28,7 +28,6 @@ export const defaultLogSheetShareSettings: LogSheetShareSettings = {
 export type LogSheet = {
   id: string;
   title: string;
-  dateRange: string;
   status: "Draft" | "Locked";
   source?: "manual" | "scanner";
   verificationNote?: string;

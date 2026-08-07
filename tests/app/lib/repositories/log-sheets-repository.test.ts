@@ -33,7 +33,7 @@ describe("LogSheetsRepository", () => {
     const db = new MockDatabase({ log_sheets: [row] });
 
     await expect(new LogSheetsRepository(db).findAll("repository-user")).resolves.toEqual([row]);
-    expect(db.calls[0].sql).toBe("select * from log_sheets where owner_id = $1 order by date_range desc, title");
+    expect(db.calls[0].sql).toBe("select * from log_sheets where owner_id = $1");
     expect(db.calls[0].values).toEqual(["repository-user"]);
   });
 
@@ -50,7 +50,7 @@ describe("LogSheetsRepository", () => {
     await new LogSheetsRepository(db).insert(sheet, "repository-user");
 
     expect(db.calls[0].sql).toContain("insert into log_sheets");
-    expect(db.calls[0].values).toEqual([`repository-user:${sheet.id}`, sheet.title, "2026-05-14", sheet.status, null, null, null, `repository-user:${sheet.boatId}`, JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), null, null, null, null, "repository-user", 9, 54, 63, 635, 1, 635, 635, "private", 0, 0, 0, 0, 0, 0, 0]);
+    expect(db.calls[0].values).toEqual([`repository-user:${sheet.id}`, sheet.title, sheet.status, null, null, null, `repository-user:${sheet.boatId}`, JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), null, null, null, null, "repository-user", 9, 54, 63, 635, 1, 635, 635, "private", 0, 0, 0, 0, 0, 0, 0]);
   });
 
   it("maps relational rows back to a persisted logbook", () => {
@@ -90,7 +90,7 @@ describe("LogSheetsRepository", () => {
 
     await new LogSheetsRepository(db).insert({ ...sheet, image }, "repository-user");
 
-    expect(db.calls[0].values?.slice(15, 19)).toEqual([image.data, image.mimeType, image.width, image.height]);
+    expect(db.calls[0].values?.slice(14, 18)).toEqual([image.data, image.mimeType, image.width, image.height]);
 
     const boatRow: BoatRow = { ...boat, flag_state: boat.flagState, home_port: boat.homePort, yacht_data: JSON.stringify(boat.yachtData), deviation_table: JSON.stringify(boat.deviationTable), image_data: "base64-boat", image_mime_type: "image/png", image_width: 640, image_height: 480 };
     const sheetRow = logSheetRow({ image_data: image.data, image_mime_type: image.mimeType, image_width: image.width, image_height: image.height });
@@ -110,7 +110,6 @@ function logSheetRow(overrides: Partial<LogSheetRow> = {}): LogSheetRow {
   return {
     id: sheet.id,
     title: sheet.title,
-    date_range: sheet.dateRange,
     status: sheet.status,
     boat_id: sheet.boatId,
     skipper: JSON.stringify({}),
