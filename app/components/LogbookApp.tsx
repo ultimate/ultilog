@@ -50,6 +50,7 @@ import {
 import { ManagerShell } from "./managers/ManagerShell";
 import { courseConversionColumns } from "../domain/nautical/course-conversion";
 import { calculateLogSheetMetrics, formatLogSheetDuration } from "../domain/logbook/sheet-metrics";
+import { activeBoats } from "../domain/boats/boat-policy";
 import { lineFormToLogLine } from "../domain/log-lines/log-line-form";
 import type { MeteoLogLineAutofill, MeteoSourceRemarkPart } from "../domain/meteo";
 import { ModuleTabs, type ActiveView } from "../templates/ModuleTabs";
@@ -104,9 +105,10 @@ function resolvePreferredBoatId(
   logbook: PersistedLogbook,
   preferences: SheetFormPreferences,
 ) {
-  return logbook.boats.some((boat) => boat.id === preferences.defaultBoatId)
+  const availableBoats = activeBoats(logbook.boats);
+  return availableBoats.some((boat) => boat.id === preferences.defaultBoatId)
     ? preferences.defaultBoatId
-    : (logbook.boats[0]?.id ?? "");
+    : (availableBoats[0]?.id ?? "");
 }
 
 function createDefaultSheetForm(
@@ -205,6 +207,7 @@ export function LogbookApp({
     defaultLogbook.boats[0]?.id ?? "",
   );
   const [scannerBoatId, setScannerBoatId] = useState(defaultLogbook.boats[0]?.id ?? "");
+  const [logsheetBoatFilterId, setLogsheetBoatFilterId] = useState("");
   const [selectedScannerFiles, setSelectedScannerFiles] = useState<File[]>([]);
   const [isScannerPrivacyConfirmed, setIsScannerPrivacyConfirmed] =
     useState(false);
@@ -388,7 +391,8 @@ export function LogbookApp({
           : undefined;
       const fallbackSheet =
         normalizedLogbook.sheets[0] ?? emptySheet;
-      const fallbackBoat = normalizedLogbook.boats[0] ?? emptyBoat;
+      const availableStoredBoats = activeBoats(normalizedLogbook.boats);
+      const fallbackBoat = availableStoredBoats[0] ?? normalizedLogbook.boats[0] ?? emptyBoat;
       const nextSheet = routedSheet ?? fallbackSheet;
       const nextBoat = routedBoat ?? fallbackBoat;
 
@@ -403,9 +407,9 @@ export function LogbookApp({
       );
       setSelectedBoatId(nextBoat.id);
       setScannerBoatId(
-        normalizedLogbook.boats.length === 1
-          ? normalizedLogbook.boats[0].id
-          : nextBoat.id,
+        availableStoredBoats.length === 1
+          ? availableStoredBoats[0].id
+          : (availableStoredBoats.some((boat) => boat.id === nextBoat.id) ? nextBoat.id : availableStoredBoats[0]?.id ?? ""),
       );
       if (routedBoat) {
         setEditingBoatId(routedBoat.id);
@@ -692,10 +696,11 @@ export function LogbookApp({
     emptyBoat;
   const selectedCrew =
     logbook.crewMembers[selectedCrewIndex] ?? logbook.crewMembers[0];
+  const availableBoats = activeBoats(logbook.boats);
   const effectiveScannerBoatId =
-    logbook.boats.length === 1
-      ? logbook.boats[0].id
-      : logbook.boats.some((boat) => boat.id === scannerBoatId)
+    availableBoats.length === 1
+      ? availableBoats[0].id
+      : availableBoats.some((boat) => boat.id === scannerBoatId)
         ? scannerBoatId
         : preferredBoatId;
   const isAdmin = userGroups.includes("admin");
@@ -784,7 +789,7 @@ export function LogbookApp({
           onChange={(event) => setSheetInlineDraft(event.target.value)}
           autoFocus
         >
-          {logbook.boats.map((boat) => (
+          {availableBoats.map((boat) => (
             <option key={boat.id} value={boat.id}>
               {boat.name}
             </option>
@@ -916,6 +921,7 @@ export function LogbookApp({
     const previousBoat = currentLogbook.boats.find((boat) => boat.id === id);
     const boat: Boat = {
       id,
+      archived: previousBoat?.archived ?? false,
       name: boatForm.name,
       type: boatForm.type,
       registration: boatForm.registration,
@@ -1048,6 +1054,20 @@ export function LogbookApp({
       return;
     setSelectedBoatId(nextBoats[0]?.id ?? "");
     setEditingBoatId(nextBoats[0]?.id ?? null);
+  }
+
+  async function setSelectedBoatArchived(archived: boolean) {
+    if (!selectedBoat?.id) return;
+    const nextBoats = logbookRef.current.boats.map((boat) =>
+      boat.id === selectedBoat.id ? { ...boat, archived } : boat,
+    );
+    await saveLogbookNow({ ...logbookRef.current, boats: nextBoats });
+  }
+
+  function showSelectedBoatLogsheets() {
+    if (!selectedBoat?.id) return;
+    setLogsheetBoatFilterId(selectedBoat.id);
+    navigate("logbooks");
   }
 
   function startEditingBoat(boat: Boat) {
@@ -1815,6 +1835,8 @@ export function LogbookApp({
               isScannerPrivacyConfirmed={isScannerPrivacyConfirmed}
               calculateSheetSummary={(sheet) => calculateSheetSummary(sheet, preferences.motionStationaryThresholdNm)}
               logbook={logbook}
+              boatFilterId={logsheetBoatFilterId}
+              onBoatFilterChange={setLogsheetBoatFilterId}
               navigate={navigate}
               onScanFilesSelected={selectScannerFiles}
               onScannerUploadConfirmed={createSheetFromScan}
@@ -1908,6 +1930,8 @@ export function LogbookApp({
               editingBoatId={editingBoatId}
               cancelBoatEdit={cancelBoatEdit}
               deleteSelectedBoat={deleteSelectedBoat}
+              setSelectedBoatArchived={setSelectedBoatArchived}
+              showSelectedBoatLogsheets={showSelectedBoatLogsheets}
               setSelectedBoatId={setSelectedBoatId}
               pushAppPath={pushAppPath}
               defaultPageSize={preferences.defaultPageSize}

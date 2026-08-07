@@ -1,7 +1,7 @@
 import { EntityImage } from "../EntityImage";
 import { flagGroups, flagOptionEmoji } from "../../../lib/flags";
 import { useI18n } from "../../../lib/i18n";
-import { useMemo, useRef, type Dispatch, type SetStateAction } from "react";
+import { useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { windDriftSailSettings, type Boat, type BoatForm, type BoatType, type PersistedLogbook } from "../../../models/logbook";
 import { boatToForm, defaultBoatForm } from "../forms";
 import { modulePath } from "../persistence";
@@ -24,6 +24,8 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
     editingBoatId,
     cancelBoatEdit,
     deleteSelectedBoat,
+    setSelectedBoatArchived,
+    showSelectedBoatLogsheets,
     pushAppPath,
   } = props;
   const boatForm = props.boatForm as BoatForm;
@@ -42,9 +44,14 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
   const isDemo = Boolean(props.isDemo);
   const onDemoFeatureBlocked = props.onDemoFeatureBlocked as (feature: "images") => void;
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const [showArchived, setShowArchived] = useState(false);
   const selectedBoatSheets = useMemo(
     () => logbook.sheets.filter((sheet) => sheet.boatId === (editingBoatId ?? selectedBoat.id)),
     [editingBoatId, logbook.sheets, selectedBoat.id],
+  );
+  const visibleBoats = useMemo(
+    () => logbook.boats.filter((boat) => showArchived || !boat.archived),
+    [logbook.boats, showArchived],
   );
   const columns = useMemo(() => [
     { key: "name", value: (boat: Boat) => boat.name },
@@ -54,7 +61,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
     { key: "homePort", value: (boat: Boat) => boat.homePort },
     { key: "owner", value: (boat: Boat) => boat.owner },
   ], []);
-  const list = useSortableList(logbook.boats, columns, props.defaultPageSize as number, "name");
+  const list = useSortableList(visibleBoats, columns, props.defaultPageSize as number, "name");
 
   return (
     <section className="sheet-detail module-panel">
@@ -69,6 +76,10 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
         list={
           <>
           <ListSearch value={list.query} onChange={list.setQuery} />
+          <label className="manager-list-filter">
+            <input type="checkbox" checked={showArchived} onChange={(event) => setShowArchived(event.currentTarget.checked)} />
+            {t("boats.showArchived")}
+          </label>
           <div className="manager-list-sort">
             <label>{t("list.sortBy")} <select value={list.sort.key} onChange={(event) => list.setSortKey(event.target.value)}>{columns.map((column) => <option key={column.key} value={column.key}>{t(column.key === "flagState" ? "boats.flagState" : column.key === "homePort" ? "boats.homePort" : `common.${column.key}` as any)}</option>)}</select></label>
             <button type="button" className="edit-chip" onClick={() => list.setSortKey(list.sort.key)} aria-label={t("list.toggleDirection")}>{list.sort.direction === "ascending" ? "▲" : "▼"}</button>
@@ -95,6 +106,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                   />
                   <span>
                     <strong>{boat.name}</strong>
+                    {boat.archived && <small>{t("boats.archived")}</small>}
                     <small>
                       {boat.type} · {boat.registration || t("boats.noRegistration")}
                     </small>
@@ -434,17 +446,27 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
               >
                 {t("common.cancel")}
               </button>
-              <button
-                type="button"
-                className="ghost-button"
-                disabled={logbook.sheets.some(
-                  (sheet) => sheet.boatId === selectedBoat.id,
-                )}
-                onClick={deleteSelectedBoat}
-              >
-                {t("boats.delete")}
-              </button>
+              {selectedBoat.archived ? (
+                <button type="button" className="ghost-button" onClick={() => setSelectedBoatArchived(false)}>
+                  {t("boats.restore")}
+                </button>
+              ) : (
+                <button type="button" className="ghost-button" onClick={() => setSelectedBoatArchived(true)}>
+                  {t("boats.archive")}
+                </button>
+              )}
+              {selectedBoatSheets.length === 0 && (
+                <button type="button" className="ghost-button" onClick={deleteSelectedBoat}>
+                  {t("boats.delete")}
+                </button>
+              )}
             </div>
+            {selectedBoatSheets.length > 0 && (
+              <p className="form-help wide-field" role="status">
+                {t("boats.deleteBlocked").replace("{count}", String(selectedBoatSheets.length))}{" "}
+                <button type="button" className="table-title-button" onClick={showSelectedBoatLogsheets}>{t("boats.viewLogSheets")}</button>
+              </p>
+            )}
           </form>
           ) : (
             <p className="empty-state">{t("common.selectEntry")}</p>

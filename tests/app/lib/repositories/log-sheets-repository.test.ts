@@ -60,7 +60,7 @@ describe("LogSheetsRepository", () => {
     const lineRow: LogLineRow = logLineRow();
 
     expect(LogSheetsRepository.toLogbook([boatRow], [sheetRow], [crewRow], [lineRow])).toEqual({
-      boats: [boat],
+      boats: [{ ...boat, archived: false }],
       crewMembers: [],
       sheets: [{ ...sheet, metrics: { motorMiles: 0, sailMiles: 0, totalMiles: 0, durationMinutes: null, motorHours: 0, overallDurationMinutes: null, motionDurationMinutes: 0 }, share: { masterData: "private", picture: "private", logLines: "private", metrics: "private", technicalLog: "private", skipper: "private", crew: "private" }, crew: [{ ...crew, isPrimary: false }], lines: [line] }],
     });

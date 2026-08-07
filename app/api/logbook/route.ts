@@ -4,6 +4,7 @@ import { readLogbook, writeLogbook } from "../../lib/logbook-store";
 import type { PersistedLogbook } from "../../models/logbook";
 import { applyDemoLogbookRestrictions } from "../../lib/demo/demo-logbook-policy";
 import { isActiveDemoSandbox } from "../../lib/demo/demo-policy";
+import { validateLogbookMutation } from "../../domain/boats/boat-policy";
 
 export async function GET() {
   const session = await auth();
@@ -19,5 +20,8 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Invalid logbook payload" }, { status: 400 });
   }
   const persistedLogbook = await isActiveDemoSandbox(session.user.id) ? applyDemoLogbookRestrictions(logbook) : logbook;
+  const currentLogbook = await readLogbook(session.user.id);
+  const mutationError = validateLogbookMutation(currentLogbook, persistedLogbook);
+  if (mutationError) return NextResponse.json({ error: mutationError.message, code: mutationError.code }, { status: 409 });
   return NextResponse.json(await writeLogbook(persistedLogbook, session.user.id));
 }

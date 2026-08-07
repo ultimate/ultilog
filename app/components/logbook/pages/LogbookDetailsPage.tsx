@@ -430,7 +430,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                       setSheetForm({ ...sheetForm, boatId: e.target.value })
                     }
                   >
-                    {logbook.boats.map((boat) => (
+                    {logbook.boats.filter((boat) => !boat.archived || (Boolean(editingSheetId) && boat.id === sheetForm.boatId)).map((boat) => (
                       <option key={boat.id} value={boat.id}>
                         {boat.name}
                       </option>

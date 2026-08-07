@@ -28,6 +28,8 @@ export function LogbookListPage({
   isScannerPrivacyConfirmed,
   calculateSheetSummary,
   logbook,
+  boatFilterId,
+  onBoatFilterChange,
   navigate,
   onScanFilesSelected,
   onScannerUploadConfirmed,
@@ -53,6 +55,8 @@ export function LogbookListPage({
   isScannerPrivacyConfirmed: boolean;
   calculateSheetSummary: (sheet: LogSheet) => SheetSummary;
   logbook: PersistedLogbook;
+  boatFilterId: string;
+  onBoatFilterChange: (boatId: string) => void;
   navigate: Navigate;
   onScanFilesSelected: (files: FileList | File[], boatId: string) => void;
   onScannerUploadConfirmed: (files: File[], boatId: string) => void;
@@ -73,13 +77,18 @@ export function LogbookListPage({
   const { t } = useI18n();
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
-  const hasBoats = logbook.boats.length > 0;
-  const hasMultipleBoats = logbook.boats.length > 1;
-  const rows = useMemo(() => logbook.sheets.map((sheet) => ({
+  const availableBoats = useMemo(() => logbook.boats.filter((boat) => !boat.archived), [logbook.boats]);
+  const hasBoats = availableBoats.length > 0;
+  const hasMultipleBoats = availableBoats.length > 1;
+  const filteredSheets = useMemo(
+    () => boatFilterId ? logbook.sheets.filter((sheet) => sheet.boatId === boatFilterId) : logbook.sheets,
+    [boatFilterId, logbook.sheets],
+  );
+  const rows = useMemo(() => filteredSheets.map((sheet) => ({
     sheet,
     boat: logbook.boats.find((candidate) => candidate.id === sheet.boatId),
     summary: calculateSheetSummary(sheet),
-  })), [calculateSheetSummary, logbook.boats, logbook.sheets]);
+  })), [calculateSheetSummary, filteredSheets, logbook.boats]);
   const columns = useMemo(() => [
     { key: "date", value: (row: SheetListRow) => row.sheet.dateRange },
     { key: "entry", value: (row: SheetListRow) => row.sheet.title },
@@ -164,7 +173,7 @@ export function LogbookListPage({
                 }
                 aria-label={t("logbooks.scannerBoat")}
               >
-                {logbook.boats.map((boat) => (
+                {availableBoats.map((boat) => (
                   <option key={boat.id} value={boat.id}>
                     {boat.name}
                   </option>
@@ -282,8 +291,9 @@ export function LogbookListPage({
       )}
       <div className="logbook-toolbar">
         <ListSearch value={list.query} onChange={list.setQuery} label={t("logbooks.search")} />
-        <select aria-label={t("logbooks.vesselFilter")} defaultValue={t("logbooks.allVessels")}>
-          <option>{t("logbooks.allVessels")}</option>
+        <select aria-label={t("logbooks.vesselFilter")} value={boatFilterId} onChange={(event) => onBoatFilterChange(event.currentTarget.value)}>
+          <option value="">{t("logbooks.allVessels")}</option>
+          {logbook.boats.map((boat) => <option key={boat.id} value={boat.id}>{boat.name}</option>)}
         </select>
         <select aria-label={t("logbooks.timeFilter")} defaultValue={t("logbooks.allTime")}>
           <option>{t("logbooks.allTime")}</option>
@@ -380,7 +390,7 @@ export function LogbookListPage({
             <p>{t("logbooks.mapHelp")}</p>
           </div>
           <LogSheetsMapView
-            sheets={logbook.sheets}
+            sheets={filteredSheets}
             onSheetClick={openSheet}
             ariaLabel={t("logbooks.mapAria")}
             showRouteTargets={false}

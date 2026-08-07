@@ -78,6 +78,7 @@ create index if not exists demo_login_tokens_expires_at_idx on demo_login_tokens
 
 create table if not exists boats (
   id text primary key,
+  archived integer not null default 0,
   name text not null,
   type text not null,
   registration text not null,

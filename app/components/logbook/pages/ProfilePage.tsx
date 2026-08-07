@@ -445,7 +445,7 @@ export function ProfilePage(props: ProfilePageProps) {
               <label>
                 {t("profile.defaultVessel")}
                 <select value={profilePreferences.defaultBoatId || activeBoat.id} onChange={(event) => updateViewPreferences({ defaultBoatId: event.target.value })}>
-                  {logbook.boats.map((boat) => <option key={boat.id} value={boat.id}>{boat.name}</option>)}
+                  {logbook.boats.filter((boat) => !boat.archived).map((boat) => <option key={boat.id} value={boat.id}>{boat.name}</option>)}
                 </select>
               </label>
               <label>
