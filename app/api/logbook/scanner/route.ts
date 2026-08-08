@@ -5,6 +5,7 @@ import { openAiScannerProvider } from "../../../lib/logbook-scanner/openai-provi
 import { readLogbook, writeLogbook } from "../../../lib/logbook-store";
 import { findUserById } from "../../../lib/users";
 import { isActiveDemoSandbox } from "../../../lib/demo/demo-policy";
+import { consumeRateLimit, rateLimitResponse } from "../../../lib/security/rate-limiter";
 
 const MAX_FILE_COUNT = 5;
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
@@ -34,6 +35,8 @@ type ScannerErrorResponse = {
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user?.id) return scannerError("unauthenticated", "Sign in to scan logbook pages.", 401);
+  const quota = await consumeRateLimit({ name: "scanner-user", limit: 10, windowMs: 60 * 60_000 }, session.user.id);
+  if (!quota.allowed) return rateLimitResponse(quota, "Scanner quota exceeded. Please try again later.");
   if (await isActiveDemoSandbox(session.user.id)) {
     return scannerError("demo_feature_unavailable", "Logbook scanning is available after registration and is disabled in demo sessions.", 403);
   }

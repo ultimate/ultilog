@@ -15,6 +15,8 @@ export type DemoSandboxLogin = {
   expiresAt: string;
 };
 
+export class DemoCapacityError extends Error {}
+
 function tokenHash(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
@@ -28,7 +30,7 @@ function writableDemoTemplate(): PersistedLogbook {
   return structuredClone(DEMO_LOGBOOK_TEMPLATE) as PersistedLogbook;
 }
 
-export async function createDemoSandbox(): Promise<DemoSandboxLogin> {
+export async function createDemoSandbox(options: { ipHash?: string; deviceHash?: string } = {}): Promise<DemoSandboxLogin> {
   const db = getDatabase();
   await db.migrate();
 
@@ -39,6 +41,14 @@ export async function createDemoSandbox(): Promise<DemoSandboxLogin> {
   const expiresAt = new Date(now.getTime() + sandboxTtlHours() * 60 * 60 * 1000).toISOString();
   const tokenExpiresAt = new Date(now.getTime() + LOGIN_TOKEN_TTL_MINUTES * 60 * 1000).toISOString();
 
+  const active = async (column?: "requester_ip_hash" | "requester_device_hash", value?: string) => Number((await db.query<{ count: number | string }>(
+    `select count(*) as count from demo_sandboxes where expires_at > ${db.placeholder(1)}${column ? ` and ${column} = ${db.placeholder(2)}` : ""}`,
+    column ? [now.toISOString(), value] : [now.toISOString()],
+  )).rows[0]?.count) || 0;
+  if (await active() >= 100 || (options.ipHash && await active("requester_ip_hash", options.ipHash) >= 3) || (options.deviceHash && await active("requester_device_hash", options.deviceHash) >= 2)) {
+    throw new DemoCapacityError("Demo sandbox capacity reached.");
+  }
+
   try {
     await db.query(
       `insert into users (id, name, email, password_hash, email_verified_at) values (${db.placeholder(1)}, ${db.placeholder(2)}, ${db.placeholder(3)}, ${db.placeholder(4)}, ${db.placeholder(5)})`,
@@ -46,8 +56,8 @@ export async function createDemoSandbox(): Promise<DemoSandboxLogin> {
     );
     await db.query(`insert into user_groups (user_id, name) values (${db.placeholder(1)}, ${db.placeholder(2)})`, [userId, "demo"]);
     await db.query(
-      `insert into demo_sandboxes (user_id, template_version, expires_at, last_accessed_at) values (${db.placeholder(1)}, ${db.placeholder(2)}, ${db.placeholder(3)}, ${db.placeholder(4)})`,
-      [userId, DEMO_TEMPLATE_VERSION, expiresAt, now.toISOString()],
+      `insert into demo_sandboxes (user_id, template_version, expires_at, last_accessed_at, requester_ip_hash, requester_device_hash) values (${db.placeholder(1)}, ${db.placeholder(2)}, ${db.placeholder(3)}, ${db.placeholder(4)}, ${db.placeholder(5)}, ${db.placeholder(6)})`,
+      [userId, DEMO_TEMPLATE_VERSION, expiresAt, now.toISOString(), options.ipHash ?? "", options.deviceHash ?? ""],
     );
     await db.query(
       `insert into demo_login_tokens (token_hash, user_id, expires_at) values (${db.placeholder(1)}, ${db.placeholder(2)}, ${db.placeholder(3)})`,

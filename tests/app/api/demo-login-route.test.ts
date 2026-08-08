@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../app/lib/demo/demo-sandboxes", () => ({
   createDemoSandbox: vi.fn(),
+  DemoCapacityError: class DemoCapacityError extends Error {},
 }));
 
 const { createDemoSandbox } = await import("../../../app/lib/demo/demo-sandboxes");
