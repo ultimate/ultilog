@@ -33,7 +33,7 @@ describe("register endpoint", () => {
     }));
 
     expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toEqual({ error: "An account with this email already exists." });
+    await expect(response.json()).resolves.toEqual({ error: "Unable to register with the supplied details." });
     expect(mockedRegisterUser).toHaveBeenCalledWith({ name: "", email: "new@example.test", password: "" });
   });
 });

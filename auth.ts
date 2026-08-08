@@ -1,10 +1,12 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import type { NextRequest } from "next/server";
 import { consumeDemoSandboxLogin } from "./app/lib/demo/demo-sandboxes";
 import { isDemoSandboxSessionExpired } from "./app/lib/demo/demo-session";
 import { validateUser } from "./app/lib/users";
+import { enforceRateLimits, normalizeEmail, rateLimitResponse, requestIp, securityEvent } from "./app/lib/security/rate-limiter";
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+const nextAuth = NextAuth({
   session: { strategy: "jwt" },
   providers: [
     Credentials({
@@ -17,7 +19,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (typeof credentials?.demoToken === "string") return consumeDemoSandboxLogin(credentials.demoToken);
         const email = typeof credentials?.email === "string" ? credentials.email : "";
         const password = typeof credentials?.password === "string" ? credentials.password : "";
-        return validateUser(email, password);
+        const user = await validateUser(email, password);
+        securityEvent(user ? "credentials_login_succeeded" : "credentials_login_failed", { emailDomain: normalizeEmail(email).split("@")[1] ?? "invalid" });
+        return user;
       },
     }),
   ],
@@ -48,3 +52,22 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   pages: { signIn: "/login" },
 });
+
+export const { auth, signIn, signOut } = nextAuth;
+
+async function credentialsPost(request: NextRequest) {
+  if (new URL(request.url).pathname.endsWith("/callback/credentials")) {
+    const form = await request.clone().formData();
+    const email = typeof form.get("email") === "string" ? String(form.get("email")) : "";
+    if (email) {
+      const limited = await enforceRateLimits([
+        { rule: { name: "credentials-ip", limit: 20, windowMs: 15 * 60_000 }, principal: requestIp(request) },
+        { rule: { name: "credentials-email", limit: 8, windowMs: 15 * 60_000 }, principal: normalizeEmail(email) },
+      ]);
+      if (limited) return rateLimitResponse(limited, "Too many sign-in attempts. Please try again later.");
+    }
+  }
+  return nextAuth.handlers.POST(request);
+}
+
+export const handlers = { GET: nextAuth.handlers.GET, POST: credentialsPost };
