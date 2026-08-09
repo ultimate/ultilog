@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import { isOnboardingTaskId, type OnboardingTaskId } from "./onboarding/tasks";
 import { getDatabase, writeLogbook } from "./logbook-store";
 import { sendEmailVerificationEmail, sendPasswordResetEmail } from "./mailer";
+import { normalizeStandardTechnicalCheckIds, STANDARD_TECHNICAL_CHECK_IDS, type StandardTechnicalCheckId } from "../domain/logbook/technical-log";
 import { dateFormats, defaultDateFormat, defaultTimeFormat, timeFormats, type DateFormat, type TimeFormat } from "./date-time-format";
 
 export type UserTheme = "light" | "dark" | "auto";
@@ -23,18 +24,20 @@ export type UserPreferences = {
   showCourseConversionTable: boolean;
   showAvatarOnPrint?: boolean;
   motionStationaryThresholdNm?: number;
+  technicalLogTemplate?: string[];
+  enabledStandardTechnicalChecks?: StandardTechnicalCheckId[];
 };
 export type AppUser = { id: string; name: string; email: string; emailVerified?: boolean; avatar?: string; hasUploadedAvatar?: boolean; groups: string[]; onboardingCompletedTasks: OnboardingTaskId[]; hasReadCompliance: boolean; demoSandboxExpiresAt?: string } & UserPreferences;
 export type AdminUserListItem = AppUser;
 export type DirectoryUserListItem = { id: string; username: string; avatar?: string; sailMiles: number; motorMiles: number; logbookSheets: number; boats: number };
 
-type UserRow = Omit<AppUser, "avatar" | "hasUploadedAvatar" | "groups" | "onboardingCompletedTasks" | "hasReadCompliance" | "isNavSlim" | "countryCode" | "dateFormat" | "timeFormat" | "windUnit" | "waterHeightUnit" | "temperatureUnit" | "coordinateFormat" | "distanceDisplayUnit" | "defaultBoatId" | "defaultCrewMemberIds" | "showCourseConversionTable" | "showAvatarOnPrint" | "motionStationaryThresholdNm" | "emailVerified"> & { avatar_data: string | null; avatar_mime_type: string | null; password_hash: string; onboarding_completed_tasks: string; country_code: string; date_format: string; time_format: string; wind_unit: string; water_height_unit: string; temperature_unit: string; coordinate_format: string; distance_display_unit: string; default_boat_id: string; default_crew_member_ids: string; nav_slim: number | boolean; has_read_compliance: number | boolean; show_course_conversion_table: number | boolean; show_avatar_on_print: number | boolean; motion_stationary_threshold_nm: number | string | null; email_verified_at: string | null };
+type UserRow = Omit<AppUser, "avatar" | "hasUploadedAvatar" | "groups" | "onboardingCompletedTasks" | "hasReadCompliance" | "isNavSlim" | "countryCode" | "dateFormat" | "timeFormat" | "windUnit" | "waterHeightUnit" | "temperatureUnit" | "coordinateFormat" | "distanceDisplayUnit" | "defaultBoatId" | "defaultCrewMemberIds" | "showCourseConversionTable" | "showAvatarOnPrint" | "motionStationaryThresholdNm" | "technicalLogTemplate" | "enabledStandardTechnicalChecks" | "emailVerified"> & { avatar_data: string | null; avatar_mime_type: string | null; password_hash: string; onboarding_completed_tasks: string; country_code: string; date_format: string; time_format: string; wind_unit: string; water_height_unit: string; temperature_unit: string; coordinate_format: string; distance_display_unit: string; default_boat_id: string; default_crew_member_ids: string; nav_slim: number | boolean; has_read_compliance: number | boolean; show_course_conversion_table: number | boolean; show_avatar_on_print: number | boolean; motion_stationary_threshold_nm: number | string | null; technical_log_template: string; technical_log_standard_checks: string | null; email_verified_at: string | null };
 type GroupRow = { user_id?: string; name: string };
 type PasswordResetTokenRow = { id: string; user_id: string; token_hash: string; expires_at: string; used_at: string | null };
 type EmailVerificationTokenRow = PasswordResetTokenRow;
 type DirectoryUserRow = { id: string; username: string; email: string; avatar_data: string | null; avatar_mime_type: string | null; sail_miles: number | string | null; motor_miles: number | string | null; logbook_sheets: number | string | null; boats: number | string | null };
 
-const USER_COLUMNS = "id, name, email, avatar_data, avatar_mime_type, password_hash, onboarding_completed_tasks, theme, nav_slim, has_read_compliance, country_code, language, date_format, time_format, wind_unit, water_height_unit, temperature_unit, coordinate_format, distance_display_unit, default_boat_id, default_crew_member_ids, show_course_conversion_table, show_avatar_on_print, motion_stationary_threshold_nm, email_verified_at";
+const USER_COLUMNS = "id, name, email, avatar_data, avatar_mime_type, password_hash, onboarding_completed_tasks, theme, nav_slim, has_read_compliance, country_code, language, date_format, time_format, wind_unit, water_height_unit, temperature_unit, coordinate_format, distance_display_unit, default_boat_id, default_crew_member_ids, show_course_conversion_table, show_avatar_on_print, motion_stationary_threshold_nm, technical_log_template, technical_log_standard_checks, email_verified_at";
 
 export function gravatarAvatarUrl(email: string) {
   const emailHash = createHash("sha256").update(normalizeEmail(email)).digest("hex");
@@ -122,6 +125,15 @@ function normalizeStringList(value: unknown): string[] {
   }
 }
 
+function normalizeStoredStandardTechnicalChecks(value: string | null): StandardTechnicalCheckId[] {
+  if (value === null) return [...STANDARD_TECHNICAL_CHECK_IDS];
+  try {
+    return normalizeStandardTechnicalCheckIds(value ? JSON.parse(value) : [], []);
+  } catch {
+    return [...STANDARD_TECHNICAL_CHECK_IDS];
+  }
+}
+
 function normalizeCountryCode(value: unknown) {
   if (typeof value !== "string") return "";
   const countryCode = value.trim().toUpperCase();
@@ -156,6 +168,8 @@ function normalizeUserPreferences(input: Partial<Record<keyof UserPreferences, u
     showCourseConversionTable: input.showCourseConversionTable === undefined ? currentUser?.showCourseConversionTable ?? true : Boolean(input.showCourseConversionTable),
     showAvatarOnPrint: input.showAvatarOnPrint === undefined ? currentUser?.showAvatarOnPrint ?? true : Boolean(input.showAvatarOnPrint),
     motionStationaryThresholdNm: normalizeNonNegativeNumber(input.motionStationaryThresholdNm, currentUser?.motionStationaryThresholdNm ?? 0.1, "Motion threshold", strict),
+    technicalLogTemplate: input.technicalLogTemplate === undefined ? currentUser?.technicalLogTemplate ?? [] : normalizeStringList(input.technicalLogTemplate),
+    enabledStandardTechnicalChecks: input.enabledStandardTechnicalChecks === undefined ? currentUser?.enabledStandardTechnicalChecks ?? [...STANDARD_TECHNICAL_CHECK_IDS] : normalizeStandardTechnicalCheckIds(input.enabledStandardTechnicalChecks, []),
   };
 }
 
@@ -194,6 +208,8 @@ function toAppUser(user: UserRow, groups: string[]): AppUser {
     showCourseConversionTable: normalizeBooleanFlag(user.show_course_conversion_table ?? true),
     showAvatarOnPrint: normalizeBooleanFlag(user.show_avatar_on_print ?? true),
     motionStationaryThresholdNm: normalizeNonNegativeNumber(user.motion_stationary_threshold_nm, 0.1, "Motion threshold"),
+    technicalLogTemplate: normalizeStringList(user.technical_log_template),
+    enabledStandardTechnicalChecks: normalizeStoredStandardTechnicalChecks(user.technical_log_standard_checks),
   };
 }
 
@@ -540,8 +556,8 @@ export async function updateUserViewPreferences(userId: string, input: Partial<R
   if (!current) throw new Error("User not found.");
   const preferences = normalizeUserPreferences(input, current, true);
   await db.query(
-    `update users set country_code = ${db.placeholder(1)}, language = ${db.placeholder(2)}, date_format = ${db.placeholder(3)}, time_format = ${db.placeholder(4)}, wind_unit = ${db.placeholder(5)}, water_height_unit = ${db.placeholder(6)}, temperature_unit = ${db.placeholder(7)}, coordinate_format = ${db.placeholder(8)}, distance_display_unit = ${db.placeholder(9)}, default_boat_id = ${db.placeholder(10)}, default_crew_member_ids = ${db.placeholder(11)}, theme = ${db.placeholder(12)}, nav_slim = ${db.placeholder(13)}, show_course_conversion_table = ${db.placeholder(14)}, motion_stationary_threshold_nm = ${db.placeholder(15)}, show_avatar_on_print = ${db.placeholder(16)} where id = ${db.placeholder(17)}`,
-    [preferences.countryCode, preferences.language, preferences.dateFormat, preferences.timeFormat, preferences.windUnit, preferences.waterHeightUnit, preferences.temperatureUnit, preferences.coordinateFormat, preferences.distanceDisplayUnit, preferences.defaultBoatId, JSON.stringify(preferences.defaultCrewMemberIds), preferences.theme, preferences.isNavSlim ? 1 : 0, preferences.showCourseConversionTable ? 1 : 0, preferences.motionStationaryThresholdNm, preferences.showAvatarOnPrint ? 1 : 0, userId],
+    `update users set country_code = ${db.placeholder(1)}, language = ${db.placeholder(2)}, date_format = ${db.placeholder(3)}, time_format = ${db.placeholder(4)}, wind_unit = ${db.placeholder(5)}, water_height_unit = ${db.placeholder(6)}, temperature_unit = ${db.placeholder(7)}, coordinate_format = ${db.placeholder(8)}, distance_display_unit = ${db.placeholder(9)}, default_boat_id = ${db.placeholder(10)}, default_crew_member_ids = ${db.placeholder(11)}, theme = ${db.placeholder(12)}, nav_slim = ${db.placeholder(13)}, show_course_conversion_table = ${db.placeholder(14)}, motion_stationary_threshold_nm = ${db.placeholder(15)}, show_avatar_on_print = ${db.placeholder(16)}, technical_log_template = ${db.placeholder(17)}, technical_log_standard_checks = ${db.placeholder(18)} where id = ${db.placeholder(19)}`,
+    [preferences.countryCode, preferences.language, preferences.dateFormat, preferences.timeFormat, preferences.windUnit, preferences.waterHeightUnit, preferences.temperatureUnit, preferences.coordinateFormat, preferences.distanceDisplayUnit, preferences.defaultBoatId, JSON.stringify(preferences.defaultCrewMemberIds), preferences.theme, preferences.isNavSlim ? 1 : 0, preferences.showCourseConversionTable ? 1 : 0, preferences.motionStationaryThresholdNm, preferences.showAvatarOnPrint ? 1 : 0, JSON.stringify(preferences.technicalLogTemplate), JSON.stringify(preferences.enabledStandardTechnicalChecks), userId],
   );
   return {
     ...toAppUser(current, await manualGroupsForUser(userId)),

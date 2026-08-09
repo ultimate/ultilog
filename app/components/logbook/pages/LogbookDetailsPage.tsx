@@ -1,3 +1,4 @@
+import { TECHNICAL_CHECK_STATUSES } from "../../../domain/logbook/technical-log";
 import { EntityImage } from "../EntityImage";
 import { useI18n } from "../../../lib/i18n";
 import { useDateTimeFormat } from "../../../lib/DateTimeFormatProvider";
@@ -173,7 +174,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   }
 
   async function saveTechnicalCheckDraft(index: number) {
-    await updateTechnicalCheck(index, technicalCheckDrafts[index] ?? activeSheet.technicalChecks[index] ?? "");
+    await updateTechnicalCheck(index, technicalCheckDrafts[index] ?? activeSheet.technicalChecks[index]?.text ?? "");
     setTechnicalCheckDraftState((current) => {
       const { [index]: _discarded, ...next } = current.sheetId === activeSheet.id ? current.drafts : {};
       return { sheetId: activeSheet.id, drafts: next };
@@ -983,9 +984,12 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                   {activeSheet.technicalChecks.length ? (
                     <ul className="stack-list">
                       {activeSheet.technicalChecks.map((item, index) => {
-                        const draft = technicalCheckDrafts[index] ?? item;
+                        const draft = technicalCheckDrafts[index] ?? item.text;
                         return (
-                          <li key={`${item}-${index}`}>
+                          <li key={`${item.text}-${index}`} className="technical-check-row">
+                            <select aria-label={`Check status ${index + 1}`} disabled={isActiveSheetLocked} value={item.status} onChange={(event) => updateTechnicalCheck(index, draft, event.target.value)}>
+                              {TECHNICAL_CHECK_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
+                            </select>
                             <input
                               aria-label={`${t("details.technicalLogEntry")} ${index + 1}`}
                               disabled={isActiveSheetLocked}
@@ -997,7 +1001,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                               <button
                                 type="button"
                                 aria-label={`${t("common.save")} ${t("details.technicalLogEntry")} ${index + 1}`}
-                                disabled={isActiveSheetLocked || draft === item}
+                                disabled={isActiveSheetLocked || draft === item.text}
                                 onClick={() => saveTechnicalCheckDraft(index)}
                               >
                                 💾
@@ -1005,7 +1009,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                               <button
                                 type="button"
                                 aria-label={`${t("common.cancel")} ${t("details.technicalLogEntry")} ${index + 1}`}
-                                disabled={isActiveSheetLocked || draft === item}
+                                disabled={isActiveSheetLocked || draft === item.text}
                                 onClick={() => cancelTechnicalCheckDraft(index)}
                               >
                                 ❎

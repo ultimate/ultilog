@@ -6,6 +6,10 @@ const meteoSnapshotToLogLineAutofill = vi.fn();
 vi.mock("../../../auth", () => ({
   auth: vi.fn(),
 }));
+vi.mock("../../../app/lib/security/rate-limiter", async () => {
+  const actual = await vi.importActual<typeof import("../../../app/lib/security/rate-limiter")>("../../../app/lib/security/rate-limiter");
+  return { ...actual, consumeRateLimit: vi.fn().mockResolvedValue({ allowed: true, remaining: 29, retryAfter: 60, resetAt: new Date() }) };
+});
 
 vi.mock("../../../app/domain/meteo", () => ({
   createFreeMeteoService: vi.fn(() => ({ getSnapshot })),

@@ -95,7 +95,7 @@ export default async function SharedLogbookPage({ params }: { params: Promise<{ 
             {hasTechnicalLog ? (
               <article className="info-card logbook-section">
                 <h2>Technical log</h2>
-                <ul className="stack-list">{sheet.technicalChecks.map((item, index) => <li key={`${item}-${index}`}>{item}</li>)}</ul>
+                <ul className="stack-list">{sheet.technicalChecks.map((item, index) => <li key={`${item.text}-${index}`}>{item.status} {item.text}</li>)}</ul>
               </article>
             ) : null}
 

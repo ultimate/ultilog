@@ -17,12 +17,17 @@ vi.mock("../../../app/lib/users", () => ({
   findUserById: vi.fn(),
 }));
 vi.mock("../../../app/lib/demo/demo-policy", () => ({ isActiveDemoSandbox: vi.fn() }));
+vi.mock("../../../app/lib/security/rate-limiter", async () => {
+  const actual = await vi.importActual<typeof import("../../../app/lib/security/rate-limiter")>("../../../app/lib/security/rate-limiter");
+  return { ...actual, consumeRateLimit: vi.fn().mockResolvedValue({ allowed: true, remaining: 9, retryAfter: 60, resetAt: new Date() }) };
+});
 
 const { auth } = await import("../../../auth");
 const store = await import("../../../app/lib/logbook-store");
 const { openAiScannerProvider } = await import("../../../app/lib/logbook-scanner/openai-provider");
 const { findUserById } = await import("../../../app/lib/users");
 const { isActiveDemoSandbox } = await import("../../../app/lib/demo/demo-policy");
+const { consumeRateLimit } = await import("../../../app/lib/security/rate-limiter");
 const { POST } = await import("../../../app/api/logbook/scanner/route");
 
 const mockedAuth = auth as unknown as Mock;
@@ -32,6 +37,7 @@ const mockedScanner = vi.mocked(openAiScannerProvider.extractLogbookDraft);
 const mockedScannerConfigured = vi.mocked(openAiScannerProvider.isConfigured);
 const mockedFindUserById = vi.mocked(findUserById);
 const mockedIsActiveDemoSandbox = vi.mocked(isActiveDemoSandbox);
+const mockedConsumeRateLimit = vi.mocked(consumeRateLimit);
 const session = { user: { id: "user-1", name: "User", email: "user@example.test", groups: [] }, expires: "2099-01-01T00:00:00.000Z" };
 const boat = { id: "boat-1", name: "Aurora", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [] };
 const logbook = { boats: [boat], crewMembers: [], sheets: [] };
@@ -58,6 +64,7 @@ describe("logbook scanner endpoint", () => {
     vi.clearAllMocks();
     mockedScannerConfigured.mockReturnValue(true);
     mockedIsActiveDemoSandbox.mockResolvedValue(false);
+    mockedConsumeRateLimit.mockResolvedValue({ allowed: true, remaining: 9, retryAfter: 60, resetAt: new Date() });
     mockedFindUserById.mockResolvedValue({ ...session.user, countryCode: "", language: "en", windUnit: "bft", waterHeightUnit: "m", temperatureUnit: "°C", coordinateFormat: "decimal", distanceDisplayUnit: "off", defaultBoatId: "", defaultCrewMemberIds: [], theme: "light", isNavSlim: false, onboardingCompletedTasks: [], hasReadCompliance: false, showCourseConversionTable: true });
   });
 
@@ -69,6 +76,15 @@ describe("logbook scanner endpoint", () => {
 
     expect(response.status).toBe(401);
     await expect(response.json()).resolves.toEqual({ code: "unauthenticated", error: "Sign in to scan logbook pages." });
+    expect(mockedReadLogbook).not.toHaveBeenCalled();
+  });
+
+  it("returns 429 with retry timing when the user quota is exhausted", async () => {
+    mockedAuth.mockResolvedValueOnce(session);
+    mockedConsumeRateLimit.mockResolvedValueOnce({ allowed: false, remaining: 0, retryAfter: 37, resetAt: new Date() });
+    const response = await POST(scannerRequest(new FormData()));
+    expect(response.status).toBe(429);
+    expect(response.headers.get("Retry-After")).toBe("37");
     expect(mockedReadLogbook).not.toHaveBeenCalled();
   });
 
