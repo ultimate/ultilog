@@ -23,11 +23,11 @@ describe("smart log-line defaults", () => {
     expect(fields).toEqual({ logNm: "72" });
   });
 
-  it("derives COG and speed from device movement samples above one knot", () => {
+  it("derives COG and speed across an extended device movement sample window", () => {
     expect(calculateTrackedMotionFields(
       { latitude: 54, longitude: 10, timestamp: 0 },
-      { latitude: 54.001, longitude: 10, timestamp: 60_000 },
-    )).toEqual({ courseOverGround: "0", speedKn: "3.6" });
+      { latitude: 54.001, longitude: 10, timestamp: 120_000 },
+    )).toEqual({ courseOverGround: "0", speedKn: "1.8" });
   });
 
   it("waits for more samples when measured motion is below one knot", () => {

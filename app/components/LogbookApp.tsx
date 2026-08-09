@@ -2231,7 +2231,12 @@ function sampleFromPosition(position: GeolocationPosition): TimedCoordinate {
   return { ...coordinatesFromPosition(position), timestamp: position.timestamp };
 }
 
-function trackDeviceMotion(initial: TimedCoordinate, timeoutMs = 20_000) {
+// A longer baseline makes the bearing much less sensitive to normal GPS jitter,
+// especially around the one-knot lower limit where the device moves slowly.
+const minimumMotionTrackingWindowMs = 12_000;
+const maximumMotionTrackingWindowMs = 30_000;
+
+function trackDeviceMotion(initial: TimedCoordinate, timeoutMs = maximumMotionTrackingWindowMs) {
   return new Promise<Partial<LineForm>>((resolve) => {
     if (!navigator.geolocation) return resolve({});
     let settled = false;
@@ -2245,7 +2250,7 @@ function trackDeviceMotion(initial: TimedCoordinate, timeoutMs = 20_000) {
     const watchId = navigator.geolocation.watchPosition(
       (position) => {
         const sample = sampleFromPosition(position);
-        if (sample.timestamp - initial.timestamp < 5_000) return;
+        if (sample.timestamp - initial.timestamp < minimumMotionTrackingWindowMs) return;
         const fields = calculateTrackedMotionFields(initial, sample);
         if (fields.speedKn) finish(fields);
       },
