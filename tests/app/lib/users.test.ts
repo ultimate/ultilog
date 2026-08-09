@@ -33,7 +33,7 @@ describe("users preferences", () => {
     const { findUserById, registerUser, updateUserAvatar } = await importUsersWithTempDatabase();
     const { getDatabase } = await import("../../../app/lib/logbook-store");
     const user = await registerUser({ name: "Picture User", email: "picture@example.test", password: "password123" });
-    const avatarData = Buffer.from("avatar bytes").toString("base64");
+    const avatarData = Buffer.from([0xff, 0xd8, 0xff, 0xd9]).toString("base64");
 
     await updateUserAvatar(user.id, { data: avatarData, mimeType: "image/jpeg" });
 
@@ -46,7 +46,7 @@ describe("users preferences", () => {
   it("removes an uploaded picture and restores the Gravatar fallback", async () => {
     const { findUserById, gravatarAvatarUrl, registerUser, removeUserAvatar, updateUserAvatar } = await importUsersWithTempDatabase();
     const user = await registerUser({ name: "Remove Picture", email: "remove-picture@example.test", password: "password123" });
-    await updateUserAvatar(user.id, { data: Buffer.from("avatar bytes").toString("base64"), mimeType: "image/jpeg" });
+    await updateUserAvatar(user.id, { data: Buffer.from([0xff, 0xd8, 0xff, 0xd9]).toString("base64"), mimeType: "image/jpeg" });
 
     await expect(removeUserAvatar(user.id)).resolves.toBe(gravatarAvatarUrl(user.email));
     await expect(findUserById(user.id)).resolves.toMatchObject({ avatar: gravatarAvatarUrl(user.email), hasUploadedAvatar: false });
