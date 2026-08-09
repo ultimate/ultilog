@@ -154,16 +154,31 @@ describe("profile endpoint", () => {
 
   it("updates profile view preferences", async () => {
     mockedAuth.mockResolvedValueOnce(session);
-    mockedUpdateUserViewPreferences.mockResolvedValueOnce(appUser({ theme: "dark", isNavSlim: true, hasReadCompliance: true, countryCode: "US", language: "de", windUnit: "kn", waterHeightUnit: "ft", temperatureUnit: "f", coordinateFormat: "dms", distanceDisplayUnit: "mi", defaultBoatId: "boat-1", defaultCrewMemberIds: ["crew-1"], showCourseConversionTable: false, showAvatarOnPrint: false }));
+    mockedUpdateUserViewPreferences.mockResolvedValueOnce(appUser({ theme: "dark", isNavSlim: true, hasReadCompliance: true, countryCode: "DE", language: "de", windUnit: "kn", waterHeightUnit: "ft", temperatureUnit: "f", coordinateFormat: "dms", distanceDisplayUnit: "mi", defaultBoatId: "boat-1", defaultCrewMemberIds: ["crew-1"], showCourseConversionTable: false, showAvatarOnPrint: false }));
 
     const response = await PATCH(new Request("https://ultilog.test/api/profile", {
       method: "PATCH",
-      body: JSON.stringify({ action: "preferences", preferences: { countryCode: "US", language: "de", dateFormat: "dd/MM/yyyy", timeFormat: "HH:mm", windUnit: "kn", waterHeightUnit: "ft", temperatureUnit: "f", coordinateFormat: "dms", distanceDisplayUnit: "mi", defaultBoatId: "boat-1", defaultCrewMemberIds: ["crew-1"], theme: "dark", isNavSlim: true, showCourseConversionTable: false, showAvatarOnPrint: false } }),
+      body: JSON.stringify({ action: "preferences", preferences: { countryCode: "DE", language: "de", dateFormat: "dd/MM/yyyy", timeFormat: "HH:mm", windUnit: "kn", waterHeightUnit: "ft", temperatureUnit: "f", coordinateFormat: "dms", distanceDisplayUnit: "mi", defaultBoatId: "boat-1", defaultCrewMemberIds: ["crew-1"], theme: "dark", isNavSlim: true, showCourseConversionTable: false, showAvatarOnPrint: false } }),
     }));
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ preferences: { countryCode: "US", language: "de", dateFormat: "dd/MM/yyyy", timeFormat: "HH:mm", windUnit: "kn", waterHeightUnit: "ft", temperatureUnit: "f", coordinateFormat: "dms", distanceDisplayUnit: "mi", defaultBoatId: "boat-1", defaultCrewMemberIds: ["crew-1"], theme: "dark", isNavSlim: true, showCourseConversionTable: false, showAvatarOnPrint: false }, theme: "dark", isNavSlim: true });
-    expect(mockedUpdateUserViewPreferences).toHaveBeenCalledWith("user-1", { countryCode: "US", language: "de", dateFormat: "dd/MM/yyyy", timeFormat: "HH:mm", windUnit: "kn", waterHeightUnit: "ft", temperatureUnit: "f", coordinateFormat: "dms", distanceDisplayUnit: "mi", defaultBoatId: "boat-1", defaultCrewMemberIds: ["crew-1"], theme: "dark", isNavSlim: true, showCourseConversionTable: false, showAvatarOnPrint: false });
+    await expect(response.json()).resolves.toEqual({ preferences: { countryCode: "DE", language: "de", dateFormat: "dd/MM/yyyy", timeFormat: "HH:mm", windUnit: "kn", waterHeightUnit: "ft", temperatureUnit: "f", coordinateFormat: "dms", distanceDisplayUnit: "mi", defaultBoatId: "boat-1", defaultCrewMemberIds: ["crew-1"], theme: "dark", isNavSlim: true, showCourseConversionTable: false, showAvatarOnPrint: false }, theme: "dark", isNavSlim: true });
+    expect(mockedUpdateUserViewPreferences).toHaveBeenCalledWith("user-1", expect.objectContaining({ countryCode: "DE" }));
+  });
+
+  it("passes empty country selections through and reports invalid country values", async () => {
+    mockedAuth.mockResolvedValue(session);
+    mockedUpdateUserViewPreferences
+      .mockResolvedValueOnce(appUser({ countryCode: "" }))
+      .mockRejectedValueOnce(new Error("Country code must be a supported ISO country code."));
+
+    const emptyResponse = await PATCH(new Request("https://ultilog.test/api/profile", { method: "PATCH", body: JSON.stringify({ action: "preferences", preferences: { countryCode: "" } }) }));
+    expect(emptyResponse.status).toBe(200);
+    await expect(emptyResponse.json()).resolves.toMatchObject({ preferences: { countryCode: "" } });
+
+    const invalidResponse = await PATCH(new Request("https://ultilog.test/api/profile", { method: "PATCH", body: JSON.stringify({ action: "preferences", preferences: { countryCode: "ZZ" } }) }));
+    expect(invalidResponse.status).toBe(400);
+    await expect(invalidResponse.json()).resolves.toEqual({ error: "Country code must be a supported ISO country code." });
   });
 
   it("marks compliance information as read", async () => {
