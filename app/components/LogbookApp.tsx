@@ -51,6 +51,7 @@ import {
 import { ManagerShell } from "./managers/ManagerShell";
 import { courseConversionColumns } from "../domain/nautical/course-conversion";
 import { calculateLogSheetMetrics, formatLogSheetDuration } from "../domain/logbook/sheet-metrics";
+import { calculateLogbookDayStatistics } from "../domain/logbook/logbook-statistics";
 import { activeBoats } from "../domain/boats/boat-policy";
 import { lineFormToLogLine } from "../domain/log-lines/log-line-form";
 import { calculateSmartNavigationFields, calculateTrackedMotionFields, previousSheetLogMiles, type TimedCoordinate } from "../domain/log-lines/smart-line";
@@ -892,6 +893,7 @@ export function LogbookApp({
     const durationMinutes = sheetsWithMetrics.reduce((sum, item) => sum + (item.metrics.overallDurationMinutes ?? item.metrics.durationMinutes ?? 0), 0);
     const motionDurationMinutes = sheetsWithMetrics.reduce((sum, item) => sum + item.metrics.motionDurationMinutes, 0);
     const motorHours = sheetsWithMetrics.reduce((sum, item) => sum + item.metrics.motorHours, 0);
+    const dayStatistics = calculateLogbookDayStatistics(logbook.sheets, preferences.motionStationaryThresholdNm);
     const timeline = sheetsWithMetrics
       .slice().sort((a, b) => a.sheet.route.departed.localeCompare(b.sheet.route.departed))
       .map((item) => ({ label: monthLabelForSheet(item.sheet), totalNm: item.metrics.totalMiles, sailNm: item.metrics.sailMiles, motorNm: item.metrics.motorMiles, overallMinutes: item.metrics.overallDurationMinutes ?? item.metrics.durationMinutes ?? 0, motionMinutes: item.metrics.motionDurationMinutes, motorMinutes: item.metrics.motorHours * 60 }));
@@ -908,6 +910,7 @@ export function LogbookApp({
       durationMinutes,
       motionDurationMinutes,
       motorHours,
+      ...dayStatistics,
       timeline,
       boatDistribution,
       sheets: logbook.sheets.length,
