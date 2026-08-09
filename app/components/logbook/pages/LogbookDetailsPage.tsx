@@ -92,6 +92,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     startAddingLineAtCoordinates,
     startAddingSmartLine,
     smartLineStatus,
+    smartMotionStatus,
     showAddLine,
     saveLineFromFields,
     editingLineIndex,
@@ -231,6 +232,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   };
 
   const renderCourseInput = (field: Exclude<keyof LineForm, "engineHours">, options: { min?: number; max?: number }) => (
+    <span className="smart-field-wrap">
     <input
       type="number"
       min={options.min}
@@ -238,7 +240,10 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
       step="1"
       value={lineForm[field]}
       onChange={(e) => updateLineFormField(field, e.target.value)}
+      aria-busy={field === "courseOverGround" && smartMotionStatus === "tracking"}
     />
+    {field === "courseOverGround" && smartMotionStatus === "tracking" ? <span className="smart-field-spinner" role="status" aria-label={t("details.trackingMotion")} /> : null}
+    </span>
   );
 
   const toggleCourseTooltip = (descriptionKey: TranslationKey, event: MouseEvent<HTMLButtonElement>) => {
@@ -354,7 +359,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
         <td className={column.isOptional ? "optional-course-cell" : undefined} key={column.field}>
           {renderCourseInput(column.field, { min: column.min, max: column.max })}
         </td>
-      ))}<td>{renderNumberInput("speedKn", { step: "0.1" })}</td><td>{renderNumberInput("logNm", { step: "0.1" })}</td>
+      ))}<td><span className="smart-field-wrap">{renderNumberInput("speedKn", { step: "0.1" })}{smartMotionStatus === "tracking" ? <span className="smart-field-spinner" role="status" aria-label={t("details.trackingMotion")} /> : null}</span></td><td>{renderNumberInput("logNm", { step: "0.1" })}</td>
       <td><div className="compound-inputs labeled-inputs"><label><span>[nm]</span>{renderNumberInput("sailMiles", { step: "0.1" })}</label><label><span>[note]</span>{renderTextInput("sailNote", t("details.sailNote"))}</label></div></td>
       <td><div className="compound-inputs labeled-inputs"><label><span>[nm]</span>{renderNumberInput("motorMiles", { step: "0.1" })}</label>{logLineEngines.map((engine) => <label key={engine.id}><span>{engine.label} [h]</span><input aria-label={`${engine.name} ${t("details.engineRuntime")}`} type="number" min="0" step="0.1" value={lineForm.engineHours?.[engine.id] ?? ""} onChange={(event) => setLineForm({ ...lineForm, engineHours: { ...lineForm.engineHours, [engine.id]: nonNegativeInputValue(event.target.value) } })} /></label>)}<label><span>[note]</span>{renderTextInput("motorNote", t("details.motorNote"))}</label></div></td>
       <td>{renderTextInput("remarks")}</td><td colSpan={2}><div className="table-actions"><button type="button" onClick={saveLineFromFields}>{editingLineIndex === null ? t("details.saveLine") : "💾"}</button><button type="button" className="ghost-button" onClick={cancelLineEdit}>{t("common.cancel")}</button></div></td>

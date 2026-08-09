@@ -2,18 +2,25 @@ import type { LineForm, LogLine, LogSheet } from "../../models/logbook";
 import { calculateGlobeDistanceNm } from "../nautical/globe-distance";
 
 type Coordinate = { latitude: number; longitude: number };
+export type TimedCoordinate = Coordinate & { timestamp: number };
 
-export function calculateSmartNavigationFields(lines: LogLine[], coordinate: Coordinate, timestamp: string): Partial<LineForm> {
+export function calculateSmartNavigationFields(lines: LogLine[], coordinate: Coordinate): Partial<LineForm> {
   const previous = [...lines].filter(hasCoordinates).sort((a, b) => Date.parse(a.time) - Date.parse(b.time)).at(-1);
   if (!previous) return {};
 
   const distance = calculateGlobeDistanceNm(previous, coordinate);
-  const elapsedHours = (Date.parse(timestamp) - Date.parse(previous.time)) / 3_600_000;
   const previousLog = Number.isFinite(previous.logNm) ? previous.logNm : 0;
+  return { logNm: formatDecimal(previousLog + distance) };
+}
+
+export function calculateTrackedMotionFields(from: TimedCoordinate, to: TimedCoordinate, minimumSpeedKn = 1): Partial<LineForm> {
+  const elapsedHours = (to.timestamp - from.timestamp) / 3_600_000;
+  if (elapsedHours <= 0) return {};
+  const speedKn = calculateGlobeDistanceNm(from, to) / elapsedHours;
+  if (speedKn < minimumSpeedKn) return {};
   return {
-    logNm: formatDecimal(previousLog + distance),
-    courseOverGround: String(Math.round(initialBearing(previous, coordinate)) % 360),
-    ...(elapsedHours > 0 ? { speedKn: formatDecimal(distance / elapsedHours) } : {}),
+    courseOverGround: String(Math.round(initialBearing(from, to)) % 360),
+    speedKn: formatDecimal(speedKn),
   };
 }
 

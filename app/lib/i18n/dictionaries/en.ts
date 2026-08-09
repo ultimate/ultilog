@@ -346,6 +346,7 @@ export const en = {
   "details.addLine": "+ Add line",
   "details.addSmartLine": "+ Add smart line",
   "details.addSmartLineLoading": "Fetching meteo…",
+  "details.trackingMotion": "Tracking device motion",
   "details.addSmartLineError": "The line is ready, but some location or weather fields could not be filled automatically.",
   "details.timePos": "Time & Pos",
   "details.weatherSea": "Weather & Sea",

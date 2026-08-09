@@ -1622,3 +1622,27 @@ img.entity-image--preview {
 .open-seamap-context-menu-time input {
   min-width: 8rem;
 }
+
+.smart-field-wrap {
+  position: relative;
+  display: inline-flex;
+  width: 100%;
+}
+
+.smart-field-spinner {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  width: 0.85rem;
+  height: 0.85rem;
+  margin-top: -0.425rem;
+  border: 2px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: smart-field-spin 0.8s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes smart-field-spin {
+  to { transform: rotate(360deg); }
+}

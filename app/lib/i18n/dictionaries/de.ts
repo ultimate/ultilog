@@ -348,6 +348,7 @@ export const de: Dictionary = {
   "details.addLine": "+ Zeile hinzufügen",
   "details.addSmartLine": "+ Smarte Zeile hinzufügen",
   "details.addSmartLineLoading": "Meteo wird geladen…",
+  "details.trackingMotion": "Gerätebewegung wird erfasst",
   "details.addSmartLineError": "Die Zeile ist bereit, aber einige Positions- oder Wetterfelder konnten nicht automatisch ausgefüllt werden.",
   "details.timePos": "Zeit & Pos",
   "details.weatherSea": "Wetter & See",
