@@ -53,6 +53,7 @@ import { courseConversionColumns } from "../domain/nautical/course-conversion";
 import { calculateLogSheetMetrics, formatLogSheetDuration } from "../domain/logbook/sheet-metrics";
 import { activeBoats } from "../domain/boats/boat-policy";
 import { lineFormToLogLine } from "../domain/log-lines/log-line-form";
+import { calculateSmartNavigationFields, calculateTrackedMotionFields, previousSheetLogMiles, type TimedCoordinate } from "../domain/log-lines/smart-line";
 import type { MeteoLogLineAutofill, MeteoSourceRemarkPart } from "../domain/meteo";
 import { ModuleTabs, type ActiveView } from "../templates/ModuleTabs";
 import { useI18n, type TranslationKey } from "../lib/i18n";
@@ -220,6 +221,7 @@ export function LogbookApp({
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [smartLineStatus, setSmartLineStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [smartMotionStatus, setSmartMotionStatus] = useState<"idle" | "tracking">("idle");
   const [nameForm, setNameForm] = useState({
     name: userName ?? "",
     currentPassword: "",
@@ -1208,37 +1210,25 @@ export function LogbookApp({
   function startAddingLine() {
     if (activeSheet.status === "Locked") return;
     setEditingLineIndex(null);
-    setLineForm(lineDefaults);
+    setLineForm(lineDefaultsForActiveSheet());
     setShowAddLine((show) => !show);
   }
 
-  function startAddingLineHereNow() {
-    if (activeSheet.status === "Locked") return;
-    const now = new Date();
-    const time = dateTimeLocalFromDate(now);
-    setEditingLineIndex(null);
-    setLineForm({ ...lineDefaults, time });
-    setShowAddLine(true);
-    navigator.geolocation?.getCurrentPosition((position) => {
-      setLineForm((current) => ({
-        ...current,
-        latitude: String(position.coords.latitude),
-        longitude: String(position.coords.longitude),
-      }));
-    });
+  async function startAddingLineAtCoordinates(coordinate: { latitude: number; longitude: number }, selectedTime?: string) {
+    const sheetDate = dateTimeLocalFromStamp(activeSheet.route.departed || activeSheet.route.arrived).slice(0, 10);
+    await startAddingSmartLine(coordinate, selectedTime && sheetDate ? `${sheetDate}T${selectedTime}` : undefined);
   }
 
-  async function startAddingLineAtCoordinates(coordinate: { latitude: number; longitude: number }) {
-    await startAddingSmartLine(coordinate);
-  }
-
-  async function startAddingSmartLine(coordinate?: { latitude: number; longitude: number }) {
+  async function startAddingSmartLine(coordinate?: { latitude: number; longitude: number }, requestedTime?: string) {
     if (activeSheet.status === "Locked" || smartLineStatus === "loading") return;
     const now = new Date();
-    const time = dateTimeLocalFromDate(now);
+    const time = requestedTime ?? dateTimeLocalFromDate(now);
+    const timestamp = isoDateTimeWithTimezone(time, timezoneOffsetFromStamp(activeSheet.route.departed));
+    const initialFields = coordinate ? calculateSmartNavigationFields(activeSheet.lines, coordinate) : {};
     setEditingLineIndex(null);
     setLineForm({
-      ...lineDefaults,
+      ...lineDefaultsForActiveSheet(),
+      ...initialFields,
       time,
       ...(coordinate
         ? {
@@ -1252,42 +1242,59 @@ export function LogbookApp({
     setSaveError(null);
 
     try {
-      const linePosition = coordinate ?? await currentGeolocationCoordinates();
+      const initialPosition = coordinate ? undefined : await getCurrentPosition();
+      const linePosition = coordinate ?? coordinatesFromPosition(initialPosition!);
       const latitude = linePosition.latitude;
       const longitude = linePosition.longitude;
       const latitudeValue = String(Number(latitude.toFixed(6)));
       const longitudeValue = String(Number(longitude.toFixed(6)));
-      setLineForm((current) => ({ ...current, latitude: latitudeValue, longitude: longitudeValue }));
+      const navigationFields = calculateSmartNavigationFields(activeSheet.lines, linePosition);
+      setLineForm((current) => ({ ...current, ...navigationFields, latitude: latitudeValue, longitude: longitudeValue }));
 
-      const response = await fetch("/api/meteo/log-line-autofill", {
+      if (initialPosition) setSmartMotionStatus("tracking");
+      const motionPromise = initialPosition ? trackDeviceMotion(sampleFromPosition(initialPosition)) : Promise.resolve({});
+      const weatherPromise = fetch("/api/meteo/log-line-autofill", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           latitude,
           longitude,
-          timestamp: now.toISOString(),
+          timestamp,
           temperatureUnit: preferences.temperatureUnit,
           windUnit: preferences.windUnit,
           seaUnit: preferences.waterHeightUnit,
           tideUnit: preferences.waterHeightUnit,
         }),
+      }).then(async (response) => {
+        const payload = await response.json() as Partial<MeteoLogLineAutofill> & { error?: string };
+        if (!response.ok) throw new Error(payload.error ?? "Unable to fetch meteo data.");
+        setLineForm((current) => ({
+          ...current,
+          ...(payload.fields ?? {}),
+          latitude: latitudeValue,
+          longitude: longitudeValue,
+          time,
+          weatherRemark: formatMeteoWeatherRemark(payload.remarkParts ?? [], t),
+        }));
       });
-      const payload = await response.json() as Partial<MeteoLogLineAutofill> & { error?: string };
-      if (!response.ok) throw new Error(payload.error ?? "Unable to fetch meteo data.");
 
-      setLineForm((current) => ({
-        ...current,
-        ...(payload.fields ?? {}),
-        latitude: latitudeValue,
-        longitude: longitudeValue,
-        time,
-        weatherRemark: formatMeteoWeatherRemark(payload.remarkParts ?? [], t),
-      }));
+      const [weatherResult, motionResult] = await Promise.allSettled([weatherPromise, motionPromise]);
+      setSmartMotionStatus("idle");
+      if (motionResult.status === "fulfilled") setLineForm((current) => ({ ...current, ...motionResult.value }));
+      if (weatherResult.status === "rejected") throw weatherResult.reason;
       setSmartLineStatus("idle");
     } catch {
+      setSmartMotionStatus("idle");
       setSmartLineStatus("error");
       setSaveError(t("details.addSmartLineError"));
     }
+  }
+
+  function lineDefaultsForActiveSheet(): LineForm {
+    return {
+      ...lineDefaults,
+      logNm: previousSheetLogMiles(logbookRef.current.sheets, activeSheet),
+    };
   }
 
   async function deleteLine(indexToDelete: number) {
@@ -1886,10 +1893,10 @@ export function LogbookApp({
               onCoordinateFormatChange={updateCoordinateFormatPreference}
               onShowCourseColumnsChange={updateShowCourseColumnsDisplay}
               startAddingLine={startAddingLine}
-              startAddingLineHereNow={startAddingLineHereNow}
               startAddingLineAtCoordinates={startAddingLineAtCoordinates}
               startAddingSmartLine={startAddingSmartLine}
               smartLineStatus={smartLineStatus}
+              smartMotionStatus={smartMotionStatus}
               showAddLine={showAddLine}
               lineForm={lineForm}
               setLineForm={setLineForm}
@@ -2214,12 +2221,45 @@ function dateTimeLocalFromDate(date: Date) {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
-async function currentGeolocationCoordinates() {
-  const position = await getCurrentPosition();
+function coordinatesFromPosition(position: GeolocationPosition) {
   return {
     latitude: position.coords.latitude,
     longitude: position.coords.longitude,
   };
+}
+
+function sampleFromPosition(position: GeolocationPosition): TimedCoordinate {
+  return { ...coordinatesFromPosition(position), timestamp: position.timestamp };
+}
+
+// A longer baseline makes the bearing much less sensitive to normal GPS jitter,
+// especially around the one-knot lower limit where the device moves slowly.
+const minimumMotionTrackingWindowMs = 12_000;
+const maximumMotionTrackingWindowMs = 30_000;
+
+function trackDeviceMotion(initial: TimedCoordinate, timeoutMs = maximumMotionTrackingWindowMs) {
+  return new Promise<Partial<LineForm>>((resolve) => {
+    if (!navigator.geolocation) return resolve({});
+    let settled = false;
+    const finish = (fields: Partial<LineForm> = {}) => {
+      if (settled) return;
+      settled = true;
+      navigator.geolocation.clearWatch(watchId);
+      window.clearTimeout(timeoutId);
+      resolve(fields);
+    };
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        const sample = sampleFromPosition(position);
+        if (sample.timestamp - initial.timestamp < minimumMotionTrackingWindowMs) return;
+        const fields = calculateTrackedMotionFields(initial, sample);
+        if (fields.speedKn) finish(fields);
+      },
+      () => finish(),
+      { enableHighAccuracy: true, maximumAge: 0, timeout: timeoutMs },
+    );
+    const timeoutId = window.setTimeout(() => finish(), timeoutMs);
+  });
 }
 
 function getCurrentPosition() {
