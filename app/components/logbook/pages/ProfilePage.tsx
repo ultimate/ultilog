@@ -8,6 +8,7 @@ import type { ProfilePreferences } from "../../onboarding/useOnboardingProfile";
 import { dateFormats, formatStoredDate, formatStoredTime, timeFormats } from "../../../lib/date-time-format";
 import { STANDARD_TECHNICAL_CHECK_IDS, standardTechnicalLogTemplate, type StandardTechnicalCheckId } from "../../../domain/logbook/technical-log";
 import { pageSizeOptions, normalizePageSize } from "../PaginationControls";
+import { CountryFlagSelector } from "../../CountryFlagSelector";
 
 type ProfilePageProps = Record<string, any>;
 
@@ -391,15 +392,14 @@ export function ProfilePage(props: ProfilePageProps) {
           <fieldset className="preference-group wide-field">
             <legend>{t("profile.regionSettings")}</legend>
             <div className="preference-group-grid">
-              <label>
-                {t("profile.countryCode")}
-                <input
+              <CountryFlagSelector
+                  id="profile-country-code"
+                  mode="iso-code"
+                  label={t("profile.countryCode")}
+                  emptyLabel={t("profile.countryNotSelected")}
                   value={profilePreferences.countryCode}
-                  maxLength={2}
-                  placeholder="US"
-                  onChange={(event) => updateViewPreferences({ countryCode: event.target.value.toUpperCase() })}
+                  onChange={(countryCode) => updateViewPreferences({ countryCode })}
                 />
-              </label>
               <label>
                 {t("profile.language")}
                 <select value={profilePreferences.language} onChange={(event) => updateViewPreferences({ language: event.target.value as ProfilePreferences["language"] })}>

@@ -467,6 +467,7 @@ export const it: Dictionary = {
   "profile.defaultSettings": "Defaults",
   "profile.displaySettings": "Display",
   "profile.countryCode": "Country code",
+  "profile.countryNotSelected": "Non selezionato",
   "profile.language": "Language",
   "profile.dateFormat": "Formato data",
   "profile.timeFormat": "Formato ora",

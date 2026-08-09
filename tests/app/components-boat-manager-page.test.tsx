@@ -20,13 +20,13 @@ const boat: Boat = {
   deviationTable: [],
 };
 
-function renderManager(logbook: PersistedLogbook, selectedBoat: Boat) {
+function renderManager(logbook: PersistedLogbook, selectedBoat: Boat, flagState = "") {
   return renderToStaticMarkup(<I18nProvider><BoatManagerPage
     logbook={logbook}
     selectedBoat={selectedBoat}
     showBoatManager={false}
     editingBoatId={selectedBoat.id}
-    boatForm={defaultBoatForm}
+    boatForm={{ ...defaultBoatForm, flagState }}
     setBoatForm={vi.fn()}
     setEditingBoatId={vi.fn()}
     setSelectedBoatId={vi.fn()}
@@ -44,6 +44,12 @@ function renderManager(logbook: PersistedLogbook, selectedBoat: Boat) {
 }
 
 describe("BoatManagerPage archiving", () => {
+  it("keeps legacy and custom boat flag values selectable", () => {
+    const markup = renderManager({ boats: [boat], crewMembers: [], sheets: [] }, boat, "Switzerland");
+
+    expect(markup).toContain('<option value="Switzerland" selected="">Switzerland</option>');
+    expect(markup).toContain('<option value="🇨🇭">🇨🇭 Switzerland</option>');
+  });
   it("offers archiving and a logsheet link instead of deletion for a referenced boat", () => {
     const logbook: PersistedLogbook = {
       boats: [boat],
