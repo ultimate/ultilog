@@ -59,5 +59,5 @@ function sheet(departed: string, arrived: string, lines: LogLine[] = []): LogShe
 }
 
 function line(time: string, logNm: number): LogLine {
-  return { time, logNm, latitude: 54, longitude: 10, position: "", weather: "", weatherRemark: "", temperature: 0, temperatureUnit: "°C", barometer: 0, windDirection: "", windStrength: 0, windUnit: "kn", waves: 0, seaUnit: "m", tide: 0, tideUnit: "m", moon: "", compassCourse: 0, deviation: 0, magneticCourse: 0, variation: 0, trueCourse: 0, windDrift: 0, courseThroughWater: 0, currentDrift: 0, courseOverGround: 0, speedKn: 0, sailMiles: 0, sailNote: "", motorMiles: 0, motorHours: 0, motorNote: "", remarks: "" };
+  return { id: `${time}-${logNm}`, time, logNm, latitude: 54, longitude: 10, position: "", weather: "", weatherRemark: "", temperature: 0, temperatureUnit: "°C", barometer: 0, windDirection: "", windStrength: 0, windUnit: "kn", waves: 0, seaUnit: "m", tide: 0, tideUnit: "m", moon: "", compassCourse: 0, deviation: 0, magneticCourse: 0, variation: 0, trueCourse: 0, windDrift: 0, courseThroughWater: 0, currentDrift: 0, courseOverGround: 0, speedKn: 0, sailMiles: 0, sailNote: "", motorMiles: 0, motorHours: 0, motorNote: "", remarks: "" };
 }
