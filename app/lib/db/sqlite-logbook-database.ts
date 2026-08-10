@@ -28,6 +28,12 @@ export class SqliteLogbookDatabase extends LogbookDatabase {
     await runMigrations(this);
   }
 
+  protected async withTransaction<T>(operation: (database: LogbookDatabase) => Promise<T>) {
+    const db = await this.getDb();
+    try { db.run("begin"); const result = await operation(this); db.run("commit"); await this.persist(); return result; }
+    catch (error) { db.run("rollback"); throw error; }
+  }
+
   override async flush() {
     await this.persist();
   }

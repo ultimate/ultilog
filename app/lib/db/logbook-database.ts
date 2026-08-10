@@ -1,4 +1,4 @@
-import { defaultLogSheetShareSettings, type LogSheet, type PersistedLogbook } from "../../models/logbook";
+import { defaultLogSheetShareSettings, type Boat, type CrewMember, type LogSheet, type PersistedLogbook } from "../../models/logbook";
 import { BoatsRepository } from "../repositories/boats-repository";
 import { CrewRepository } from "../repositories/crew-repository";
 import { LogLinesRepository } from "../repositories/log-lines-repository";
@@ -6,6 +6,7 @@ import { scopedId } from "../repositories/boats-repository";
 import { LogSheetsRepository } from "../repositories/log-sheets-repository";
 import { backfillCrewMemberEncryption } from "./encryption-backfill";
 import { createHash } from "node:crypto";
+import { referencedBoatDeletionError, sheetBoatMutationError } from "../../domain/boats/boat-policy";
 
 export type QueryResult<Row> = { rows: Row[] };
 
@@ -26,6 +27,8 @@ export abstract class LogbookDatabase implements QueryableDatabase {
   abstract placeholder(index: number): string;
   abstract query<Row>(sql: string, values?: unknown[]): Promise<QueryResult<Row>>;
   protected abstract ensureSchema(): Promise<void>;
+
+  protected abstract withTransaction<T>(operation: (database: LogbookDatabase) => Promise<T>): Promise<T>;
 
   async flush() {}
 
@@ -67,6 +70,83 @@ export abstract class LogbookDatabase implements QueryableDatabase {
     await this.ensureSchemaAndBackfill();
     await this.replaceTables(logbook);
     return logbook;
+  }
+
+  async upsertBoat(boat: Boat) {
+    await this.ensureSchemaAndBackfill();
+    return this.withTransaction(async (database) => {
+      const ownerId = database.requireOwnerId();
+      await database.boats.upsert(boat, ownerId);
+      const row = await database.boats.findById(boat.id, ownerId);
+      return row ? LogSheetsRepository.toLogbook([row], [], [], []).boats[0] : undefined;
+    });
+  }
+
+  async deleteBoat(id: string) {
+    await this.ensureSchemaAndBackfill();
+    return this.withTransaction(async (database) => {
+      const ownerId = database.requireOwnerId();
+      const row = await database.boats.findById(id, ownerId);
+      if (!row) return undefined;
+      const entity = LogSheetsRepository.toLogbook([row], [], [], []).boats[0];
+      const policyError = referencedBoatDeletionError(entity, await database.boats.isReferenced(id, ownerId));
+      if (policyError) throw Object.assign(new Error(policyError.message), { code: policyError.code });
+      await database.boats.delete(id, ownerId);
+      return entity;
+    });
+  }
+
+  async upsertCrewMember(crew: CrewMember) {
+    await this.ensureSchemaAndBackfill();
+    return this.withTransaction(async (database) => {
+      const ownerId = database.requireOwnerId();
+      await database.crew.upsert(crew, ownerId);
+      const row = await database.crew.findProfile(crew.id, ownerId);
+      return row ? LogSheetsRepository.toLogbook([], [], [], [], [row]).crewMembers[0] : undefined;
+    });
+  }
+
+  async deleteCrewMember(id: string) {
+    await this.ensureSchemaAndBackfill();
+    return this.withTransaction(async (database) => {
+      const ownerId = database.requireOwnerId();
+      const row = await database.crew.findProfile(id, ownerId);
+      if (!row) return undefined;
+      const entity = LogSheetsRepository.toLogbook([], [], [], [], [row]).crewMembers[0];
+      await database.crew.delete(id, ownerId);
+      return entity;
+    });
+  }
+
+  async upsertLogSheet(sheet: LogSheet) {
+    await this.ensureSchemaAndBackfill();
+    return this.withTransaction(async (database) => {
+      const ownerId = database.requireOwnerId();
+      const boatRow = await database.boats.findById(sheet.boatId, ownerId);
+      const prior = await database.sheets.findById(sheet.id, ownerId);
+      const policyError = sheetBoatMutationError(boatRow ? { name: boatRow.name, archived: Boolean(boatRow.archived) } : undefined, Boolean(prior && prior.boat_id === scopedId(ownerId, sheet.boatId)));
+      if (policyError) throw Object.assign(new Error(policyError.message), { code: policyError.code });
+      if (!boatRow) throw new Error("Boat policy failed to reject a missing boat.");
+      await database.sheets.upsert(sheet, ownerId, await database.motionStationaryThresholdNm());
+      await database.crew.replaceAssignments(sheet.id, sheet.crew, ownerId);
+      await database.lines.replaceForSheet(sheet.id, sheet.lines, ownerId);
+      await database.sheets.updateMetrics(sheet, sheet.lines, ownerId, await database.motionStationaryThresholdNm());
+      const [row, crew, lines] = await Promise.all([database.sheets.findById(sheet.id, ownerId), database.crew.findForSheet(scopedId(ownerId, sheet.id), ownerId), database.lines.findForSheet(scopedId(ownerId, sheet.id))]);
+      return row ? LogSheetsRepository.toLogbook([], [row], crew, lines).sheets[0] : undefined;
+    });
+  }
+
+  async deleteLogSheet(id: string) {
+    await this.ensureSchemaAndBackfill();
+    return this.withTransaction(async (database) => {
+      const ownerId = database.requireOwnerId();
+      const row = await database.sheets.findById(id, ownerId);
+      if (!row) return undefined;
+      const [crew, lines] = await Promise.all([database.crew.findForSheet(row.id, ownerId), database.lines.findForSheet(row.id)]);
+      const entity = LogSheetsRepository.toLogbook([], [row], crew, lines).sheets[0];
+      await database.sheets.delete(id, ownerId);
+      return entity;
+    });
   }
 
   async readSharedSheet(sheetId: string, isAuthenticated: boolean, ownerId?: string): Promise<{ sheet: LogSheet; boatName: string; ownerAvatar?: string; showOwnerAvatarOnPrint?: boolean } | undefined> {

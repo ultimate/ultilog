@@ -15,6 +15,16 @@ export class CrewRepository {
     `, [ownerId])).rows.map((row) => this.decryptCrewRow(row, ownerId)).sort((left, right) => Number(right.is_primary ?? 0) - Number(left.is_primary ?? 0) || left.name.localeCompare(right.name));
   }
 
+  async findProfile(id: string, ownerId: string) {
+    return (await this.findProfiles(ownerId)).find((crew) => crew.crew_member_id === scopedId(ownerId, id));
+  }
+
+  async upsert(crew: CrewMember, ownerId: string) { await this.insertProfile(crew, ownerId); }
+
+  async delete(id: string, ownerId: string) {
+    await this.db.query(`delete from crew_members where id = ${this.db.placeholder(1)} and owner_id = ${this.db.placeholder(2)}`, [scopedId(ownerId, id), ownerId]);
+  }
+
   async findAll(ownerId: string) {
     return (await this.db.query<CrewMemberRow>(`
       select
@@ -154,6 +164,13 @@ export class CrewRepository {
       `insert into sheet_crew_members (sheet_id, crew_member_id, sort_order, embarkation, disembarkation, embarkation_datetime, embarkation_position, disembarkation_datetime, disembarkation_position) values ${rows}`,
       values,
     );
+  }
+
+  async replaceAssignments(sheetId: string, crew: SheetCrewMember[], ownerId: string) {
+    const id = scopedId(ownerId, sheetId);
+    await this.db.query(`delete from sheet_crew_members where sheet_id = ${this.db.placeholder(1)} and exists (select 1 from log_sheets where id = ${this.db.placeholder(1)} and owner_id = ${this.db.placeholder(2)})`, [id, ownerId]);
+    for (const member of crew) await this.upsert(member, ownerId);
+    await this.insertAssignments(crew.map((member, sortOrder) => ({ sheetId, sortOrder, crew: member })), ownerId);
   }
 
   private decryptCrewRow<Row extends Pick<CrewMemberRow, "crew_member_id" | "name" | "nationality" | "role" | "address" | "certificate" | "date_of_birth" | "place_of_birth" | "gender" | "identity_document_type" | "identity_document_number" | "identity_document_issuing_date" | "identity_document_expiry_date" | "image_data">>(row: Row, ownerId: string): Row {

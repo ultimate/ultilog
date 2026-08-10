@@ -12,6 +12,20 @@ export class LogSheetsRepository {
     return rows.sort((left, right) => routeStart(right).localeCompare(routeStart(left)) || left.title.localeCompare(right.title));
   }
 
+  async findById(id: string, ownerId: string) {
+    return (await this.db.query<LogSheetRow>(`select * from log_sheets where id = ${this.db.placeholder(1)} and owner_id = ${this.db.placeholder(2)} limit 1`, [scopedId(ownerId, id), ownerId])).rows[0];
+  }
+
+  async upsert(sheet: LogSheet, ownerId: string, motionStationaryThresholdNm = 0.1) {
+    const existing = await this.findById(sheet.id, ownerId);
+    if (existing) await this.db.query(`delete from log_sheets where id = ${this.db.placeholder(1)} and owner_id = ${this.db.placeholder(2)}`, [scopedId(ownerId, sheet.id), ownerId]);
+    await this.insert(sheet, ownerId, motionStationaryThresholdNm);
+  }
+
+  async delete(id: string, ownerId: string) {
+    await this.db.query(`delete from log_sheets where id = ${this.db.placeholder(1)} and owner_id = ${this.db.placeholder(2)}`, [scopedId(ownerId, id), ownerId]);
+  }
+
   async findSharedByScopedId(scopedSheetId: string) {
     return (await this.db.query<LogSheetRow>(`select * from log_sheets where id = ${this.db.placeholder(1)} and share_privacy <> 'private' limit 1`, [scopedSheetId])).rows[0];
   }
