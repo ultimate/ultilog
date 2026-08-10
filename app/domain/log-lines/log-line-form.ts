@@ -1,5 +1,6 @@
 import type { LineForm, LogLine, TemperatureUnit, WindUnit } from "../../models/logbook";
 import { normalizeCoordinate, parseCoordinate } from "../nautical/coordinates";
+import { createLogLineId } from "./log-line-id";
 
 const numberOrZero = (value: string) => Number.parseFloat(value) || 0;
 const supportedWindUnits = new Set<WindUnit>(["bft", "kn", "km/h", "mp/h", "m/s"]);
@@ -29,6 +30,7 @@ export function signedCourse(value: string) {
 export function lineFormToLogLine(lineForm: LineForm): LogLine {
   const engineHours: Record<string, number> = Object.fromEntries((Object.keys(lineForm.engineHours ?? {}).length ? Object.entries(lineForm.engineHours ?? {}) : [["main-engine", lineForm.motorHours]]).map(([engineId, value]) => [engineId, Math.max(0, numberOrZero(value))]).filter((entry) => Number(entry[1]) > 0));
   return {
+    id: lineForm.id || createLogLineId(),
     time: lineForm.time,
     position: lineForm.position,
     latitude: normalizeCoordinate(parseCoordinate(lineForm.latitude), "lat"),

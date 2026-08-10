@@ -206,7 +206,7 @@ export function LogbookApp({
     useState<SheetInlineField | null>(null);
   const [sheetInlineDraft, setSheetInlineDraft] = useState("");
   const [sheetInlineTimezoneDraft, setSheetInlineTimezoneDraft] = useState(timezoneOffsetFromStamp(""));
-  const [editingLineIndex, setEditingLineIndex] = useState<number | null>(null);
+  const [editingLineId, setEditingLineId] = useState<string | null>(null);
   const [selectedBoatId, setSelectedBoatId] = useState(
     defaultLogbook.boats[0]?.id ?? "",
   );
@@ -1184,17 +1184,17 @@ export function LogbookApp({
       sheets: currentLogbook.sheets.map((sheet) => {
         if (sheet.id !== activeSheet.id) return sheet;
         const lines =
-          editingLineIndex === null
+          editingLineId === null
             ? [...sheet.lines, line]
-            : sheet.lines.map((candidate, index) =>
-                index === editingLineIndex ? line : candidate,
+            : sheet.lines.map((candidate) =>
+                candidate.id === editingLineId ? line : candidate,
               );
         return withCalculatedSheetMetrics({ ...sheet, lines: sortLogLines(lines) }, preferences.motionStationaryThresholdNm);
       }),
     };
     if (!(await saveLogbookNow(nextLogbook))) return;
     setLineForm(lineDefaults);
-    setEditingLineIndex(null);
+    setEditingLineId(null);
     setShowAddLine(false);
   }
 
@@ -1203,16 +1203,16 @@ export function LogbookApp({
     await saveLineFromFields();
   }
 
-  function startEditingLine(line: LogLine, index: number) {
+  function startEditingLine(line: LogLine) {
     if (activeSheet.status === "Locked") return;
-    setEditingLineIndex(index);
+    setEditingLineId(line.id);
     setLineForm(lineToForm(line));
     setShowAddLine(false);
   }
 
   function startAddingLine() {
     if (activeSheet.status === "Locked") return;
-    setEditingLineIndex(null);
+    setEditingLineId(null);
     setLineForm(lineDefaultsForActiveSheet());
     setShowAddLine((show) => !show);
   }
@@ -1228,7 +1228,7 @@ export function LogbookApp({
     const time = requestedTime ?? dateTimeLocalFromDate(now);
     const timestamp = isoDateTimeWithTimezone(time, timezoneOffsetFromStamp(activeSheet.route.departed));
     const initialFields = coordinate ? calculateSmartNavigationFields(activeSheet.lines, coordinate) : {};
-    setEditingLineIndex(null);
+    setEditingLineId(null);
     setLineForm({
       ...lineDefaultsForActiveSheet(),
       ...initialFields,
@@ -1300,21 +1300,21 @@ export function LogbookApp({
     };
   }
 
-  async function deleteLine(indexToDelete: number) {
+  async function deleteLine(lineIdToDelete: string) {
     if (activeSheet.status === "Locked") return;
     const currentLogbook = logbookRef.current;
     await saveLogbookNow({
       ...currentLogbook,
       sheets: currentLogbook.sheets.map((sheet) =>
         sheet.id === activeSheet.id
-          ? withCalculatedSheetMetrics({ ...sheet, lines: sheet.lines.filter((_, index) => index !== indexToDelete) }, preferences.motionStationaryThresholdNm)
+          ? withCalculatedSheetMetrics({ ...sheet, lines: sheet.lines.filter((line) => line.id !== lineIdToDelete) }, preferences.motionStationaryThresholdNm)
           : sheet,
       ),
     });
   }
 
   function cancelLineEdit() {
-    setEditingLineIndex(null);
+    setEditingLineId(null);
     setLineForm(lineDefaults);
     setShowAddLine(false);
   }
@@ -1774,7 +1774,7 @@ export function LogbookApp({
     setCrewForm(crewToForm(resetLogbook.crewMembers[0] ?? defaultCrewForm));
     setEditingBoatId(null);
     setEditingSheetId(null);
-    setEditingLineIndex(null);
+    setEditingLineId(null);
     setSelectedCrewIndex(resetLogbook.crewMembers.length ? 0 : -2);
     setProfileMessage(t("profile.demoResetSuccess"));
     return true;
@@ -1904,7 +1904,7 @@ export function LogbookApp({
               lineForm={lineForm}
               setLineForm={setLineForm}
               saveLineFromFields={saveLineFromFields}
-              editingLineIndex={editingLineIndex}
+              editingLineId={editingLineId}
               cancelLineEdit={cancelLineEdit}
               startEditingLine={startEditingLine}
               deleteLine={deleteLine}

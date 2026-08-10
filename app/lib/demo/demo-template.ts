@@ -235,6 +235,7 @@ function logLine(dayData: Day, waypoint: Waypoint, nextWaypoint: Waypoint | unde
   const compassCourse = underway ? (magneticCourse - deviation + 360) % 360 : 0;
   const legDistance = index === 0 ? 0 : Math.round((dayData.distance / (count - 1)) * 10) / 10;
   return {
+    id: `demo-line-${dayData.date}-${index}`,
     time,
     position: waypoint.name,
     latitude: waypoint.latitude,

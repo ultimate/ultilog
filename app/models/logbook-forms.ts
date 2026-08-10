@@ -12,6 +12,6 @@ export type BoatForm = Pick<Boat, "name" | "registration" | "flagState" | "homeP
 };
 
 export type LineForm = Omit<Record<keyof LogLine, string>, "engineHours"> & { engineHours?: Record<string, string> };
-export type LineFormField = Exclude<keyof LineForm, "engineHours">;
+export type LineFormField = Exclude<keyof LineForm, "engineHours" | "id">;
 
 export type CrewForm = CrewMember;
