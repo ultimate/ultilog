@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 import type { PersistedLogbook } from "../../../app/models/logbook";
+import { LOGBOOK_LIMITS } from "../../../app/lib/validation/logbook";
 
 vi.mock("../../../auth", () => ({
   auth: vi.fn(),
@@ -21,7 +22,7 @@ const mockedReadLogbook = vi.mocked(store.readLogbook);
 const mockedWriteLogbook = vi.mocked(store.writeLogbook);
 const mockedIsActiveDemoSandbox = vi.mocked(isActiveDemoSandbox);
 const session = { user: { id: "user-1", name: "User", email: "user@example.test", groups: [] }, expires: "2099-01-01T00:00:00.000Z" };
-const image = { data: "base64-image", mimeType: "image/png", width: 64, height: 32 };
+const image = { data: Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]).toString("base64"), mimeType: "image/png", width: 64, height: 32 };
 const logbook = { boats: [], crewMembers: [], sheets: [] };
 
 describe("logbook endpoint", () => {
@@ -75,6 +76,45 @@ describe("logbook endpoint", () => {
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({ error: "Invalid logbook payload" });
     expect(mockedWriteLogbook).not.toHaveBeenCalled();
+  });
+
+  it("rejects an oversized request before reading or parsing its body", async () => {
+    mockedAuth.mockResolvedValueOnce(session);
+    const request = new Request("https://ultilog.test/api/logbook", { method: "PUT", headers: { "content-length": String(LOGBOOK_LIMITS.requestBytes + 1) }, body: "not json" });
+    const readSpy = vi.spyOn(request, "text");
+
+    const response = await PUT(request);
+
+    expect(response.status).toBe(413);
+    expect(readSpy).not.toHaveBeenCalled();
+  });
+
+  it("returns 413 for count limits and accepts the boundary", async () => {
+    mockedAuth.mockResolvedValue(session);
+    mockedWriteLogbook.mockImplementation(async value => value);
+    const boat = { id: "boat", name: "Boat", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [] };
+    const atLimit = { ...logbook, boats: Array.from({ length: LOGBOOK_LIMITS.boats }, (_, i) => ({ ...boat, id: `boat-${i}` })) };
+    expect((await PUT(new Request("https://ultilog.test/api/logbook", { method: "PUT", body: JSON.stringify(atLimit) }))).status).toBe(200);
+    expect((await PUT(new Request("https://ultilog.test/api/logbook", { method: "PUT", body: JSON.stringify({ ...atLimit, boats: [...atLimit.boats, boat] }) }))).status).toBe(413);
+  });
+
+  it("rejects malformed nested values and unsupported or oversized images", async () => {
+    mockedAuth.mockResolvedValue(session);
+    const boat = { id: "boat", name: "Boat", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [] };
+    const malformed = { ...logbook, boats: [{ ...boat, engines: [{ id: "engine", name: 42, label: "Main", role: "propulsion" }] }] };
+    expect((await PUT(new Request("https://ultilog.test/api/logbook", { method: "PUT", body: JSON.stringify(malformed) }))).status).toBe(400);
+    const invalidMime = { ...logbook, boats: [{ ...boat, image: { ...image, mimeType: "image/svg+xml" } }] };
+    expect((await PUT(new Request("https://ultilog.test/api/logbook", { method: "PUT", body: JSON.stringify(invalidMime) }))).status).toBe(400);
+    const oversizedData = Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), Buffer.alloc(1024 * 1024)]).toString("base64");
+    const oversized = { ...logbook, boats: [{ ...boat, image: { ...image, data: oversizedData } }] };
+    expect((await PUT(new Request("https://ultilog.test/api/logbook", { method: "PUT", body: JSON.stringify(oversized) }))).status).toBe(413);
+  });
+
+  it("accepts individual strings immediately below their limit", async () => {
+    mockedAuth.mockResolvedValueOnce(session);
+    mockedWriteLogbook.mockImplementationOnce(async value => value);
+    const boundary = { ...logbook, crewMembers: [{ id: "crew", name: "x".repeat(LOGBOOK_LIMITS.string), nationality: "", role: "" }] };
+    expect((await PUT(new Request("https://ultilog.test/api/logbook", { method: "PUT", body: JSON.stringify(boundary) }))).status).toBe(200);
   });
 
 
