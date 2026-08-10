@@ -1,0 +1,213 @@
+{
+  "_instructions": {
+    "purpose": "Fill this catalog with authoritative legal logbook information and license requirements. Keep every id stable after publication because ids will be used for saved user progress.",
+    "dates": "Use YYYY-MM-DD for checkedAt and effectiveFrom. Leave effectiveFrom empty if the official source does not state one.",
+    "translations": "Use the same section and requirement ids in every language. Text may differ, but the underlying rule, progress type, threshold, and filters must not.",
+    "legalText": "Set textKind to official-excerpt for verbatim official wording or editorial-summary for our own summary. Put the precise act/article/paragraph reference in citation.",
+    "requirementTypes": [
+      "manual",
+      "sail-miles",
+      "motor-miles",
+      "total-miles",
+      "days-on-water"
+    ],
+    "progress": "For manual requirements, use a null threshold and unit. For tracked requirements, provide a numeric threshold, an appropriate unit, and describe every qualification rule in filters and notes.",
+    "placeholders": "Replace all TODO values. Duplicate the example section or requirement objects as needed; do not reuse an id within the same document or license."
+  },
+  "legalLogbookRequirements": [
+    {
+      "countryCode": "DE",
+      "defaultLanguage": "de",
+      "translations": {
+        "de": {
+          "title": "TODO: Deutscher Titel",
+          "authority": "TODO: zuständige Behörde",
+          "sourceUrl": "TODO: https://...",
+          "citation": "TODO: Gesetz/Verordnung, Paragraph/Artikel",
+          "checkedAt": "TODO: YYYY-MM-DD",
+          "effectiveFrom": "",
+          "sections": [
+            {
+              "id": "TODO-stable-section-id",
+              "heading": "TODO: Überschrift",
+              "text": "TODO: Gesetzestext oder redaktionelle Zusammenfassung",
+              "textKind": "editorial-summary"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "countryCode": "CH",
+      "defaultLanguage": "de",
+      "translations": {
+        "de": {
+          "title": "TODO: Deutscher Titel",
+          "authority": "TODO: zuständige Behörde",
+          "sourceUrl": "TODO: https://...",
+          "citation": "TODO: Erlass, Artikel/Absatz",
+          "checkedAt": "TODO: YYYY-MM-DD",
+          "effectiveFrom": "",
+          "sections": [
+            {
+              "id": "TODO-stable-section-id",
+              "heading": "TODO: Überschrift",
+              "text": "TODO: Gesetzestext oder redaktionelle Zusammenfassung",
+              "textKind": "editorial-summary"
+            }
+          ]
+        },
+        "fr": {
+          "title": "TODO: titre français",
+          "authority": "TODO: autorité compétente",
+          "sourceUrl": "TODO: https://...",
+          "citation": "TODO: acte, article/alinéa",
+          "checkedAt": "TODO: YYYY-MM-DD",
+          "effectiveFrom": "",
+          "sections": [
+            {
+              "id": "TODO-stable-section-id",
+              "heading": "TODO: titre de la section",
+              "text": "TODO: texte légal ou résumé éditorial",
+              "textKind": "editorial-summary"
+            }
+          ]
+        },
+        "it": {
+          "title": "TODO: titolo italiano",
+          "authority": "TODO: autorità competente",
+          "sourceUrl": "TODO: https://...",
+          "citation": "TODO: atto, articolo/capoverso",
+          "checkedAt": "TODO: YYYY-MM-DD",
+          "effectiveFrom": "",
+          "sections": [
+            {
+              "id": "TODO-stable-section-id",
+              "heading": "TODO: titolo della sezione",
+              "text": "TODO: testo legale o sintesi editoriale",
+              "textKind": "editorial-summary"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "licenses": [
+    {
+      "id": "ch-hochseeausweis-sail",
+      "countryCode": "CH",
+      "variant": "sail",
+      "defaultLanguage": "de",
+      "availableLanguages": ["de", "fr", "it"],
+      "content": {
+        "de": { "name": "Hochseeausweis – Segel", "description": "TODO", "authority": "TODO", "sourceUrl": "TODO: https://...", "citation": "TODO", "checkedAt": "TODO: YYYY-MM-DD", "effectiveFrom": "" },
+        "fr": { "name": "TODO: permis hauturier – voile", "description": "TODO", "authority": "TODO", "sourceUrl": "TODO: https://...", "citation": "TODO", "checkedAt": "TODO: YYYY-MM-DD", "effectiveFrom": "" },
+        "it": { "name": "TODO: licenza d'altura – vela", "description": "TODO", "authority": "TODO", "sourceUrl": "TODO: https://...", "citation": "TODO", "checkedAt": "TODO: YYYY-MM-DD", "effectiveFrom": "" }
+      },
+      "requirements": [
+        {
+          "id": "TODO-stable-requirement-id",
+          "type": "manual",
+          "threshold": null,
+          "unit": null,
+          "filters": {
+            "role": "any",
+            "propulsion": "any",
+            "seaArea": "any",
+            "minimumVoyageMiles": null,
+            "withinYears": null
+          },
+          "notes": "TODO: precise qualification/counting rules",
+          "translations": {
+            "de": { "label": "TODO", "description": "TODO" },
+            "fr": { "label": "TODO", "description": "TODO" },
+            "it": { "label": "TODO", "description": "TODO" }
+          }
+        }
+      ]
+    },
+    {
+      "id": "ch-hochseeausweis-motor",
+      "countryCode": "CH",
+      "variant": "motor",
+      "defaultLanguage": "de",
+      "availableLanguages": ["de", "fr", "it"],
+      "content": {
+        "de": { "name": "Hochseeausweis – Motor", "description": "TODO", "authority": "TODO", "sourceUrl": "TODO: https://...", "citation": "TODO", "checkedAt": "TODO: YYYY-MM-DD", "effectiveFrom": "" },
+        "fr": { "name": "TODO: permis hauturier – moteur", "description": "TODO", "authority": "TODO", "sourceUrl": "TODO: https://...", "citation": "TODO", "checkedAt": "TODO: YYYY-MM-DD", "effectiveFrom": "" },
+        "it": { "name": "TODO: licenza d'altura – motore", "description": "TODO", "authority": "TODO", "sourceUrl": "TODO: https://...", "citation": "TODO", "checkedAt": "TODO: YYYY-MM-DD", "effectiveFrom": "" }
+      },
+      "requirements": []
+    },
+    {
+      "id": "ch-hochseeausweis-sail-motor-addon",
+      "countryCode": "CH",
+      "variant": "sail-with-motor-addon",
+      "defaultLanguage": "de",
+      "availableLanguages": ["de", "fr", "it"],
+      "content": {
+        "de": { "name": "Hochseeausweis – Segel mit Motor-Zusatz", "description": "TODO", "authority": "TODO", "sourceUrl": "TODO: https://...", "citation": "TODO", "checkedAt": "TODO: YYYY-MM-DD", "effectiveFrom": "" },
+        "fr": { "name": "TODO", "description": "TODO", "authority": "TODO", "sourceUrl": "TODO: https://...", "citation": "TODO", "checkedAt": "TODO: YYYY-MM-DD", "effectiveFrom": "" },
+        "it": { "name": "TODO", "description": "TODO", "authority": "TODO", "sourceUrl": "TODO: https://...", "citation": "TODO", "checkedAt": "TODO: YYYY-MM-DD", "effectiveFrom": "" }
+      },
+      "requirements": []
+    },
+    {
+      "id": "ch-hochseeausweis-motor-sail-addon",
+      "countryCode": "CH",
+      "variant": "motor-with-sail-addon",
+      "defaultLanguage": "de",
+      "availableLanguages": ["de", "fr", "it"],
+      "content": {
+        "de": { "name": "Hochseeausweis – Motor mit Segel-Zusatz", "description": "TODO", "authority": "TODO", "sourceUrl": "TODO: https://...", "citation": "TODO", "checkedAt": "TODO: YYYY-MM-DD", "effectiveFrom": "" },
+        "fr": { "name": "TODO", "description": "TODO", "authority": "TODO", "sourceUrl": "TODO: https://...", "citation": "TODO", "checkedAt": "TODO: YYYY-MM-DD", "effectiveFrom": "" },
+        "it": { "name": "TODO", "description": "TODO", "authority": "TODO", "sourceUrl": "TODO: https://...", "citation": "TODO", "checkedAt": "TODO: YYYY-MM-DD", "effectiveFrom": "" }
+      },
+      "requirements": []
+    },
+    {
+      "id": "de-sbf",
+      "countryCode": "DE",
+      "variant": "sbf",
+      "defaultLanguage": "de",
+      "availableLanguages": ["de"],
+      "content": {
+        "de": { "name": "Sportbootführerschein (SBF)", "description": "TODO", "authority": "TODO", "sourceUrl": "TODO: https://...", "citation": "TODO", "checkedAt": "TODO: YYYY-MM-DD", "effectiveFrom": "" }
+      },
+      "requirements": []
+    },
+    {
+      "id": "de-sks",
+      "countryCode": "DE",
+      "variant": "sks",
+      "defaultLanguage": "de",
+      "availableLanguages": ["de"],
+      "content": {
+        "de": { "name": "Sportküstenschifferschein (SKS)", "description": "TODO", "authority": "TODO", "sourceUrl": "TODO: https://...", "citation": "TODO", "checkedAt": "TODO: YYYY-MM-DD", "effectiveFrom": "" }
+      },
+      "requirements": []
+    },
+    {
+      "id": "de-sss",
+      "countryCode": "DE",
+      "variant": "sss",
+      "defaultLanguage": "de",
+      "availableLanguages": ["de"],
+      "content": {
+        "de": { "name": "Sportseeschifferschein (SSS)", "description": "TODO", "authority": "TODO", "sourceUrl": "TODO: https://...", "citation": "TODO", "checkedAt": "TODO: YYYY-MM-DD", "effectiveFrom": "" }
+      },
+      "requirements": []
+    },
+    {
+      "id": "de-shs",
+      "countryCode": "DE",
+      "variant": "shs",
+      "defaultLanguage": "de",
+      "availableLanguages": ["de"],
+      "content": {
+        "de": { "name": "Sporthochseeschifferschein (SHS)", "description": "TODO", "authority": "TODO", "sourceUrl": "TODO: https://...", "citation": "TODO", "checkedAt": "TODO: YYYY-MM-DD", "effectiveFrom": "" }
+      },
+      "requirements": []
+    }
+  ]
+}
