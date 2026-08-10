@@ -71,6 +71,7 @@ test("splits filled sheets that exceed one A4 landscape page", async ({ page }) 
     title: "Long printable passage",
     lines: Array.from({ length: 21 }, (_, index) => ({
       ...demoSheet.lines[index % demoSheet.lines.length],
+      id: `print-long-line-${index}`,
       time: `2026-05-14T${String(index).padStart(2, "0")}:00`,
       remarks: index === 0 ? "A very long remark that should shrink rather than changing the fixed print row height for the printed logbook sheet." : demoSheet.lines[index % demoSheet.lines.length].remarks,
     })),
