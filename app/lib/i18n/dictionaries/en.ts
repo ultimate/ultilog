@@ -469,6 +469,7 @@ export const en = {
   "profile.defaultSettings": "Defaults",
   "profile.displaySettings": "Display",
   "profile.countryCode": "Country code",
+  "profile.countryNotSelected": "Not selected",
   "profile.language": "Language",
   "profile.dateFormat": "Date format",
   "profile.timeFormat": "Time format",

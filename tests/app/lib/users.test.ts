@@ -92,7 +92,7 @@ describe("users preferences", () => {
     const user = await registerUser({ name: "Persist User", email: "persist@example.test", password: "password123" });
 
     const updated = await updateUserViewPreferences(user.id, {
-      countryCode: " us ",
+      countryCode: " de ",
       language: "fr",
       dateFormat: "dd.MM.yyyy",
       timeFormat: "h:mm a",
@@ -109,7 +109,7 @@ describe("users preferences", () => {
     });
 
     expect(updated).toMatchObject({
-      countryCode: "US",
+      countryCode: "DE",
       language: "fr",
       dateFormat: "dd.MM.yyyy",
       timeFormat: "h:mm a",
@@ -132,7 +132,9 @@ describe("users preferences", () => {
     const user = await registerUser({ name: "Invalid User", email: "invalid@example.test", password: "password123" });
 
     await expect(updateUserViewPreferences(user.id, { windUnit: "mph" })).rejects.toThrow("Wind unit is not supported.");
-    await expect(updateUserViewPreferences(user.id, { countryCode: "USA" })).rejects.toThrow("Country code must be a two-letter ISO country code.");
+    await expect(updateUserViewPreferences(user.id, { countryCode: "ZZ" })).rejects.toThrow("Country code must be a supported ISO country code.");
+    await expect(updateUserViewPreferences(user.id, { countryCode: "CH" })).resolves.toMatchObject({ countryCode: "CH" });
+    await expect(updateUserViewPreferences(user.id, { countryCode: "" })).resolves.toMatchObject({ countryCode: "" });
   });
 });
 

@@ -5,6 +5,7 @@ import { getDatabase, writeLogbook } from "./logbook-store";
 import { sendEmailVerificationEmail, sendPasswordResetEmail } from "./mailer";
 import { normalizeStandardTechnicalCheckIds, STANDARD_TECHNICAL_CHECK_IDS, type StandardTechnicalCheckId } from "../domain/logbook/technical-log";
 import { dateFormats, defaultDateFormat, defaultTimeFormat, timeFormats, type DateFormat, type TimeFormat } from "./date-time-format";
+import { isSupportedCountryCode } from "./flags";
 import { validateStoredImage } from "./validation/stored-image";
 
 export type UserTheme = "light" | "dark" | "auto";
@@ -139,7 +140,7 @@ function normalizeCountryCode(value: unknown) {
   if (typeof value !== "string") return "";
   const countryCode = value.trim().toUpperCase();
   if (!countryCode) return "";
-  if (!/^[A-Z]{2}$/.test(countryCode)) throw new Error("Country code must be a two-letter ISO country code.");
+  if (!isSupportedCountryCode(countryCode)) throw new Error("Country code must be a supported ISO country code.");
   return countryCode;
 }
 
