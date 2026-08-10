@@ -1,7 +1,7 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { defaultDeviationTable } from "../../../../app/models/logbook";
 import { SqliteLogbookDatabase } from "../../../../app/lib/db/sqlite-logbook-database";
 import { sampleLogSheets } from "../../../fixtures/logbook";
@@ -13,6 +13,56 @@ afterEach(async () => {
 });
 
 describe("SqliteLogbookDatabase", () => {
+  it("scopes focused create, update, and delete mutations to their owner", async () => {
+    const path = await tempDatabasePath();
+    const owner = new SqliteLogbookDatabase(path).forUser("owner-a");
+    await owner.migrate();
+    await owner.query("insert into users (id, name, email, password_hash) values (?, ?, ?, ?), (?, ?, ?, ?)", ["owner-a", "A", "a@example.test", "", "owner-b", "B", "b@example.test", ""]);
+    const initial = { id: "shared-id", name: "Owner A boat", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: defaultDeviationTable() };
+    await expect(owner.upsertBoat(initial)).resolves.toMatchObject(initial);
+    await expect(owner.upsertBoat({ ...initial, name: "Updated" })).resolves.toMatchObject({ name: "Updated" });
+    const other = new SqliteLogbookDatabase(path).forUser("owner-b");
+    await expect(other.deleteBoat(initial.id)).resolves.toBeUndefined();
+    await expect(owner.readLogbook()).resolves.toMatchObject({ boats: [{ name: "Updated" }] });
+    await expect(owner.deleteBoat(initial.id)).resolves.toMatchObject({ id: initial.id });
+  });
+
+  it("enforces referenced and archived boat policies for focused mutations", async () => {
+    const db = new SqliteLogbookDatabase(await tempDatabasePath()).forUser("policy-user");
+    await db.migrate();
+    await db.query("insert into users (id, name, email, password_hash) values (?, ?, ?, ?)", ["policy-user", "Policy", "policy@example.test", ""]);
+    const boat = { id: "boat-1", archived: true, name: "Archived", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: defaultDeviationTable() };
+    await db.upsertBoat(boat);
+    const sheet = { id: "sheet-1", title: "Trip", status: "Draft" as const, boatId: boat.id, route: { from: "", to: "", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] };
+    await expect(db.upsertLogSheet(sheet)).rejects.toMatchObject({ code: "archived_boat_for_new_sheet" });
+    await db.upsertBoat({ ...boat, archived: false });
+    await db.upsertLogSheet(sheet);
+    await expect(db.deleteBoat(boat.id)).rejects.toMatchObject({ code: "referenced_boat_deleted" });
+    await expect(db.deleteLogSheet(sheet.id)).resolves.toMatchObject({ id: sheet.id });
+    await expect(db.deleteBoat(boat.id)).resolves.toMatchObject({ id: boat.id });
+  });
+
+  it("rolls back a failed focused sheet mutation", async () => {
+    const db = new SqliteLogbookDatabase(await tempDatabasePath()).forUser("rollback-user");
+    await db.migrate();
+    await db.query("insert into users (id, name, email, password_hash) values (?, ?, ?, ?)", ["rollback-user", "Rollback", "rollback@example.test", ""]);
+    const boat = { id: "boat-1", name: "Boat", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: defaultDeviationTable() };
+    await db.upsertBoat(boat);
+    const original = { id: "sheet-1", title: "Original", status: "Draft" as const, boatId: boat.id, route: { from: "", to: "", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] };
+    await db.upsertLogSheet(original);
+    const query = db.query.bind(db);
+    const failure = vi.spyOn(db, "query").mockImplementation(async (sql, values) => {
+      if (sql.startsWith("update log_sheets set motor_miles")) throw new Error("simulated metrics failure");
+      return query(sql, values);
+    });
+
+    await expect(db.upsertLogSheet({ ...original, title: "Must roll back" })).rejects.toThrow("simulated metrics failure");
+    failure.mockRestore();
+
+    const persisted = await db.readLogbook();
+    expect(persisted.sheets.find(sheet => sheet.id === original.id)?.title).toBe("Original");
+  });
+
   it("requires every logbook access to be scoped to an explicit user", async () => {
     const db = new SqliteLogbookDatabase(await tempDatabasePath());
 

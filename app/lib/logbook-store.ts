@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import type { PersistedLogbook } from "../models/logbook";
+import type { Boat, CrewMember, LogSheet, PersistedLogbook } from "../models/logbook";
 import { LogbookDatabase } from "./db/logbook-database";
 import { PostgresLogbookDatabase } from "./db/postgres-logbook-database";
 import { SqliteLogbookDatabase } from "./db/sqlite-logbook-database";
@@ -25,6 +25,19 @@ export async function writeLogbook(logbook: PersistedLogbook, userId: string) {
   writeQueue = operation.then(() => undefined, () => undefined);
   return operation;
 }
+
+function mutate<T>(userId: string, operation: (database: LogbookDatabase) => Promise<T>) {
+  const pending = writeQueue.then(() => operation(getDatabase().forUser(userId)));
+  writeQueue = pending.then(() => undefined, () => undefined);
+  return pending;
+}
+
+export const upsertBoat = (boat: Boat, userId: string) => mutate(userId, db => db.upsertBoat(boat));
+export const deleteBoat = (id: string, userId: string) => mutate(userId, db => db.deleteBoat(id));
+export const upsertCrewMember = (crew: CrewMember, userId: string) => mutate(userId, db => db.upsertCrewMember(crew));
+export const deleteCrewMember = (id: string, userId: string) => mutate(userId, db => db.deleteCrewMember(id));
+export const upsertLogSheet = (sheet: LogSheet, userId: string) => mutate(userId, db => db.upsertLogSheet(sheet));
+export const deleteLogSheet = (id: string, userId: string) => mutate(userId, db => db.deleteLogSheet(id));
 
 export async function readSharedLogSheet(sheetId: string, isAuthenticated: boolean, ownerId?: string) {
   const operation = writeQueue.then(() => getDatabase().readSharedSheet(sheetId, isAuthenticated, ownerId));

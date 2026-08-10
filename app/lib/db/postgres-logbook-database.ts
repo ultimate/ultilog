@@ -24,6 +24,13 @@ export class PostgresLogbookDatabase extends LogbookDatabase {
     await runMigrations(this);
   }
 
+  protected async withTransaction<T>(operation: (database: LogbookDatabase) => Promise<T>) {
+    const client = await this.pool.connect();
+    try { await client.query("begin"); const result = await operation(new PostgresTransactionLogbookDatabase(client, this.requireOwnerId())); await client.query("commit"); return result; }
+    catch (error) { await client.query("rollback"); throw error; }
+    finally { client.release(); }
+  }
+
   override async writeLogbook(logbook: PersistedLogbook) {
     await this.ensureSchemaAndBackfill();
     const client = await this.pool.connect();
@@ -75,6 +82,8 @@ class PostgresTransactionLogbookDatabase extends LogbookDatabase {
   protected async ensureSchema() {
     return;
   }
+
+  protected async withTransaction<T>(operation: (database: LogbookDatabase) => Promise<T>): Promise<T> { return operation(this); }
 
   protected async insertLogbook(logbook: PersistedLogbook) {
     const ownerId = this.requireOwnerId();

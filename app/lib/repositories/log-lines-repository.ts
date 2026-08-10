@@ -21,6 +21,12 @@ export class LogLinesRepository {
     await this.db.query(`delete from log_lines where sheet_id in (select id from log_sheets where owner_id = ${this.db.placeholder(1)})`, [ownerId]);
   }
 
+  async replaceForSheet(sheetId: string, lines: LogLine[], ownerId: string) {
+    const scopedSheetId = scopedId(ownerId, sheetId);
+    await this.db.query(`delete from log_lines where sheet_id = ${this.db.placeholder(1)} and exists (select 1 from log_sheets where id = ${this.db.placeholder(1)} and owner_id = ${this.db.placeholder(2)})`, [scopedSheetId, ownerId]);
+    await this.insertMany(lines.map((line, sortOrder) => ({ sheetId, sortOrder, line })), ownerId);
+  }
+
   async insert(sheetId: string, sortOrder: number, line: LogLine, ownerId: string) {
     await this.insertMany([{ sheetId, sortOrder, line }], ownerId);
   }
