@@ -3,6 +3,7 @@ import { lineFormToLogLine } from "../../../../app/domain/log-lines/log-line-for
 import type { LineForm } from "../../../../app/models/logbook";
 
 const baseLineForm: LineForm = {
+  id: "test-line",
   time: "2026-07-03T10:15",
   position: "Off Point",
   latitude: "47° 30.000' N",
@@ -42,6 +43,7 @@ const baseLineForm: LineForm = {
 describe("lineFormToLogLine", () => {
   it("normalizes scanned and manual line form values into persisted log lines", () => {
     expect(lineFormToLogLine(baseLineForm)).toEqual({
+      id: "test-line",
       time: "2026-07-03T10:15",
       position: "Off Point",
       latitude: 47.5,

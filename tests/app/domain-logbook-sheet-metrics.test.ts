@@ -3,6 +3,7 @@ import { calculateLogSheetMetrics } from "../../app/domain/logbook/sheet-metrics
 import type { LogLine } from "../../app/models/logbook";
 
 const baseLine: LogLine = {
+  id: "base-line",
   time: "00:00",
   position: "",
   latitude: 0,

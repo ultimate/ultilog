@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it } from "vitest";
 import { defaultDeviationTable } from "../../../../app/models/logbook";
 import { SqliteLogbookDatabase } from "../../../../app/lib/db/sqlite-logbook-database";
+import { sampleLogSheets } from "../../../fixtures/logbook";
 
 const tempDirs: string[] = [];
 
@@ -71,6 +72,25 @@ describe("SqliteLogbookDatabase", () => {
     await firstWrapper.writeLogbook(updatedLogbook);
 
     await expect(new SqliteLogbookDatabase(databasePath).forUser("new-user").readLogbook()).resolves.toMatchObject({ boats: updatedLogbook.boats, sheets: updatedLogbook.sheets });
+  });
+
+  it("retains line identifiers through reloads, independent edits, and reordering", async () => {
+    const databasePath = await tempDatabasePath();
+    const db = new SqliteLogbookDatabase(databasePath).forUser("line-id-user");
+    await db.migrate();
+    await db.query("insert into users (id, name, email, password_hash) values (?, ?, ?, ?)", ["line-id-user", "Line IDs", "lines@example.test", ""]);
+    const boat = { id: "boat-1", archived: false, name: "ID test", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: defaultDeviationTable() };
+    const original = sampleLogSheets[0].lines.slice(0, 2).map((line) => ({ ...line, time: "2026-05-14T10:00" }));
+    const sheet = { id: "sheet-1", title: "Stable IDs", status: "Draft" as const, boatId: boat.id, route: { from: "", to: "", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [...original].reverse() };
+
+    await db.writeLogbook({ boats: [boat], crewMembers: [], sheets: [sheet] });
+    const reloaded = await new SqliteLogbookDatabase(databasePath).forUser("line-id-user").readLogbook();
+    expect(reloaded.sheets[0].lines.map((line) => line.id)).toEqual(sheet.lines.map((line) => line.id));
+
+    const editedLines = reloaded.sheets[0].lines.map((line) => ({ ...line, remarks: line.id === original[0].id ? "first edit" : "second edit" }));
+    await db.writeLogbook({ ...reloaded, sheets: [{ ...reloaded.sheets[0], lines: editedLines }] });
+    const edited = await new SqliteLogbookDatabase(databasePath).forUser("line-id-user").readLogbook();
+    expect(Object.fromEntries(edited.sheets[0].lines.map((line) => [line.id, line.remarks]))).toEqual({ [original[0].id]: "first edit", [original[1].id]: "second edit" });
   });
 });
 

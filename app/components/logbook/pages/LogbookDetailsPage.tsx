@@ -96,7 +96,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     smartMotionStatus,
     showAddLine,
     saveLineFromFields,
-    editingLineIndex,
+    editingLineId,
     cancelLineEdit,
     startEditingLine,
     deleteLine,
@@ -212,15 +212,15 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     };
   }, [openCourseTooltip]);
 
-  const renderNumberInput = (field: Exclude<keyof LineForm, "engineHours">, options?: { min?: number; max?: number; step?: string }) => (
+  const renderNumberInput = (field: Exclude<keyof LineForm, "engineHours" | "id">, options?: { min?: number; max?: number; step?: string }) => (
     <input type="number" min={options?.min} max={options?.max} step={options?.step ?? "1"} value={lineForm[field]} onChange={(e) => setLineForm({ ...lineForm, [field]: e.target.value })} />
   );
-  const renderTextInput = (field: Exclude<keyof LineForm, "engineHours">, label?: string) => (
+  const renderTextInput = (field: Exclude<keyof LineForm, "engineHours" | "id">, label?: string) => (
     <input aria-label={label} value={lineForm[field]} onChange={(e) => setLineForm({ ...lineForm, [field]: e.target.value })} />
   );
 
 
-  const updateLineFormField = (field: Exclude<keyof LineForm, "engineHours">, value: string) => {
+  const updateLineFormField = (field: Exclude<keyof LineForm, "engineHours" | "id">, value: string) => {
     const sequence = courseConversionSequence.current + 1;
     courseConversionSequence.current = sequence;
     const updated = updateLogLineFormForInput(lineForm, { field, value }, { boat: activeBoat });
@@ -232,7 +232,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
       .catch(() => setLineForm({ ...lineForm, [field]: value }));
   };
 
-  const renderCourseInput = (field: Exclude<keyof LineForm, "engineHours">, options: { min?: number; max?: number }) => (
+  const renderCourseInput = (field: Exclude<keyof LineForm, "engineHours" | "id">, options: { min?: number; max?: number }) => (
     <span className="smart-field-wrap">
     <input
       type="number"
@@ -363,7 +363,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
       ))}<td><span className="smart-field-wrap">{renderNumberInput("speedKn", { step: "0.1" })}{smartMotionStatus === "tracking" ? <span className="smart-field-spinner" role="status" aria-label={t("details.trackingMotion")} /> : null}</span></td><td>{renderNumberInput("logNm", { step: "0.1" })}</td>
       <td><div className="compound-inputs labeled-inputs"><label><span>[nm]</span>{renderNumberInput("sailMiles", { step: "0.1" })}</label><label><span>[note]</span>{renderTextInput("sailNote", t("details.sailNote"))}</label></div></td>
       <td><div className="compound-inputs labeled-inputs"><label><span>[nm]</span>{renderNumberInput("motorMiles", { step: "0.1" })}</label>{logLineEngines.map((engine) => <label key={engine.id}><span>{engine.label} [h]</span><input aria-label={`${engine.name} ${t("details.engineRuntime")}`} type="number" min="0" step="0.1" value={lineForm.engineHours?.[engine.id] ?? ""} onChange={(event) => setLineForm({ ...lineForm, engineHours: { ...lineForm.engineHours, [engine.id]: nonNegativeInputValue(event.target.value) } })} /></label>)}<label><span>[note]</span>{renderTextInput("motorNote", t("details.motorNote"))}</label></div></td>
-      <td>{renderTextInput("remarks")}</td><td colSpan={2}><div className="table-actions"><button type="button" onClick={saveLineFromFields}>{editingLineIndex === null ? t("details.saveLine") : "💾"}</button><button type="button" className="ghost-button" onClick={cancelLineEdit}>{t("common.cancel")}</button></div></td>
+      <td>{renderTextInput("remarks")}</td><td colSpan={2}><div className="table-actions"><button type="button" onClick={saveLineFromFields}>{editingLineId === null ? t("details.saveLine") : "💾"}</button><button type="button" className="ghost-button" onClick={cancelLineEdit}>{t("common.cancel")}</button></div></td>
     </tr>
   );
 
@@ -829,15 +829,15 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                     </thead>
                     <tbody>
                       {showAddLine && renderLineEditor("new")}
-                      {activeSheet.lines.map((line, index) => editingLineIndex === index ? renderLineEditor(`edit-${index}`) : (
-                        <tr key={`${line.time}-${line.position}-${index}`}>
+                      {activeSheet.lines.map((line) => editingLineId === line.id ? renderLineEditor(`edit-${line.id}`) : (
+                        <tr key={line.id}>
                           <td>{formatTime(line.time)}</td><td>{coordinateToInput(line.latitude, "lat", coordinateFormat)}</td><td>{coordinateToInput(line.longitude, "lon", coordinateFormat)}</td><td>{line.weather}</td><td>{renderClampedLogText(t("details.weatherRemark"), line.weatherRemark)}</td><td>{line.temperature} {line.temperatureUnit}</td><td>{line.barometer}</td><td>{line.windDirection} {line.windStrength} {line.windUnit}</td><td>{line.waves} {line.seaUnit}</td><td>{line.tide} {line.tideUnit}</td><td>{line.moon}</td>
                           {courseConversionColumns.map((column) => (!column.isOptional || showCourseColumns) && (
-                            <td className={column.isOptional ? "optional-course-cell" : undefined} key={`${line.time}-${index}-${column.field}`}>{line[column.field]}</td>
+                            <td className={column.isOptional ? "optional-course-cell" : undefined} key={`${line.id}-${column.field}`}>{line[column.field]}</td>
                           ))}
                           <td>{line.speedKn}</td><td>{line.logNm}</td><td><span className="log-line-distance-summary">{line.sailMiles} nm</span>{renderClampedLogText(t("details.sailNote"), line.sailNote)}</td><td><span className="log-line-distance-summary">{line.motorMiles} nm · {Object.entries(line.engineHours ?? {}).map(([id, hours]) => `${activeBoat.engines?.find((engine) => engine.id === id)?.label ?? id} ${hours} h`).join(" · ") || `${line.motorHours ?? 0} h`}</span>{renderClampedLogText(t("details.motorNote"), line.motorNote)}</td><td>{renderClampedLogText(t("details.remarksEvent"), line.remarks)}</td>
-                          <td><button type="button" className="edit-chip" disabled={isActiveSheetLocked} onClick={() => startEditingLine(line, index)}>✏️</button></td>
-                          <td><button type="button" className="edit-chip" disabled={isActiveSheetLocked} onClick={() => deleteLine(index)}>🗑️</button></td>
+                          <td><button type="button" className="edit-chip" disabled={isActiveSheetLocked} onClick={() => startEditingLine(line)}>✏️</button></td>
+                          <td><button type="button" className="edit-chip" disabled={isActiveSheetLocked} onClick={() => deleteLine(line.id)}>🗑️</button></td>
                         </tr>
                       ))}
                     </tbody>

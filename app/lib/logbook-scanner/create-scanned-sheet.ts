@@ -31,6 +31,7 @@ const verificationNote = "Please verify scanned information before locking this 
 const rolloverEndDateWarning = "A log-line date rollover would exceed the sheet end date; the inferred date was capped at the end date.";
 
 const defaultLineForm: LineForm = {
+  id: "",
   time: "",
   position: "",
   latitude: "",
