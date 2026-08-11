@@ -63,6 +63,24 @@ describe("SqliteLogbookDatabase", () => {
     expect(persisted.sheets.find(sheet => sheet.id === original.id)?.title).toBe("Original");
   });
 
+  it("serializes concurrent focused mutations for the same sheet", async () => {
+    const db = new SqliteLogbookDatabase(await tempDatabasePath()).forUser("concurrent-user");
+    await db.migrate();
+    await db.query("insert into users (id, name, email, password_hash) values (?, ?, ?, ?)", ["concurrent-user", "Concurrent", "concurrent@example.test", ""]);
+    const boat = { id: "boat-1", name: "Boat", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: defaultDeviationTable() };
+    await db.upsertBoat(boat);
+    const source = sampleLogSheets[0];
+    const sheet = { ...source, id: "sheet-1", boatId: boat.id, crew: [], lines: source.lines.slice(0, 2) };
+    await db.upsertLogSheet(sheet);
+
+    await expect(Promise.all([
+      db.upsertLogSheet({ ...sheet, title: "First queued edit" }),
+      db.upsertLogSheet({ ...sheet, title: "Second queued edit" }),
+    ])).resolves.toHaveLength(2);
+
+    await expect(db.readLogbook()).resolves.toMatchObject({ sheets: [{ title: "Second queued edit" }] });
+  });
+
   it("requires every logbook access to be scoped to an explicit user", async () => {
     const db = new SqliteLogbookDatabase(await tempDatabasePath());
 
