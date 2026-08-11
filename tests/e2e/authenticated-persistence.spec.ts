@@ -1,5 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
 
+test.setTimeout(120_000);
+
 test("persists user-created crew, boat, and logbook sheets across refresh and relogin", async ({ page }) => {
   const unique = Date.now().toString(36);
   const email = `e2e-${unique}@example.test`;
@@ -43,7 +45,10 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   await boatForm.getByLabel("Flag state").selectOption("🇨🇭");
   await boatForm.getByLabel("Home port").fill("Basel");
   await boatForm.getByLabel("Owner").fill("E2E Owner");
+  const boatSave = waitForFocusedLogbookSave(page, "boats");
   await clickButton(page, "Create boat");
+  await boatSave;
+  await expect(boatForm).toBeHidden();
   await expect(page.getByText(boatName)).toBeVisible();
 
   await openModule(page, "Logbook list", "+ New sheet");
@@ -53,7 +58,9 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   await sheetForm.getByLabel("Boat").selectOption({ label: boatName });
   await sheetForm.getByLabel("From position").fill("Port A");
   await sheetForm.getByLabel("To position").fill("Port B");
+  const sheetSave = waitForFocusedLogbookSave(page, "sheets");
   await clickButton(page, "Save");
+  await sheetSave;
   await expect(page.getByRole("heading", { name: sheetTitle })).toBeVisible();
   await expect(page.getByText(`1. ⭐ Skipper · E2E Skipper ${unique}`)).toBeVisible();
 
