@@ -35,7 +35,10 @@ import {
   createId,
   modulePath,
   normalizeLogbookIds,
-  persistLogbook,
+  deleteLogbookEntity,
+  persistBoat,
+  persistCrewMember,
+  persistSheet,
   routeFromPathname,
 } from "./logbook/persistence";
 import {
@@ -249,7 +252,9 @@ export function LogbookApp({
   const [adminError, setAdminError] = useState<string | null>(null);
   const [groupDrafts, setGroupDrafts] = useState<Record<string, string>>({});
   const logbookRef = useRef(logbook);
-  const hasUnsavedLogbookChangesRef = useRef(false);
+  const pendingMutationsRef = useRef(new Map<string, number>());
+  const failedMutationsRef = useRef(new Map<string, number>());
+  const mutationSequenceRef = useRef(0);
 
   function pushAppPath(path: string) {
     if (path === routePath) return;
@@ -302,9 +307,6 @@ export function LogbookApp({
   async function logout() {
     setSaveError(null);
     setIsLoggingOut(true);
-    if (hasUnsavedLogbookChangesRef.current) {
-      await persistLogbook(logbookRef.current).catch(() => undefined);
-    }
     await signOut({ redirect: false });
     window.location.assign("/login");
   }
@@ -336,17 +338,36 @@ export function LogbookApp({
     [activeSheetId],
   );
 
-  async function saveLogbookNow(nextLogbook: PersistedLogbook) {
+  type FocusedMutation =
+    | { kind: "boat"; entity: Boat; isNew?: boolean }
+    | { kind: "crew"; entity: PersistedLogbook["crewMembers"][number]; isNew?: boolean }
+    | { kind: "sheet"; entity: LogSheet; isNew?: boolean }
+    | { kind: "sheet"; id: string }
+    | { kind: "deletion"; entityKind: "boat" | "crew" | "sheet"; id: string };
+
+  async function saveLogbookNow(nextLogbook: PersistedLogbook, mutation: FocusedMutation) {
     logbookRef.current = nextLogbook;
-    hasUnsavedLogbookChangesRef.current = true;
     setLogbook(nextLogbook);
     setSaveError(null);
+    const id = mutation.kind === "deletion" || "id" in mutation ? mutation.id : mutation.entity.id;
+    const key = `${mutation.kind === "deletion" ? mutation.entityKind : mutation.kind}:${id}`;
+    const sequence = ++mutationSequenceRef.current;
+    pendingMutationsRef.current.set(key, sequence);
+    failedMutationsRef.current.delete(key);
     if (!isBackendReady) return true;
-    const response = await persistLogbook(nextLogbook).catch(() => undefined);
+    const request = mutation.kind === "boat" ? persistBoat(mutation.entity, mutation.isNew)
+      : mutation.kind === "crew" ? persistCrewMember(mutation.entity, mutation.isNew)
+      : mutation.kind === "sheet" ? persistSheet("entity" in mutation ? mutation.entity : nextLogbook.sheets.find((sheet) => sheet.id === mutation.id)!)
+      : deleteLogbookEntity(mutation.entityKind, mutation.id);
+    const response = await request.catch(() => undefined);
+    // An older response must never clear or mark a later edit of the same entity.
+    if (pendingMutationsRef.current.get(key) !== sequence) return response?.ok ?? false;
+    pendingMutationsRef.current.delete(key);
     if (response?.ok) {
-      hasUnsavedLogbookChangesRef.current = false;
+      failedMutationsRef.current.delete(key);
       return true;
     }
+    failedMutationsRef.current.set(key, sequence);
     setSaveError(t("logbook.saveError"));
     return false;
   }
@@ -399,7 +420,8 @@ export function LogbookApp({
       const nextBoat = routedBoat ?? fallbackBoat;
 
       logbookRef.current = normalizedLogbook;
-      hasUnsavedLogbookChangesRef.current = false;
+      pendingMutationsRef.current.clear();
+      failedMutationsRef.current.clear();
       setLogbook(normalizedLogbook);
       setActiveSheetId(routedSheet?.id ?? "");
       setSheetForm(
@@ -438,7 +460,13 @@ export function LogbookApp({
         window.history.replaceState(null, "", nextRoutePath);
         setRoutePath(nextRoutePath);
       }
-      if (changed) persistLogbook(normalizedLogbook).catch(() => undefined);
+      if (changed) {
+        void Promise.all([
+          ...normalizedLogbook.boats.map((boat) => persistBoat(boat)),
+          ...normalizedLogbook.crewMembers.map((crew) => persistCrewMember(crew)),
+          ...normalizedLogbook.sheets.map((sheet) => persistSheet(sheet)),
+        ]).catch(() => setSaveError(t("logbook.saveError")));
+      }
       setIsBackendReady(true);
     }
     loadLogbook().catch(() => setIsBackendReady(true));
@@ -561,42 +589,6 @@ export function LogbookApp({
     }, 0);
     return () => window.clearTimeout(timeout);
   }, [activeModule, adminUsers.length, loadAdminUsers, userGroups]);
-
-  useEffect(() => {
-    if (!isBackendReady || !hasUnsavedLogbookChangesRef.current) return;
-    const controller = new AbortController();
-    const timeout = window.setTimeout(() => {
-      persistLogbook(logbook, { signal: controller.signal }).catch(
-        () => undefined,
-      ).then((response) => {
-        if (response?.ok) hasUnsavedLogbookChangesRef.current = false;
-      });
-    }, 300);
-    return () => {
-      window.clearTimeout(timeout);
-      controller.abort();
-    };
-  }, [isBackendReady, logbook]);
-
-  useEffect(() => {
-    if (!isBackendReady) return;
-    const saveBeforeLeaving = () => {
-      if (!hasUnsavedLogbookChangesRef.current) return;
-      persistLogbook(logbookRef.current, { keepalive: true }).catch(
-        () => undefined,
-      );
-    };
-    const saveWhenHidden = () => {
-      if (document.visibilityState === "hidden") saveBeforeLeaving();
-    };
-    window.addEventListener("pagehide", saveBeforeLeaving);
-    document.addEventListener("visibilitychange", saveWhenHidden);
-    return () => {
-      window.removeEventListener("pagehide", saveBeforeLeaving);
-      document.removeEventListener("visibilitychange", saveWhenHidden);
-    };
-  }, [isBackendReady]);
-
 
   async function refreshLogbookAfterScan(sheetId: string) {
     const response = await fetch("/api/logbook");
@@ -961,7 +953,7 @@ export function LogbookApp({
           )
         : [...currentLogbook.boats, boat],
     };
-    if (!(await saveLogbookNow(nextLogbook))) return;
+    if (!(await saveLogbookNow(nextLogbook, { kind: "boat", entity: boat, isNew: !editingBoatId }))) return;
     setBoatForm(defaultBoatForm);
     setEditingBoatId(null);
     setShowBoatManager(false);
@@ -1034,7 +1026,7 @@ export function LogbookApp({
           )
         : [sheet, ...currentLogbook.sheets],
     };
-    if (!(await saveLogbookNow(nextLogbook))) return;
+    if (!(await saveLogbookNow(nextLogbook, { kind: "sheet", entity: sheet, isNew: !editingSheetId }))) return;
     setActiveSheetId(id);
     setEditingSheetId(null);
     setSheetForm(sheetToForm(sheet));
@@ -1053,7 +1045,7 @@ export function LogbookApp({
     const nextBoats = logbookRef.current.boats.filter(
       (boat) => boat.id !== selectedBoat.id,
     );
-    if (!(await saveLogbookNow({ ...logbookRef.current, boats: nextBoats })))
+    if (!(await saveLogbookNow({ ...logbookRef.current, boats: nextBoats }, { kind: "deletion", entityKind: "boat", id: selectedBoat.id })))
       return;
     setSelectedBoatId(nextBoats[0]?.id ?? "");
     setEditingBoatId(nextBoats[0]?.id ?? null);
@@ -1064,7 +1056,7 @@ export function LogbookApp({
     const nextBoats = logbookRef.current.boats.map((boat) =>
       boat.id === selectedBoat.id ? { ...boat, archived } : boat,
     );
-    await saveLogbookNow({ ...logbookRef.current, boats: nextBoats });
+    await saveLogbookNow({ ...logbookRef.current, boats: nextBoats }, { kind: "boat", entity: nextBoats.find((boat) => boat.id === selectedBoat.id)! });
   }
 
   function showSelectedBoatLogsheets() {
@@ -1100,7 +1092,7 @@ export function LogbookApp({
         sheet.id === activeSheet.id ? { ...sheet, share } : sheet,
       ),
     };
-    await saveLogbookNow(nextLogbook);
+    await saveLogbookNow(nextLogbook, { kind: "sheet", entity: nextLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)! });
   }
 
   async function updateActiveSheetStatus(status: LogSheet["status"]) {
@@ -1111,7 +1103,7 @@ export function LogbookApp({
         sheet.id === activeSheet.id ? { ...sheet, status } : sheet,
       ),
     };
-    await saveLogbookNow(nextLogbook);
+    await saveLogbookNow(nextLogbook, { kind: "sheet", entity: nextLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)! });
   }
   function startEditingSheetField(
     field: SheetInlineField,
@@ -1160,7 +1152,7 @@ export function LogbookApp({
     };
     setEditingSheetField(null);
     setSheetInlineDraft("");
-    await saveLogbookNow(nextLogbook);
+    await saveLogbookNow(nextLogbook, { kind: "sheet", entity: nextLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)! });
   }
 
   function cancelSheetInlineEdit() {
@@ -1192,7 +1184,7 @@ export function LogbookApp({
         return withCalculatedSheetMetrics({ ...sheet, lines: sortLogLines(lines) }, preferences.motionStationaryThresholdNm);
       }),
     };
-    if (!(await saveLogbookNow(nextLogbook))) return;
+    if (!(await saveLogbookNow(nextLogbook, { kind: "sheet", entity: nextLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)! }))) return;
     setLineForm(lineDefaults);
     setEditingLineId(null);
     setShowAddLine(false);
@@ -1310,7 +1302,7 @@ export function LogbookApp({
           ? withCalculatedSheetMetrics({ ...sheet, lines: sheet.lines.filter((line) => line.id !== lineIdToDelete) }, preferences.motionStationaryThresholdNm)
           : sheet,
       ),
-    });
+    }, { kind: "sheet", id: activeSheet.id });
   }
 
   function cancelLineEdit() {
@@ -1331,7 +1323,7 @@ export function LogbookApp({
           ? { ...sheet, technicalChecks: [...sheet.technicalChecks, { status: "⌛", text: technicalCheck }] }
           : sheet,
       ),
-    });
+    }, { kind: "sheet", id: activeSheet.id });
   }
 
   async function updateTechnicalCheck(indexToUpdate: number, value: string, status?: string) {
@@ -1349,7 +1341,7 @@ export function LogbookApp({
             .filter((item) => item.text),
         };
       }),
-    });
+    }, { kind: "sheet", id: activeSheet.id });
   }
 
   async function deleteTechnicalCheck(indexToDelete: number) {
@@ -1362,7 +1354,7 @@ export function LogbookApp({
           ? { ...sheet, technicalChecks: sheet.technicalChecks.filter((_, index) => index !== indexToDelete) }
           : sheet,
       ),
-    });
+    }, { kind: "sheet", id: activeSheet.id });
   }
 
   async function saveCrew() {
@@ -1396,7 +1388,7 @@ export function LogbookApp({
               candidate.id === id ? crew : candidate,
             ),
     };
-    if (!(await saveLogbookNow(nextLogbook))) return;
+    if (!(await saveLogbookNow(nextLogbook, { kind: "crew", entity: crew, isNew: selectedCrewIndex === -1 }))) return;
     if (selectedCrewIndex === -1)
       setSelectedCrewIndex(nextLogbook.crewMembers.length - 1);
   }
@@ -1432,7 +1424,7 @@ export function LogbookApp({
           : sheet,
       ),
     };
-    await saveLogbookNow(nextLogbook);
+    await saveLogbookNow(nextLogbook, { kind: "sheet", entity: nextLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)! });
   }
 
   async function updateCrewAssignment(
@@ -1457,7 +1449,7 @@ export function LogbookApp({
         };
       }),
     };
-    await saveLogbookNow(nextLogbook);
+    await saveLogbookNow(nextLogbook, { kind: "sheet", entity: nextLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)! });
   }
 
   async function moveCrewOnActiveSheet(index: number, direction: -1 | 1) {
@@ -1473,7 +1465,7 @@ export function LogbookApp({
         return { ...sheet, crew };
       }),
     };
-    await saveLogbookNow(nextLogbook);
+    await saveLogbookNow(nextLogbook, { kind: "sheet", entity: nextLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)! });
   }
 
   async function deleteCrewFromActiveSheet(index: number) {
@@ -1488,7 +1480,7 @@ export function LogbookApp({
         };
       }),
     };
-    await saveLogbookNow(nextLogbook);
+    await saveLogbookNow(nextLogbook, { kind: "sheet", entity: nextLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)! });
   }
 
   async function deleteSelectedCrew() {
@@ -1507,7 +1499,7 @@ export function LogbookApp({
       !(await saveLogbookNow({
         ...logbookRef.current,
         crewMembers: nextCrewMembers,
-      }))
+      }, { kind: "deletion", entityKind: "crew", id: selectedCrew.id }))
     )
       return;
     setSelectedCrewIndex(0);
@@ -1764,7 +1756,8 @@ export function LogbookApp({
     const firstBoat = resetLogbook.boats[0] ?? emptyBoat;
     const firstSheet = resetLogbook.sheets[0] ?? emptySheet;
     logbookRef.current = resetLogbook;
-    hasUnsavedLogbookChangesRef.current = false;
+    pendingMutationsRef.current.clear();
+    failedMutationsRef.current.clear();
     setLogbook(resetLogbook);
     setActiveSheetId(firstSheet.id);
     setSelectedBoatId(firstBoat.id);
