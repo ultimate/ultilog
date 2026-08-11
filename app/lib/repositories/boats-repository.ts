@@ -5,7 +5,7 @@ export class BoatsRepository {
   constructor(private db: QueryableDatabase) {}
 
   async findAll(ownerId: string) {
-    const boats = (await this.db.query<BoatRow>(`select * from boats where owner_id = ${this.db.placeholder(1)} order by name`, [ownerId])).rows;
+    const boats = (await this.db.query<BoatRow>(`select boats.*, stored_images.data as image_data, stored_images.mime_type as image_mime_type, stored_images.width as image_width, stored_images.height as image_height from boats left join stored_images on stored_images.id = boats.image_id and stored_images.owner_id = boats.owner_id where boats.owner_id = ${this.db.placeholder(1)} order by name`, [ownerId])).rows;
     const engines = (await this.db.query<EngineRow>(`select engines.* from engines join boats on boats.id = engines.boat_id where boats.owner_id = ${this.db.placeholder(1)} order by engines.boat_id, engines.sort_order`, [ownerId])).rows;
     return boats.map((boat) => {
       const boatEngines = engines.filter((engine) => engine.boat_id === boat.id).map(engineFromRow);
@@ -14,7 +14,7 @@ export class BoatsRepository {
   }
 
   async findByScopedId(id: string) {
-    const boat = (await this.db.query<BoatRow>(`select * from boats where id = ${this.db.placeholder(1)} limit 1`, [id])).rows[0];
+    const boat = (await this.db.query<BoatRow>(`select boats.*, stored_images.data as image_data, stored_images.mime_type as image_mime_type, stored_images.width as image_width, stored_images.height as image_height from boats left join stored_images on stored_images.id = boats.image_id and stored_images.owner_id = boats.owner_id where boats.id = ${this.db.placeholder(1)} limit 1`, [id])).rows[0];
     if (!boat) return undefined;
     const engines = (await this.db.query<EngineRow>(`select * from engines where boat_id = ${this.db.placeholder(1)} order by sort_order`, [id])).rows;
     return { ...boat, engines: engines.map(engineFromRow) };
@@ -32,8 +32,8 @@ export class BoatsRepository {
   async upsert(boat: Boat, ownerId: string) {
     const id = scopedId(ownerId, boat.id);
     await this.db.query(
-      `insert into boats (id, archived, name, type, registration, flag_state, home_port, owner, dimensions, logfactor, yacht_data, deviation_table, wind_drift_table, image_data, image_mime_type, image_width, image_height, owner_id) values (${this.values(18)}) on conflict(id) do update set archived = excluded.archived, name = excluded.name, type = excluded.type, registration = excluded.registration, flag_state = excluded.flag_state, home_port = excluded.home_port, owner = excluded.owner, dimensions = excluded.dimensions, logfactor = excluded.logfactor, yacht_data = excluded.yacht_data, deviation_table = excluded.deviation_table, wind_drift_table = excluded.wind_drift_table, image_data = excluded.image_data, image_mime_type = excluded.image_mime_type, image_width = excluded.image_width, image_height = excluded.image_height where boats.owner_id = excluded.owner_id`,
-      [id, boat.archived ? 1 : 0, boat.name, boat.type, boat.registration, boat.flagState, boat.homePort, boat.owner, boat.dimensions, boat.logfactor, JSON.stringify(boat.yachtData), JSON.stringify(boat.deviationTable), JSON.stringify(boat.windDriftTable ?? []), ...imageValues(boat.image), ownerId],
+      `insert into boats (id, archived, name, type, registration, flag_state, home_port, owner, dimensions, logfactor, yacht_data, deviation_table, wind_drift_table, image_id, owner_id) values (${this.values(15)}) on conflict(id) do update set archived = excluded.archived, name = excluded.name, type = excluded.type, registration = excluded.registration, flag_state = excluded.flag_state, home_port = excluded.home_port, owner = excluded.owner, dimensions = excluded.dimensions, logfactor = excluded.logfactor, yacht_data = excluded.yacht_data, deviation_table = excluded.deviation_table, wind_drift_table = excluded.wind_drift_table, image_id = excluded.image_id where boats.owner_id = excluded.owner_id`,
+      [id, boat.archived ? 1 : 0, boat.name, boat.type, boat.registration, boat.flagState, boat.homePort, boat.owner, boat.dimensions, boat.logfactor, JSON.stringify(boat.yachtData), JSON.stringify(boat.deviationTable), JSON.stringify(boat.windDriftTable ?? []), boat.imageId ?? boat.image?.id ?? null, ownerId],
     );
     await this.db.query(`delete from engines where boat_id = ${this.db.placeholder(1)}`, [id]);
     for (const [sortOrder, engine] of (boat.engines?.length ? boat.engines : [defaultMainEngine()]).entries()) {
@@ -51,8 +51,8 @@ export class BoatsRepository {
 
   async insert(boat: Boat, ownerId: string) {
     await this.db.query(
-      `insert into boats (id, archived, name, type, registration, flag_state, home_port, owner, dimensions, logfactor, yacht_data, deviation_table, wind_drift_table, image_data, image_mime_type, image_width, image_height, owner_id) values (${this.values(18)})`,
-      [scopedId(ownerId, boat.id), boat.archived ? 1 : 0, boat.name, boat.type, boat.registration, boat.flagState, boat.homePort, boat.owner, boat.dimensions, boat.logfactor, JSON.stringify(boat.yachtData), JSON.stringify(boat.deviationTable), JSON.stringify(boat.windDriftTable ?? []), ...imageValues(boat.image), ownerId],
+      `insert into boats (id, archived, name, type, registration, flag_state, home_port, owner, dimensions, logfactor, yacht_data, deviation_table, wind_drift_table, image_id, owner_id) values (${this.values(15)})`,
+      [scopedId(ownerId, boat.id), boat.archived ? 1 : 0, boat.name, boat.type, boat.registration, boat.flagState, boat.homePort, boat.owner, boat.dimensions, boat.logfactor, JSON.stringify(boat.yachtData), JSON.stringify(boat.deviationTable), JSON.stringify(boat.windDriftTable ?? []), boat.imageId ?? boat.image?.id ?? null, ownerId],
     );
     // Replacements normally cascade through boats, but explicitly clear equipment
     // rows as well so legacy SQLite databases with foreign keys previously disabled
@@ -81,9 +81,9 @@ export function imageValues(image?: StoredImage): [string | null, string | null,
   return image ? [image.data, image.mimeType, image.width, image.height] : [null, null, null, null];
 }
 
-export function imageFromRow(row: { image_data?: string | null; image_mime_type?: string | null; image_width?: number | null; image_height?: number | null }): StoredImage | undefined {
+export function imageFromRow(row: { image_id?: string | null; image_data?: string | null; image_mime_type?: string | null; image_width?: number | null; image_height?: number | null }): StoredImage | undefined {
   if (!row.image_data || !row.image_mime_type || row.image_width == null || row.image_height == null) return undefined;
-  return { data: row.image_data, mimeType: row.image_mime_type, width: Number(row.image_width), height: Number(row.image_height) };
+  return { id: row.image_id ?? undefined, data: row.image_data, mimeType: row.image_mime_type, width: Number(row.image_width), height: Number(row.image_height) };
 }
 
 export function scopedId(ownerId: string, id: string) {

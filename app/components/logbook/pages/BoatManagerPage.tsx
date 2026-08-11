@@ -5,7 +5,7 @@ import { useDateTimeFormat } from "../../../lib/DateTimeFormatProvider";
 import { useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { windDriftSailSettings, type Boat, type BoatEngineRole, type BoatForm, type BoatType, type PersistedLogbook } from "../../../models/logbook";
 import { boatToForm, defaultBoatForm } from "../forms";
-import { modulePath } from "../persistence";
+import { modulePath, uploadStoredImage } from "../persistence";
 import { ManagerShell } from "../../managers/ManagerShell";
 import { fileToStoredImage } from "../image-utils";
 import { ListPagination, ListSearch, useSortableList } from "../SortableList";
@@ -253,7 +253,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                   const file = e.target.files?.[0];
                   if (!file) return;
                   try {
-                    const image = await fileToStoredImage(file);
+                    const image = await uploadStoredImage(await fileToStoredImage(file));
                     setBoatForm((current) => ({ ...current, image }));
                   } catch (error) {
                     alert(error instanceof Error ? error.message : "Image could not be processed.");

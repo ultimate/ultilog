@@ -8,12 +8,12 @@ export class LogSheetsRepository {
   constructor(private db: QueryableDatabase) {}
 
   async findAll(ownerId: string) {
-    const rows = (await this.db.query<LogSheetRow>(`select * from log_sheets where owner_id = ${this.db.placeholder(1)}`, [ownerId])).rows;
+    const rows = (await this.db.query<LogSheetRow>(`select log_sheets.*, stored_images.data as image_data, stored_images.mime_type as image_mime_type, stored_images.width as image_width, stored_images.height as image_height from log_sheets left join stored_images on stored_images.id = log_sheets.image_id and stored_images.owner_id = log_sheets.owner_id where log_sheets.owner_id = ${this.db.placeholder(1)}`, [ownerId])).rows;
     return rows.sort((left, right) => routeStart(right).localeCompare(routeStart(left)) || left.title.localeCompare(right.title));
   }
 
   async findById(id: string, ownerId: string) {
-    return (await this.db.query<LogSheetRow>(`select * from log_sheets where id = ${this.db.placeholder(1)} and owner_id = ${this.db.placeholder(2)} limit 1`, [scopedId(ownerId, id), ownerId])).rows[0];
+    return (await this.db.query<LogSheetRow>(`select log_sheets.*, stored_images.data as image_data, stored_images.mime_type as image_mime_type, stored_images.width as image_width, stored_images.height as image_height from log_sheets left join stored_images on stored_images.id = log_sheets.image_id and stored_images.owner_id = log_sheets.owner_id where log_sheets.id = ${this.db.placeholder(1)} and log_sheets.owner_id = ${this.db.placeholder(2)} limit 1`, [scopedId(ownerId, id), ownerId])).rows[0];
   }
 
   async upsert(sheet: LogSheet, ownerId: string, motionStationaryThresholdNm = 0.1) {
@@ -27,11 +27,11 @@ export class LogSheetsRepository {
   }
 
   async findSharedByScopedId(scopedSheetId: string) {
-    return (await this.db.query<LogSheetRow>(`select * from log_sheets where id = ${this.db.placeholder(1)} and share_privacy <> 'private' limit 1`, [scopedSheetId])).rows[0];
+    return (await this.db.query<LogSheetRow>(`select log_sheets.*, stored_images.data as image_data, stored_images.mime_type as image_mime_type, stored_images.width as image_width, stored_images.height as image_height from log_sheets left join stored_images on stored_images.id = log_sheets.image_id and stored_images.owner_id = log_sheets.owner_id where log_sheets.id = ${this.db.placeholder(1)} and log_sheets.share_privacy <> 'private' limit 1`, [scopedSheetId])).rows[0];
   }
 
   async findSharedByUnscopedId(sheetId: string) {
-    return (await this.db.query<LogSheetRow>(`select * from log_sheets where (id = ${this.db.placeholder(1)} or id like ${this.db.placeholder(2)}) and share_privacy <> 'private' limit 1`, [sheetId, `%:${sheetId}`])).rows[0];
+    return (await this.db.query<LogSheetRow>(`select log_sheets.*, stored_images.data as image_data, stored_images.mime_type as image_mime_type, stored_images.width as image_width, stored_images.height as image_height from log_sheets left join stored_images on stored_images.id = log_sheets.image_id and stored_images.owner_id = log_sheets.owner_id where (log_sheets.id = ${this.db.placeholder(1)} or log_sheets.id like ${this.db.placeholder(2)}) and log_sheets.share_privacy <> 'private' limit 1`, [sheetId, `%:${sheetId}`])).rows[0];
   }
 
   async deleteAll(ownerId: string) {
@@ -41,8 +41,8 @@ export class LogSheetsRepository {
   async insert(sheet: LogSheet, ownerId: string, motionStationaryThresholdNm = 0.1) {
     const metrics = calculateLogSheetMetrics(sheet.lines, sheet.route, { stationaryDistanceThresholdNm: motionStationaryThresholdNm });
     await this.db.query(
-      `insert into log_sheets (id, title, status, source, verification_note, scanner_warnings, boat_id, skipper, route, weather_briefing, day_summary, remarks, watch_plan, technical_checks, image_data, image_mime_type, image_width, image_height, owner_id, motor_miles, sail_miles, total_miles, duration_minutes, motor_hours, overall_duration_minutes, motion_duration_minutes, share_privacy, share_master_data, share_picture, share_loglines, share_metrics, share_technical_log, share_skipper, share_crew) values (${this.values(34)})`,
-      [scopedId(ownerId, sheet.id), sheet.title, sheet.status, sheet.source ?? null, sheet.verificationNote ?? null, sheet.scannerWarnings ? JSON.stringify(sheet.scannerWarnings) : null, scopedId(ownerId, sheet.boatId), JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), ...imageValues(sheet.image), ownerId, metrics.motorMiles, metrics.sailMiles, metrics.totalMiles, metrics.durationMinutes, metrics.motorHours, metrics.overallDurationMinutes, metrics.motionDurationMinutes, overallPrivacy(sheet.share), privacyFor(sheet.share?.masterData), privacyFor(sheet.share?.picture), privacyFor(sheet.share?.logLines), privacyFor(sheet.share?.metrics), privacyFor(sheet.share?.technicalLog), privacyFor(sheet.share?.skipper), privacyFor(sheet.share?.crew)],
+      `insert into log_sheets (id, title, status, source, verification_note, scanner_warnings, boat_id, skipper, route, weather_briefing, day_summary, remarks, watch_plan, technical_checks, image_id, owner_id, motor_miles, sail_miles, total_miles, duration_minutes, motor_hours, overall_duration_minutes, motion_duration_minutes, share_privacy, share_master_data, share_picture, share_loglines, share_metrics, share_technical_log, share_skipper, share_crew) values (${this.values(31)})`,
+      [scopedId(ownerId, sheet.id), sheet.title, sheet.status, sheet.source ?? null, sheet.verificationNote ?? null, sheet.scannerWarnings ? JSON.stringify(sheet.scannerWarnings) : null, scopedId(ownerId, sheet.boatId), JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), sheet.imageId ?? sheet.image?.id ?? null, ownerId, metrics.motorMiles, metrics.sailMiles, metrics.totalMiles, metrics.durationMinutes, metrics.motorHours, metrics.overallDurationMinutes, metrics.motionDurationMinutes, overallPrivacy(sheet.share), privacyFor(sheet.share?.masterData), privacyFor(sheet.share?.picture), privacyFor(sheet.share?.logLines), privacyFor(sheet.share?.metrics), privacyFor(sheet.share?.technicalLog), privacyFor(sheet.share?.skipper), privacyFor(sheet.share?.crew)],
     );
   }
 
@@ -73,13 +73,14 @@ export class LogSheetsRepository {
       deviationTable: normalizeDeviationTable(parseJson<Boat["deviationTable"]>(boat.deviation_table ?? [])),
       ...(boat.engines?.length ? { engines: boat.engines } : {}),
       ...(boat.wind_drift_table == null ? {} : { windDriftTable: normalizeWindDriftTable(parseJson<NonNullable<Boat["windDriftTable"]>>(boat.wind_drift_table)) }),
+      ...(boat.image_id ? { imageId: boat.image_id } : {}),
       ...(imageFromRow(boat) ? { image: imageFromRow(boat) } : {}),
     }));
     const crewDetails = (crew: CrewMemberRow) => ({ ...(crew.date_of_birth === undefined ? {} : { dateOfBirth: crew.date_of_birth }), ...(crew.place_of_birth === undefined ? {} : { placeOfBirth: crew.place_of_birth }), ...(crew.gender === undefined ? {} : { gender: crew.gender }), ...(crew.identity_document_type === undefined ? {} : { identityDocumentType: crew.identity_document_type }), ...(crew.identity_document_number === undefined ? {} : { identityDocumentNumber: crew.identity_document_number }), ...(crew.identity_document_issuing_date === undefined ? {} : { identityDocumentIssuingDate: crew.identity_document_issuing_date }), ...(crew.identity_document_expiry_date === undefined ? {} : { identityDocumentExpiryDate: crew.identity_document_expiry_date }) });
-    const crewMembers = crewProfileRows.map((crew) => ({ id: unscopedId(crew.crew_member_id ?? crew.id), name: crew.name, ...crewDetails(crew), nationality: crew.nationality, role: crew.role, address: crew.address ?? "", certificate: crew.certificate ?? "", isPrimary: Boolean(crew.is_primary), ...(imageFromRow(crew) ? { image: imageFromRow(crew) } : {}) }));
+    const crewMembers = crewProfileRows.map((crew) => ({ id: unscopedId(crew.crew_member_id ?? crew.id), name: crew.name, ...crewDetails(crew), nationality: crew.nationality, role: crew.role, address: crew.address ?? "", certificate: crew.certificate ?? "", isPrimary: Boolean(crew.is_primary), ...(crew.image_id ? { imageId: crew.image_id } : {}), ...(imageFromRow(crew) ? { image: imageFromRow(crew) } : {}) }));
     const sheets: LogSheet[] = sheetRows.map((sheet) => ({
       ...mapStoredSheet(sheet),
-      crew: (crewBySheet.get(sheet.id) ?? []).map(({ sheet_id, crew_member_id, sort_order, is_primary, embarkation_datetime, embarkation_position, disembarkation_datetime, disembarkation_position, image_data, image_mime_type, image_width, image_height, date_of_birth, place_of_birth, identity_document_type, identity_document_number, identity_document_issuing_date, identity_document_expiry_date, ...crew }) => ({ ...crew, ...(date_of_birth === undefined ? {} : { dateOfBirth: date_of_birth }), ...(place_of_birth === undefined ? {} : { placeOfBirth: place_of_birth }), ...(identity_document_type === undefined ? {} : { identityDocumentType: identity_document_type }), ...(identity_document_number === undefined ? {} : { identityDocumentNumber: identity_document_number }), ...(identity_document_issuing_date === undefined ? {} : { identityDocumentIssuingDate: identity_document_issuing_date }), ...(identity_document_expiry_date === undefined ? {} : { identityDocumentExpiryDate: identity_document_expiry_date }), id: unscopedId(crew_member_id), isPrimary: Boolean(is_primary), embarkationDateTime: embarkation_datetime, embarkationPosition: embarkation_position, disembarkationDateTime: disembarkation_datetime, disembarkationPosition: disembarkation_position, ...(imageFromRow({ image_data, image_mime_type, image_width, image_height }) ? { image: imageFromRow({ image_data, image_mime_type, image_width, image_height }) } : {}) })),
+      crew: (crewBySheet.get(sheet.id) ?? []).map(({ sheet_id, crew_member_id, sort_order, is_primary, embarkation_datetime, embarkation_position, disembarkation_datetime, disembarkation_position, image_data, image_mime_type, image_width, image_height, date_of_birth, place_of_birth, identity_document_type, identity_document_number, identity_document_issuing_date, identity_document_expiry_date, ...crew }) => ({ ...crew, ...(date_of_birth === undefined ? {} : { dateOfBirth: date_of_birth }), ...(place_of_birth === undefined ? {} : { placeOfBirth: place_of_birth }), ...(identity_document_type === undefined ? {} : { identityDocumentType: identity_document_type }), ...(identity_document_number === undefined ? {} : { identityDocumentNumber: identity_document_number }), ...(identity_document_issuing_date === undefined ? {} : { identityDocumentIssuingDate: identity_document_issuing_date }), ...(identity_document_expiry_date === undefined ? {} : { identityDocumentExpiryDate: identity_document_expiry_date }), id: unscopedId(crew_member_id), isPrimary: Boolean(is_primary), embarkationDateTime: embarkation_datetime, embarkationPosition: embarkation_position, disembarkationDateTime: disembarkation_datetime, disembarkationPosition: disembarkation_position, ...(crew.image_id ? { imageId: crew.image_id } : {}), ...(imageFromRow({ image_id: crew.image_id, image_data, image_mime_type, image_width, image_height }) ? { image: imageFromRow({ image_data, image_mime_type, image_width, image_height }) } : {}) })),
       lines: (linesBySheet.get(sheet.id) ?? []).map(({ sheet_id, sort_order, position_name, weather_remark, log_nm, wind_direction, wind_strength, wind_unit, temperature_unit, waves, sea_unit, tide_unit, compass_course, magnetic_course, true_course, wind_drift, course_through_water, current_drift, course_over_ground, speed_kn, sail_miles, sail_note, motor_miles, motor_hours, engineHours, motor_note, ...line }) => ({
         ...line,
         barometer: Number(line.barometer) || 0,
@@ -146,6 +147,7 @@ function mapStoredSheet(sheet: LogSheetRow): StoredLogSheet {
     route: parseJson<LogSheet["route"]>(sheet.route),
     watchPlan: parseJson<string[]>(sheet.watch_plan),
     technicalChecks: parseJson<unknown[]>(sheet.technical_checks).map(normalizeTechnicalCheck).filter((item): item is NonNullable<typeof item> => Boolean(item)),
+    ...(sheet.image_id ? { imageId: sheet.image_id } : {}),
     ...(imageFromRow(sheet) ? { image: imageFromRow(sheet) } : {}),
     metrics: {
       motorMiles: Number(sheet.motor_miles) || 0,

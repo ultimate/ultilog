@@ -45,6 +45,7 @@ export type LogSheet = {
   watchPlan: string[];
   technicalChecks: TechnicalCheck[];
   image?: StoredImage;
+  imageId?: string;
   lines: LogLine[];
   metrics?: LogSheetMetrics;
   share?: LogSheetShareSettings;

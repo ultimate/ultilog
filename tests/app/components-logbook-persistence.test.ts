@@ -68,4 +68,17 @@ describe("logbook persistence", () => {
       ["/api/logbook/sheets/sheet-1", "DELETE", undefined],
     ]);
   });
+
+  it("edits an entity by image id without retransmitting image bytes", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const boat = { ...sampleLogSheets[0], id: "sheet-image", image: { id: "stable-image", data: "large-base64", mimeType: "image/png", width: 2, height: 2 } };
+
+    await persistSheet(boat);
+
+    const payload = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(payload.imageId).toBe("stable-image");
+    expect(payload).not.toHaveProperty("image");
+    expect(fetchMock.mock.calls[0][1].body).not.toContain("large-base64");
+  });
 });

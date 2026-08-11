@@ -39,6 +39,7 @@ function validateCrew(v: unknown, path: string, sheet = false) {
   assert(record(v) && crewFields(v), `${path} is malformed.`);
   if (sheet) assert(["embarkationDateTime", "embarkationPosition", "disembarkationDateTime", "disembarkationPosition"].every(k => string(v[k])), `${path} assignment is malformed.`);
   image(v.image, `${path}.image`);
+  assert(optional(v.imageId, string), `${path}.imageId must be a string.`);
 }
 
 const lineStringFields = ["time", "position", "weather", "weatherRemark", "temperatureUnit", "windDirection", "windUnit", "seaUnit", "tideUnit", "moon", "sailNote", "motorNote", "remarks"];
@@ -57,6 +58,7 @@ export function validatePersistedLogbook(value: unknown): PersistedLogbook {
     (boat.engines as unknown[] | undefined)?.forEach((engine, j) => assert(record(engine) && ["id", "name", "label"].every(k => string(engine[k])) && ["propulsion", "generator", "auxiliary"].includes(engine.role as string) && optional(engine.archived, boolean) && ["manufacturer", "model", "serialNumber"].every(k => optional(engine[k], string)), `boats[${i}].engines[${j}] is malformed.`));
     if (boat.windDriftTable !== undefined) assert(record(boat.windDriftTable) && stringRecord(boat.windDriftTable.windSpeedLimits) && Array.isArray(boat.windDriftTable.rows) && boat.windDriftTable.rows.every(row => record(row) && ["closeHauled", "beamReach", "broadReach"].includes(row.angle as string) && stringRecord(row.values)), `boats[${i}].windDriftTable is malformed.`);
     image(boat.image, `boats[${i}].image`);
+    assert(optional(boat.imageId, string), `boats[${i}].imageId must be a string.`);
   });
   value.crewMembers.forEach((crew, i) => validateCrew(crew, `crewMembers[${i}]`));
   let totalLines = 0, totalSheetCrew = 0;
@@ -72,6 +74,7 @@ export function validatePersistedLogbook(value: unknown): PersistedLogbook {
     if (sheet.metrics !== undefined) assert(record(sheet.metrics) && Object.entries(sheet.metrics).every(([, x]) => x === null || finite(x) || numberRecord(x)), `sheets[${i}].metrics is malformed.`);
     assert(optional(sheet.source, x => x === "manual" || x === "scanner") && optional(sheet.verificationNote, string) && optional(sheet.scannerWarnings, strings), `sheets[${i}] optional values are malformed.`);
     image(sheet.image, `sheets[${i}].image`);
+    assert(optional(sheet.imageId, string), `sheets[${i}].imageId must be a string.`);
   });
   let aggregate = 0;
   const walk = (v: unknown): void => { if (typeof v === "string") { if (v.length > LOGBOOK_LIMITS.string) throw new LogbookValidationError("A string exceeds the length limit.", "limit"); aggregate += v.length; } else if (Array.isArray(v)) v.forEach(walk); else if (record(v)) Object.entries(v).forEach(([k, x]) => { walk(k); walk(x); }); };

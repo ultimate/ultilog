@@ -21,6 +21,7 @@ import { LogLinesMapView } from "../OpenSeaMapView";
 import type { TranslationKey } from "../../../lib/i18n";
 import { fileToStoredImage } from "../image-utils";
 import { defaultLogSheetShareSettings } from "../../../models/logbook";
+import { uploadStoredImage } from "../persistence";
 
 type CourseColumn = {
   field: keyof Pick<
@@ -556,7 +557,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                       const file = e.target.files?.[0];
                       if (!file) return;
                       try {
-                        const image = await fileToStoredImage(file);
+                        const image = await uploadStoredImage(await fileToStoredImage(file));
                         setSheetForm((current: SheetForm) => ({ ...current, image }));
                       } catch (error) {
                         alert(error instanceof Error ? error.message : "Image could not be processed.");
