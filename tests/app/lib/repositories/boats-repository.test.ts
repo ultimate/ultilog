@@ -30,7 +30,8 @@ describe("BoatsRepository", () => {
     const db = new MockDatabase({ boats: [row] });
 
     await expect(new BoatsRepository(db).findAll("repository-user")).resolves.toEqual([row]);
-    expect(db.calls[0].sql).toContain("from boats where owner_id = $1 order by name");
+    expect(db.calls[0].sql).toContain("from boats left join stored_images");
+    expect(db.calls[0].sql).toContain("where boats.owner_id = $1 order by name");
     expect(db.calls[0].values).toEqual(["repository-user"]);
   });
 
@@ -47,17 +48,17 @@ describe("BoatsRepository", () => {
     await new BoatsRepository(db).insert(boat, "repository-user");
 
     expect(db.calls[0].sql).toContain("insert into boats");
-    expect(db.calls[0].sql).toContain("$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18");
-    expect(db.calls[0].values).toEqual([`repository-user:${boat.id}`, boat.archived ? 1 : 0, boat.name, boat.type, boat.registration, boat.flagState, boat.homePort, boat.owner, boat.dimensions, boat.logfactor, JSON.stringify(boat.yachtData), JSON.stringify(boat.deviationTable), JSON.stringify(boat.windDriftTable ?? []), null, null, null, null, "repository-user"]);
+    expect(db.calls[0].sql).toContain("image_id, owner_id");
+    expect(db.calls[0].values).toEqual([`repository-user:${boat.id}`, boat.archived ? 1 : 0, boat.name, boat.type, boat.registration, boat.flagState, boat.homePort, boat.owner, boat.dimensions, boat.logfactor, JSON.stringify(boat.yachtData), JSON.stringify(boat.deviationTable), JSON.stringify(boat.windDriftTable ?? []), null, "repository-user"]);
   });
 
   it("inserts boat image metadata when present", async () => {
     const db = new MockDatabase();
-    const image = { data: "base64-boat", mimeType: "image/png", width: 640, height: 480 };
+    const image = { id: "boat-image", data: "base64-boat", mimeType: "image/png", width: 640, height: 480 };
 
     await new BoatsRepository(db).insert({ ...boat, image }, "repository-user");
 
-    expect(db.calls[0].values?.slice(13, 17)).toEqual([image.data, image.mimeType, image.width, image.height]);
+    expect(db.calls[0].values?.slice(13, 15)).toEqual([image.id, "repository-user"]);
   });
 
   it("maps loaded boat image metadata back to an image payload", () => {
