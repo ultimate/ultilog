@@ -16,29 +16,69 @@
   },
   "legalLogbookRequirements": [
     {
-      "countryCode": "DE",
+      "countryCode": "CH",
       "defaultLanguage": "de",
       "translations": {
         "de": {
-          "title": "TODO: Deutscher Titel",
-          "authority": "TODO: zuständige Behörde",
-          "sourceUrl": "TODO: https://...",
-          "citation": "TODO: Gesetz/Verordnung, Paragraph/Artikel",
-          "checkedAt": "TODO: YYYY-MM-DD",
-          "effectiveFrom": "",
+          "title": "Allgemeine Bestimmungen über die schweizerischen Jachten zur See",
+          "authority": "Schweizerisches Seeschifffahrtsamt SSA",
+          "sourceUrl": "https://www.schweizerischesseeschifffahrtsamt.eda.admin.ch/dam/de/sd-web/rAYQQ7qE-y3W/Allgemeine%20Bestimmungen%20ueber%20die%20schweizerischen%20Jachten%20zur%20See%20DE%202025.pdf",
+          "checkedAt": "2026-08-11",
+          "effectiveFrom": "2025-02-17",
           "sections": [
             {
-              "id": "TODO-stable-section-id",
-              "heading": "TODO: Überschrift",
-              "text": "TODO: Gesetzestext oder redaktionelle Zusammenfassung",
-              "textKind": "editorial-summary"
+              "id": "9.",
+              "heading": "An Bord laufend mitzuführende Dokumente (Art. 20 Abs. 2 Jachtenverordnung)",
+              "citation": "<ul>\n<li>[...]</li>\n<li>das Schiffstagebuch (Logbuch), das bei Fahrten auf See durch den Schiffsführer täglich nachzuführen ist und mindestens folgende Angaben enthalten muss:\n<ul>\n<li>Name, Flaggenschein-Nummer und Heimathafen sowie ggf. weitere Daten des Schiffes</li>\n<li>Name, Adresse und Nationalität des jeweiligen Schiffsführers oder der jeweiligen Schiffsführerin</li>\n<li>Art, Nummer sowie Ausstellungsdatum, -ort und -instanz seines oder ihres Fähigkeitsausweises</li>\n<li>Personalien inkl. Nationalität der übrigen Anwesenden an Bord, die von ihnen allfällig ausgeübten Funktionen, die Häfen ihrer Ein- und Ausschiffung (Ort und Datum)</li>\n<li>Arbeitssprache an Bord</li>\n<li>Wacheinteilung</li>\n<li>Verproviantierung und Bunkerstände</li>\n<li>Fahrtbericht (Wind und Wetter, Kurse und Berichtigungen, Logstände, Segelführung, Maschinenbetrieb, laufend festgestellte Schiffspositionen, Einlaufen und Auslaufen in Häfen und auf</li>\nReeden, Ankerplätze usw.)</li>\n<li>Wichtige oder besondere Ereignisse und/oder Beobachtungen, wie Unfälle, Havarien und dergleichen.</li>\n</ul>\nJede Seite des Logbuchs muss die Unterschrift des Schiffsführers oder der Schiffsführerin tragen.</li>\n<li>[...]</li>\n</ul>"
+            }
+          ]
+        },
+        "fr": {
+          "title": "Dispositions générales concernant les yachts suisses naviguant en mer",
+          "authority": "Office suisse de la navigation maritime OSNM",
+          "sourceUrl": "https://www.schweizerischesseeschifffahrtsamt.eda.admin.ch/dam/fr/sd-web/rAYQQ7qE-y3W/Allgemeine%20Bestimmungen%20ueber%20die%20schweizerischen%20Jachten%20zur%20See%20FR%202025.pdf",
+          "checkedAt": "2026-08-11",
+          "effectiveFrom": "2025-02-17",
+          "sections": [
+            {
+              "id": "9.",
+              "heading": "Documents à conserver constamment à bord (art. 20, al. 2, de l’ordonnance sur les yachts)",
+              "citation": "<ul>\n<li>[...]</li>\n<li>le livre de bord (logbook) que doit tenir quotidiennement le conducteur du yacht lors de sorties en mer. Ce document doit contenir au moins les informations suivantes:\n<ul>\n<li>nom, numéro du certificat de pavillon et port d’enregistrement du bateau ainsi que d’autres indications éventuelles concernant le bateau</li>\n<li>nom, adresse et nationalité du conducteur</li>\n<li>type, numéro, date et lieu d’établissement du certificat de capacité du conducteur ainsi que l’instance qui l’a délivré</li>\n<li>nom et nationalité des autres personnes à bord, fonctions éventuelles qu’elles exercent à bord, ports d’embarquement et de débarquement (lieu et date)</li>\n<li>langue de travail à bord</li>\n<li>tableau des quarts</li>\n<li>ravitaillement et stands de soute</li>\n<li>rapport de navigation (vents et météo, caps et corrections, loch, voilure, heures au moteur, positions du bateau relevées régulièrement, entrées et sorties des ports et des rades / mouillages, etc.)</li>\n<li>événements et observations importants ou particuliers, tels qu’accidents, avaries, etc.</li>\n</ul>\nChaque page du livre de bord doit être signée par le conducteur.</li>\n<li>[...]</li>\n</ul>"
+            }
+          ]
+        },
+        "it": {
+          "title": "Disposizioni generali riguardanti yacht svizzeri in mare",
+          "authority": "Ufficio svizzero della navigazione marittima USNM ",
+          "sourceUrl": "https://www.schweizerischesseeschifffahrtsamt.eda.admin.ch/dam/it/sd-web/rAYQQ7qE-y3W/Allgemeine%20Bestimmungen%20ueber%20die%20schweizerischen%20Jachten%20zur%20See%20IT%202025.pdf",
+		  "checkedAt": "2026-08-11",
+          "effectiveFrom": "2025-02-17",
+          "sections": [
+            {
+              "id": "9.",
+              "heading": "Documenti da conservare sempre a bordo (art. 20 cpv. 2 dell’ordinanza sugli yacht)",
+              "citation": "<ul>\n<li>[...]</li>\n<li>Giornale di bordo, che deve essere tenuto quotidianamente dalla o dal comandante durante i viaggi in mare e deve contenere almeno le seguenti informazioni:\n<ul>\n<li>nome, numero del certificato di bandiera e porto d’origine, nonché altri dati della nave, se del caso;</li>\n<li>nome, indirizzo e nazionalità della o del comandante dello yacht;</li>\n<li>tipo, numero nonché data, luogo e autorità di rilascio del certificato di capacità della o del comandante;</li>\n<li>generalità, compresa la nazionalità, delle altre persone a bordo, le eventuali funzioni svolte, i porti d’imbarco e di sbarco (luogo e data);</li>\n<li>lingua di lavoro a bordo;</li>\n<li>turni di guardia;</li>\n<li>approvvigionamento e stoccaggio;</li>\n<li>rapporto di navigazione (vento e condizioni meteorologiche, rotte e correzioni, dati del log, velatura, funzionamento del motore, rilevazioni continue della posizione dell’imbarcazione, entrate e uscite dai porti e dalle rade, posti di fonda ecc.);</li>\n<li>eventi e/o osservazioni importanti o particolari, come incidenti, avarie e simili.</li>\n</ul>\nOgni pagina del giornale di bordo deve essere firmata dalla o dal comandante.</li>\n<li>[...]</li>\n</ul>"
+            }
+          ]
+        },
+        "en": {
+          "title": "General provisions for Swiss seagoing yachts",
+          "authority": "Swiss Maritime Navigation Office SMNO",
+          "sourceUrl": "https://www.schweizerischesseeschifffahrtsamt.eda.admin.ch/dam/en/sd-web/rAYQQ7qE-y3W/Allgemeine%20Bestimmungen%20ueber%20die%20schweizerischen%20Jachten%20zur%20See%20EN%202025.pdf",
+		  "checkedAt": "2026-08-11",
+          "effectiveFrom": "2025-02-17",
+          "sections": [
+            {
+              "id": "9.",
+              "heading": "Documentation to be permanently carried aboard (Art. 20 para. 2 YO)",
+              "citation": "<ul>\n<li>[...]</li>\n<li>The logbook, which must be duly filled in by and signed by the skipper on a daily basis and on each page whenever navigating, and which must contain at least the following information:\n<ul>\n<li>Name, number of the certificate of registry, port of registration and if applicable further information on the craft</li>\n<li>Name, address and nationality of the skipper</li>\n<li>Type, number, date and place of issuance, and issuing authority of the skipper’s certificate of competency</li>\n<li>Personal details including nationality of all other persons present aboard, their role and duties aboard, place and date of their embarkation and disembarkation</li>\n<li>Working language aboard</li>\n<li>Watchkeeping schedule</li>\n<li>Provisioning and bunkers</li>\n<li>Voyage report (meteorological information, sea state and current, courses, log and depth readings, use of sails and/or engine(s), positions, port entries and departures, anchorages etc.)</li>\n<li>Any particular events and/or observations, such as incidents, groundings etc.</li>\n</ul>\nEach page of the logbook must bear the signature of the skipper.</li>\n<li>[...]</li>\n</ul>"
             }
           ]
         }
       }
     },
     {
-      "countryCode": "CH",
+      "countryCode": "DE",
       "defaultLanguage": "de",
       "translations": {
         "de": {
@@ -53,38 +93,6 @@
               "id": "TODO-stable-section-id",
               "heading": "TODO: Überschrift",
               "text": "TODO: Gesetzestext oder redaktionelle Zusammenfassung",
-              "textKind": "editorial-summary"
-            }
-          ]
-        },
-        "fr": {
-          "title": "TODO: titre français",
-          "authority": "TODO: autorité compétente",
-          "sourceUrl": "TODO: https://...",
-          "citation": "TODO: acte, article/alinéa",
-          "checkedAt": "TODO: YYYY-MM-DD",
-          "effectiveFrom": "",
-          "sections": [
-            {
-              "id": "TODO-stable-section-id",
-              "heading": "TODO: titre de la section",
-              "text": "TODO: texte légal ou résumé éditorial",
-              "textKind": "editorial-summary"
-            }
-          ]
-        },
-        "it": {
-          "title": "TODO: titolo italiano",
-          "authority": "TODO: autorità competente",
-          "sourceUrl": "TODO: https://...",
-          "citation": "TODO: atto, articolo/capoverso",
-          "checkedAt": "TODO: YYYY-MM-DD",
-          "effectiveFrom": "",
-          "sections": [
-            {
-              "id": "TODO-stable-section-id",
-              "heading": "TODO: titolo della sezione",
-              "text": "TODO: testo legale o sintesi editoriale",
               "textKind": "editorial-summary"
             }
           ]
@@ -103,7 +111,7 @@
         "de": { "name": "Hochseeausweis – Segel", "description": "TODO", "authority": "TODO", "sourceUrl": "TODO: https://...", "citation": "TODO", "checkedAt": "TODO: YYYY-MM-DD", "effectiveFrom": "" },
         "fr": { "name": "TODO: permis hauturier – voile", "description": "TODO", "authority": "TODO", "sourceUrl": "TODO: https://...", "citation": "TODO", "checkedAt": "TODO: YYYY-MM-DD", "effectiveFrom": "" },
         "it": { "name": "TODO: licenza d'altura – vela", "description": "TODO", "authority": "TODO", "sourceUrl": "TODO: https://...", "citation": "TODO", "checkedAt": "TODO: YYYY-MM-DD", "effectiveFrom": "" }
-      },
+       },
       "requirements": [
         {
           "id": "TODO-stable-requirement-id",
