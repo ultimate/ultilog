@@ -254,6 +254,7 @@ export function LogbookApp({
   const logbookRef = useRef(logbook);
   const pendingMutationsRef = useRef(new Map<string, number>());
   const failedMutationsRef = useRef(new Map<string, number>());
+  const mutationQueuesRef = useRef(new Map<string, Promise<void>>());
   const mutationSequenceRef = useRef(0);
 
   function pushAppPath(path: string) {
@@ -355,20 +356,31 @@ export function LogbookApp({
     pendingMutationsRef.current.set(key, sequence);
     failedMutationsRef.current.delete(key);
     if (!isBackendReady) return true;
-    const request = mutation.kind === "boat" ? persistBoat(mutation.entity, mutation.isNew)
-      : mutation.kind === "crew" ? persistCrewMember(mutation.entity, mutation.isNew)
-      : mutation.kind === "sheet" ? persistSheet("entity" in mutation ? mutation.entity : nextLogbook.sheets.find((sheet) => sheet.id === mutation.id)!)
-      : deleteLogbookEntity(mutation.entityKind, mutation.id);
-    const response = await request.catch(() => undefined);
+    // Sheet saves replace their child collections, so requests for the same entity
+    // must not overlap. The queue also preserves the order of rapid optimistic edits.
+    const previousRequest = mutationQueuesRef.current.get(key) ?? Promise.resolve();
+    let response: Response | undefined;
+    const request = previousRequest.catch(() => undefined).then(async () => {
+      response = await (mutation.kind === "boat" ? persistBoat(mutation.entity, mutation.isNew)
+        : mutation.kind === "crew" ? persistCrewMember(mutation.entity, mutation.isNew)
+        : mutation.kind === "sheet" ? persistSheet("entity" in mutation ? mutation.entity : nextLogbook.sheets.find((sheet) => sheet.id === mutation.id)!)
+        : deleteLogbookEntity(mutation.entityKind, mutation.id)).catch(() => undefined);
+    });
+    mutationQueuesRef.current.set(key, request);
+    await request;
+    if (mutationQueuesRef.current.get(key) === request) mutationQueuesRef.current.delete(key);
+    if (!response?.ok) {
+      failedMutationsRef.current.set(key, sequence);
+      setSaveError(t("logbook.saveError"));
+    }
     // An older response must never clear or mark a later edit of the same entity.
     if (pendingMutationsRef.current.get(key) !== sequence) return response?.ok ?? false;
     pendingMutationsRef.current.delete(key);
     if (response?.ok) {
       failedMutationsRef.current.delete(key);
+      if (failedMutationsRef.current.size === 0) setSaveError(null);
       return true;
     }
-    failedMutationsRef.current.set(key, sequence);
-    setSaveError(t("logbook.saveError"));
     return false;
   }
 
@@ -422,6 +434,7 @@ export function LogbookApp({
       logbookRef.current = normalizedLogbook;
       pendingMutationsRef.current.clear();
       failedMutationsRef.current.clear();
+      mutationQueuesRef.current.clear();
       setLogbook(normalizedLogbook);
       setActiveSheetId(routedSheet?.id ?? "");
       setSheetForm(
@@ -1758,6 +1771,7 @@ export function LogbookApp({
     logbookRef.current = resetLogbook;
     pendingMutationsRef.current.clear();
     failedMutationsRef.current.clear();
+    mutationQueuesRef.current.clear();
     setLogbook(resetLogbook);
     setActiveSheetId(firstSheet.id);
     setSelectedBoatId(firstBoat.id);
