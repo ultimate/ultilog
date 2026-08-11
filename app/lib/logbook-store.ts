@@ -4,31 +4,45 @@ import { LogbookDatabase } from "./db/logbook-database";
 import { PostgresLogbookDatabase } from "./db/postgres-logbook-database";
 import { SqliteLogbookDatabase } from "./db/sqlite-logbook-database";
 
-let database: LogbookDatabase | undefined;
-let writeQueue: Promise<unknown> = Promise.resolve();
+type StoreState = { database?: LogbookDatabase; writeQueue: Promise<unknown> };
+const globalLogbookStores = globalThis as typeof globalThis & { __ultilogLogbookStores?: Map<string, StoreState> };
 
-export function getDatabase() {
-  if (database) return database;
+function storeState(): { state: StoreState; postgresUrl: string | undefined } {
   const postgresUrl = process.env.POSTGRES_URL ?? process.env.DATABASE_URL;
-  database = postgresUrl ? new PostgresLogbookDatabase(postgresUrl) : new SqliteLogbookDatabase(process.env.LOCAL_DATABASE_PATH ?? join(process.cwd(), ".data", "ultilog.sqlite"));
-  return database;
+  const key = postgresUrl ? `postgres:${postgresUrl}` : `sqlite:${process.env.LOCAL_DATABASE_PATH ?? join(process.cwd(), ".data", "ultilog.sqlite")}`;
+  const stores = globalLogbookStores.__ultilogLogbookStores ??= new Map();
+  let state = stores.get(key);
+  if (!state) {
+    state = { writeQueue: Promise.resolve() };
+    stores.set(key, state);
+  }
+  return { state, postgresUrl };
+}
+
+export function getDatabase(): LogbookDatabase {
+  const { state, postgresUrl } = storeState();
+  if (!state.database) state.database = postgresUrl ? new PostgresLogbookDatabase(postgresUrl) : new SqliteLogbookDatabase(process.env.LOCAL_DATABASE_PATH ?? join(process.cwd(), ".data", "ultilog.sqlite"));
+  return state.database;
 }
 
 export async function readLogbook(userId: string): Promise<PersistedLogbook> {
-  const operation = writeQueue.then(() => getDatabase().forUser(userId).readLogbook());
-  writeQueue = operation.then(() => undefined, () => undefined);
+  const { state } = storeState();
+  const operation = state.writeQueue.then(() => getDatabase().forUser(userId).readLogbook());
+  state.writeQueue = operation.then(() => undefined, () => undefined);
   return operation;
 }
 
 export async function writeLogbook(logbook: PersistedLogbook, userId: string) {
-  const operation = writeQueue.then(() => getDatabase().forUser(userId).writeLogbook(logbook));
-  writeQueue = operation.then(() => undefined, () => undefined);
+  const { state } = storeState();
+  const operation = state.writeQueue.then(() => getDatabase().forUser(userId).writeLogbook(logbook));
+  state.writeQueue = operation.then(() => undefined, () => undefined);
   return operation;
 }
 
 function mutate<T>(userId: string, operation: (database: LogbookDatabase) => Promise<T>) {
-  const pending = writeQueue.then(() => operation(getDatabase().forUser(userId)));
-  writeQueue = pending.then(() => undefined, () => undefined);
+  const { state } = storeState();
+  const pending = state.writeQueue.then(() => operation(getDatabase().forUser(userId)));
+  state.writeQueue = pending.then(() => undefined, () => undefined);
   return pending;
 }
 
@@ -40,7 +54,8 @@ export const upsertLogSheet = (sheet: LogSheet, userId: string) => mutate(userId
 export const deleteLogSheet = (id: string, userId: string) => mutate(userId, db => db.deleteLogSheet(id));
 
 export async function readSharedLogSheet(sheetId: string, isAuthenticated: boolean, ownerId?: string) {
-  const operation = writeQueue.then(() => getDatabase().readSharedSheet(sheetId, isAuthenticated, ownerId));
-  writeQueue = operation.then(() => undefined, () => undefined);
+  const { state } = storeState();
+  const operation = state.writeQueue.then(() => getDatabase().readSharedSheet(sheetId, isAuthenticated, ownerId));
+  state.writeQueue = operation.then(() => undefined, () => undefined);
   return operation;
 }
