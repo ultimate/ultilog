@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { deleteLogbookEntity, normalizeLogbookIds, persistBoat, persistCrewMember, persistSheet } from "../../app/components/logbook/persistence";
 import type { PersistedLogbook } from "../../app/models/logbook";
+import { sampleLogSheets } from "../fixtures/logbook";
 
 const image = { data: "base64-image", mimeType: "image/png", width: 64, height: 32 };
 
@@ -29,11 +30,14 @@ describe("logbook persistence", () => {
   it("serializes only the edited sheet when a log line changes", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
-    const sheet = {
-      id: "sheet-1", title: "Edited", status: "Draft" as const, boatId: "boat-1",
-      route: { from: "A", to: "B", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [],
-      lines: [{ id: "line-1", time: "2026-08-11T10:00", remarks: "later edit" }],
-    } as PersistedLogbook["sheets"][number];
+    const sourceSheet = sampleLogSheets[0];
+    const sheet: PersistedLogbook["sheets"][number] = {
+      ...sourceSheet,
+      id: "sheet-1",
+      title: "Edited",
+      boatId: "boat-1",
+      lines: [{ ...sourceSheet.lines[0], id: "line-1", time: "2026-08-11T10:00", remarks: "later edit" }],
+    };
 
     await persistSheet(sheet);
 
