@@ -1,6 +1,8 @@
 import { expect, type Page, test } from "@playwright/test";
 
-test.setTimeout(120_000);
+// Next's CI dev server can briefly restart a request after a client-side
+// navigation; leave enough time for the persistence and relogin assertions.
+test.setTimeout(180_000);
 
 test("persists user-created crew, boat, and logbook sheets across refresh and relogin", async ({ page }) => {
   const unique = Date.now().toString(36);
@@ -125,6 +127,6 @@ async function expectLoggedIn(page: Page) {
   await expect(async () => {
     const continueToApp = page.getByRole("button", { name: "Continue to app" });
     if (await continueToApp.isVisible({ timeout: 500 }).catch(() => false)) await continueToApp.click();
-    await expect(page.getByRole("button", { name: "Logout" })).toBeVisible({ timeout: 1_000 });
-  }).toPass({ timeout: 30_000 });
+    await expect(page.getByRole("button", { name: "Logout" })).toBeVisible({ timeout: 2_000 });
+  }).toPass({ timeout: 60_000 });
 }

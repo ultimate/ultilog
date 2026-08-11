@@ -45,10 +45,10 @@ async function removeDemoLogsheets(page: Page) {
   const currentResponse = await page.request.get("/api/logbook");
   expect(currentResponse.ok()).toBeTruthy();
   const currentLogbook = await currentResponse.json();
-  for (const sheet of currentLogbook.sheets) {
-    const clearResponse = await page.request.delete(`/api/logbook/sheets/${encodeURIComponent(sheet.id)}`);
-    expect(clearResponse.ok(), await clearResponse.text()).toBeTruthy();
-  }
+  // Clear sheets in one write so queued client normalization cannot restore a
+  // reference between individual deletes and replacement demo seeding.
+  const clearResponse = await page.request.put("/api/logbook", { data: { ...currentLogbook, sheets: [] } });
+  expect(clearResponse.ok(), await clearResponse.text()).toBeTruthy();
 }
 
 function crewProfilesFromSheets(sheets: typeof sampleLogSheets) {
