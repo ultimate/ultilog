@@ -28,6 +28,9 @@ export const defaultLogSheetShareSettings: LogSheetShareSettings = {
 export type TechnicalCheck = { status: string; text: string };
 
 export type LogSheet = {
+  revision?: number;
+  createdAt?: string;
+  updatedAt?: string;
   id: string;
   title: string;
   status: "Draft" | "Locked";

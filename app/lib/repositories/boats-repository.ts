@@ -31,10 +31,14 @@ export class BoatsRepository {
 
   async upsert(boat: Boat, ownerId: string) {
     const id = scopedId(ownerId, boat.id);
-    await this.db.query(
-      `insert into boats (id, archived, name, type, registration, flag_state, home_port, owner, dimensions, logfactor, yacht_data, deviation_table, wind_drift_table, image_id, owner_id) values (${this.values(15)}) on conflict(id) do update set archived = excluded.archived, name = excluded.name, type = excluded.type, registration = excluded.registration, flag_state = excluded.flag_state, home_port = excluded.home_port, owner = excluded.owner, dimensions = excluded.dimensions, logfactor = excluded.logfactor, yacht_data = excluded.yacht_data, deviation_table = excluded.deviation_table, wind_drift_table = excluded.wind_drift_table, image_id = excluded.image_id where boats.owner_id = excluded.owner_id`,
-      [id, boat.archived ? 1 : 0, boat.name, boat.type, boat.registration, boat.flagState, boat.homePort, boat.owner, boat.dimensions, boat.logfactor, JSON.stringify(boat.yachtData), JSON.stringify(boat.deviationTable), JSON.stringify(boat.windDriftTable ?? []), boat.imageId ?? boat.image?.id ?? null, ownerId],
-    );
+    const existing = await this.findById(boat.id, ownerId);
+    const values = [boat.archived ? 1 : 0, boat.name, boat.type, boat.registration, boat.flagState, boat.homePort, boat.owner, boat.dimensions, boat.logfactor, JSON.stringify(boat.yachtData), JSON.stringify(boat.deviationTable), JSON.stringify(boat.windDriftTable ?? []), boat.imageId ?? boat.image?.id ?? null];
+    if (existing) {
+      const expected = boat.revision ?? Number(existing.revision);
+      const assignments = ["archived", "name", "type", "registration", "flag_state", "home_port", "owner", "dimensions", "logfactor", "yacht_data", "deviation_table", "wind_drift_table", "image_id"].map((column, index) => `${column} = ${this.db.placeholder(index + 1)}`);
+      const updated = await this.db.query<{ revision: number }>(`update boats set ${assignments.join(", ")}, revision = revision + 1, updated_at = ${this.now()} where id = ${this.db.placeholder(14)} and owner_id = ${this.db.placeholder(15)} and revision = ${this.db.placeholder(16)} returning revision`, [...values, id, ownerId, expected]);
+      if (!updated.rows.length) throw Object.assign(new Error("The boat was changed by another request."), { code: "revision_conflict" });
+    } else await this.db.query(`insert into boats (id, archived, name, type, registration, flag_state, home_port, owner, dimensions, logfactor, yacht_data, deviation_table, wind_drift_table, image_id, owner_id) values (${this.values(15)})`, [id, ...values, ownerId]);
     await this.db.query(`delete from engines where boat_id = ${this.db.placeholder(1)}`, [id]);
     for (const [sortOrder, engine] of (boat.engines?.length ? boat.engines : [defaultMainEngine()]).entries()) {
       await this.db.query(`insert into engines (id, boat_id, sort_order, name, short_label, role, archived, manufacturer, model, serial_number) values (${this.values(10)})`, [`${id}:${engine.id}`, id, sortOrder, engine.name, engine.label, engine.role, engine.archived ? 1 : 0, engine.manufacturer ?? "", engine.model ?? "", engine.serialNumber ?? ""]);
@@ -69,6 +73,7 @@ export class BoatsRepository {
   private values(count: number) {
     return Array.from({ length: count }, (_, index) => this.db.placeholder(index + 1)).join(", ");
   }
+  private now() { return this.db.placeholder(1) === "$1" ? "current_timestamp" : "strftime('%Y-%m-%dT%H:%M:%fZ','now')"; }
 }
 
 type EngineRow = { id: string; boat_id: string; name: string; short_label: string; role: BoatEngine["role"]; archived: number | boolean; manufacturer: string; model: string; serial_number: string };

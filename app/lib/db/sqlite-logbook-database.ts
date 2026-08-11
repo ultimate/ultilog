@@ -19,7 +19,7 @@ export class SqliteLogbookDatabase extends LogbookDatabase {
 
   async query<Row>(sql: string, values: unknown[] = []): Promise<QueryResult<Row>> {
     const db = await this.getDb();
-    if (sql.trim().toLowerCase().startsWith("select")) return { rows: selectRows<Row>(db, sql, values) };
+    if (sql.trim().toLowerCase().startsWith("select") || /\breturning\b/i.test(sql)) return { rows: selectRows<Row>(db, sql, values) };
     // Focused sheet mutations replace these child collections. `or replace`
     // makes an overlapping retry idempotent at the SQLite constraint boundary.
     const statement = /^insert into (log_lines|sheet_crew_members|log_line_engine_hours)\b/i.test(sql.trim())

@@ -1,0 +1,4 @@
+-- Resource concurrency metadata. Existing creation times are unknowable, so all
+-- pre-existing rows receive the deterministic migration instant captured by the
+-- migration runner. Engines and stored images are owned implementation details;
+-- their aggregate carries concurrency metadata. Backend-specific DDL is in migrations.ts.

@@ -10,7 +10,7 @@ export type ImageRowFields = {
   image_height?: number | null;
 };
 
-export type BoatRow = Omit<Boat, "archived" | "flagState" | "homePort" | "yachtData" | "deviationTable" | "windDriftTable" | "image" | "imageId" | "logfactor" | "engines"> & ImageRowFields & {
+export type BoatRow = { revision?: number; created_at?: string | Date; updated_at?: string | Date } & Omit<Boat, "revision" | "createdAt" | "updatedAt" | "archived" | "flagState" | "homePort" | "yachtData" | "deviationTable" | "windDriftTable" | "image" | "imageId" | "logfactor" | "engines"> & ImageRowFields & {
   engines?: Boat["engines"];
   archived?: number | boolean | null;
   flag_state: string;
@@ -22,6 +22,7 @@ export type BoatRow = Omit<Boat, "archived" | "flagState" | "homePort" | "yachtD
 };
 
 export type LogSheetRow = ImageRowFields & {
+  revision?: number; created_at?: string | Date; updated_at?: string | Date;
   id: string;
   title: string;
   status: LogSheet["status"];
@@ -54,7 +55,7 @@ export type LogSheetRow = ImageRowFields & {
   owner_id?: string;
 };
 
-export type CrewMemberRow = Omit<SheetCrewMember, "embarkationDateTime" | "embarkationPosition" | "disembarkationDateTime" | "disembarkationPosition" | "image" | "imageId"> & ImageRowFields & {
+export type CrewMemberRow = { revision?: number; created_at?: string | Date; updated_at?: string | Date } & Omit<SheetCrewMember, "revision" | "createdAt" | "updatedAt" | "embarkationDateTime" | "embarkationPosition" | "disembarkationDateTime" | "disembarkationPosition" | "image" | "imageId"> & ImageRowFields & {
   date_of_birth?: string;
   place_of_birth?: string;
   gender?: string;
@@ -72,7 +73,7 @@ export type CrewMemberRow = Omit<SheetCrewMember, "embarkationDateTime" | "embar
   is_primary?: number;
 };
 
-export type LogLineRow = Omit<LogLine, "position" | "weatherRemark" | "temperature" | "temperatureUnit" | "logNm" | "windDirection" | "windStrength" | "windUnit" | "waves" | "seaUnit" | "tideUnit" | "compassCourse" | "magneticCourse" | "trueCourse" | "windDrift" | "courseThroughWater" | "currentDrift" | "courseOverGround" | "speedKn" | "sailMiles" | "sailNote" | "motorMiles" | "motorHours" | "engineHours" | "motorNote"> & {
+export type LogLineRow = { revision?: number; created_at?: string | Date; updated_at?: string | Date } & Omit<LogLine, "revision" | "createdAt" | "updatedAt" | "position" | "weatherRemark" | "temperature" | "temperatureUnit" | "logNm" | "windDirection" | "windStrength" | "windUnit" | "waves" | "seaUnit" | "tideUnit" | "compassCourse" | "magneticCourse" | "trueCourse" | "windDrift" | "courseThroughWater" | "currentDrift" | "courseOverGround" | "speedKn" | "sailMiles" | "sailNote" | "motorMiles" | "motorHours" | "engineHours" | "motorNote"> & {
   engineHours?: Record<string, number>;
   sheet_id: string;
   sort_order: number;

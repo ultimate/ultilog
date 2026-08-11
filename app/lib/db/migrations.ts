@@ -27,6 +27,10 @@ export async function runMigrations(db: QueryableDatabase) {
 }
 
 async function applyMigration(db: QueryableDatabase, id: string, sql: string) {
+  if (id === "037_resource_concurrency") {
+    await addResourceConcurrencyColumns(db);
+    return;
+  }
   if (id === "021_iso_datetime_offsets") {
     await normalizeStoredDateTimes(db);
     return;
@@ -52,6 +56,25 @@ async function applyMigration(db: QueryableDatabase, id: string, sql: string) {
       await db.query(statement);
     } catch (error) {
       if (!isDuplicateColumnError(error)) throw error;
+    }
+  }
+}
+
+async function addResourceConcurrencyColumns(db: QueryableDatabase) {
+  const postgres = db.placeholder(1) === "$1";
+  const timestampType = postgres ? "timestamptz" : "text";
+  const now = postgres ? "current_timestamp" : "strftime('%Y-%m-%dT%H:%M:%fZ','now')";
+  const captured = (await db.query<{ now: string }>(`select ${now} as now`)).rows[0]?.now ?? "1970-01-01T00:00:00.000Z";
+  for (const table of ["boats", "crew_members", "log_sheets", "log_lines"]) {
+    await db.query(`alter table ${table} add column revision integer not null default 1`);
+    const sqliteDefault = `'${String(captured).replaceAll("'", "''")}'`;
+    await db.query(`alter table ${table} add column created_at ${timestampType}${postgres ? "" : ` not null default ${sqliteDefault}`}`);
+    await db.query(`alter table ${table} add column updated_at ${timestampType}${postgres ? "" : ` not null default ${sqliteDefault}`}`);
+    await db.query(`update ${table} set created_at = ${db.placeholder(1)}, updated_at = ${db.placeholder(2)} where created_at is null or updated_at is null`, [captured, captured]);
+    if (postgres) await db.query(`alter table ${table} alter column created_at set default current_timestamp, alter column created_at set not null, alter column updated_at set default current_timestamp, alter column updated_at set not null`);
+    else {
+      await db.query(`create trigger ${table}_concurrency_insert after insert on ${table} begin update ${table} set created_at = strftime('%Y-%m-%dT%H:%M:%fZ','now'), updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') where rowid = new.rowid; end`);
+      await db.query(`create trigger ${table}_concurrency_update after update on ${table} when new.updated_at = old.updated_at begin update ${table} set updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') where rowid = new.rowid; end`);
     }
   }
 }
