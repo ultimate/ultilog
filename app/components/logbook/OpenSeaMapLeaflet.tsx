@@ -14,6 +14,7 @@ import {
 } from "react-leaflet";
 import { useI18n } from "../../lib/i18n";
 import type { LogLine, LogSheet } from "../../models/logbook";
+import { markerCourse } from "./map-marker";
 
 type Coordinate = {
   latitude: number;
@@ -26,6 +27,8 @@ type MapPoint = Coordinate & {
   title: string;
   description?: string;
   logLine?: LogLine;
+  courseOverGround?: number;
+  speedKn?: number;
 };
 
 export type MapRoute = {
@@ -74,13 +77,17 @@ function toLatLng(point: Coordinate): LatLngExpression {
   return [point.latitude, point.longitude];
 }
 
-function makeMarkerIcon(label: string, variant: "detail" | "start" | "end") {
+function makeMarkerIcon(point: MapPoint, variant: "detail" | "start" | "end") {
+  const course = markerCourse(point);
+  const shape = course === null ? "circle" : "arrow";
+  const style = course === null ? "" : ` style="--marker-course: ${course}deg"`;
+
   return L.divIcon({
-    className: `open-seamap-marker open-seamap-marker-${variant}`,
-    html: `<span>${label}</span>`,
-    iconAnchor: [15, 15],
-    iconSize: [30, 30],
-    popupAnchor: [0, -16],
+    className: `open-seamap-marker open-seamap-marker-${variant} open-seamap-marker-${shape}`,
+    html: `<span${style}><b>${point.label}</b></span>`,
+    iconAnchor: [12, 12],
+    iconSize: [24, 24],
+    popupAnchor: [0, -13],
   });
 }
 
@@ -299,7 +306,7 @@ export function OpenSeaMapLeaflet({
             return (
               <Marker
                 key={`${route.id}-${point.id}-${markerIndex}`}
-                icon={makeMarkerIcon(point.label, variant)}
+                icon={makeMarkerIcon(point, variant)}
                 position={toLatLng(point)}
               >
                 <Popup>

@@ -69,6 +69,8 @@ function lineToPoint(line: LogLine, index: number, routeId: string, labels: { we
     label: `${index + 1}`,
     title: line.time ? `${formatTime(line.time)} · ${line.position}` : line.position,
     description: lineDescription(line, labels),
+    courseOverGround: line.courseOverGround,
+    speedKn: line.speedKn,
   };
 }
 
