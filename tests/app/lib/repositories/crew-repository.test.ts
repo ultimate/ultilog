@@ -116,8 +116,8 @@ describe("CrewRepository", () => {
 
     expect(db.calls[0].sql).toContain("insert into crew_members");
     expect(db.calls[0].values?.[0]).toBe("repository-user:luca-frei-swiss");
-    expect(db.calls[0].values?.slice(6, 12)).toEqual([crew.isPrimary ? 1 : 0, null, null, null, null, "repository-user"]);
-    expect(db.calls[0].values?.slice(12)).toHaveLength(7);
+    expect(db.calls[0].values?.slice(6, 9)).toEqual([crew.isPrimary ? 1 : 0, null, "repository-user"]);
+    expect(db.calls[0].values?.slice(9)).toHaveLength(7);
     for (const [index, plaintext] of [crew.name, crew.nationality, crew.role, crew.address ?? "", crew.certificate ?? ""].entries()) {
       expect(db.calls[0].values?.[index + 1]).not.toBe(plaintext);
       expect(db.calls[0].values?.[index + 1]).toEqual(expect.stringMatching(/^\{"v":1,"alg":"AES-256-GCM","kid":"crew-pii-v1",/));
@@ -140,18 +140,14 @@ describe("CrewRepository", () => {
     expect(db.calls[0].values?.[10]).toBe("repository-user:second-crew");
   });
 
-  it("encrypts crew image payloads while leaving display metadata available", async () => {
+  it("persists only the stable image reference for a crew profile", async () => {
     const db = new MockDatabase();
-    const image = { data: "base64-crew-private-face", mimeType: "image/jpeg", width: 320, height: 240 };
+    const image = { id: "crew-image", data: "base64-crew-private-face", mimeType: "image/jpeg", width: 320, height: 240 };
 
     await new CrewRepository(db).insertProfile({ ...crew, image }, "repository-user");
 
-    const storedImageData = db.calls[0].values?.[7] as string;
-    expect(storedImageData).not.toBe(image.data);
-    expect(storedImageData).not.toContain(image.data);
-    expect(storedImageData).toEqual(expect.stringMatching(/^\{"v":1,"alg":"AES-256-GCM","kid":"crew-pii-v1",/));
-    expect(decryptCrewField("repository-user", "repository-user:luca-frei-swiss", "image_data", storedImageData)).toBe(image.data);
-    expect(db.calls[0].values?.slice(8, 11)).toEqual([image.mimeType, image.width, image.height]);
+    expect(db.calls[0].values?.slice(7, 9)).toEqual([image.id, "repository-user"]);
+    expect(db.calls[0].values).not.toContain(image.data);
   });
 
   it("decrypts crew profile image payloads with profile rows", async () => {

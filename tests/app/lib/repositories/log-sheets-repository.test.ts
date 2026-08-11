@@ -33,7 +33,8 @@ describe("LogSheetsRepository", () => {
     const db = new MockDatabase({ log_sheets: [row] });
 
     await expect(new LogSheetsRepository(db).findAll("repository-user")).resolves.toEqual([row]);
-    expect(db.calls[0].sql).toBe("select * from log_sheets where owner_id = $1");
+    expect(db.calls[0].sql).toContain("from log_sheets left join stored_images");
+    expect(db.calls[0].sql).toContain("where log_sheets.owner_id = $1");
     expect(db.calls[0].values).toEqual(["repository-user"]);
   });
 
@@ -50,7 +51,7 @@ describe("LogSheetsRepository", () => {
     await new LogSheetsRepository(db).insert(sheet, "repository-user");
 
     expect(db.calls[0].sql).toContain("insert into log_sheets");
-    expect(db.calls[0].values).toEqual([`repository-user:${sheet.id}`, sheet.title, sheet.status, null, null, null, `repository-user:${sheet.boatId}`, JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), null, null, null, null, "repository-user", 9, 54, 63, 635, 1, 635, 635, "private", 0, 0, 0, 0, 0, 0, 0]);
+    expect(db.calls[0].values).toEqual([`repository-user:${sheet.id}`, sheet.title, sheet.status, null, null, null, `repository-user:${sheet.boatId}`, JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), null, "repository-user", 9, 54, 63, 635, 1, 635, 635, "private", 0, 0, 0, 0, 0, 0, 0]);
   });
 
   it("maps relational rows back to a persisted logbook", () => {
@@ -85,15 +86,15 @@ describe("LogSheetsRepository", () => {
   });
 
   it("persists and maps stored images", async () => {
-    const image = { data: "base64-sheet", mimeType: "image/webp", width: 1024, height: 768 };
+    const image = { id: "sheet-image", data: "base64-sheet", mimeType: "image/webp", width: 1024, height: 768 };
     const db = new MockDatabase();
 
     await new LogSheetsRepository(db).insert({ ...sheet, image }, "repository-user");
 
-    expect(db.calls[0].values?.slice(14, 18)).toEqual([image.data, image.mimeType, image.width, image.height]);
+    expect(db.calls[0].values?.slice(14, 16)).toEqual([image.id, "repository-user"]);
 
     const boatRow: BoatRow = { ...boat, flag_state: boat.flagState, home_port: boat.homePort, yacht_data: JSON.stringify(boat.yachtData), deviation_table: JSON.stringify(boat.deviationTable), image_data: "base64-boat", image_mime_type: "image/png", image_width: 640, image_height: 480 };
-    const sheetRow = logSheetRow({ image_data: image.data, image_mime_type: image.mimeType, image_width: image.width, image_height: image.height });
+    const sheetRow = logSheetRow({ image_id: image.id, image_data: image.data, image_mime_type: image.mimeType, image_width: image.width, image_height: image.height });
     const crewRow: CrewMemberRow = { sheet_id: sheet.id, crew_member_id: "luca-frei-swiss", sort_order: 0, ...crew, embarkation_datetime: crew.embarkationDateTime, embarkation_position: crew.embarkationPosition, disembarkation_datetime: crew.disembarkationDateTime, disembarkation_position: crew.disembarkationPosition, image_data: "base64-crew", image_mime_type: "image/jpeg", image_width: 320, image_height: 240 };
 
     const crewProfileRow: CrewMemberRow = { ...crewRow, id: "luca-frei-swiss", is_primary: 1 };
