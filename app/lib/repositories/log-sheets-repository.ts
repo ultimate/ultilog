@@ -18,8 +18,14 @@ export class LogSheetsRepository {
 
   async upsert(sheet: LogSheet, ownerId: string, motionStationaryThresholdNm = 0.1) {
     const existing = await this.findById(sheet.id, ownerId);
-    if (existing) await this.db.query(`delete from log_sheets where id = ${this.db.placeholder(1)} and owner_id = ${this.db.placeholder(2)}`, [scopedId(ownerId, sheet.id), ownerId]);
+    if (existing) {
+      const expected = sheet.revision ?? Number(existing.revision);
+      const claimed = await this.db.query<{ revision: number }>(`update log_sheets set revision = revision where id = ${this.db.placeholder(1)} and owner_id = ${this.db.placeholder(2)} and revision = ${this.db.placeholder(3)} returning revision`, [scopedId(ownerId, sheet.id), ownerId, expected]);
+      if (!claimed.rows.length) throw Object.assign(new Error("The log sheet was changed by another request."), { code: "revision_conflict" });
+      await this.db.query(`delete from log_sheets where id = ${this.db.placeholder(1)} and owner_id = ${this.db.placeholder(2)}`, [scopedId(ownerId, sheet.id), ownerId]);
+    }
     await this.insert(sheet, ownerId, motionStationaryThresholdNm);
+    if (existing) await this.db.query(`update log_sheets set revision = ${this.db.placeholder(1)}, created_at = ${this.db.placeholder(2)}, updated_at = ${this.now()} where id = ${this.db.placeholder(3)} and owner_id = ${this.db.placeholder(4)}`, [Number(existing.revision) + 1, existing.created_at, scopedId(ownerId, sheet.id), ownerId]);
   }
 
   async delete(id: string, ownerId: string) {
@@ -60,6 +66,7 @@ export class LogSheetsRepository {
     const linesBySheet = groupBy(lineRows, (line) => line.sheet_id);
     const boats: Boat[] = boatRows.map((boat) => ({
       id: unscopedId(boat.id),
+      ...concurrencyMetadata(boat),
       archived: Boolean(boat.archived),
       name: boat.name,
       type: boat.type,
@@ -77,12 +84,13 @@ export class LogSheetsRepository {
       ...(imageFromRow(boat) ? { image: imageFromRow(boat) } : {}),
     }));
     const crewDetails = (crew: CrewMemberRow) => ({ ...(crew.date_of_birth === undefined ? {} : { dateOfBirth: crew.date_of_birth }), ...(crew.place_of_birth === undefined ? {} : { placeOfBirth: crew.place_of_birth }), ...(crew.gender === undefined ? {} : { gender: crew.gender }), ...(crew.identity_document_type === undefined ? {} : { identityDocumentType: crew.identity_document_type }), ...(crew.identity_document_number === undefined ? {} : { identityDocumentNumber: crew.identity_document_number }), ...(crew.identity_document_issuing_date === undefined ? {} : { identityDocumentIssuingDate: crew.identity_document_issuing_date }), ...(crew.identity_document_expiry_date === undefined ? {} : { identityDocumentExpiryDate: crew.identity_document_expiry_date }) });
-    const crewMembers = crewProfileRows.map((crew) => ({ id: unscopedId(crew.crew_member_id ?? crew.id), name: crew.name, ...crewDetails(crew), nationality: crew.nationality, role: crew.role, address: crew.address ?? "", certificate: crew.certificate ?? "", isPrimary: Boolean(crew.is_primary), ...(crew.image_id ? { imageId: crew.image_id } : {}), ...(imageFromRow(crew) ? { image: imageFromRow(crew) } : {}) }));
+    const crewMembers = crewProfileRows.map((crew) => ({ ...concurrencyMetadata(crew), id: unscopedId(crew.crew_member_id ?? crew.id), name: crew.name, ...crewDetails(crew), nationality: crew.nationality, role: crew.role, address: crew.address ?? "", certificate: crew.certificate ?? "", isPrimary: Boolean(crew.is_primary), ...(crew.image_id ? { imageId: crew.image_id } : {}), ...(imageFromRow(crew) ? { image: imageFromRow(crew) } : {}) }));
     const sheets: LogSheet[] = sheetRows.map((sheet) => ({
       ...mapStoredSheet(sheet),
       crew: (crewBySheet.get(sheet.id) ?? []).map(({ sheet_id, crew_member_id, sort_order, is_primary, embarkation_datetime, embarkation_position, disembarkation_datetime, disembarkation_position, image_data, image_mime_type, image_width, image_height, date_of_birth, place_of_birth, identity_document_type, identity_document_number, identity_document_issuing_date, identity_document_expiry_date, ...crew }) => ({ ...crew, ...(date_of_birth === undefined ? {} : { dateOfBirth: date_of_birth }), ...(place_of_birth === undefined ? {} : { placeOfBirth: place_of_birth }), ...(identity_document_type === undefined ? {} : { identityDocumentType: identity_document_type }), ...(identity_document_number === undefined ? {} : { identityDocumentNumber: identity_document_number }), ...(identity_document_issuing_date === undefined ? {} : { identityDocumentIssuingDate: identity_document_issuing_date }), ...(identity_document_expiry_date === undefined ? {} : { identityDocumentExpiryDate: identity_document_expiry_date }), id: unscopedId(crew_member_id), isPrimary: Boolean(is_primary), embarkationDateTime: embarkation_datetime, embarkationPosition: embarkation_position, disembarkationDateTime: disembarkation_datetime, disembarkationPosition: disembarkation_position, ...(crew.image_id ? { imageId: crew.image_id } : {}), ...(imageFromRow({ image_id: crew.image_id, image_data, image_mime_type, image_width, image_height }) ? { image: imageFromRow({ image_data, image_mime_type, image_width, image_height }) } : {}) })),
-      lines: (linesBySheet.get(sheet.id) ?? []).map(({ sheet_id, sort_order, position_name, weather_remark, log_nm, wind_direction, wind_strength, wind_unit, temperature_unit, waves, sea_unit, tide_unit, compass_course, magnetic_course, true_course, wind_drift, course_through_water, current_drift, course_over_ground, speed_kn, sail_miles, sail_note, motor_miles, motor_hours, engineHours, motor_note, ...line }) => ({
+      lines: (linesBySheet.get(sheet.id) ?? []).map(({ sheet_id, sort_order, position_name, weather_remark, log_nm, wind_direction, wind_strength, wind_unit, temperature_unit, waves, sea_unit, tide_unit, compass_course, magnetic_course, true_course, wind_drift, course_through_water, current_drift, course_over_ground, speed_kn, sail_miles, sail_note, motor_miles, motor_hours, engineHours, motor_note, revision: sheetLineRevision, created_at: sheetLineCreatedAt, updated_at: sheetLineUpdatedAt, ...line }) => ({
         ...line,
+        ...concurrencyMetadata({ revision: sheetLineRevision, created_at: sheetLineCreatedAt, updated_at: sheetLineUpdatedAt }),
         barometer: Number(line.barometer) || 0,
         weatherRemark: weather_remark ?? "",
         temperature: Number(line.temperature) || 0,
@@ -117,6 +125,7 @@ export class LogSheetsRepository {
   private values(count: number) {
     return Array.from({ length: count }, (_, index) => this.db.placeholder(index + 1)).join(", ");
   }
+  private now() { return this.db.placeholder(1) === "$1" ? "current_timestamp" : "strftime('%Y-%m-%dT%H:%M:%fZ','now')"; }
 }
 
 function routeStart(sheet: LogSheetRow) {
@@ -138,6 +147,7 @@ function groupBy<T>(items: T[], keyFor: (item: T) => string) {
 function mapStoredSheet(sheet: LogSheetRow): StoredLogSheet {
   return {
     id: unscopedId(sheet.id),
+    ...concurrencyMetadata(sheet),
     title: sheet.title,
     status: sheet.status,
     ...(sheet.source ? { source: sheet.source } : {}),
@@ -188,4 +198,9 @@ function privacyFromRow(value: unknown, legacyPrivacy: NonNullable<LogSheet["sha
   if (value === 2 || value === "2") return "registered";
   if (value === 1 || value === "1" || value === true) return legacyPrivacy === "registered" ? "registered" : "public";
   return "private";
+}
+
+function concurrencyMetadata(row: { revision?: number; created_at?: string | Date; updated_at?: string | Date }) {
+  if (row.revision == null || row.created_at == null || row.updated_at == null) return {};
+  return { revision: Number(row.revision), createdAt: new Date(row.created_at).toISOString(), updatedAt: new Date(row.updated_at).toISOString() };
 }

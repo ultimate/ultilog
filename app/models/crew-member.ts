@@ -1,6 +1,9 @@
 import type { StoredImage } from "./stored-image";
 
 export type CrewMember = {
+  revision?: number;
+  createdAt?: string;
+  updatedAt?: string;
   id: string;
   name: string;
   nationality: string;

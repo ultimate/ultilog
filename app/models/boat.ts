@@ -89,6 +89,9 @@ export function normalizeWindDriftTable(table: WindDriftTable | WindDriftTableRo
 }
 
 export type Boat = {
+  revision?: number;
+  createdAt?: string;
+  updatedAt?: string;
   id: string;
   archived?: boolean;
   name: string;

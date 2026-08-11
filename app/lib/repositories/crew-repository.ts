@@ -8,7 +8,7 @@ export class CrewRepository {
 
   async findProfiles(ownerId: string) {
     return (await this.db.query<CrewMemberRow>(`
-      select crew_members.id as crew_member_id, crew_members.image_id, name, nationality, role, address, certificate, date_of_birth, place_of_birth, gender, identity_document_type, identity_document_number, identity_document_issuing_date, identity_document_expiry_date, is_primary, stored_images.data as image_data, stored_images.mime_type as image_mime_type, stored_images.width as image_width, stored_images.height as image_height
+      select crew_members.id as crew_member_id, crew_members.image_id, name, nationality, role, address, certificate, date_of_birth, place_of_birth, gender, identity_document_type, identity_document_number, identity_document_issuing_date, identity_document_expiry_date, is_primary, crew_members.revision, crew_members.created_at, crew_members.updated_at, stored_images.data as image_data, stored_images.mime_type as image_mime_type, stored_images.width as image_width, stored_images.height as image_height
       from crew_members
       left join stored_images on stored_images.id = crew_members.image_id and stored_images.owner_id = crew_members.owner_id
       where crew_members.owner_id = ${this.db.placeholder(1)}
@@ -46,6 +46,7 @@ export class CrewRepository {
         crew_members.identity_document_issuing_date,
         crew_members.identity_document_expiry_date,
         crew_members.is_primary,
+        crew_members.revision, crew_members.created_at, crew_members.updated_at,
         crew_members.image_id,
         stored_images.data as image_data,
         stored_images.mime_type as image_mime_type,
@@ -84,6 +85,7 @@ export class CrewRepository {
         crew_members.identity_document_issuing_date,
         crew_members.identity_document_expiry_date,
         crew_members.is_primary,
+        crew_members.revision, crew_members.created_at, crew_members.updated_at,
         crew_members.image_id,
         stored_images.data as image_data,
         stored_images.mime_type as image_mime_type,

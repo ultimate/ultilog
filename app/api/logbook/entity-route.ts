@@ -12,7 +12,7 @@ export async function authenticatedMutation<T>(operation: (ownerId: string) => P
   } catch (error) {
     if (error instanceof LogbookValidationError || error instanceof SyntaxError) return NextResponse.json({ error: "Invalid entity payload" }, { status: 400 });
     const code = typeof error === "object" && error && "code" in error ? String(error.code) : undefined;
-    if (["referenced_boat_deleted", "missing_boat", "archived_boat_for_new_sheet", "missing_image", "referenced_image"].includes(code ?? "")) return NextResponse.json({ error: error instanceof Error ? error.message : "Mutation rejected", code }, { status: 409 });
+    if (["revision_conflict", "referenced_boat_deleted", "missing_boat", "archived_boat_for_new_sheet", "missing_image", "referenced_image"].includes(code ?? "")) return NextResponse.json({ error: error instanceof Error ? error.message : "Mutation rejected", code }, { status: 409 });
     throw error;
   }
 }
