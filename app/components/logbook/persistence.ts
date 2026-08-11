@@ -1,6 +1,6 @@
 import { moduleTabs } from "../../templates/app-shell";
 import type { ActiveView } from "../../templates/ModuleTabs";
-import type { Boat, CrewMember, LogSheet, PersistedLogbook, SheetCrewMember } from "../../models/logbook";
+import type { Boat, CrewMember, LogLine, LogSheet, PersistedLogbook, SheetCrewMember } from "../../models/logbook";
 
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const routedModules = new Set<ActiveView>([...moduleTabs.map((tab) => tab.id), "profile", "admin"]);
@@ -87,7 +87,7 @@ export function normalizeLogbookIds(logbook: PersistedLogbook): { logbook: Persi
 
 type RequestOptions = { signal?: AbortSignal; keepalive?: boolean };
 
-function entityRequest(path: string, method: "POST" | "PUT" | "DELETE", entity?: Boat | CrewMember | LogSheet, options?: RequestOptions) {
+function entityRequest(path: string, method: "POST" | "PUT" | "DELETE", entity?: Boat | CrewMember | LogSheet | LogLine, options?: RequestOptions) {
   return fetch(path, {
     method,
     headers: { "Content-Type": "application/json" },
@@ -103,6 +103,10 @@ export const persistCrewMember = (crew: CrewMember, isNew = false, options?: Req
   entityRequest(isNew ? "/api/logbook/crew" : `/api/logbook/crew/${encodeURIComponent(crew.id)}`, isNew ? "POST" : "PUT", crew, options);
 export const persistSheet = (sheet: LogSheet, isNew = false, options?: RequestOptions) =>
   entityRequest(isNew ? "/api/logbook/sheets" : `/api/logbook/sheets/${encodeURIComponent(sheet.id)}`, isNew ? "POST" : "PUT", sheet, options);
+export const persistLogLine = (sheetId: string, line: LogLine, isNew: boolean) =>
+  entityRequest(`/api/logbook/sheets/${encodeURIComponent(sheetId)}/lines${isNew ? "" : `/${encodeURIComponent(line.id)}`}`, isNew ? "POST" : "PUT", line);
+export const deleteLogLine = (sheetId: string, lineId: string) => entityRequest(`/api/logbook/sheets/${encodeURIComponent(sheetId)}/lines/${encodeURIComponent(lineId)}`, "DELETE");
+export const reorderLogLines = (sheetId: string, lineIds: string[]) => fetch(`/api/logbook/sheets/${encodeURIComponent(sheetId)}/lines/reorder`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lineIds }) });
 export const deleteLogbookEntity = (kind: "boat" | "crew" | "sheet", id: string, options?: RequestOptions) => {
   const collection = kind === "boat" ? "boats" : kind === "sheet" ? "sheets" : "crew";
   return entityRequest(`/api/logbook/${collection}/${encodeURIComponent(id)}`, "DELETE", undefined, options);

@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { defaultDeviationTable } from "../../../../app/models/logbook";
 import { SqliteLogbookDatabase } from "../../../../app/lib/db/sqlite-logbook-database";
 import { sampleLogSheets } from "../../../fixtures/logbook";
+import { calculateLogSheetMetrics } from "../../../../app/domain/logbook/sheet-metrics";
 
 const tempDirs: string[] = [];
 
@@ -13,6 +14,34 @@ afterEach(async () => {
 });
 
 describe("SqliteLogbookDatabase", () => {
+  it("mutates only the addressed line and sheet while keeping cached metrics current", async () => {
+    const db = new SqliteLogbookDatabase(await tempDatabasePath()).forUser("focused-lines");
+    await db.migrate();
+    await db.query("insert into users (id, name, email, password_hash) values (?, ?, ?, ?)", ["focused-lines", "Lines", "focused@example.test", ""]);
+    const boat = { id: "boat-1", name: "Boat", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: defaultDeviationTable() };
+    await db.upsertBoat(boat);
+    const source = sampleLogSheets[0];
+    const firstLines = source.lines.slice(0, 2).map(line => ({ ...line, motorHours: 0, engineHours: undefined }));
+    const first = { ...source, id: "first", boatId: boat.id, crew: [], lines: firstLines };
+    const unrelated = { ...source, id: "unrelated", title: "Do not touch", boatId: boat.id, crew: [], lines: source.lines.slice(2, 4) };
+    await db.upsertLogSheet(first);
+    await db.upsertLogSheet(unrelated);
+    const untouchedBefore = await db.query("select * from log_lines where sheet_id = ? order by sort_order", ["focused-lines:unrelated"]);
+
+    const created = { ...source.lines[2], id: "created-line", motorMiles: 7, sailMiles: 3, motorHours: 2 };
+    await db.createLogLine(first.id, created);
+    await db.updateLogLine(first.id, created.id, { ...created, motorMiles: 9, remarks: "updated" });
+    await db.reorderLogLines(first.id, [created.id, first.lines[1].id, first.lines[0].id]);
+    await db.deleteLogLine(first.id, created.id);
+
+    const persisted = await db.readLogbook();
+    const changed = persisted.sheets.find(sheet => sheet.id === first.id)!;
+    expect(changed.lines.map(line => line.id)).toEqual([first.lines[1].id]);
+    expect(calculateLogSheetMetrics(changed.lines, changed.route)).toMatchObject(changed.metrics!);
+    expect(await db.query("select * from log_lines where sheet_id = ? order by sort_order", ["focused-lines:unrelated"])).toEqual(untouchedBefore);
+    expect(persisted.sheets.find(sheet => sheet.id === unrelated.id)).toMatchObject({ title: unrelated.title, lines: unrelated.lines });
+  });
+
   it("scopes focused create, update, and delete mutations to their owner", async () => {
     const path = await tempDatabasePath();
     const owner = new SqliteLogbookDatabase(path).forUser("owner-a");
