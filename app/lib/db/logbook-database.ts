@@ -1,4 +1,4 @@
-import { defaultLogSheetShareSettings, type Boat, type CrewMember, type LogSheet, type PersistedLogbook } from "../../models/logbook";
+import { defaultLogSheetShareSettings, type Boat, type CrewMember, type LogLine, type LogSheet, type PersistedLogbook } from "../../models/logbook";
 import { BoatsRepository } from "../repositories/boats-repository";
 import { CrewRepository } from "../repositories/crew-repository";
 import { LogLinesRepository } from "../repositories/log-lines-repository";
@@ -146,6 +146,37 @@ export abstract class LogbookDatabase implements QueryableDatabase {
       const entity = LogSheetsRepository.toLogbook([], [row], crew, lines).sheets[0];
       await database.sheets.delete(id, ownerId);
       return entity;
+    });
+  }
+
+  async createLogLine(sheetId: string, line: LogLine) {
+    return this.mutateLogLines(sheetId, database => database.lines.create(sheetId, line, database.requireOwnerId()));
+  }
+
+  async updateLogLine(sheetId: string, lineId: string, line: LogLine) {
+    return this.mutateLogLines(sheetId, database => database.lines.update(sheetId, lineId, line, database.requireOwnerId()));
+  }
+
+  async deleteLogLine(sheetId: string, lineId: string) {
+    return this.mutateLogLines(sheetId, database => database.lines.delete(sheetId, lineId, database.requireOwnerId()));
+  }
+
+  async reorderLogLines(sheetId: string, lineIds: string[]) {
+    return this.mutateLogLines(sheetId, database => database.lines.reorder(sheetId, lineIds, database.requireOwnerId()));
+  }
+
+  private async mutateLogLines<T>(sheetId: string, mutation: (database: LogbookDatabase) => Promise<T | undefined>) {
+    await this.ensureSchemaAndBackfill();
+    return this.withTransaction(async database => {
+      const ownerId = database.requireOwnerId();
+      const sheetRow = await database.sheets.findById(sheetId, ownerId);
+      if (!sheetRow) return undefined;
+      const result = await mutation(database);
+      if (result === undefined) return undefined;
+      const lines = await database.lines.findForSheet(sheetRow.id);
+      const sheet = LogSheetsRepository.toLogbook([], [sheetRow], [], lines).sheets[0];
+      await database.sheets.updateMetrics(sheet, sheet.lines, ownerId, await database.motionStationaryThresholdNm());
+      return result;
     });
   }
 

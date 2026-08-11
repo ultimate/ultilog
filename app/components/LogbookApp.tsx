@@ -39,6 +39,9 @@ import {
   persistBoat,
   persistCrewMember,
   persistSheet,
+  persistLogLine,
+  deleteLogLine as persistDeleteLogLine,
+  reorderLogLines,
   routeFromPathname,
 } from "./logbook/persistence";
 import {
@@ -344,13 +347,15 @@ export function LogbookApp({
     | { kind: "crew"; entity: PersistedLogbook["crewMembers"][number]; isNew?: boolean }
     | { kind: "sheet"; entity: LogSheet; isNew?: boolean }
     | { kind: "sheet"; id: string }
+    | { kind: "line"; sheetId: string; entity: LogLine; isNew: boolean; lineIds: string[] }
+    | { kind: "line-deletion"; sheetId: string; id: string }
     | { kind: "deletion"; entityKind: "boat" | "crew" | "sheet"; id: string };
 
   async function saveLogbookNow(nextLogbook: PersistedLogbook, mutation: FocusedMutation) {
     logbookRef.current = nextLogbook;
     setLogbook(nextLogbook);
     setSaveError(null);
-    const id = mutation.kind === "deletion" || "id" in mutation ? mutation.id : mutation.entity.id;
+    const id = mutation.kind === "line" || mutation.kind === "line-deletion" ? mutation.sheetId : mutation.kind === "deletion" || "id" in mutation ? mutation.id : mutation.entity.id;
     const key = `${mutation.kind === "deletion" ? mutation.entityKind : mutation.kind}:${id}`;
     const sequence = ++mutationSequenceRef.current;
     pendingMutationsRef.current.set(key, sequence);
@@ -363,6 +368,8 @@ export function LogbookApp({
     const request = previousRequest.catch(() => undefined).then(async () => {
       response = await (mutation.kind === "boat" ? persistBoat(mutation.entity, mutation.isNew)
         : mutation.kind === "crew" ? persistCrewMember(mutation.entity, mutation.isNew)
+        : mutation.kind === "line" ? (async () => { const saved = await persistLogLine(mutation.sheetId, mutation.entity, mutation.isNew); return saved.ok ? reorderLogLines(mutation.sheetId, mutation.lineIds) : saved; })()
+        : mutation.kind === "line-deletion" ? persistDeleteLogLine(mutation.sheetId, mutation.id)
         : mutation.kind === "sheet" ? persistSheet("entity" in mutation ? mutation.entity : nextLogbook.sheets.find((sheet) => sheet.id === mutation.id)!)
         : deleteLogbookEntity(mutation.entityKind, mutation.id)).catch(() => undefined);
     });
@@ -1197,7 +1204,8 @@ export function LogbookApp({
         return withCalculatedSheetMetrics({ ...sheet, lines: sortLogLines(lines) }, preferences.motionStationaryThresholdNm);
       }),
     };
-    if (!(await saveLogbookNow(nextLogbook, { kind: "sheet", entity: nextLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)! }))) return;
+    const nextSheet = nextLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)!;
+    if (!(await saveLogbookNow(nextLogbook, { kind: "line", sheetId: activeSheet.id, entity: line, isNew: editingLineId === null, lineIds: nextSheet.lines.map(candidate => candidate.id) }))) return;
     setLineForm(lineDefaults);
     setEditingLineId(null);
     setShowAddLine(false);
@@ -1315,7 +1323,7 @@ export function LogbookApp({
           ? withCalculatedSheetMetrics({ ...sheet, lines: sheet.lines.filter((line) => line.id !== lineIdToDelete) }, preferences.motionStationaryThresholdNm)
           : sheet,
       ),
-    }, { kind: "sheet", id: activeSheet.id });
+    }, { kind: "line-deletion", sheetId: activeSheet.id, id: lineIdToDelete });
   }
 
   function cancelLineEdit() {

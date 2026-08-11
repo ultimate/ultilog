@@ -43,7 +43,7 @@ function validateCrew(v: unknown, path: string, sheet = false) {
 
 const lineStringFields = ["time", "position", "weather", "weatherRemark", "temperatureUnit", "windDirection", "windUnit", "seaUnit", "tideUnit", "moon", "sailNote", "motorNote", "remarks"];
 const lineNumberFields = ["latitude", "longitude", "temperature", "barometer", "windStrength", "waves", "tide", "compassCourse", "deviation", "magneticCourse", "variation", "trueCourse", "windDrift", "courseThroughWater", "currentDrift", "courseOverGround", "speedKn", "logNm", "sailMiles", "motorMiles", "motorHours"];
-function validateLine(v: unknown, path: string) {
+export function validateLine(v: unknown, path = "line") {
   assert(record(v) && lineStringFields.every(k => string(v[k])) && lineNumberFields.every(k => finite(v[k])) && optional(v.engineHours, numberRecord), `${path} is malformed.`);
 }
 

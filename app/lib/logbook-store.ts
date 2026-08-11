@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import type { Boat, CrewMember, LogSheet, PersistedLogbook } from "../models/logbook";
+import type { Boat, CrewMember, LogLine, LogSheet, PersistedLogbook } from "../models/logbook";
 import { LogbookDatabase } from "./db/logbook-database";
 import { PostgresLogbookDatabase } from "./db/postgres-logbook-database";
 import { SqliteLogbookDatabase } from "./db/sqlite-logbook-database";
@@ -52,6 +52,10 @@ export const upsertCrewMember = (crew: CrewMember, userId: string) => mutate(use
 export const deleteCrewMember = (id: string, userId: string) => mutate(userId, db => db.deleteCrewMember(id));
 export const upsertLogSheet = (sheet: LogSheet, userId: string) => mutate(userId, db => db.upsertLogSheet(sheet));
 export const deleteLogSheet = (id: string, userId: string) => mutate(userId, db => db.deleteLogSheet(id));
+export const createLogLine = (sheetId: string, line: LogLine, userId: string) => mutate(userId, db => db.createLogLine(sheetId, line));
+export const updateLogLine = (sheetId: string, lineId: string, line: LogLine, userId: string) => mutate(userId, db => db.updateLogLine(sheetId, lineId, line));
+export const deleteLogLine = (sheetId: string, lineId: string, userId: string) => mutate(userId, db => db.deleteLogLine(sheetId, lineId));
+export const reorderLogLines = (sheetId: string, lineIds: string[], userId: string) => mutate(userId, db => db.reorderLogLines(sheetId, lineIds));
 
 export async function readSharedLogSheet(sheetId: string, isAuthenticated: boolean, ownerId?: string) {
   const { state } = storeState();
