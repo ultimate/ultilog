@@ -258,26 +258,60 @@ dd { margin: 0; }
 }
 
 .open-seamap-marker span {
+  position: relative;
   display: grid;
   place-items: center;
-  width: 1.9rem;
-  height: 1.9rem;
-  border: 3px solid white;
-  border-radius: 50%;
-  background: var(--accent);
+  width: 1.5rem;
+  height: 1.5rem;
   color: #102033;
-  font-size: 0.78rem;
+  font-size: 0.68rem;
   font-weight: 900;
-  box-shadow: 0 8px 20px rgba(16, 32, 51, 0.22);
+  filter: drop-shadow(0 5px 8px rgba(16, 32, 51, 0.22));
+  --marker-fill: var(--accent);
+}
+
+.open-seamap-marker span::before,
+.open-seamap-marker span::after {
+  position: absolute;
+  content: "";
+  transform: rotate(var(--marker-course, 0deg));
+}
+
+.open-seamap-marker span::before {
+  inset: 0;
+  z-index: -2;
+  background: white;
+}
+
+.open-seamap-marker span::after {
+  inset: 2px;
+  z-index: -1;
+  background: var(--marker-fill);
+}
+
+.open-seamap-marker-circle span::before,
+.open-seamap-marker-circle span::after {
+  border-radius: 50%;
+}
+
+.open-seamap-marker-arrow span::before,
+.open-seamap-marker-arrow span::after {
+  clip-path: polygon(50% 0, 100% 72%, 72% 100%, 28% 100%, 0 72%);
+}
+
+.open-seamap-marker span b {
+  position: relative;
+  z-index: 1;
+  font: inherit;
 }
 
 .open-seamap-marker-start span {
-  background: var(--success);
+  --marker-fill: var(--success);
   color: white;
 }
 
 .open-seamap-marker-end span {
-  background: var(--primary);
+  --marker-fill: var(--primary);
   color: white;
 }
 
