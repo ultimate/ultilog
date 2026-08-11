@@ -8,9 +8,10 @@ export class CrewRepository {
 
   async findProfiles(ownerId: string) {
     return (await this.db.query<CrewMemberRow>(`
-      select id as crew_member_id, name, nationality, role, address, certificate, date_of_birth, place_of_birth, gender, identity_document_type, identity_document_number, identity_document_issuing_date, identity_document_expiry_date, is_primary, image_data, image_mime_type, image_width, image_height
+      select crew_members.id as crew_member_id, crew_members.image_id, name, nationality, role, address, certificate, date_of_birth, place_of_birth, gender, identity_document_type, identity_document_number, identity_document_issuing_date, identity_document_expiry_date, is_primary, stored_images.data as image_data, stored_images.mime_type as image_mime_type, stored_images.width as image_width, stored_images.height as image_height
       from crew_members
-      where owner_id = ${this.db.placeholder(1)}
+      left join stored_images on stored_images.id = crew_members.image_id and stored_images.owner_id = crew_members.owner_id
+      where crew_members.owner_id = ${this.db.placeholder(1)}
       order by is_primary desc
     `, [ownerId])).rows.map((row) => this.decryptCrewRow(row, ownerId)).sort((left, right) => Number(right.is_primary ?? 0) - Number(left.is_primary ?? 0) || left.name.localeCompare(right.name));
   }
@@ -45,10 +46,11 @@ export class CrewRepository {
         crew_members.identity_document_issuing_date,
         crew_members.identity_document_expiry_date,
         crew_members.is_primary,
-        crew_members.image_data,
-        crew_members.image_mime_type,
-        crew_members.image_width,
-        crew_members.image_height,
+        crew_members.image_id,
+        stored_images.data as image_data,
+        stored_images.mime_type as image_mime_type,
+        stored_images.width as image_width,
+        stored_images.height as image_height,
         sheet_crew_members.embarkation_datetime,
         sheet_crew_members.embarkation_position,
         sheet_crew_members.disembarkation_datetime,
@@ -56,6 +58,7 @@ export class CrewRepository {
       from sheet_crew_members
       join log_sheets on log_sheets.id = sheet_crew_members.sheet_id
       join crew_members on crew_members.id = sheet_crew_members.crew_member_id
+      left join stored_images on stored_images.id = crew_members.image_id and stored_images.owner_id = crew_members.owner_id
       where log_sheets.owner_id = ${this.db.placeholder(1)}
       order by sheet_crew_members.sheet_id, sheet_crew_members.sort_order
     `, [ownerId])).rows.map((row) => this.decryptCrewRow(row, ownerId));
@@ -81,16 +84,18 @@ export class CrewRepository {
         crew_members.identity_document_issuing_date,
         crew_members.identity_document_expiry_date,
         crew_members.is_primary,
-        crew_members.image_data,
-        crew_members.image_mime_type,
-        crew_members.image_width,
-        crew_members.image_height,
+        crew_members.image_id,
+        stored_images.data as image_data,
+        stored_images.mime_type as image_mime_type,
+        stored_images.width as image_width,
+        stored_images.height as image_height,
         sheet_crew_members.embarkation_datetime,
         sheet_crew_members.embarkation_position,
         sheet_crew_members.disembarkation_datetime,
         sheet_crew_members.disembarkation_position
       from sheet_crew_members
       join crew_members on crew_members.id = sheet_crew_members.crew_member_id
+      left join stored_images on stored_images.id = crew_members.image_id and stored_images.owner_id = crew_members.owner_id
       where sheet_crew_members.sheet_id = ${this.db.placeholder(1)}
       order by sheet_crew_members.sort_order
     `, [sheetScopedId])).rows.map((row) => this.decryptCrewRow(row, ownerId));
@@ -104,7 +109,7 @@ export class CrewRepository {
   async insertProfile(crew: CrewMember, ownerId: string) {
     const crewMemberId = scopedId(ownerId, crew.id);
     await this.db.query(
-      `insert into crew_members (id, name, nationality, role, address, certificate, is_primary, image_data, image_mime_type, image_width, image_height, owner_id, date_of_birth, place_of_birth, gender, identity_document_type, identity_document_number, identity_document_issuing_date, identity_document_expiry_date) values (${this.values(19)}) on conflict(id) do update set name = excluded.name, nationality = excluded.nationality, role = excluded.role, address = excluded.address, certificate = excluded.certificate, date_of_birth = excluded.date_of_birth, place_of_birth = excluded.place_of_birth, gender = excluded.gender, identity_document_type = excluded.identity_document_type, identity_document_number = excluded.identity_document_number, identity_document_issuing_date = excluded.identity_document_issuing_date, identity_document_expiry_date = excluded.identity_document_expiry_date, is_primary = excluded.is_primary, image_data = excluded.image_data, image_mime_type = excluded.image_mime_type, image_width = excluded.image_width, image_height = excluded.image_height`,
+      `insert into crew_members (id, name, nationality, role, address, certificate, is_primary, image_id, owner_id, date_of_birth, place_of_birth, gender, identity_document_type, identity_document_number, identity_document_issuing_date, identity_document_expiry_date) values (${this.values(16)}) on conflict(id) do update set name = excluded.name, nationality = excluded.nationality, role = excluded.role, address = excluded.address, certificate = excluded.certificate, date_of_birth = excluded.date_of_birth, place_of_birth = excluded.place_of_birth, gender = excluded.gender, identity_document_type = excluded.identity_document_type, identity_document_number = excluded.identity_document_number, identity_document_issuing_date = excluded.identity_document_issuing_date, identity_document_expiry_date = excluded.identity_document_expiry_date, is_primary = excluded.is_primary, image_id = excluded.image_id`,
       [
         crewMemberId,
         encryptCrewField(ownerId, crewMemberId, "name", this.plainCrewField(ownerId, crewMemberId, "name", crew.name)),
@@ -113,7 +118,7 @@ export class CrewRepository {
         encryptCrewField(ownerId, crewMemberId, "address", this.plainCrewField(ownerId, crewMemberId, "address", crew.address ?? "")),
         encryptCrewField(ownerId, crewMemberId, "certificate", this.plainCrewField(ownerId, crewMemberId, "certificate", crew.certificate ?? "")),
         crew.isPrimary ? 1 : 0,
-        ...this.encryptedImageValues(ownerId, crewMemberId, crew.image),
+        crew.imageId ?? crew.image?.id ?? null,
         ownerId,
         ...([ ["date_of_birth", crew.dateOfBirth], ["place_of_birth", crew.placeOfBirth], ["gender", crew.gender], ["identity_document_type", crew.identityDocumentType], ["identity_document_number", crew.identityDocumentNumber], ["identity_document_issuing_date", crew.identityDocumentIssuingDate], ["identity_document_expiry_date", crew.identityDocumentExpiryDate] ] as const).map(([field, value]) => encryptCrewField(ownerId, crewMemberId, field, this.plainCrewField(ownerId, crewMemberId, field, value ?? ""))),
       ],

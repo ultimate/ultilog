@@ -56,6 +56,9 @@ export const createLogLine = (sheetId: string, line: LogLine, userId: string) =>
 export const updateLogLine = (sheetId: string, lineId: string, line: LogLine, userId: string) => mutate(userId, db => db.updateLogLine(sheetId, lineId, line));
 export const deleteLogLine = (sheetId: string, lineId: string, userId: string) => mutate(userId, db => db.deleteLogLine(sheetId, lineId));
 export const reorderLogLines = (sheetId: string, lineIds: string[], userId: string) => mutate(userId, db => db.reorderLogLines(sheetId, lineIds));
+export const createStoredImage = (id: string, image: import("../models/stored-image").StoredImage, userId: string) => mutate(userId, db => db.createStoredImage(id, image));
+export const readStoredImage = (id: string, userId: string) => mutate(userId, db => db.readStoredImage(id));
+export const deleteStoredImage = (id: string, userId: string) => mutate(userId, db => db.deleteStoredImage(id));
 
 export async function readSharedLogSheet(sheetId: string, isAuthenticated: boolean, ownerId?: string) {
   const { state } = storeState();

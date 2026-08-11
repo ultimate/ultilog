@@ -16,6 +16,7 @@ export type CrewMember = {
   identityDocumentExpiryDate?: string;
   isPrimary?: boolean;
   image?: StoredImage;
+  imageId?: string;
 };
 
 export type SheetCrewMember = CrewMember & {

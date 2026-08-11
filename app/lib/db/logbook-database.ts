@@ -4,6 +4,7 @@ import { CrewRepository } from "../repositories/crew-repository";
 import { LogLinesRepository } from "../repositories/log-lines-repository";
 import { scopedId } from "../repositories/boats-repository";
 import { LogSheetsRepository } from "../repositories/log-sheets-repository";
+import { StoredImagesRepository } from "../repositories/stored-images-repository";
 import { backfillCrewMemberEncryption } from "./encryption-backfill";
 import { createHash } from "node:crypto";
 import { referencedBoatDeletionError, sheetBoatMutationError } from "../../domain/boats/boat-policy";
@@ -23,6 +24,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
   protected readonly sheets = new LogSheetsRepository(this);
   protected readonly crew = new CrewRepository(this);
   protected readonly lines = new LogLinesRepository(this);
+  protected readonly images = new StoredImagesRepository(this);
 
   abstract placeholder(index: number): string;
   abstract query<Row>(sql: string, values?: unknown[]): Promise<QueryResult<Row>>;
@@ -72,11 +74,30 @@ export abstract class LogbookDatabase implements QueryableDatabase {
     return logbook;
   }
 
+  async createStoredImage(id: string, image: import("../../models/stored-image").StoredImage) {
+    await this.ensureSchemaAndBackfill();
+    return this.images.create(id, this.requireOwnerId(), image);
+  }
+
+  async readStoredImage(id: string) {
+    await this.ensureSchemaAndBackfill();
+    return this.images.findById(id, this.requireOwnerId());
+  }
+
+  async deleteStoredImage(id: string) {
+    await this.ensureSchemaAndBackfill();
+    return this.images.delete(id, this.requireOwnerId());
+  }
+
   async upsertBoat(boat: Boat) {
     await this.ensureSchemaAndBackfill();
     return this.withTransaction(async (database) => {
       const ownerId = database.requireOwnerId();
+      const previousImageId = (await database.boats.findById(boat.id, ownerId))?.image_id ?? undefined;
+      const nextImageId = boat.imageId ?? boat.image?.id;
+      await database.images.assertOwned(nextImageId, ownerId);
       await database.boats.upsert(boat, ownerId);
+      if (previousImageId !== nextImageId) await database.images.deleteIfOrphaned(previousImageId, ownerId);
       const row = await database.boats.findById(boat.id, ownerId);
       return row ? LogSheetsRepository.toLogbook([row], [], [], []).boats[0] : undefined;
     });
@@ -89,9 +110,11 @@ export abstract class LogbookDatabase implements QueryableDatabase {
       const row = await database.boats.findById(id, ownerId);
       if (!row) return undefined;
       const entity = LogSheetsRepository.toLogbook([row], [], [], []).boats[0];
+      const imageId = row.image_id ?? undefined;
       const policyError = referencedBoatDeletionError(entity, await database.boats.isReferenced(id, ownerId));
       if (policyError) throw Object.assign(new Error(policyError.message), { code: policyError.code });
       await database.boats.delete(id, ownerId);
+      await database.images.deleteIfOrphaned(imageId, ownerId);
       return entity;
     });
   }
@@ -100,7 +123,11 @@ export abstract class LogbookDatabase implements QueryableDatabase {
     await this.ensureSchemaAndBackfill();
     return this.withTransaction(async (database) => {
       const ownerId = database.requireOwnerId();
+      const previousImageId = (await database.crew.findProfile(crew.id, ownerId))?.image_id ?? undefined;
+      const nextImageId = crew.imageId ?? crew.image?.id;
+      await database.images.assertOwned(nextImageId, ownerId);
       await database.crew.upsert(crew, ownerId);
+      if (previousImageId !== nextImageId) await database.images.deleteIfOrphaned(previousImageId, ownerId);
       const row = await database.crew.findProfile(crew.id, ownerId);
       return row ? LogSheetsRepository.toLogbook([], [], [], [], [row]).crewMembers[0] : undefined;
     });
@@ -113,7 +140,9 @@ export abstract class LogbookDatabase implements QueryableDatabase {
       const row = await database.crew.findProfile(id, ownerId);
       if (!row) return undefined;
       const entity = LogSheetsRepository.toLogbook([], [], [], [], [row]).crewMembers[0];
+      const imageId = row.image_id ?? undefined;
       await database.crew.delete(id, ownerId);
+      await database.images.deleteIfOrphaned(imageId, ownerId);
       return entity;
     });
   }
@@ -124,6 +153,10 @@ export abstract class LogbookDatabase implements QueryableDatabase {
       const ownerId = database.requireOwnerId();
       const boatRow = await database.boats.findById(sheet.boatId, ownerId);
       const prior = await database.sheets.findById(sheet.id, ownerId);
+      const previousImageId = prior?.image_id ?? undefined;
+      const nextImageId = sheet.imageId ?? sheet.image?.id;
+      await database.images.assertOwned(nextImageId, ownerId);
+      for (const member of sheet.crew) await database.images.assertOwned(member.imageId ?? member.image?.id, ownerId);
       const policyError = sheetBoatMutationError(boatRow ? { name: boatRow.name, archived: Boolean(boatRow.archived) } : undefined, Boolean(prior && prior.boat_id === scopedId(ownerId, sheet.boatId)));
       if (policyError) throw Object.assign(new Error(policyError.message), { code: policyError.code });
       if (!boatRow) throw new Error("Boat policy failed to reject a missing boat.");
@@ -131,6 +164,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
       await database.crew.replaceAssignments(sheet.id, sheet.crew, ownerId);
       await database.lines.replaceForSheet(sheet.id, sheet.lines, ownerId);
       await database.sheets.updateMetrics(sheet, sheet.lines, ownerId, await database.motionStationaryThresholdNm());
+      if (previousImageId !== nextImageId) await database.images.deleteIfOrphaned(previousImageId, ownerId);
       const [row, crew, lines] = await Promise.all([database.sheets.findById(sheet.id, ownerId), database.crew.findForSheet(scopedId(ownerId, sheet.id), ownerId), database.lines.findForSheet(scopedId(ownerId, sheet.id))]);
       return row ? LogSheetsRepository.toLogbook([], [row], crew, lines).sheets[0] : undefined;
     });
@@ -144,7 +178,9 @@ export abstract class LogbookDatabase implements QueryableDatabase {
       if (!row) return undefined;
       const [crew, lines] = await Promise.all([database.crew.findForSheet(row.id, ownerId), database.lines.findForSheet(row.id)]);
       const entity = LogSheetsRepository.toLogbook([], [row], crew, lines).sheets[0];
+      const imageId = row.image_id ?? undefined;
       await database.sheets.delete(id, ownerId);
+      await database.images.deleteIfOrphaned(imageId, ownerId);
       return entity;
     });
   }

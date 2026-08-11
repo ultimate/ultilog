@@ -3,13 +3,14 @@ import type { Boat, CrewMember, LogLine, LogSheet, LogSheetSharePrivacy, SheetCr
 export type StoredLogSheet = Omit<LogSheet, "crew" | "lines">;
 
 export type ImageRowFields = {
+  image_id?: string | null;
   image_data?: string | null;
   image_mime_type?: string | null;
   image_width?: number | null;
   image_height?: number | null;
 };
 
-export type BoatRow = Omit<Boat, "archived" | "flagState" | "homePort" | "yachtData" | "deviationTable" | "windDriftTable" | "image" | "logfactor" | "engines"> & ImageRowFields & {
+export type BoatRow = Omit<Boat, "archived" | "flagState" | "homePort" | "yachtData" | "deviationTable" | "windDriftTable" | "image" | "imageId" | "logfactor" | "engines"> & ImageRowFields & {
   engines?: Boat["engines"];
   archived?: number | boolean | null;
   flag_state: string;
@@ -53,7 +54,7 @@ export type LogSheetRow = ImageRowFields & {
   owner_id?: string;
 };
 
-export type CrewMemberRow = Omit<SheetCrewMember, "embarkationDateTime" | "embarkationPosition" | "disembarkationDateTime" | "disembarkationPosition" | "image"> & ImageRowFields & {
+export type CrewMemberRow = Omit<SheetCrewMember, "embarkationDateTime" | "embarkationPosition" | "disembarkationDateTime" | "disembarkationPosition" | "image" | "imageId"> & ImageRowFields & {
   date_of_birth?: string;
   place_of_birth?: string;
   gender?: string;

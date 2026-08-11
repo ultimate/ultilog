@@ -104,4 +104,5 @@ export type Boat = {
   windDriftTable?: WindDriftTable;
   engines?: BoatEngine[];
   image?: StoredImage;
+  imageId?: string;
 };
