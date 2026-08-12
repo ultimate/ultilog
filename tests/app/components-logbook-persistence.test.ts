@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { deleteLogbookEntity, normalizeLogbookIds, persistBoat, persistCrewMember, persistLogLine, persistSheet } from "../../app/components/logbook/persistence";
+import { deleteLogbookEntity, normalizeLogbookIds, persistBoat, persistCrewMember, persistLogLine, persistSheet, uploadStoredImage } from "../../app/components/logbook/persistence";
+import * as importOperations from "../../app/components/logbook/import";
 import type { PersistedLogbook } from "../../app/models/logbook";
 import { sampleLogSheets } from "../fixtures/logbook";
 
@@ -8,6 +9,25 @@ const image = { data: "base64-image", mimeType: "image/png", width: 64, height: 
 vi.stubGlobal("crypto", { randomUUID: vi.fn() });
 
 describe("logbook persistence", () => {
+  it("never invokes full replacement for routine boat, crew, sheet, assignment, image, or line mutations", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: "image-1" }), { status: 200, headers: { "Content-Type": "application/json" } }));
+    vi.stubGlobal("fetch", fetchMock);
+    const replacementSpy = vi.spyOn(importOperations, "replaceEntireLogbook");
+    const boat = { id: "boat-1", name: "Solo", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [] } as PersistedLogbook["boats"][number];
+    const crew = { id: "crew-1", name: "Ada", nationality: "", role: "Crew" } as PersistedLogbook["crewMembers"][number];
+    const sheet = { ...sampleLogSheets[0], id: "sheet-1", boatId: boat.id, crew: [{ ...crew, embarkationDateTime: "", embarkationPosition: "", disembarkationDateTime: "", disembarkationPosition: "" }] };
+
+    await persistBoat(boat);
+    await persistCrewMember(crew);
+    await persistSheet(sheet); // Includes routine crew-assignment changes.
+    await persistLogLine(sheet.id, sheet.lines[0], false);
+    await uploadStoredImage({ data: "iVBORw0KGgo=", mimeType: "image/png", width: 1, height: 1 });
+
+    expect(replacementSpy).not.toHaveBeenCalled();
+    expect(fetchMock.mock.calls.map(([url]) => url)).not.toContain("/api/logbook/import");
+    expect(fetchMock.mock.calls.some(([url]) => url === "/api/logbook")).toBe(false);
+  });
+
   it("preserves images while normalizing boat, crew, and sheet identifiers", () => {
     vi.mocked(crypto.randomUUID)
       .mockReturnValueOnce("11111111-1111-4111-8111-111111111111")

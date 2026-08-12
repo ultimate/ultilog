@@ -117,3 +117,16 @@ Keep the app organized by responsibility so feature work does not collect in a s
 - `npm run start` - run the production server after building.
 - `npm run lint` - run ESLint.
 - `npm run typecheck` - validate TypeScript types.
+
+### Destructive logbook import
+
+`PUT /api/logbook/import` exists for controlled backups, migrations, and test
+seeding. It **replaces the authenticated user's entire logbook**: omitted boats,
+crew, sheets, assignments, lines, and image references are deleted. Routine UI
+persistence must use the resource-specific endpoints under `/api/logbook/*`.
+
+The endpoint requires an authenticated session and the explicit confirmation
+header `X-Ultilog-Confirm-Replace: replace-my-entire-logbook`. `PUT /api/logbook`
+is intentionally not supported. Callers should obtain direct user confirmation
+immediately before import; background saves, scanners, logout handlers, and page
+lifecycle handlers must never invoke it.
