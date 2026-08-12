@@ -34,7 +34,7 @@ describe("demo sandboxes", () => {
 
     const firstLogbook = await readLogbook(firstUser!.id);
     const secondLogbook = await readLogbook(secondUser!.id);
-    expect(firstLogbook).toEqual(secondLogbook);
+    expect(withoutConcurrencyMetadata(firstLogbook)).toEqual(withoutConcurrencyMetadata(secondLogbook));
     await writeLogbook({ ...firstLogbook, sheets: firstLogbook.sheets.slice(1) }, firstUser!.id);
 
     await expect(readLogbook(firstUser!.id)).resolves.toMatchObject({ sheets: { length: 7 } });
@@ -123,3 +123,9 @@ describe("demo sandboxes", () => {
     expect((await db.query<{ id: string }>("select id from users where id in (?, ?)", [first!.id, second!.id])).rows).toHaveLength(0);
   });
 });
+
+function withoutConcurrencyMetadata(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(withoutConcurrencyMetadata);
+  if (!value || typeof value !== "object") return value;
+  return Object.fromEntries(Object.entries(value).filter(([key]) => !["revision", "createdAt", "updatedAt"].includes(key)).map(([key, item]) => [key, withoutConcurrencyMetadata(item)]));
+}
