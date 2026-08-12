@@ -35,7 +35,10 @@ import {
   createId,
   modulePath,
   normalizeLogbookIds,
-  persistLogbook,
+  deleteLogbookEntity,
+  persistBoat,
+  persistCrewMember,
+  persistSheet,
   routeFromPathname,
 } from "./logbook/persistence";
 import {
@@ -51,8 +54,10 @@ import {
 import { ManagerShell } from "./managers/ManagerShell";
 import { courseConversionColumns } from "../domain/nautical/course-conversion";
 import { calculateLogSheetMetrics, formatLogSheetDuration } from "../domain/logbook/sheet-metrics";
+import { calculateLogbookDayStatistics } from "../domain/logbook/logbook-statistics";
 import { activeBoats } from "../domain/boats/boat-policy";
 import { lineFormToLogLine } from "../domain/log-lines/log-line-form";
+import { calculateSmartNavigationFields, calculateTrackedMotionFields, previousSheetLogMiles, type TimedCoordinate } from "../domain/log-lines/smart-line";
 import type { MeteoLogLineAutofill, MeteoSourceRemarkPart } from "../domain/meteo";
 import { ModuleTabs, type ActiveView } from "../templates/ModuleTabs";
 import { useI18n, type TranslationKey } from "../lib/i18n";
@@ -204,7 +209,7 @@ export function LogbookApp({
     useState<SheetInlineField | null>(null);
   const [sheetInlineDraft, setSheetInlineDraft] = useState("");
   const [sheetInlineTimezoneDraft, setSheetInlineTimezoneDraft] = useState(timezoneOffsetFromStamp(""));
-  const [editingLineIndex, setEditingLineIndex] = useState<number | null>(null);
+  const [editingLineId, setEditingLineId] = useState<string | null>(null);
   const [selectedBoatId, setSelectedBoatId] = useState(
     defaultLogbook.boats[0]?.id ?? "",
   );
@@ -220,6 +225,7 @@ export function LogbookApp({
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [smartLineStatus, setSmartLineStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [smartMotionStatus, setSmartMotionStatus] = useState<"idle" | "tracking">("idle");
   const [nameForm, setNameForm] = useState({
     name: userName ?? "",
     currentPassword: "",
@@ -246,7 +252,10 @@ export function LogbookApp({
   const [adminError, setAdminError] = useState<string | null>(null);
   const [groupDrafts, setGroupDrafts] = useState<Record<string, string>>({});
   const logbookRef = useRef(logbook);
-  const hasUnsavedLogbookChangesRef = useRef(false);
+  const pendingMutationsRef = useRef(new Map<string, number>());
+  const failedMutationsRef = useRef(new Map<string, number>());
+  const mutationQueuesRef = useRef(new Map<string, Promise<void>>());
+  const mutationSequenceRef = useRef(0);
 
   function pushAppPath(path: string) {
     if (path === routePath) return;
@@ -299,9 +308,6 @@ export function LogbookApp({
   async function logout() {
     setSaveError(null);
     setIsLoggingOut(true);
-    if (hasUnsavedLogbookChangesRef.current) {
-      await persistLogbook(logbookRef.current).catch(() => undefined);
-    }
     await signOut({ redirect: false });
     window.location.assign("/login");
   }
@@ -333,18 +339,48 @@ export function LogbookApp({
     [activeSheetId],
   );
 
-  async function saveLogbookNow(nextLogbook: PersistedLogbook) {
+  type FocusedMutation =
+    | { kind: "boat"; entity: Boat; isNew?: boolean }
+    | { kind: "crew"; entity: PersistedLogbook["crewMembers"][number]; isNew?: boolean }
+    | { kind: "sheet"; entity: LogSheet; isNew?: boolean }
+    | { kind: "sheet"; id: string }
+    | { kind: "deletion"; entityKind: "boat" | "crew" | "sheet"; id: string };
+
+  async function saveLogbookNow(nextLogbook: PersistedLogbook, mutation: FocusedMutation) {
     logbookRef.current = nextLogbook;
-    hasUnsavedLogbookChangesRef.current = true;
     setLogbook(nextLogbook);
     setSaveError(null);
+    const id = mutation.kind === "deletion" || "id" in mutation ? mutation.id : mutation.entity.id;
+    const key = `${mutation.kind === "deletion" ? mutation.entityKind : mutation.kind}:${id}`;
+    const sequence = ++mutationSequenceRef.current;
+    pendingMutationsRef.current.set(key, sequence);
+    failedMutationsRef.current.delete(key);
     if (!isBackendReady) return true;
-    const response = await persistLogbook(nextLogbook).catch(() => undefined);
+    // Sheet saves replace their child collections, so requests for the same entity
+    // must not overlap. The queue also preserves the order of rapid optimistic edits.
+    const previousRequest = mutationQueuesRef.current.get(key) ?? Promise.resolve();
+    let response: Response | undefined;
+    const request = previousRequest.catch(() => undefined).then(async () => {
+      response = await (mutation.kind === "boat" ? persistBoat(mutation.entity, mutation.isNew)
+        : mutation.kind === "crew" ? persistCrewMember(mutation.entity, mutation.isNew)
+        : mutation.kind === "sheet" ? persistSheet("entity" in mutation ? mutation.entity : nextLogbook.sheets.find((sheet) => sheet.id === mutation.id)!)
+        : deleteLogbookEntity(mutation.entityKind, mutation.id)).catch(() => undefined);
+    });
+    mutationQueuesRef.current.set(key, request);
+    await request;
+    if (mutationQueuesRef.current.get(key) === request) mutationQueuesRef.current.delete(key);
+    if (!response?.ok) {
+      failedMutationsRef.current.set(key, sequence);
+      setSaveError(t("logbook.saveError"));
+    }
+    // An older response must never clear or mark a later edit of the same entity.
+    if (pendingMutationsRef.current.get(key) !== sequence) return response?.ok ?? false;
+    pendingMutationsRef.current.delete(key);
     if (response?.ok) {
-      hasUnsavedLogbookChangesRef.current = false;
+      failedMutationsRef.current.delete(key);
+      if (failedMutationsRef.current.size === 0) setSaveError(null);
       return true;
     }
-    setSaveError(t("logbook.saveError"));
     return false;
   }
 
@@ -396,7 +432,9 @@ export function LogbookApp({
       const nextBoat = routedBoat ?? fallbackBoat;
 
       logbookRef.current = normalizedLogbook;
-      hasUnsavedLogbookChangesRef.current = false;
+      pendingMutationsRef.current.clear();
+      failedMutationsRef.current.clear();
+      mutationQueuesRef.current.clear();
       setLogbook(normalizedLogbook);
       setActiveSheetId(routedSheet?.id ?? "");
       setSheetForm(
@@ -435,7 +473,13 @@ export function LogbookApp({
         window.history.replaceState(null, "", nextRoutePath);
         setRoutePath(nextRoutePath);
       }
-      if (changed) persistLogbook(normalizedLogbook).catch(() => undefined);
+      if (changed) {
+        void Promise.all([
+          ...normalizedLogbook.boats.map((boat) => persistBoat(boat)),
+          ...normalizedLogbook.crewMembers.map((crew) => persistCrewMember(crew)),
+          ...normalizedLogbook.sheets.map((sheet) => persistSheet(sheet)),
+        ]).catch(() => setSaveError(t("logbook.saveError")));
+      }
       setIsBackendReady(true);
     }
     loadLogbook().catch(() => setIsBackendReady(true));
@@ -558,42 +602,6 @@ export function LogbookApp({
     }, 0);
     return () => window.clearTimeout(timeout);
   }, [activeModule, adminUsers.length, loadAdminUsers, userGroups]);
-
-  useEffect(() => {
-    if (!isBackendReady || !hasUnsavedLogbookChangesRef.current) return;
-    const controller = new AbortController();
-    const timeout = window.setTimeout(() => {
-      persistLogbook(logbook, { signal: controller.signal }).catch(
-        () => undefined,
-      ).then((response) => {
-        if (response?.ok) hasUnsavedLogbookChangesRef.current = false;
-      });
-    }, 300);
-    return () => {
-      window.clearTimeout(timeout);
-      controller.abort();
-    };
-  }, [isBackendReady, logbook]);
-
-  useEffect(() => {
-    if (!isBackendReady) return;
-    const saveBeforeLeaving = () => {
-      if (!hasUnsavedLogbookChangesRef.current) return;
-      persistLogbook(logbookRef.current, { keepalive: true }).catch(
-        () => undefined,
-      );
-    };
-    const saveWhenHidden = () => {
-      if (document.visibilityState === "hidden") saveBeforeLeaving();
-    };
-    window.addEventListener("pagehide", saveBeforeLeaving);
-    document.addEventListener("visibilitychange", saveWhenHidden);
-    return () => {
-      window.removeEventListener("pagehide", saveBeforeLeaving);
-      document.removeEventListener("visibilitychange", saveWhenHidden);
-    };
-  }, [isBackendReady]);
-
 
   async function refreshLogbookAfterScan(sheetId: string) {
     const response = await fetch("/api/logbook");
@@ -890,6 +898,7 @@ export function LogbookApp({
     const durationMinutes = sheetsWithMetrics.reduce((sum, item) => sum + (item.metrics.overallDurationMinutes ?? item.metrics.durationMinutes ?? 0), 0);
     const motionDurationMinutes = sheetsWithMetrics.reduce((sum, item) => sum + item.metrics.motionDurationMinutes, 0);
     const motorHours = sheetsWithMetrics.reduce((sum, item) => sum + item.metrics.motorHours, 0);
+    const dayStatistics = calculateLogbookDayStatistics(logbook.sheets, preferences.motionStationaryThresholdNm);
     const timeline = sheetsWithMetrics
       .slice().sort((a, b) => a.sheet.route.departed.localeCompare(b.sheet.route.departed))
       .map((item) => ({ label: monthLabelForSheet(item.sheet), totalNm: item.metrics.totalMiles, sailNm: item.metrics.sailMiles, motorNm: item.metrics.motorMiles, overallMinutes: item.metrics.overallDurationMinutes ?? item.metrics.durationMinutes ?? 0, motionMinutes: item.metrics.motionDurationMinutes, motorMinutes: item.metrics.motorHours * 60 }));
@@ -906,6 +915,7 @@ export function LogbookApp({
       durationMinutes,
       motionDurationMinutes,
       motorHours,
+      ...dayStatistics,
       timeline,
       boatDistribution,
       sheets: logbook.sheets.length,
@@ -956,7 +966,7 @@ export function LogbookApp({
           )
         : [...currentLogbook.boats, boat],
     };
-    if (!(await saveLogbookNow(nextLogbook))) return;
+    if (!(await saveLogbookNow(nextLogbook, { kind: "boat", entity: boat, isNew: !editingBoatId }))) return;
     setBoatForm(defaultBoatForm);
     setEditingBoatId(null);
     setShowBoatManager(false);
@@ -1029,7 +1039,7 @@ export function LogbookApp({
           )
         : [sheet, ...currentLogbook.sheets],
     };
-    if (!(await saveLogbookNow(nextLogbook))) return;
+    if (!(await saveLogbookNow(nextLogbook, { kind: "sheet", entity: sheet, isNew: !editingSheetId }))) return;
     setActiveSheetId(id);
     setEditingSheetId(null);
     setSheetForm(sheetToForm(sheet));
@@ -1048,7 +1058,7 @@ export function LogbookApp({
     const nextBoats = logbookRef.current.boats.filter(
       (boat) => boat.id !== selectedBoat.id,
     );
-    if (!(await saveLogbookNow({ ...logbookRef.current, boats: nextBoats })))
+    if (!(await saveLogbookNow({ ...logbookRef.current, boats: nextBoats }, { kind: "deletion", entityKind: "boat", id: selectedBoat.id })))
       return;
     setSelectedBoatId(nextBoats[0]?.id ?? "");
     setEditingBoatId(nextBoats[0]?.id ?? null);
@@ -1059,7 +1069,7 @@ export function LogbookApp({
     const nextBoats = logbookRef.current.boats.map((boat) =>
       boat.id === selectedBoat.id ? { ...boat, archived } : boat,
     );
-    await saveLogbookNow({ ...logbookRef.current, boats: nextBoats });
+    await saveLogbookNow({ ...logbookRef.current, boats: nextBoats }, { kind: "boat", entity: nextBoats.find((boat) => boat.id === selectedBoat.id)! });
   }
 
   function showSelectedBoatLogsheets() {
@@ -1095,7 +1105,7 @@ export function LogbookApp({
         sheet.id === activeSheet.id ? { ...sheet, share } : sheet,
       ),
     };
-    await saveLogbookNow(nextLogbook);
+    await saveLogbookNow(nextLogbook, { kind: "sheet", entity: nextLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)! });
   }
 
   async function updateActiveSheetStatus(status: LogSheet["status"]) {
@@ -1106,7 +1116,7 @@ export function LogbookApp({
         sheet.id === activeSheet.id ? { ...sheet, status } : sheet,
       ),
     };
-    await saveLogbookNow(nextLogbook);
+    await saveLogbookNow(nextLogbook, { kind: "sheet", entity: nextLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)! });
   }
   function startEditingSheetField(
     field: SheetInlineField,
@@ -1155,7 +1165,7 @@ export function LogbookApp({
     };
     setEditingSheetField(null);
     setSheetInlineDraft("");
-    await saveLogbookNow(nextLogbook);
+    await saveLogbookNow(nextLogbook, { kind: "sheet", entity: nextLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)! });
   }
 
   function cancelSheetInlineEdit() {
@@ -1179,17 +1189,17 @@ export function LogbookApp({
       sheets: currentLogbook.sheets.map((sheet) => {
         if (sheet.id !== activeSheet.id) return sheet;
         const lines =
-          editingLineIndex === null
+          editingLineId === null
             ? [...sheet.lines, line]
-            : sheet.lines.map((candidate, index) =>
-                index === editingLineIndex ? line : candidate,
+            : sheet.lines.map((candidate) =>
+                candidate.id === editingLineId ? line : candidate,
               );
         return withCalculatedSheetMetrics({ ...sheet, lines: sortLogLines(lines) }, preferences.motionStationaryThresholdNm);
       }),
     };
-    if (!(await saveLogbookNow(nextLogbook))) return;
+    if (!(await saveLogbookNow(nextLogbook, { kind: "sheet", entity: nextLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)! }))) return;
     setLineForm(lineDefaults);
-    setEditingLineIndex(null);
+    setEditingLineId(null);
     setShowAddLine(false);
   }
 
@@ -1198,47 +1208,35 @@ export function LogbookApp({
     await saveLineFromFields();
   }
 
-  function startEditingLine(line: LogLine, index: number) {
+  function startEditingLine(line: LogLine) {
     if (activeSheet.status === "Locked") return;
-    setEditingLineIndex(index);
+    setEditingLineId(line.id);
     setLineForm(lineToForm(line));
     setShowAddLine(false);
   }
 
   function startAddingLine() {
     if (activeSheet.status === "Locked") return;
-    setEditingLineIndex(null);
-    setLineForm(lineDefaults);
+    setEditingLineId(null);
+    setLineForm(lineDefaultsForActiveSheet());
     setShowAddLine((show) => !show);
   }
 
-  function startAddingLineHereNow() {
-    if (activeSheet.status === "Locked") return;
-    const now = new Date();
-    const time = dateTimeLocalFromDate(now);
-    setEditingLineIndex(null);
-    setLineForm({ ...lineDefaults, time });
-    setShowAddLine(true);
-    navigator.geolocation?.getCurrentPosition((position) => {
-      setLineForm((current) => ({
-        ...current,
-        latitude: String(position.coords.latitude),
-        longitude: String(position.coords.longitude),
-      }));
-    });
+  async function startAddingLineAtCoordinates(coordinate: { latitude: number; longitude: number }, selectedTime?: string) {
+    const sheetDate = dateTimeLocalFromStamp(activeSheet.route.departed || activeSheet.route.arrived).slice(0, 10);
+    await startAddingSmartLine(coordinate, selectedTime && sheetDate ? `${sheetDate}T${selectedTime}` : undefined);
   }
 
-  async function startAddingLineAtCoordinates(coordinate: { latitude: number; longitude: number }) {
-    await startAddingSmartLine(coordinate);
-  }
-
-  async function startAddingSmartLine(coordinate?: { latitude: number; longitude: number }) {
+  async function startAddingSmartLine(coordinate?: { latitude: number; longitude: number }, requestedTime?: string) {
     if (activeSheet.status === "Locked" || smartLineStatus === "loading") return;
     const now = new Date();
-    const time = dateTimeLocalFromDate(now);
-    setEditingLineIndex(null);
+    const time = requestedTime ?? dateTimeLocalFromDate(now);
+    const timestamp = isoDateTimeWithTimezone(time, timezoneOffsetFromStamp(activeSheet.route.departed));
+    const initialFields = coordinate ? calculateSmartNavigationFields(activeSheet.lines, coordinate) : {};
+    setEditingLineId(null);
     setLineForm({
-      ...lineDefaults,
+      ...lineDefaultsForActiveSheet(),
+      ...initialFields,
       time,
       ...(coordinate
         ? {
@@ -1252,59 +1250,76 @@ export function LogbookApp({
     setSaveError(null);
 
     try {
-      const linePosition = coordinate ?? await currentGeolocationCoordinates();
+      const initialPosition = coordinate ? undefined : await getCurrentPosition();
+      const linePosition = coordinate ?? coordinatesFromPosition(initialPosition!);
       const latitude = linePosition.latitude;
       const longitude = linePosition.longitude;
       const latitudeValue = String(Number(latitude.toFixed(6)));
       const longitudeValue = String(Number(longitude.toFixed(6)));
-      setLineForm((current) => ({ ...current, latitude: latitudeValue, longitude: longitudeValue }));
+      const navigationFields = calculateSmartNavigationFields(activeSheet.lines, linePosition);
+      setLineForm((current) => ({ ...current, ...navigationFields, latitude: latitudeValue, longitude: longitudeValue }));
 
-      const response = await fetch("/api/meteo/log-line-autofill", {
+      if (initialPosition) setSmartMotionStatus("tracking");
+      const motionPromise = initialPosition ? trackDeviceMotion(sampleFromPosition(initialPosition)) : Promise.resolve({});
+      const weatherPromise = fetch("/api/meteo/log-line-autofill", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           latitude,
           longitude,
-          timestamp: now.toISOString(),
+          timestamp,
           temperatureUnit: preferences.temperatureUnit,
           windUnit: preferences.windUnit,
           seaUnit: preferences.waterHeightUnit,
           tideUnit: preferences.waterHeightUnit,
         }),
+      }).then(async (response) => {
+        const payload = await response.json() as Partial<MeteoLogLineAutofill> & { error?: string };
+        if (!response.ok) throw new Error(payload.error ?? "Unable to fetch meteo data.");
+        setLineForm((current) => ({
+          ...current,
+          ...(payload.fields ?? {}),
+          latitude: latitudeValue,
+          longitude: longitudeValue,
+          time,
+          weatherRemark: formatMeteoWeatherRemark(payload.remarkParts ?? [], t),
+        }));
       });
-      const payload = await response.json() as Partial<MeteoLogLineAutofill> & { error?: string };
-      if (!response.ok) throw new Error(payload.error ?? "Unable to fetch meteo data.");
 
-      setLineForm((current) => ({
-        ...current,
-        ...(payload.fields ?? {}),
-        latitude: latitudeValue,
-        longitude: longitudeValue,
-        time,
-        weatherRemark: formatMeteoWeatherRemark(payload.remarkParts ?? [], t),
-      }));
+      const [weatherResult, motionResult] = await Promise.allSettled([weatherPromise, motionPromise]);
+      setSmartMotionStatus("idle");
+      if (motionResult.status === "fulfilled") setLineForm((current) => ({ ...current, ...motionResult.value }));
+      if (weatherResult.status === "rejected") throw weatherResult.reason;
       setSmartLineStatus("idle");
     } catch {
+      setSmartMotionStatus("idle");
       setSmartLineStatus("error");
       setSaveError(t("details.addSmartLineError"));
     }
   }
 
-  async function deleteLine(indexToDelete: number) {
+  function lineDefaultsForActiveSheet(): LineForm {
+    return {
+      ...lineDefaults,
+      logNm: previousSheetLogMiles(logbookRef.current.sheets, activeSheet),
+    };
+  }
+
+  async function deleteLine(lineIdToDelete: string) {
     if (activeSheet.status === "Locked") return;
     const currentLogbook = logbookRef.current;
     await saveLogbookNow({
       ...currentLogbook,
       sheets: currentLogbook.sheets.map((sheet) =>
         sheet.id === activeSheet.id
-          ? withCalculatedSheetMetrics({ ...sheet, lines: sheet.lines.filter((_, index) => index !== indexToDelete) }, preferences.motionStationaryThresholdNm)
+          ? withCalculatedSheetMetrics({ ...sheet, lines: sheet.lines.filter((line) => line.id !== lineIdToDelete) }, preferences.motionStationaryThresholdNm)
           : sheet,
       ),
-    });
+    }, { kind: "sheet", id: activeSheet.id });
   }
 
   function cancelLineEdit() {
-    setEditingLineIndex(null);
+    setEditingLineId(null);
     setLineForm(lineDefaults);
     setShowAddLine(false);
   }
@@ -1321,7 +1336,7 @@ export function LogbookApp({
           ? { ...sheet, technicalChecks: [...sheet.technicalChecks, { status: "⌛", text: technicalCheck }] }
           : sheet,
       ),
-    });
+    }, { kind: "sheet", id: activeSheet.id });
   }
 
   async function updateTechnicalCheck(indexToUpdate: number, value: string, status?: string) {
@@ -1339,7 +1354,7 @@ export function LogbookApp({
             .filter((item) => item.text),
         };
       }),
-    });
+    }, { kind: "sheet", id: activeSheet.id });
   }
 
   async function deleteTechnicalCheck(indexToDelete: number) {
@@ -1352,7 +1367,7 @@ export function LogbookApp({
           ? { ...sheet, technicalChecks: sheet.technicalChecks.filter((_, index) => index !== indexToDelete) }
           : sheet,
       ),
-    });
+    }, { kind: "sheet", id: activeSheet.id });
   }
 
   async function saveCrew() {
@@ -1386,7 +1401,7 @@ export function LogbookApp({
               candidate.id === id ? crew : candidate,
             ),
     };
-    if (!(await saveLogbookNow(nextLogbook))) return;
+    if (!(await saveLogbookNow(nextLogbook, { kind: "crew", entity: crew, isNew: selectedCrewIndex === -1 }))) return;
     if (selectedCrewIndex === -1)
       setSelectedCrewIndex(nextLogbook.crewMembers.length - 1);
   }
@@ -1422,7 +1437,7 @@ export function LogbookApp({
           : sheet,
       ),
     };
-    await saveLogbookNow(nextLogbook);
+    await saveLogbookNow(nextLogbook, { kind: "sheet", entity: nextLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)! });
   }
 
   async function updateCrewAssignment(
@@ -1447,7 +1462,7 @@ export function LogbookApp({
         };
       }),
     };
-    await saveLogbookNow(nextLogbook);
+    await saveLogbookNow(nextLogbook, { kind: "sheet", entity: nextLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)! });
   }
 
   async function moveCrewOnActiveSheet(index: number, direction: -1 | 1) {
@@ -1463,7 +1478,7 @@ export function LogbookApp({
         return { ...sheet, crew };
       }),
     };
-    await saveLogbookNow(nextLogbook);
+    await saveLogbookNow(nextLogbook, { kind: "sheet", entity: nextLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)! });
   }
 
   async function deleteCrewFromActiveSheet(index: number) {
@@ -1478,7 +1493,7 @@ export function LogbookApp({
         };
       }),
     };
-    await saveLogbookNow(nextLogbook);
+    await saveLogbookNow(nextLogbook, { kind: "sheet", entity: nextLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)! });
   }
 
   async function deleteSelectedCrew() {
@@ -1497,7 +1512,7 @@ export function LogbookApp({
       !(await saveLogbookNow({
         ...logbookRef.current,
         crewMembers: nextCrewMembers,
-      }))
+      }, { kind: "deletion", entityKind: "crew", id: selectedCrew.id }))
     )
       return;
     setSelectedCrewIndex(0);
@@ -1754,7 +1769,9 @@ export function LogbookApp({
     const firstBoat = resetLogbook.boats[0] ?? emptyBoat;
     const firstSheet = resetLogbook.sheets[0] ?? emptySheet;
     logbookRef.current = resetLogbook;
-    hasUnsavedLogbookChangesRef.current = false;
+    pendingMutationsRef.current.clear();
+    failedMutationsRef.current.clear();
+    mutationQueuesRef.current.clear();
     setLogbook(resetLogbook);
     setActiveSheetId(firstSheet.id);
     setSelectedBoatId(firstBoat.id);
@@ -1764,7 +1781,7 @@ export function LogbookApp({
     setCrewForm(crewToForm(resetLogbook.crewMembers[0] ?? defaultCrewForm));
     setEditingBoatId(null);
     setEditingSheetId(null);
-    setEditingLineIndex(null);
+    setEditingLineId(null);
     setSelectedCrewIndex(resetLogbook.crewMembers.length ? 0 : -2);
     setProfileMessage(t("profile.demoResetSuccess"));
     return true;
@@ -1886,15 +1903,15 @@ export function LogbookApp({
               onCoordinateFormatChange={updateCoordinateFormatPreference}
               onShowCourseColumnsChange={updateShowCourseColumnsDisplay}
               startAddingLine={startAddingLine}
-              startAddingLineHereNow={startAddingLineHereNow}
               startAddingLineAtCoordinates={startAddingLineAtCoordinates}
               startAddingSmartLine={startAddingSmartLine}
               smartLineStatus={smartLineStatus}
+              smartMotionStatus={smartMotionStatus}
               showAddLine={showAddLine}
               lineForm={lineForm}
               setLineForm={setLineForm}
               saveLineFromFields={saveLineFromFields}
-              editingLineIndex={editingLineIndex}
+              editingLineId={editingLineId}
               cancelLineEdit={cancelLineEdit}
               startEditingLine={startEditingLine}
               deleteLine={deleteLine}
@@ -2214,12 +2231,45 @@ function dateTimeLocalFromDate(date: Date) {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
-async function currentGeolocationCoordinates() {
-  const position = await getCurrentPosition();
+function coordinatesFromPosition(position: GeolocationPosition) {
   return {
     latitude: position.coords.latitude,
     longitude: position.coords.longitude,
   };
+}
+
+function sampleFromPosition(position: GeolocationPosition): TimedCoordinate {
+  return { ...coordinatesFromPosition(position), timestamp: position.timestamp };
+}
+
+// A longer baseline makes the bearing much less sensitive to normal GPS jitter,
+// especially around the one-knot lower limit where the device moves slowly.
+const minimumMotionTrackingWindowMs = 12_000;
+const maximumMotionTrackingWindowMs = 30_000;
+
+function trackDeviceMotion(initial: TimedCoordinate, timeoutMs = maximumMotionTrackingWindowMs) {
+  return new Promise<Partial<LineForm>>((resolve) => {
+    if (!navigator.geolocation) return resolve({});
+    let settled = false;
+    const finish = (fields: Partial<LineForm> = {}) => {
+      if (settled) return;
+      settled = true;
+      navigator.geolocation.clearWatch(watchId);
+      window.clearTimeout(timeoutId);
+      resolve(fields);
+    };
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        const sample = sampleFromPosition(position);
+        if (sample.timestamp - initial.timestamp < minimumMotionTrackingWindowMs) return;
+        const fields = calculateTrackedMotionFields(initial, sample);
+        if (fields.speedKn) finish(fields);
+      },
+      () => finish(),
+      { enableHighAccuracy: true, maximumAge: 0, timeout: timeoutMs },
+    );
+    const timeoutId = window.setTimeout(() => finish(), timeoutMs);
+  });
 }
 
 function getCurrentPosition() {

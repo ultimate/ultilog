@@ -60,9 +60,13 @@ export function formatLogSheetDuration(durationMinutes: number | null | undefine
 function calculateMotionDurationMinutes(lines: LogLine[], stationaryDistanceThresholdNm: number) {
   return lines.reduce((sum, line, index) => {
     const previous = lines[index - 1];
-    if (!previous || isStationary(previous, line, stationaryDistanceThresholdNm)) return sum;
+    if (!previous || !isLogLineMotionInterval(previous, line, stationaryDistanceThresholdNm)) return sum;
     return sum + timeDeltaMinutes(previous.time, line.time);
   }, 0);
+}
+
+export function isLogLineMotionInterval(previous: LogLine, current: LogLine, stationaryDistanceThresholdNm: number) {
+  return !isStationary(previous, current, stationaryDistanceThresholdNm) && timeDeltaMinutes(previous.time, current.time) > 0;
 }
 
 function isStationary(previous: LogLine, current: LogLine, stationaryDistanceThresholdNm: number) {

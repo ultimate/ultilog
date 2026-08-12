@@ -33,7 +33,7 @@ describe("users preferences", () => {
     const { findUserById, registerUser, updateUserAvatar } = await importUsersWithTempDatabase();
     const { getDatabase } = await import("../../../app/lib/logbook-store");
     const user = await registerUser({ name: "Picture User", email: "picture@example.test", password: "password123" });
-    const avatarData = Buffer.from("avatar bytes").toString("base64");
+    const avatarData = Buffer.from([0xff, 0xd8, 0xff, 0xd9]).toString("base64");
 
     await updateUserAvatar(user.id, { data: avatarData, mimeType: "image/jpeg" });
 
@@ -46,7 +46,7 @@ describe("users preferences", () => {
   it("removes an uploaded picture and restores the Gravatar fallback", async () => {
     const { findUserById, gravatarAvatarUrl, registerUser, removeUserAvatar, updateUserAvatar } = await importUsersWithTempDatabase();
     const user = await registerUser({ name: "Remove Picture", email: "remove-picture@example.test", password: "password123" });
-    await updateUserAvatar(user.id, { data: Buffer.from("avatar bytes").toString("base64"), mimeType: "image/jpeg" });
+    await updateUserAvatar(user.id, { data: Buffer.from([0xff, 0xd8, 0xff, 0xd9]).toString("base64"), mimeType: "image/jpeg" });
 
     await expect(removeUserAvatar(user.id)).resolves.toBe(gravatarAvatarUrl(user.email));
     await expect(findUserById(user.id)).resolves.toMatchObject({ avatar: gravatarAvatarUrl(user.email), hasUploadedAvatar: false });
@@ -92,7 +92,7 @@ describe("users preferences", () => {
     const user = await registerUser({ name: "Persist User", email: "persist@example.test", password: "password123" });
 
     const updated = await updateUserViewPreferences(user.id, {
-      countryCode: " us ",
+      countryCode: " de ",
       language: "fr",
       dateFormat: "dd.MM.yyyy",
       timeFormat: "h:mm a",
@@ -109,7 +109,7 @@ describe("users preferences", () => {
     });
 
     expect(updated).toMatchObject({
-      countryCode: "US",
+      countryCode: "DE",
       language: "fr",
       dateFormat: "dd.MM.yyyy",
       timeFormat: "h:mm a",
@@ -132,7 +132,9 @@ describe("users preferences", () => {
     const user = await registerUser({ name: "Invalid User", email: "invalid@example.test", password: "password123" });
 
     await expect(updateUserViewPreferences(user.id, { windUnit: "mph" })).rejects.toThrow("Wind unit is not supported.");
-    await expect(updateUserViewPreferences(user.id, { countryCode: "USA" })).rejects.toThrow("Country code must be a two-letter ISO country code.");
+    await expect(updateUserViewPreferences(user.id, { countryCode: "ZZ" })).rejects.toThrow("Country code must be a supported ISO country code.");
+    await expect(updateUserViewPreferences(user.id, { countryCode: "CH" })).resolves.toMatchObject({ countryCode: "CH" });
+    await expect(updateUserViewPreferences(user.id, { countryCode: "" })).resolves.toMatchObject({ countryCode: "" });
   });
 });
 

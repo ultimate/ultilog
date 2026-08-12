@@ -69,7 +69,7 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
 
   await expect(page.getByRole("dialog", { name: "Privacy notice before upload" })).toBeVisible();
   await page.getByRole("button", { name: "Continue and upload" }).click();
-  await expect(page.getByRole("status")).toContainText("Scanning logbook photo");
+  await expect(page.locator(".scanner-upload-status")).toContainText("Scanning logbook photo");
   await expect(page.getByRole("progressbar", { name: "Scanning logbook photo…" })).toBeVisible();
 
   await expect(page).toHaveURL(new RegExp(`/details/${createdSheetId}$`));

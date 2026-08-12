@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import { normalizeLogbookIds } from "../../app/components/logbook/persistence";
+import { deleteLogbookEntity, normalizeLogbookIds, persistBoat, persistCrewMember, persistSheet } from "../../app/components/logbook/persistence";
 import type { PersistedLogbook } from "../../app/models/logbook";
+import { sampleLogSheets } from "../fixtures/logbook";
 
 const image = { data: "base64-image", mimeType: "image/png", width: 64, height: 32 };
 
@@ -24,5 +25,47 @@ describe("logbook persistence", () => {
     expect(normalized.crewMembers[0]).toMatchObject({ id: "22222222-2222-4222-8222-222222222222", image });
     expect(normalized.sheets[0]).toMatchObject({ id: "33333333-3333-4333-8333-333333333333", boatId: "11111111-1111-4111-8111-111111111111", image });
     expect(normalized.sheets[0].crew[0]).toMatchObject({ id: "22222222-2222-4222-8222-222222222222", image });
+  });
+
+  it("serializes only the edited sheet when a log line changes", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const sourceSheet = sampleLogSheets[0];
+    const sheet: PersistedLogbook["sheets"][number] = {
+      ...sourceSheet,
+      id: "sheet-1",
+      title: "Edited",
+      boatId: "boat-1",
+      lines: [{ ...sourceSheet.lines[0], id: "line-1", time: "2026-08-11T10:00", remarks: "later edit" }],
+    };
+
+    await persistSheet(sheet);
+
+    expect(fetchMock).toHaveBeenCalledOnce();
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/logbook/sheets/sheet-1");
+    expect(init.method).toBe("PUT");
+    expect(JSON.parse(init.body)).toEqual(sheet);
+    expect(init.body).not.toContain("unrelated-sheet");
+    expect(init.body).not.toContain("base64-image");
+    expect(init.body).not.toContain('"boats"');
+    expect(init.body).not.toContain('"crewMembers"');
+  });
+
+  it("uses focused endpoints and payloads for boats, crew, and deletions", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const boat = { id: "boat-1", name: "Solo", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [] } as PersistedLogbook["boats"][number];
+    const crew = { id: "crew-1", name: "Ada", nationality: "", role: "Crew", address: "", certificate: "", isPrimary: false } as PersistedLogbook["crewMembers"][number];
+
+    await persistBoat(boat);
+    await persistCrewMember(crew);
+    await deleteLogbookEntity("sheet", "sheet-1");
+
+    expect(fetchMock.mock.calls.map(([url, init]) => [url, init.method, init.body && JSON.parse(init.body)])).toEqual([
+      ["/api/logbook/boats/boat-1", "PUT", boat],
+      ["/api/logbook/crew/crew-1", "PUT", crew],
+      ["/api/logbook/sheets/sheet-1", "DELETE", undefined],
+    ]);
   });
 });

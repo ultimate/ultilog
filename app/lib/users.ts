@@ -5,6 +5,8 @@ import { getDatabase, writeLogbook } from "./logbook-store";
 import { sendEmailVerificationEmail, sendPasswordResetEmail } from "./mailer";
 import { normalizeStandardTechnicalCheckIds, STANDARD_TECHNICAL_CHECK_IDS, type StandardTechnicalCheckId } from "../domain/logbook/technical-log";
 import { dateFormats, defaultDateFormat, defaultTimeFormat, timeFormats, type DateFormat, type TimeFormat } from "./date-time-format";
+import { isSupportedCountryCode } from "./flags";
+import { validateStoredImage } from "./validation/stored-image";
 
 export type UserTheme = "light" | "dark" | "auto";
 export type UserPreferences = {
@@ -138,7 +140,7 @@ function normalizeCountryCode(value: unknown) {
   if (typeof value !== "string") return "";
   const countryCode = value.trim().toUpperCase();
   if (!countryCode) return "";
-  if (!/^[A-Z]{2}$/.test(countryCode)) throw new Error("Country code must be a two-letter ISO country code.");
+  if (!isSupportedCountryCode(countryCode)) throw new Error("Country code must be a supported ISO country code.");
   return countryCode;
 }
 
@@ -264,10 +266,7 @@ export async function findUserById(userId: string) {
 }
 
 export async function updateUserAvatar(userId: string, input: { data: string; mimeType: string }) {
-  if (!/^image\/(?:jpeg|png|webp)$/.test(input.mimeType)) throw new Error("Choose a JPEG, PNG, or WebP image.");
-  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(input.data)) throw new Error("The profile picture is invalid.");
-  const bytes = Buffer.from(input.data, "base64");
-  if (!bytes.length || bytes.length > 1024 * 1024) throw new Error("Profile pictures must be 1 MB or smaller.");
+  validateStoredImage({ ...input, width: 1, height: 1 });
   const db = getDatabase();
   await db.migrate();
   await db.query(`update users set avatar_data = ${db.placeholder(1)}, avatar_mime_type = ${db.placeholder(2)} where id = ${db.placeholder(3)}`, [input.data, input.mimeType, userId]);

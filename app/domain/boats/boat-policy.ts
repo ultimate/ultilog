@@ -9,6 +9,15 @@ export type LogbookMutationError = {
   message: string;
 };
 
+export function referencedBoatDeletionError(boat: Pick<Boat, "name">, isReferenced: boolean): LogbookMutationError | undefined {
+  return isReferenced ? { code: "referenced_boat_deleted", message: `Boat "${boat.name}" cannot be deleted while it is used by a logsheet.` } : undefined;
+}
+
+export function sheetBoatMutationError(boat: Pick<Boat, "name" | "archived"> | undefined, isExistingAssignment: boolean): LogbookMutationError | undefined {
+  if (!boat) return { code: "missing_boat", message: "Logsheet references a missing boat." };
+  if (boat.archived && !isExistingAssignment) return { code: "archived_boat_for_new_sheet", message: `Archived boat "${boat.name}" cannot be selected for a new logsheet.` };
+}
+
 export function validateLogbookMutation(
   current: PersistedLogbook,
   next: PersistedLogbook,

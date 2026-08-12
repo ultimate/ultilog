@@ -1613,6 +1613,41 @@ img.entity-image--preview {
 .manager-list-sort { display: flex; align-items: center; justify-content: flex-end; gap: .5rem; margin: .75rem 0; }
 .manager-list-sort label { display: flex; align-items: center; gap: .5rem; font-weight: 700; }
 .manager-list-sort select { border: 1px solid var(--border); border-radius: .65rem; padding: .4rem .55rem; background: var(--surface, white); color: var(--foreground); }
+.open-seamap-context-menu-time {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.open-seamap-context-menu-time input {
+  min-width: 8rem;
+}
+
+.smart-field-wrap {
+  position: relative;
+  display: inline-flex;
+  width: 100%;
+}
+
+.smart-field-spinner {
+  position: absolute;
+  right: 0.5rem;
+  top: 50%;
+  width: 0.85rem;
+  height: 0.85rem;
+  margin-top: -0.425rem;
+  border: 2px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: smart-field-spin 0.8s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes smart-field-spin {
+  to { transform: rotate(360deg); }
+}
 .technical-template-options { display: grid; gap: .45rem; margin-bottom: .75rem; }
 .technical-template-options label { display: flex; gap: .5rem; align-items: center; font-weight: 500; }
 .technical-template-options input { width: auto; }

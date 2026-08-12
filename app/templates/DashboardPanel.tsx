@@ -6,7 +6,7 @@ import { useI18n } from "../lib/i18n";
 import { formatMiles } from "../lib/format-number";
 
 type TimelinePoint = { label: string; totalNm: number; sailNm: number; motorNm: number; overallMinutes: number; motionMinutes: number; motorMinutes: number };
-export type DashboardStats = { totalNm: number; sailNm: number; motorNm: number; durationMinutes: number; motionDurationMinutes: number; motorHours: number; sheets: number; boats: number; timeline: TimelinePoint[]; boatDistribution: { boatName: string; totalNm: number }[]; };
+export type DashboardStats = { totalNm: number; sailNm: number; motorNm: number; durationMinutes: number; motionDurationMinutes: number; motorHours: number; sailingDays: number; daysAtSea: number; sheets: number; boats: number; timeline: TimelinePoint[]; boatDistribution: { boatName: string; totalNm: number }[]; };
 type DashboardPanelProps = { stats: DashboardStats; onboardingChecklist?: ReactNode; };
 type MilesSeries = "sail" | "motor" | "total" | "monthlySail" | "monthlyMotor";
 type HoursSeries = "overall" | "motion" | "motor" | "monthlyOverall" | "monthlyMotion" | "monthlyMotor";
@@ -54,6 +54,8 @@ export function DashboardPanel({ stats, onboardingChecklist }: DashboardPanelPro
         <article><i>⏱</i><span>{t("dashboard.overallDuration")}</span><strong>{formatDuration(stats.durationMinutes)}</strong><small>{t("dashboard.allTime")}</small></article>
         <article><i>↬</i><span>{t("dashboard.motionDuration")}</span><strong>{formatDuration(stats.motionDurationMinutes)}</strong><small>{t("dashboard.inMotion")}</small></article>
         <article><i>⚙</i><span>{t("dashboard.totalEngineHours")}</span><strong>{formatDuration(stats.motorHours * 60)}</strong><small>{t("dashboard.allTime")}</small></article>
+        <article><i>☀</i><span>{t("dashboard.sailingDays")}</span><strong>{stats.sailingDays}</strong><small>{t("dashboard.sailingDaysDescription")}</small></article>
+        <article><i>≋</i><span>{t("dashboard.daysAtSea")}</span><strong>{stats.daysAtSea}</strong><small>{t("dashboard.daysAtSeaDescription")}</small></article>
         <article><i>⚓</i><span>{t("dashboard.boats")}</span><strong>{stats.boats}</strong><small>{t("dashboard.activeVessels")}</small></article>
       </div>
       <div className="dashboard-grid dashboard-grid--charts">

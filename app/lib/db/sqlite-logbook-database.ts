@@ -7,6 +7,7 @@ import { runMigrations } from "./migrations";
 
 export class SqliteLogbookDatabase extends LogbookDatabase {
   private db: SqlJsDatabase | undefined;
+  private transactionQueue: Promise<void> = Promise.resolve();
 
   constructor(private databasePath: string) {
     super();
@@ -19,8 +20,13 @@ export class SqliteLogbookDatabase extends LogbookDatabase {
   async query<Row>(sql: string, values: unknown[] = []): Promise<QueryResult<Row>> {
     const db = await this.getDb();
     if (sql.trim().toLowerCase().startsWith("select")) return { rows: selectRows<Row>(db, sql, values) };
-    if (values.length) db.run(sql, values as SqlValue[]);
-    else db.exec(sql);
+    // Focused sheet mutations replace these child collections. `or replace`
+    // makes an overlapping retry idempotent at the SQLite constraint boundary.
+    const statement = /^insert into (log_lines|sheet_crew_members|log_line_engine_hours)\b/i.test(sql.trim())
+      ? sql.replace(/^\s*insert into/i, "insert or replace into")
+      : sql;
+    if (values.length) db.run(statement, values as SqlValue[]);
+    else db.exec(statement);
     return { rows: [] };
   }
 
@@ -28,25 +34,41 @@ export class SqliteLogbookDatabase extends LogbookDatabase {
     await runMigrations(this);
   }
 
+  protected async withTransaction<T>(operation: (database: LogbookDatabase) => Promise<T>) {
+    return this.serializeTransaction(async () => {
+      const db = await this.getDb();
+      try { db.run("begin"); const result = await operation(this); db.run("commit"); await this.persist(); return result; }
+      catch (error) { db.run("rollback"); throw error; }
+    });
+  }
+
   override async flush() {
     await this.persist();
   }
 
   override async writeLogbook(logbook: PersistedLogbook) {
-    await this.ensureSchemaAndBackfill();
-    const db = await this.getDb();
-    try {
-      db.run("begin");
-      await this.deleteTables();
-      await this.insertSqliteLogbook(logbook);
-      await this.crew.ensurePrimaryProfile(this.requireOwnerId());
-      db.run("commit");
-      await this.persist();
-      return logbook;
-    } catch (error) {
-      db.run("rollback");
-      throw error;
-    }
+    return this.serializeTransaction(async () => {
+      await this.ensureSchemaAndBackfill();
+      const db = await this.getDb();
+      try {
+        db.run("begin");
+        await this.deleteTables();
+        await this.insertSqliteLogbook(logbook);
+        await this.crew.ensurePrimaryProfile(this.requireOwnerId());
+        db.run("commit");
+        await this.persist();
+        return logbook;
+      } catch (error) {
+        db.run("rollback");
+        throw error;
+      }
+    });
+  }
+
+  private serializeTransaction<T>(operation: () => Promise<T>): Promise<T> {
+    const pending = this.transactionQueue.then(operation);
+    this.transactionQueue = pending.then(() => undefined, () => undefined);
+    return pending;
   }
 
   protected async insertLogbook(logbook: PersistedLogbook) {

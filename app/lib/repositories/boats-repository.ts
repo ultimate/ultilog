@@ -20,6 +20,31 @@ export class BoatsRepository {
     return { ...boat, engines: engines.map(engineFromRow) };
   }
 
+  async findById(id: string, ownerId: string) {
+    return this.findByScopedId(scopedId(ownerId, id));
+  }
+
+  async isReferenced(id: string, ownerId: string) {
+    const result = await this.db.query<{ id: string }>(`select id from log_sheets where boat_id = ${this.db.placeholder(1)} and owner_id = ${this.db.placeholder(2)} limit 1`, [scopedId(ownerId, id), ownerId]);
+    return result.rows.length > 0;
+  }
+
+  async upsert(boat: Boat, ownerId: string) {
+    const id = scopedId(ownerId, boat.id);
+    await this.db.query(
+      `insert into boats (id, archived, name, type, registration, flag_state, home_port, owner, dimensions, logfactor, yacht_data, deviation_table, wind_drift_table, image_data, image_mime_type, image_width, image_height, owner_id) values (${this.values(18)}) on conflict(id) do update set archived = excluded.archived, name = excluded.name, type = excluded.type, registration = excluded.registration, flag_state = excluded.flag_state, home_port = excluded.home_port, owner = excluded.owner, dimensions = excluded.dimensions, logfactor = excluded.logfactor, yacht_data = excluded.yacht_data, deviation_table = excluded.deviation_table, wind_drift_table = excluded.wind_drift_table, image_data = excluded.image_data, image_mime_type = excluded.image_mime_type, image_width = excluded.image_width, image_height = excluded.image_height where boats.owner_id = excluded.owner_id`,
+      [id, boat.archived ? 1 : 0, boat.name, boat.type, boat.registration, boat.flagState, boat.homePort, boat.owner, boat.dimensions, boat.logfactor, JSON.stringify(boat.yachtData), JSON.stringify(boat.deviationTable), JSON.stringify(boat.windDriftTable ?? []), ...imageValues(boat.image), ownerId],
+    );
+    await this.db.query(`delete from engines where boat_id = ${this.db.placeholder(1)}`, [id]);
+    for (const [sortOrder, engine] of (boat.engines?.length ? boat.engines : [defaultMainEngine()]).entries()) {
+      await this.db.query(`insert into engines (id, boat_id, sort_order, name, short_label, role, archived, manufacturer, model, serial_number) values (${this.values(10)})`, [`${id}:${engine.id}`, id, sortOrder, engine.name, engine.label, engine.role, engine.archived ? 1 : 0, engine.manufacturer ?? "", engine.model ?? "", engine.serialNumber ?? ""]);
+    }
+  }
+
+  async delete(id: string, ownerId: string) {
+    await this.db.query(`delete from boats where id = ${this.db.placeholder(1)} and owner_id = ${this.db.placeholder(2)}`, [scopedId(ownerId, id), ownerId]);
+  }
+
   async deleteAll(ownerId: string) {
     await this.db.query(`delete from boats where owner_id = ${this.db.placeholder(1)}`, [ownerId]);
   }

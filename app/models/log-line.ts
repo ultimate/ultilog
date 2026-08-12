@@ -3,6 +3,8 @@ export type WindUnit = "bft" | "kn" | "km/h" | "mp/h" | "m/s";
 export type TemperatureUnit = "c" | "f" | "°C" | "°F";
 
 export type LogLine = {
+  /** Stable identifier retained when the line is edited or reordered. */
+  id: string;
   time: string;
   position: string;
   latitude: number;

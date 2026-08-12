@@ -1,5 +1,5 @@
 import { EntityImage } from "../EntityImage";
-import { flagGroups, flagOptionEmoji } from "../../../lib/flags";
+import { CountryFlagSelector } from "../../CountryFlagSelector";
 import { useI18n } from "../../../lib/i18n";
 import { useDateTimeFormat } from "../../../lib/DateTimeFormatProvider";
 import { useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
@@ -157,40 +157,17 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                 }
               />
             </label>
-            <div className="flag-chooser-field">
-              <label htmlFor="boat-flag-state">{t("boats.flagState")}</label>
-              <select
+            <CountryFlagSelector
                 id="boat-flag-state"
                 className="flag-chooser"
+                mode="flag-emoji"
+                label={t("boats.flagState")}
+                emptyLabel={t("boats.flagPlaceholder")}
                 value={boatForm.flagState}
-                onChange={(e) =>
-                  setBoatForm({ ...boatForm, flagState: e.target.value })
+                onChange={(flagState) =>
+                  setBoatForm({ ...boatForm, flagState })
                 }
-              >
-                <option value="">{t("boats.flagPlaceholder")}</option>
-                {boatForm.flagState &&
-                  !flagGroups.some((group) =>
-                    group.flags.some((flag) => flagOptionEmoji(flag) === boatForm.flagState),
-                  ) ? (
-                  <option value={boatForm.flagState} disabled>
-                    {boatForm.flagState}
-                  </option>
-                ) : null}
-                {flagGroups.map((group) => (
-                  <optgroup key={group.continent} label={group.continent}>
-                    {group.flags.map((flag) => {
-                      const emoji = flagOptionEmoji(flag);
-
-                      return (
-                        <option key={flag.code} value={emoji}>
-                          {emoji} {flag.name}
-                        </option>
-                      );
-                    })}
-                  </optgroup>
-                ))}
-              </select>
-            </div>
+              />
             <label>
               {t("boats.homePort")}
               <input

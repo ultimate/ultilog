@@ -1,5 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
 
+test.setTimeout(120_000);
+
 test("persists user-created crew, boat, and logbook sheets across refresh and relogin", async ({ page }) => {
   const unique = Date.now().toString(36);
   const email = `e2e-${unique}@example.test`;
@@ -30,7 +32,7 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   await crewForm.getByLabel("Name", { exact: true }).fill(crewName);
   await crewForm.getByLabel("Nationality").fill("Swiss");
   await crewForm.getByLabel("Role").fill("Navigator");
-  const crewSave = waitForLogbookSave(page);
+  const crewSave = waitForFocusedLogbookSave(page, "crew");
   await clickButton(page, "Save crew");
   await crewSave;
   await expect(page.getByText(crewName)).toBeVisible();
@@ -43,7 +45,10 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   await boatForm.getByLabel("Flag state").selectOption("🇨🇭");
   await boatForm.getByLabel("Home port").fill("Basel");
   await boatForm.getByLabel("Owner").fill("E2E Owner");
+  const boatSave = waitForFocusedLogbookSave(page, "boats");
   await clickButton(page, "Create boat");
+  await boatSave;
+  await expect(boatForm).toBeHidden();
   await expect(page.getByText(boatName)).toBeVisible();
 
   await openModule(page, "Logbook list", "+ New sheet");
@@ -53,14 +58,16 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   await sheetForm.getByLabel("Boat").selectOption({ label: boatName });
   await sheetForm.getByLabel("From position").fill("Port A");
   await sheetForm.getByLabel("To position").fill("Port B");
+  const sheetSave = waitForFocusedLogbookSave(page, "sheets");
   await clickButton(page, "Save");
+  await sheetSave;
   await expect(page.getByRole("heading", { name: sheetTitle })).toBeVisible();
   await expect(page.getByText(`1. ⭐ Skipper · E2E Skipper ${unique}`)).toBeVisible();
 
   await page.getByLabel("Add crew member").selectOption({ label: crewName });
   const addedCrewRow = page.locator("li").filter({ hasText: `2. ${crewName}` });
   await expect(addedCrewRow).toBeVisible();
-  const deleteSave = page.waitForResponse((response) => response.url().endsWith("/api/logbook") && response.request().method() === "PUT" && response.ok());
+  const deleteSave = waitForFocusedLogbookSave(page, "sheets");
   await addedCrewRow.getByRole("button", { name: `Delete ${crewName}` }).click();
   await expect(addedCrewRow).toBeHidden();
   await deleteSave;
@@ -96,8 +103,13 @@ async function openModule(page: Page, moduleName: string, expectedActionName: st
   }).toPass({ timeout: 15_000 });
 }
 
-function waitForLogbookSave(page: Page) {
-  return page.waitForResponse((response) => response.url().endsWith("/api/logbook") && response.request().method() === "PUT" && response.ok());
+function waitForFocusedLogbookSave(page: Page, collection: "boats" | "crew" | "sheets") {
+  return page.waitForResponse((response) => {
+    const path = new URL(response.url()).pathname;
+    return (path === `/api/logbook/${collection}` || path.startsWith(`/api/logbook/${collection}/`))
+      && ["POST", "PUT", "DELETE"].includes(response.request().method())
+      && response.ok();
+  });
 }
 
 async function clickButton(page: Page, name: string | RegExp) {

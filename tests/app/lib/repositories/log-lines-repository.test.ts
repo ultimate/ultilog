@@ -49,7 +49,7 @@ describe("LogLinesRepository", () => {
     await new LogLinesRepository(db).insert(sheet.id, 0, line, "repository-user");
 
     expect(db.calls[0].sql).toContain("insert into log_lines");
-    expect(db.calls[0].values).toEqual([`repository-user:${sheet.id}`, 0, line.time, line.position, line.latitude, line.longitude, line.logNm, line.compassCourse, line.waves, line.barometer, line.weather, line.weatherRemark, line.temperature, line.temperatureUnit, line.sailNote, line.motorNote, line.windDirection, line.windStrength, line.windUnit, line.seaUnit, line.tide, line.tideUnit, line.moon, line.deviation, line.magneticCourse, line.variation, line.trueCourse, line.windDrift, line.courseThroughWater, line.currentDrift, line.courseOverGround, line.speedKn, line.sailMiles, line.sailNote, line.motorMiles, line.motorHours, line.motorNote, line.remarks]);
+    expect(db.calls[0].values).toEqual([`repository-user:${sheet.id}`, line.id, 0, line.time, line.position, line.latitude, line.longitude, line.logNm, line.compassCourse, line.waves, line.barometer, line.weather, line.weatherRemark, line.temperature, line.temperatureUnit, line.sailNote, line.motorNote, line.windDirection, line.windStrength, line.windUnit, line.seaUnit, line.tide, line.tideUnit, line.moon, line.deviation, line.magneticCourse, line.variation, line.trueCourse, line.windDrift, line.courseThroughWater, line.currentDrift, line.courseOverGround, line.speedKn, line.sailMiles, line.sailNote, line.motorMiles, line.motorHours, line.motorNote, line.remarks]);
   });
 
   it("inserts multiple log lines with one database round trip", async () => {
@@ -62,9 +62,9 @@ describe("LogLinesRepository", () => {
     ], "repository-user");
 
     expect(db.calls).toHaveLength(1);
-    expect(db.calls[0].sql).toContain("$38), ($39");
-    expect(db.calls[0].values).toHaveLength(76);
-    expect(db.calls[0].values?.[38]).toBe(`repository-user:${sheet.id}`);
+    expect(db.calls[0].sql).toContain("$39), ($40");
+    expect(db.calls[0].values).toHaveLength(78);
+    expect(db.calls[0].values?.[39]).toBe(`repository-user:${sheet.id}`);
   });
 });
 

@@ -33,9 +33,31 @@ describe("logbook store", () => {
   beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
+    delete (globalThis as typeof globalThis & { __ultilogLogbookStores?: unknown }).__ultilogLogbookStores;
     delete process.env.POSTGRES_URL;
     delete process.env.DATABASE_URL;
     delete process.env.LOCAL_DATABASE_PATH;
+  });
+
+  it("shares the write queue across module instances", async () => {
+    process.env.LOCAL_DATABASE_PATH = "/tmp/ultilog-shared-queue.sqlite";
+    let finishWrite: (() => void) | undefined;
+    const logbook = { boats: [], crewMembers: [], sheets: [] };
+    sqliteWriteLogbook.mockReturnValueOnce(new Promise<void>((resolve) => { finishWrite = resolve; }));
+    sqliteReadLogbook.mockResolvedValueOnce(logbook);
+    const firstStore = await import("../../../app/lib/logbook-store");
+    const write = firstStore.writeLogbook(logbook, "user-1");
+
+    vi.resetModules();
+    const secondStore = await import("../../../app/lib/logbook-store");
+    const read = secondStore.readLogbook("user-1");
+    await Promise.resolve();
+
+    expect(sqliteReadLogbook).not.toHaveBeenCalled();
+    finishWrite?.();
+    await write;
+    await expect(read).resolves.toBe(logbook);
+    expect(sqliteConstructor).toHaveBeenCalledOnce();
   });
 
   it("uses the configured local database path by default", async () => {
