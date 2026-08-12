@@ -43,6 +43,7 @@ export class BoatsRepository {
     for (const [sortOrder, engine] of (boat.engines?.length ? boat.engines : [defaultMainEngine()]).entries()) {
       await this.db.query(`insert into engines (id, boat_id, sort_order, name, short_label, role, archived, manufacturer, model, serial_number) values (${this.values(10)})`, [`${id}:${engine.id}`, id, sortOrder, engine.name, engine.label, engine.role, engine.archived ? 1 : 0, engine.manufacturer ?? "", engine.model ?? "", engine.serialNumber ?? ""]);
     }
+    return this.findById(boat.id, ownerId);
   }
 
   async delete(id: string, ownerId: string) {
@@ -68,6 +69,7 @@ export class BoatsRepository {
         [`${scopedId(ownerId, boat.id)}:${engine.id}`, scopedId(ownerId, boat.id), sortOrder, engine.name, engine.label, engine.role, engine.archived ? 1 : 0, engine.manufacturer ?? "", engine.model ?? "", engine.serialNumber ?? ""],
       );
     }
+    return this.findById(boat.id, ownerId);
   }
 
   private values(count: number) {

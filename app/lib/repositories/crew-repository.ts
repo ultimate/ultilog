@@ -22,7 +22,10 @@ export class CrewRepository {
 
   async upsert(crew: CrewMember, ownerId: string) {
     const crewMemberId = scopedId(ownerId, crew.id);
-    if (!await this.findProfile(crew.id, ownerId)) return this.insertProfile(crew, ownerId);
+    if (!await this.findProfile(crew.id, ownerId)) {
+      await this.insertProfile(crew, ownerId);
+      return this.findProfile(crew.id, ownerId);
+    }
     const columns = ["name", "nationality", "role", "address", "certificate", "is_primary", "image_id", "date_of_birth", "place_of_birth", "gender", "identity_document_type", "identity_document_number", "identity_document_issuing_date", "identity_document_expiry_date"];
     const assignments = columns.map((column, index) => `${column} = ${this.db.placeholder(index + 1)}`);
     const result = await this.db.query<{ revision: number }>(
@@ -30,6 +33,7 @@ export class CrewRepository {
       [...this.profileValues(crew, ownerId, crewMemberId), crewMemberId, ownerId, expectedRevision(crew.revision)],
     );
     if (!result.rows.length) throw Object.assign(new Error("The crew member was changed by another request."), { code: "revision_conflict" });
+    return this.findProfile(crew.id, ownerId);
   }
 
   async delete(id: string, ownerId: string) {
