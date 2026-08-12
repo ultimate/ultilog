@@ -6,6 +6,7 @@ vi.mock("../../../auth", () => ({
 
 vi.mock("../../../app/lib/logbook-store", () => ({
   readLogbook: vi.fn(),
+  createLogSheetAggregate: vi.fn(),
   writeLogbook: vi.fn(),
 }));
 
@@ -32,6 +33,7 @@ const { POST } = await import("../../../app/api/logbook/scanner/route");
 
 const mockedAuth = auth as unknown as Mock;
 const mockedReadLogbook = vi.mocked(store.readLogbook);
+const mockedCreateLogSheetAggregate = vi.mocked(store.createLogSheetAggregate);
 const mockedWriteLogbook = vi.mocked(store.writeLogbook);
 const mockedScanner = vi.mocked(openAiScannerProvider.extractLogbookDraft);
 const mockedScannerConfigured = vi.mocked(openAiScannerProvider.isConfigured);
@@ -254,9 +256,19 @@ describe("logbook scanner endpoint", () => {
 
   it("creates a draft scanner sheet from partial scanner data without persisting raw image content", async () => {
     mockedAuth.mockResolvedValueOnce(session);
-    mockedReadLogbook.mockResolvedValueOnce(logbook);
+    const unrelatedImage = { id: "unrelated-image", data: "data:image/png;base64,dW5yZWxhdGVk", mimeType: "image/png", width: 1, height: 1 };
+    mockedReadLogbook.mockResolvedValueOnce({
+      boats: [boat, { ...boat, id: "unrelated-boat", name: "Elsewhere", imageId: unrelatedImage.id, image: unrelatedImage }],
+      crewMembers: [{ id: "unrelated-crew", name: "Other crew", nationality: "", role: "", address: "", certificate: "", imageId: unrelatedImage.id, image: unrelatedImage }],
+      sheets: [{
+        id: "unrelated-sheet", title: "Existing trip", status: "Draft", boatId: boat.id,
+        route: { from: "X", to: "Y", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [],
+        imageId: unrelatedImage.id, image: unrelatedImage,
+        lines: [{ id: "unrelated-line", time: "2026-01-01T00:00", position: "", latitude: 0, longitude: 0, logNm: 0, compassCourse: 0, waves: 0, barometer: 0, weather: "", weatherRemark: "", temperature: 0, temperatureUnit: "°C", windDirection: "", windStrength: 0, windUnit: "bft", seaUnit: "m", tide: 0, tideUnit: "m", moon: "", deviation: 0, magneticCourse: 0, variation: 0, trueCourse: 0, windDrift: 0, courseThroughWater: 0, currentDrift: 0, courseOverGround: 0, speedKn: 0, sailMiles: 0, sailNote: "", motorMiles: 0, motorHours: 0, motorNote: "", remarks: "" }],
+      }],
+    });
     mockedScanner.mockResolvedValueOnce(partialScannerResult);
-    mockedWriteLogbook.mockImplementationOnce(async (updated) => updated);
+    mockedCreateLogSheetAggregate.mockImplementationOnce(async (sheet, lines) => ({ ...sheet, lines }));
     const formData = new FormData();
     formData.set("boatId", "boat-1");
     formData.append("files", imageFile("sheet.png", 4));
@@ -270,22 +282,21 @@ describe("logbook scanner endpoint", () => {
       languageHint: "en",
       files: [{ name: "sheet.png", type: "image/png", buffer: expect.any(Buffer) }],
     });
-    expect(mockedWriteLogbook).toHaveBeenCalledWith(expect.objectContaining({
-      sheets: [expect.objectContaining({
+    expect(mockedCreateLogSheetAggregate).toHaveBeenCalledWith(expect.objectContaining({
         id: body.sheetId,
         boatId: "boat-1",
         status: "Draft",
         source: "scanner",
         title: "Scanned log sheet",
         scannerWarnings: partialScannerResult.warnings,
-        lines: [expect.objectContaining({ time: "2026-07-03T10:30", latitude: 47.5, remarks: "Smudged row" })],
-      })],
-    }), "user-1");
+    }), [expect.objectContaining({ time: "2026-07-03T10:30", latitude: 47.5, remarks: "Smudged row" })], "user-1");
 
-    const [[persistedLogbook]] = mockedWriteLogbook.mock.calls;
-    expect(persistedLogbook.sheets[0].image).toBeUndefined();
-    expect(JSON.stringify(persistedLogbook)).not.toContain("sheet.png");
-    expect(JSON.stringify(persistedLogbook)).not.toContain("buffer");
+    const mutationPayload = mockedCreateLogSheetAggregate.mock.calls[0].slice(0, 2);
+    expect(mutationPayload[0]).not.toHaveProperty("lines");
+    expect(JSON.stringify(mutationPayload)).not.toContain("sheet.png");
+    expect(JSON.stringify(mutationPayload)).not.toContain("buffer");
+    expect(JSON.stringify(mutationPayload)).not.toMatch(/unrelated-(boat|crew|sheet|line|image)/);
+    expect(mockedWriteLogbook).not.toHaveBeenCalled();
   });
 
   it("defaults missing scanner units from user preferences", async () => {
@@ -301,7 +312,7 @@ describe("logbook scanner endpoint", () => {
       },
       warnings: [],
     });
-    mockedWriteLogbook.mockImplementationOnce(async (updated) => updated);
+    mockedCreateLogSheetAggregate.mockImplementationOnce(async (sheet, lines) => ({ ...sheet, lines }));
     const formData = new FormData();
     formData.set("boatId", "boat-1");
     formData.append("files", imageFile());
@@ -309,8 +320,8 @@ describe("logbook scanner endpoint", () => {
     const response = await POST(scannerRequest(formData));
 
     expect(response.status).toBe(200);
-    const [[persistedLogbook]] = mockedWriteLogbook.mock.calls;
-    expect(persistedLogbook.sheets[0].lines[0]).toEqual(expect.objectContaining({ windUnit: "kn", seaUnit: "ft", tideUnit: "ft", temperatureUnit: "°F" }));
+    const [, lines] = mockedCreateLogSheetAggregate.mock.calls[0];
+    expect(lines[0]).toEqual(expect.objectContaining({ windUnit: "kn", seaUnit: "ft", tideUnit: "ft", temperatureUnit: "°F" }));
   });
 
   it("preserves explicit scanner units instead of applying user preference defaults", async () => {
@@ -326,7 +337,7 @@ describe("logbook scanner endpoint", () => {
       },
       warnings: [],
     });
-    mockedWriteLogbook.mockImplementationOnce(async (updated) => updated);
+    mockedCreateLogSheetAggregate.mockImplementationOnce(async (sheet, lines) => ({ ...sheet, lines }));
     const formData = new FormData();
     formData.set("boatId", "boat-1");
     formData.append("files", imageFile());
@@ -334,7 +345,7 @@ describe("logbook scanner endpoint", () => {
     const response = await POST(scannerRequest(formData));
 
     expect(response.status).toBe(200);
-    const [[persistedLogbook]] = mockedWriteLogbook.mock.calls;
-    expect(persistedLogbook.sheets[0].lines[0]).toEqual(expect.objectContaining({ windUnit: "bft", seaUnit: "m", tideUnit: "m", temperatureUnit: "°C" }));
+    const [, lines] = mockedCreateLogSheetAggregate.mock.calls[0];
+    expect(lines[0]).toEqual(expect.objectContaining({ windUnit: "bft", seaUnit: "m", tideUnit: "m", temperatureUnit: "°C" }));
   });
 });

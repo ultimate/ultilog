@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "../../../../auth";
 import { createScannedSheet } from "../../../lib/logbook-scanner/create-scanned-sheet";
 import { openAiScannerProvider } from "../../../lib/logbook-scanner/openai-provider";
-import { readLogbook, writeLogbook } from "../../../lib/logbook-store";
+import { createLogSheetAggregate, readLogbook } from "../../../lib/logbook-store";
 import { findUserById } from "../../../lib/users";
 import { isActiveDemoSandbox } from "../../../lib/demo/demo-policy";
 import { consumeRateLimit, rateLimitResponse } from "../../../lib/security/rate-limiter";
@@ -88,7 +88,8 @@ export async function POST(request: Request) {
     userPreferences: user ? { windUnit: user.windUnit, waterHeightUnit: user.waterHeightUnit, temperatureUnit: user.temperatureUnit } : undefined,
   });
 
-  await writeLogbook({ ...logbook, sheets: [...logbook.sheets, sheet] }, session.user.id);
+  const { lines, ...focusedSheet } = sheet;
+  await createLogSheetAggregate(focusedSheet, lines, session.user.id);
 
   return NextResponse.json({ sheetId: sheet.id });
 }
