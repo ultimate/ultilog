@@ -16,6 +16,13 @@ export class LogbookValidationError extends Error {
   constructor(message: string, readonly kind: "structure" | "limit" = "structure") { super(message); }
 }
 
+export function requireRevision(value: unknown) {
+  const revision = value && typeof value === "object" && !Array.isArray(value) ? (value as { revision?: unknown }).revision : undefined;
+  if (!Number.isSafeInteger(revision) || Number(revision) <= 0) {
+    throw Object.assign(new LogbookValidationError("revision must be a positive integer."), { code: "invalid_revision" });
+  }
+}
+
 const record = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 const string = (v: unknown) => typeof v === "string";
 const finite = (v: unknown) => typeof v === "number" && Number.isFinite(v);

@@ -1,10 +1,16 @@
 import type { LogLine } from "../../models/logbook";
-import { LOGBOOK_LIMITS, LogbookValidationError, validateLine as assertLine } from "./logbook";
+import { LOGBOOK_LIMITS, LogbookValidationError, requireRevision, validateLine as assertLine } from "./logbook";
 
 export function validateLogLine(value: unknown): LogLine {
   assertLine(value);
   if (typeof (value as { id?: unknown }).id !== "string" || !(value as { id: string }).id.trim()) throw new LogbookValidationError("A log line id is required.");
   return value as LogLine;
+}
+
+
+export function validateLogLineUpdate(value: unknown): LogLine {
+  requireRevision(value);
+  return validateLogLine(value);
 }
 
 export function validateLineOrder(value: unknown): string[] {

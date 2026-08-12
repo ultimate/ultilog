@@ -34,7 +34,7 @@ export class BoatsRepository {
     const existing = await this.findById(boat.id, ownerId);
     const values = [boat.archived ? 1 : 0, boat.name, boat.type, boat.registration, boat.flagState, boat.homePort, boat.owner, boat.dimensions, boat.logfactor, JSON.stringify(boat.yachtData), JSON.stringify(boat.deviationTable), JSON.stringify(boat.windDriftTable ?? []), boat.imageId ?? boat.image?.id ?? null];
     if (existing) {
-      const expected = boat.revision ?? Number(existing.revision);
+      const expected = expectedRevision(boat.revision);
       const assignments = ["archived", "name", "type", "registration", "flag_state", "home_port", "owner", "dimensions", "logfactor", "yacht_data", "deviation_table", "wind_drift_table", "image_id"].map((column, index) => `${column} = ${this.db.placeholder(index + 1)}`);
       const updated = await this.db.query<{ revision: number }>(`update boats set ${assignments.join(", ")}, revision = revision + 1, updated_at = ${this.now()} where id = ${this.db.placeholder(14)} and owner_id = ${this.db.placeholder(15)} and revision = ${this.db.placeholder(16)} returning revision`, [...values, id, ownerId, expected]);
       if (!updated.rows.length) throw Object.assign(new Error("The boat was changed by another request."), { code: "revision_conflict" });
@@ -97,4 +97,9 @@ export function scopedId(ownerId: string, id: string) {
 
 export function unscopedId(id: string) {
   return id.includes(":") ? id.slice(id.indexOf(":") + 1) : id;
+}
+
+export function expectedRevision(revision: unknown) {
+  if (!Number.isSafeInteger(revision) || Number(revision) <= 0) throw Object.assign(new Error("A positive integer revision is required."), { code: "invalid_revision" });
+  return revision as number;
 }

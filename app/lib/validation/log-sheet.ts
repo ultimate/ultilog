@@ -1,5 +1,5 @@
 import type { LogSheet } from "../../models/logbook";
-import { LogbookValidationError, validatePersistedLogbook } from "./logbook";
+import { LogbookValidationError, requireRevision, validatePersistedLogbook } from "./logbook";
 
 export function validateLogSheet(value: unknown): LogSheet {
   const boat = { id: "validation-boat", name: "", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [] };
@@ -12,4 +12,10 @@ export function validateLogSheet(value: unknown): LogSheet {
 export function validateFocusedLogSheet(value: unknown): LogSheet {
   if (!value || typeof value !== "object" || Array.isArray(value) || "lines" in value) throw new LogbookValidationError("Focused sheet payloads must omit lines.");
   return validateLogSheet({ ...value, lines: [] });
+}
+
+
+export function validateFocusedLogSheetUpdate(value: unknown): LogSheet {
+  requireRevision(value);
+  return validateFocusedLogSheet(value);
 }
