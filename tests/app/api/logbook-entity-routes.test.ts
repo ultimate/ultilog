@@ -46,4 +46,18 @@ describe("entity mutation routes", () => {
     expect(response.status).toBe(409);
     await expect(response.json()).resolves.toMatchObject({ code: "referenced_boat_deleted" });
   });
+
+  it("rejects oversized declared and actual focused bodies before parsing", async () => {
+    const declared = await boats.POST(new Request("https://example.test/api/logbook/boats", {
+      method: "POST", headers: { "content-length": String(64 * 1024 + 1) }, body: "{}",
+    }));
+    expect(declared.status).toBe(413);
+    await expect(declared.json()).resolves.toMatchObject({ code: "request_body_too_large" });
+
+    const actual = await boats.POST(new Request("https://example.test/api/logbook/boats", {
+      method: "POST", body: JSON.stringify({ padding: "é".repeat(33 * 1024) }),
+    }));
+    expect(actual.status).toBe(413);
+    expect(store.upsertBoat).not.toHaveBeenCalled();
+  });
 });

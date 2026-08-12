@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { deleteLogbookEntity, normalizeLogbookIds, persistBoat, persistCrewMember, persistSheet } from "../../app/components/logbook/persistence";
+import { deleteLogbookEntity, normalizeLogbookIds, persistBoat, persistCrewMember, persistLogLine, persistSheet } from "../../app/components/logbook/persistence";
 import type { PersistedLogbook } from "../../app/models/logbook";
 import { sampleLogSheets } from "../fixtures/logbook";
 
@@ -27,7 +27,7 @@ describe("logbook persistence", () => {
     expect(normalized.sheets[0].crew[0]).toMatchObject({ id: "22222222-2222-4222-8222-222222222222", image });
   });
 
-  it("serializes only the edited sheet when a log line changes", async () => {
+  it("serializes sheet metadata without any log lines", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
     const sourceSheet = sampleLogSheets[0];
@@ -45,11 +45,27 @@ describe("logbook persistence", () => {
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe("/api/logbook/sheets/sheet-1");
     expect(init.method).toBe("PUT");
-    expect(JSON.parse(init.body)).toEqual(sheet);
+    expect(JSON.parse(init.body)).toEqual(Object.fromEntries(Object.entries(sheet).filter(([key]) => key !== "lines")));
+    expect(init.body).not.toContain('"lines"');
     expect(init.body).not.toContain("unrelated-sheet");
     expect(init.body).not.toContain("base64-image");
     expect(init.body).not.toContain('"boats"');
     expect(init.body).not.toContain('"crewMembers"');
+  });
+
+  it("serializes only one addressed log line", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const line = { ...sampleLogSheets[0].lines[0], id: "stable-line", remarks: "focused" };
+
+    await persistLogLine("sheet-1", line, false);
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("/api/logbook/sheets/sheet-1/lines/stable-line");
+    expect(JSON.parse(init.body)).toEqual(line);
+    expect(init.body).not.toContain('"boats"');
+    expect(init.body).not.toContain('"crew"');
+    expect(init.body).not.toContain('"lines"');
   });
 
   it("uses focused endpoints and payloads for boats, crew, and deletions", async () => {

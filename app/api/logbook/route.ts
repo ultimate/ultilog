@@ -15,12 +15,12 @@ export async function GET() {
 export async function PUT(request: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const configuredByteLimit = Number(process.env.LOGBOOK_MAX_REQUEST_BYTES);
+  const configuredByteLimit = Number(process.env.LOGBOOK_IMPORT_REQUEST_BYTES ?? process.env.LOGBOOK_MAX_REQUEST_BYTES);
   const byteLimit = Number.isFinite(configuredByteLimit) && configuredByteLimit > 0 ? configuredByteLimit : LOGBOOK_LIMITS.requestBytes;
   const declaredLength = Number(request.headers.get("content-length"));
-  if (Number.isFinite(declaredLength) && declaredLength > byteLimit) return NextResponse.json({ error: "Logbook payload is too large" }, { status: 413 });
+  if (Number.isFinite(declaredLength) && declaredLength > byteLimit) return NextResponse.json({ error: "Logbook payload is too large", code: "request_body_too_large" }, { status: 413 });
   const body = await request.text().catch(() => "");
-  if (Buffer.byteLength(body, "utf8") > byteLimit) return NextResponse.json({ error: "Logbook payload is too large" }, { status: 413 });
+  if (Buffer.byteLength(body, "utf8") > byteLimit) return NextResponse.json({ error: "Logbook payload is too large", code: "request_body_too_large" }, { status: 413 });
   let logbook;
   try { logbook = validatePersistedLogbook(JSON.parse(body)); }
   catch (error) {

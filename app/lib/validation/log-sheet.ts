@@ -7,3 +7,9 @@ export function validateLogSheet(value: unknown): LogSheet {
   if (!sheet.lines.every(line => typeof line.id === "string")) throw new LogbookValidationError("Every log line must have an id.");
   return sheet;
 }
+
+/** Focused sheet requests omit log lines; line routes own that collection. */
+export function validateFocusedLogSheet(value: unknown): LogSheet {
+  if (!value || typeof value !== "object" || Array.isArray(value) || "lines" in value) throw new LogbookValidationError("Focused sheet payloads must omit lines.");
+  return validateLogSheet({ ...value, lines: [] });
+}

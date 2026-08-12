@@ -162,8 +162,14 @@ export abstract class LogbookDatabase implements QueryableDatabase {
       if (!boatRow) throw new Error("Boat policy failed to reject a missing boat.");
       await database.sheets.upsert(sheet, ownerId, await database.motionStationaryThresholdNm());
       await database.crew.replaceAssignments(sheet.id, sheet.crew, ownerId);
-      await database.lines.replaceForSheet(sheet.id, sheet.lines, ownerId);
-      await database.sheets.updateMetrics(sheet, sheet.lines, ownerId, await database.motionStationaryThresholdNm());
+      // Focused sheet writes own metadata and assignments only. Log lines are
+      // independently versioned resources and are never collection-replaced.
+      // Internal imports may still seed a brand-new aggregate in one operation;
+      // focused HTTP creates always pass an empty collection.
+      if (!prior && sheet.lines.length) await database.lines.insertMany(sheet.lines.map((line, sortOrder) => ({ sheetId: sheet.id, sortOrder, line })), ownerId);
+      const persistedLineRows = await database.lines.findForSheet(scopedId(ownerId, sheet.id));
+      const persistedLines = persistedLineRows.length ? LogSheetsRepository.toLogbook([], [prior ?? (await database.sheets.findById(sheet.id, ownerId))!], [], persistedLineRows).sheets[0].lines : [];
+      await database.sheets.updateMetrics(sheet, persistedLines, ownerId, await database.motionStationaryThresholdNm());
       if (previousImageId !== nextImageId) await database.images.deleteIfOrphaned(previousImageId, ownerId);
       const [row, crew, lines] = await Promise.all([database.sheets.findById(sheet.id, ownerId), database.crew.findForSheet(scopedId(ownerId, sheet.id), ownerId), database.lines.findForSheet(scopedId(ownerId, sheet.id))]);
       return row ? LogSheetsRepository.toLogbook([], [row], crew, lines).sheets[0] : undefined;
