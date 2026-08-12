@@ -45,9 +45,19 @@ export class LogLinesRepository {
     const scopedSheetId = scopedId(ownerId, sheetId);
     const current = await this.findOwnedLine(scopedSheetId, lineId, ownerId);
     if (!current) return undefined;
-    await this.db.query(`delete from log_lines where sheet_id = ${this.db.placeholder(1)} and id = ${this.db.placeholder(2)}`, [scopedSheetId, lineId]);
-    await this.insert(sheetId, Number(current.sort_order), line, ownerId);
-    return line;
+    const expectedRevision = line.revision ?? Number(current.revision);
+    const columns = ["time", "position_name", "latitude", "longitude", "log_nm", "compass_course", "waves", "barometer", "weather", "weather_remark", "temperature", "temperature_unit", "sails", "engine", "wind_direction", "wind_strength", "wind_unit", "sea_unit", "tide", "tide_unit", "moon", "deviation", "magnetic_course", "variation", "true_course", "wind_drift", "course_through_water", "current_drift", "course_over_ground", "speed_kn", "sail_miles", "sail_note", "motor_miles", "motor_hours", "motor_note", "remarks"];
+    const values = lineValues(line);
+    const assignments = columns.map((column, index) => `${column} = ${this.db.placeholder(index + 1)}`);
+    const updated = await this.db.query<{ revision: number; created_at: string | Date; updated_at: string | Date }>(
+      `update log_lines set ${assignments.join(", ")}, revision = revision + 1, updated_at = ${this.now()} where sheet_id = ${this.db.placeholder(values.length + 1)} and id = ${this.db.placeholder(values.length + 2)} and revision = ${this.db.placeholder(values.length + 3)} returning revision, created_at, updated_at`,
+      [...values, scopedSheetId, lineId, expectedRevision],
+    );
+    if (!updated.rows.length) throw Object.assign(new Error("The log line was changed by another request."), { code: "revision_conflict" });
+    await this.db.query(`delete from log_line_engine_hours where sheet_id = ${this.db.placeholder(1)} and line_sort_order = ${this.db.placeholder(2)}`, [scopedSheetId, Number(current.sort_order)]);
+    await this.insertEngineHours(sheetId, Number(current.sort_order), line, ownerId);
+    const metadata = updated.rows[0];
+    return { ...line, revision: Number(metadata.revision), createdAt: new Date(metadata.created_at).toISOString(), updatedAt: new Date(metadata.updated_at).toISOString() };
   }
 
   async delete(sheetId: string, lineId: string, ownerId: string) {
@@ -103,6 +113,12 @@ export class LogLinesRepository {
   private values(count: number, start = 1) {
     return Array.from({ length: count }, (_, index) => this.db.placeholder(start + index)).join(", ");
   }
+
+  private now() { return this.db.placeholder(1) === "$1" ? "current_timestamp" : "strftime('%Y-%m-%dT%H:%M:%fZ','now')"; }
+}
+
+function lineValues(line: LogLine) {
+  return [line.time, line.position, line.latitude, line.longitude, line.logNm, line.compassCourse, line.waves, line.barometer, line.weather, line.weatherRemark, line.temperature, line.temperatureUnit, line.sailNote, line.motorNote, line.windDirection, line.windStrength, line.windUnit, line.seaUnit, line.tide, line.tideUnit, line.moon, line.deviation, line.magneticCourse, line.variation, line.trueCourse, line.windDrift, line.courseThroughWater, line.currentDrift, line.courseOverGround, line.speedKn, line.sailMiles, line.sailNote, line.motorMiles, line.motorHours, line.motorNote, line.remarks];
 }
 
 function LogSheetsLine(row: LogLineRow & { engineHours?: Record<string, number> }): LogLine {

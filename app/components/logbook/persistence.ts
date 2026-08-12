@@ -92,10 +92,15 @@ function entityRequest(path: string, method: "POST" | "PUT" | "DELETE", entity?:
     ? { ...entity, image: undefined, imageId: entity.imageId ?? entity.image?.id,
         ...("crew" in entity ? { crew: entity.crew.map(member => ({ ...member, image: undefined, imageId: member.imageId ?? member.image?.id })) } : {}) }
     : entity;
+  // Sheet metadata/assignment writes are deliberately independent from line
+  // writes. Lines have stable-id endpoints and must never hitch a ride here.
+  const focusedEntity = withoutImageBytes && "lines" in withoutImageBytes
+    ? Object.fromEntries(Object.entries(withoutImageBytes).filter(([key]) => key !== "lines"))
+    : withoutImageBytes;
   return fetch(path, {
     method,
     headers: { "Content-Type": "application/json" },
-    body: withoutImageBytes ? JSON.stringify(withoutImageBytes) : undefined,
+    body: focusedEntity ? JSON.stringify(focusedEntity) : undefined,
     signal: options?.signal,
     keepalive: options?.keepalive,
   });
