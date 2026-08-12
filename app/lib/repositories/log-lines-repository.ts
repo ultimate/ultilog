@@ -38,7 +38,8 @@ export class LogLinesRepository {
     const result = await this.db.query<{ sort_order: number }>(`select coalesce(max(sort_order), -1) + 1 as sort_order from log_lines where sheet_id = ${this.db.placeholder(1)} and exists (select 1 from log_sheets where id = ${this.db.placeholder(1)} and owner_id = ${this.db.placeholder(2)})`, [scopedSheetId, ownerId]);
     if (!result.rows.length) return undefined;
     await this.insert(sheetId, Number(result.rows[0].sort_order), line, ownerId);
-    return LogSheetsLine((await this.findOwnedLine(scopedSheetId, line.id, ownerId))!);
+    const stored = (await this.findForSheet(scopedSheetId)).find(row => row.id === line.id);
+    return stored ? LogSheetsLine(stored) : undefined;
   }
 
   async update(sheetId: string, lineId: string, line: LogLine, ownerId: string) {
@@ -56,8 +57,8 @@ export class LogLinesRepository {
     if (!updated.rows.length) throw Object.assign(new Error("The log line was changed by another request."), { code: "revision_conflict" });
     await this.db.query(`delete from log_line_engine_hours where sheet_id = ${this.db.placeholder(1)} and line_sort_order = ${this.db.placeholder(2)}`, [scopedSheetId, Number(current.sort_order)]);
     await this.insertEngineHours(sheetId, Number(current.sort_order), line, ownerId);
-    const metadata = updated.rows[0];
-    return { ...line, revision: Number(metadata.revision), createdAt: new Date(metadata.created_at).toISOString(), updatedAt: new Date(metadata.updated_at).toISOString() };
+    const stored = (await this.findForSheet(scopedSheetId)).find(row => row.id === lineId);
+    return stored ? LogSheetsLine(stored) : undefined;
   }
 
   async delete(sheetId: string, lineId: string, ownerId: string) {

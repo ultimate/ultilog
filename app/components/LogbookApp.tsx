@@ -45,6 +45,7 @@ import {
   reorderLogLines,
   routeFromPathname,
 } from "./logbook/persistence";
+import { mergeMutationResult } from "./logbook/mutation-merge";
 import {
   dateTimeLocalFromParts,
   dateTimeLocalFromStamp,
@@ -367,8 +368,10 @@ export function LogbookApp({
     logbookRef.current = nextLogbook;
     setLogbook(nextLogbook);
     setSaveError(null);
-    const id = mutation.kind === "line" || mutation.kind === "line-deletion" ? mutation.sheetId : mutation.kind === "deletion" || "id" in mutation ? mutation.id : mutation.entity.id;
-    const key = `${mutation.kind === "deletion" ? mutation.entityKind : mutation.kind}:${id}`;
+    const id = mutation.kind === "line-deletion" || mutation.kind === "deletion" || "id" in mutation ? mutation.id : mutation.entity.id;
+    const key = mutation.kind === "line" || mutation.kind === "line-deletion"
+      ? `line:${mutation.sheetId}:${id}`
+      : `${mutation.kind === "deletion" ? mutation.entityKind : mutation.kind}:${id}`;
     const sequence = ++mutationSequenceRef.current;
     pendingMutationsRef.current.set(key, sequence);
     failedMutationsRef.current.delete(key);
@@ -397,7 +400,7 @@ export function LogbookApp({
         : deleteLogbookEntity(mutation.entityKind, mutation.id)).catch(() => undefined);
       if (response?.ok && "entity" in mutation) {
         persistedEntity = await response.clone().json().catch(() => undefined) as typeof persistedEntity;
-        if (persistedEntity) mergeConcurrencyMetadata(mutation.kind, id, persistedEntity, mutation.kind === "line" ? mutation.sheetId : undefined);
+        if (persistedEntity) mergePersistedMutation(mutation.kind, id, entity as typeof persistedEntity, persistedEntity, mutation.kind === "line" ? mutation.sheetId : undefined);
         if (mutation.kind === "line") response = await reorderLogLines(mutation.sheetId, mutation.lineIds).catch(() => undefined);
       }
     });
@@ -419,18 +422,16 @@ export function LogbookApp({
     return false;
   }
 
-  function mergeConcurrencyMetadata(kind: "boat" | "crew" | "sheet" | "line", entityId: string, persisted: Boat | CrewMember | LogSheet | LogLine, sheetId?: string) {
-    const metadata = concurrencyMetadata(persisted);
-    if (!metadata) return;
+  function mergePersistedMutation(kind: "boat" | "crew" | "sheet" | "line", entityId: string, submitted: Boat | CrewMember | LogSheet | LogLine, persisted: Boat | CrewMember | LogSheet | LogLine, sheetId?: string) {
     const current = logbookRef.current;
     const updated: PersistedLogbook = kind === "boat"
-      ? { ...current, boats: current.boats.map(entity => entity.id === entityId ? { ...entity, ...metadata } : entity) }
+      ? { ...current, boats: current.boats.map(entity => entity.id === entityId ? mergeMutationResult(entity, submitted as Boat, persisted as Boat) : entity) }
       : kind === "crew"
-        ? { ...current, crewMembers: current.crewMembers.map(entity => entity.id === entityId ? { ...entity, ...metadata } : entity) }
+        ? { ...current, crewMembers: current.crewMembers.map(entity => entity.id === entityId ? mergeMutationResult(entity, submitted as CrewMember, persisted as CrewMember) : entity) }
         : { ...current, sheets: current.sheets.map(sheet => kind === "sheet" && sheet.id === entityId
-          ? { ...sheet, ...metadata }
+          ? mergeMutationResult(sheet, submitted as LogSheet, { ...(persisted as LogSheet), lines: sheet.lines })
           : kind === "line" && sheet.id === sheetId
-            ? { ...sheet, lines: sheet.lines.map(entity => entity.id === entityId ? { ...entity, ...metadata } : entity) }
+            ? { ...sheet, lines: sheet.lines.map(entity => entity.id === entityId ? mergeMutationResult(entity, submitted as LogLine, persisted as LogLine) : entity) }
             : sheet) };
     logbookRef.current = updated;
     setLogbook(updated);
