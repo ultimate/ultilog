@@ -183,6 +183,42 @@ export abstract class LogbookDatabase implements QueryableDatabase {
     });
   }
 
+  /** Creates a new sheet and its independently addressable lines atomically. */
+  async createLogSheetAggregate(sheet: Omit<LogSheet, "lines">, lines: LogLine[]) {
+    await this.ensureSchemaAndBackfill();
+    return this.withTransaction(async (database) => {
+      const ownerId = database.requireOwnerId();
+      if (await database.sheets.findById(sheet.id, ownerId)) throw new Error("A log sheet with this id already exists.");
+
+      const boatRow = await database.boats.findById(sheet.boatId, ownerId);
+      const policyError = sheetBoatMutationError(boatRow ? { name: boatRow.name, archived: Boolean(boatRow.archived) } : undefined, false);
+      if (policyError) throw Object.assign(new Error(policyError.message), { code: policyError.code });
+      if (!boatRow) throw new Error("Boat policy failed to reject a missing boat.");
+
+      await database.images.assertOwned(sheet.imageId ?? sheet.image?.id, ownerId);
+      for (const member of sheet.crew) await database.images.assertOwned(member.imageId ?? member.image?.id, ownerId);
+
+      const focusedSheet: LogSheet = { ...sheet, lines: [] };
+      const threshold = await database.motionStationaryThresholdNm();
+      await database.sheets.insert(focusedSheet, ownerId, threshold);
+      await database.crew.replaceAssignments(sheet.id, sheet.crew, ownerId);
+      for (const line of lines) {
+        const created = await database.lines.create(sheet.id, line, ownerId);
+        if (!created) throw new Error("The new log sheet could not be addressed while creating its lines.");
+      }
+
+      const row = (await database.sheets.findById(sheet.id, ownerId))!;
+      const lineRows = await database.lines.findForSheet(row.id);
+      const persistedLines = LogSheetsRepository.toLogbook([], [row], [], lineRows).sheets[0].lines;
+      await database.sheets.updateMetrics(sheet, persistedLines, ownerId, threshold);
+      const [createdRow, crew] = await Promise.all([
+        database.sheets.findById(sheet.id, ownerId),
+        database.crew.findForSheet(row.id, ownerId),
+      ]);
+      return createdRow ? LogSheetsRepository.toLogbook([], [createdRow], crew, lineRows).sheets[0] : undefined;
+    });
+  }
+
   async deleteLogSheet(id: string, revision: number) {
     await this.ensureSchemaAndBackfill();
     return this.withTransaction(async (database) => {
