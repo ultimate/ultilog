@@ -37,6 +37,21 @@ export async function jsonBody(request: Request, byteLimit: number) {
   return JSON.parse(body);
 }
 
+export async function deleteRevision(request: Request) {
+  let body: unknown;
+  try {
+    body = await jsonBody(request, 1024);
+  } catch (error) {
+    if (error instanceof RequestBodyTooLargeError) throw error;
+    throw Object.assign(new Error("A positive integer revision is required."), { code: "invalid_revision" });
+  }
+  const revision = body && typeof body === "object" && !Array.isArray(body) ? (body as { revision?: unknown }).revision : undefined;
+  if (!Number.isSafeInteger(revision) || Number(revision) <= 0) {
+    throw Object.assign(new Error("A positive integer revision is required."), { code: "invalid_revision" });
+  }
+  return revision as number;
+}
+
 function envBytes(name: string, fallback: number) {
   const configured = Number(process.env[name]);
   return Number.isSafeInteger(configured) && configured > 0 ? configured : fallback;

@@ -36,8 +36,9 @@ export class CrewRepository {
     return this.findProfile(crew.id, ownerId);
   }
 
-  async delete(id: string, ownerId: string) {
-    await this.db.query(`delete from crew_members where id = ${this.db.placeholder(1)} and owner_id = ${this.db.placeholder(2)}`, [scopedId(ownerId, id), ownerId]);
+  async delete(id: string, ownerId: string, revision: number) {
+    const result = await this.db.query<{ id: string }>(`delete from crew_members where id = ${this.db.placeholder(1)} and owner_id = ${this.db.placeholder(2)} and revision = ${this.db.placeholder(3)} returning id`, [scopedId(ownerId, id), ownerId, expectedRevision(revision)]);
+    if (!result.rows.length) throw Object.assign(new Error("The crew member was changed by another request."), { code: "revision_conflict" });
   }
 
   async findAll(ownerId: string) {

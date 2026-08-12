@@ -363,8 +363,8 @@ export function LogbookApp({
     | { kind: "sheet"; entity: LogSheet; isNew?: boolean }
     | { kind: "sheet"; id: string }
     | { kind: "line"; sheetId: string; entity: LogLine; isNew: boolean; previousLineIds: string[]; lineIds: string[] }
-    | { kind: "line-deletion"; sheetId: string; id: string }
-    | { kind: "deletion"; entityKind: "boat" | "crew" | "sheet"; id: string };
+    | { kind: "line-deletion"; sheetId: string; id: string; revision: number }
+    | { kind: "deletion"; entityKind: "boat" | "crew" | "sheet"; id: string; revision: number };
 
   async function saveLogbookNow(nextLogbook: PersistedLogbook, mutation: FocusedMutation) {
     logbookRef.current = nextLogbook;
@@ -427,9 +427,9 @@ export function LogbookApp({
         : undefined;
       response = await (mutation.kind === "boat" ? persistBoat(entity as Boat, mutation.isNew)
         : mutation.kind === "crew" ? persistCrewMember(entity as CrewMember, mutation.isNew)
-        : mutation.kind === "line-deletion" ? persistDeleteLogLine(mutation.sheetId, mutation.id)
+        : mutation.kind === "line-deletion" ? persistDeleteLogLine(mutation.sheetId, mutation.id, mutation.revision)
         : mutation.kind === "sheet" ? persistSheet(entity as LogSheet ?? current.sheets.find((sheet) => "id" in mutation && sheet.id === mutation.id)!, "isNew" in mutation && mutation.isNew)
-        : deleteLogbookEntity(mutation.entityKind, mutation.id)).catch(() => undefined);
+        : deleteLogbookEntity(mutation.entityKind, mutation.id, mutation.revision)).catch(() => undefined);
       if (response?.ok && "entity" in mutation) {
         persistedEntity = await response.clone().json().catch(() => undefined) as typeof persistedEntity;
         if (persistedEntity) mergePersistedMutation(mutation.kind, id, entity as typeof persistedEntity, persistedEntity);
@@ -1143,7 +1143,7 @@ export function LogbookApp({
     const nextBoats = logbookRef.current.boats.filter(
       (boat) => boat.id !== selectedBoat.id,
     );
-    if (!(await saveLogbookNow({ ...logbookRef.current, boats: nextBoats }, { kind: "deletion", entityKind: "boat", id: selectedBoat.id })))
+    if (!(await saveLogbookNow({ ...logbookRef.current, boats: nextBoats }, { kind: "deletion", entityKind: "boat", id: selectedBoat.id, revision: selectedBoat.revision ?? 0 })))
       return;
     setSelectedBoatId(nextBoats[0]?.id ?? "");
     setEditingBoatId(nextBoats[0]?.id ?? null);
@@ -1402,7 +1402,7 @@ export function LogbookApp({
           ? withCalculatedSheetMetrics({ ...sheet, lines: sheet.lines.filter((line) => line.id !== lineIdToDelete) }, preferences.motionStationaryThresholdNm)
           : sheet,
       ),
-    }, { kind: "line-deletion", sheetId: activeSheet.id, id: lineIdToDelete });
+    }, { kind: "line-deletion", sheetId: activeSheet.id, id: lineIdToDelete, revision: activeSheet.lines.find(line => line.id === lineIdToDelete)?.revision ?? 0 });
   }
 
   function cancelLineEdit() {
@@ -1599,7 +1599,7 @@ export function LogbookApp({
       !(await saveLogbookNow({
         ...logbookRef.current,
         crewMembers: nextCrewMembers,
-      }, { kind: "deletion", entityKind: "crew", id: selectedCrew.id }))
+      }, { kind: "deletion", entityKind: "crew", id: selectedCrew.id, revision: selectedCrew.revision ?? 0 }))
     )
       return;
     setSelectedCrewIndex(0);

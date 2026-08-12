@@ -61,11 +61,12 @@ export class LogLinesRepository {
     return stored ? LogSheetsLine(stored) : undefined;
   }
 
-  async delete(sheetId: string, lineId: string, ownerId: string) {
+  async delete(sheetId: string, lineId: string, ownerId: string, revision: number) {
     const scopedSheetId = scopedId(ownerId, sheetId);
     const current = await this.findOwnedLine(scopedSheetId, lineId, ownerId);
     if (!current) return undefined;
-    await this.db.query(`delete from log_lines where sheet_id = ${this.db.placeholder(1)} and id = ${this.db.placeholder(2)}`, [scopedSheetId, lineId]);
+    const deleted = await this.db.query<{ id: string }>(`delete from log_lines where sheet_id = ${this.db.placeholder(1)} and id = ${this.db.placeholder(2)} and revision = ${this.db.placeholder(3)} and exists (select 1 from log_sheets where id = log_lines.sheet_id and owner_id = ${this.db.placeholder(4)}) returning id`, [scopedSheetId, lineId, expectedRevision(revision), ownerId]);
+    if (!deleted.rows.length) throw Object.assign(new Error("The log line was changed by another request."), { code: "revision_conflict" });
     return current;
   }
 

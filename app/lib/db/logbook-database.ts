@@ -2,7 +2,7 @@ import { defaultLogSheetShareSettings, type Boat, type CrewMember, type LogLine,
 import { BoatsRepository } from "../repositories/boats-repository";
 import { CrewRepository } from "../repositories/crew-repository";
 import { LogLinesRepository } from "../repositories/log-lines-repository";
-import { scopedId } from "../repositories/boats-repository";
+import { expectedRevision, scopedId } from "../repositories/boats-repository";
 import { LogSheetsRepository } from "../repositories/log-sheets-repository";
 import { StoredImagesRepository } from "../repositories/stored-images-repository";
 import { backfillCrewMemberEncryption } from "./encryption-backfill";
@@ -103,17 +103,18 @@ export abstract class LogbookDatabase implements QueryableDatabase {
     });
   }
 
-  async deleteBoat(id: string) {
+  async deleteBoat(id: string, revision: number) {
     await this.ensureSchemaAndBackfill();
     return this.withTransaction(async (database) => {
       const ownerId = database.requireOwnerId();
       const row = await database.boats.findById(id, ownerId);
       if (!row) return undefined;
+      if (Number(row.revision) !== expectedRevision(revision)) throw Object.assign(new Error("The boat was changed by another request."), { code: "revision_conflict" });
       const entity = LogSheetsRepository.toLogbook([row], [], [], []).boats[0];
       const imageId = row.image_id ?? undefined;
       const policyError = referencedBoatDeletionError(entity, await database.boats.isReferenced(id, ownerId));
       if (policyError) throw Object.assign(new Error(policyError.message), { code: policyError.code });
-      await database.boats.delete(id, ownerId);
+      await database.boats.delete(id, ownerId, revision);
       await database.images.deleteIfOrphaned(imageId, ownerId);
       return entity;
     });
@@ -133,7 +134,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
     });
   }
 
-  async deleteCrewMember(id: string) {
+  async deleteCrewMember(id: string, revision: number) {
     await this.ensureSchemaAndBackfill();
     return this.withTransaction(async (database) => {
       const ownerId = database.requireOwnerId();
@@ -141,7 +142,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
       if (!row) return undefined;
       const entity = LogSheetsRepository.toLogbook([], [], [], [], [row]).crewMembers[0];
       const imageId = row.image_id ?? undefined;
-      await database.crew.delete(id, ownerId);
+      await database.crew.delete(id, ownerId, revision);
       await database.images.deleteIfOrphaned(imageId, ownerId);
       return entity;
     });
@@ -182,7 +183,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
     });
   }
 
-  async deleteLogSheet(id: string) {
+  async deleteLogSheet(id: string, revision: number) {
     await this.ensureSchemaAndBackfill();
     return this.withTransaction(async (database) => {
       const ownerId = database.requireOwnerId();
@@ -191,7 +192,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
       const [crew, lines] = await Promise.all([database.crew.findForSheet(row.id, ownerId), database.lines.findForSheet(row.id)]);
       const entity = LogSheetsRepository.toLogbook([], [row], crew, lines).sheets[0];
       const imageId = row.image_id ?? undefined;
-      await database.sheets.delete(id, ownerId);
+      await database.sheets.delete(id, ownerId, revision);
       await database.images.deleteIfOrphaned(imageId, ownerId);
       return entity;
     });
@@ -205,8 +206,8 @@ export abstract class LogbookDatabase implements QueryableDatabase {
     return this.mutateLogLines(sheetId, database => database.lines.update(sheetId, lineId, line, database.requireOwnerId()));
   }
 
-  async deleteLogLine(sheetId: string, lineId: string) {
-    return this.mutateLogLines(sheetId, database => database.lines.delete(sheetId, lineId, database.requireOwnerId()));
+  async deleteLogLine(sheetId: string, lineId: string, revision: number) {
+    return this.mutateLogLines(sheetId, database => database.lines.delete(sheetId, lineId, database.requireOwnerId(), revision));
   }
 
   async reorderLogLines(sheetId: string, lineIds: string[]) {

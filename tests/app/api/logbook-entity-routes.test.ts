@@ -40,11 +40,26 @@ describe("entity mutation routes", () => {
 
   it("returns not found for cross-owner ids and preserves policy conflicts", async () => {
     vi.mocked(store.deleteBoat).mockResolvedValueOnce(undefined);
-    expect((await boat.DELETE(new Request("https://example.test"), context("foreign"))).status).toBe(404);
+    expect((await boat.DELETE(new Request("https://example.test", { method: "DELETE", body: JSON.stringify({ revision: 3 }) }), context("foreign"))).status).toBe(404);
+    expect(store.deleteBoat).toHaveBeenLastCalledWith("foreign", 3, "owner-1");
     vi.mocked(store.deleteBoat).mockRejectedValueOnce(Object.assign(new Error("referenced"), { code: "referenced_boat_deleted" }));
-    const response = await boat.DELETE(new Request("https://example.test"), context("boat-1"));
+    const response = await boat.DELETE(new Request("https://example.test", { method: "DELETE", body: JSON.stringify({ revision: 3 }) }), context("boat-1"));
     expect(response.status).toBe(409);
     await expect(response.json()).resolves.toMatchObject({ code: "referenced_boat_deleted" });
+  });
+
+  it("requires a valid delete revision and reports stale revisions", async () => {
+    for (const body of [undefined, "{}", '{"revision":"1"}', '{']) {
+      const response = await boat.DELETE(new Request("https://example.test", { method: "DELETE", body }), context("boat-1"));
+      expect(response.status).toBe(400);
+      await expect(response.json()).resolves.toMatchObject({ code: "invalid_revision" });
+    }
+    expect(store.deleteBoat).not.toHaveBeenCalled();
+
+    vi.mocked(store.deleteBoat).mockRejectedValueOnce(Object.assign(new Error("stale"), { code: "revision_conflict" }));
+    const stale = await boat.DELETE(new Request("https://example.test", { method: "DELETE", body: JSON.stringify({ revision: 1 }) }), context("boat-1"));
+    expect(stale.status).toBe(409);
+    await expect(stale.json()).resolves.toMatchObject({ code: "revision_conflict" });
   });
 
   it("rejects oversized declared and actual focused bodies before parsing", async () => {
