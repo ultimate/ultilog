@@ -10,6 +10,7 @@ import {
   type BoatType,
   type BoatForm,
   type CrewForm,
+  type CrewMember,
   type LineForm,
   type LogLine,
   type LogSheet,
@@ -91,6 +92,17 @@ const adminUserColumns = [
 type SocialUser = { id: string; username: string; avatar?: string; sailMiles: number; motorMiles: number; logbookSheets: number; boats: number };
 type PrintTarget = { mode: "filled"; sheetId: string; showCourseColumns: boolean } | { mode: "empty"; showCourseColumns: boolean } | null;
 type DemoRestrictedFeature = "sharing" | "scanner" | "images";
+type ConcurrentEntity = Boat | PersistedLogbook["crewMembers"][number] | LogSheet | LogLine;
+
+function concurrencyMetadata(entity?: ConcurrentEntity) {
+  return entity?.revision && entity.createdAt && entity.updatedAt
+    ? { revision: entity.revision, createdAt: entity.createdAt, updatedAt: entity.updatedAt }
+    : undefined;
+}
+
+function withCurrentConcurrency<Entity extends ConcurrentEntity>(entity: Entity, current?: ConcurrentEntity): Entity {
+  return { ...entity, ...concurrencyMetadata(current) };
+}
 
 type SheetInlineField =
   | "title"
@@ -365,13 +377,29 @@ export function LogbookApp({
     // must not overlap. The queue also preserves the order of rapid optimistic edits.
     const previousRequest = mutationQueuesRef.current.get(key) ?? Promise.resolve();
     let response: Response | undefined;
+    let persistedEntity: Boat | CrewMember | LogSheet | LogLine | undefined;
     const request = previousRequest.catch(() => undefined).then(async () => {
-      response = await (mutation.kind === "boat" ? persistBoat(mutation.entity, mutation.isNew)
-        : mutation.kind === "crew" ? persistCrewMember(mutation.entity, mutation.isNew)
-        : mutation.kind === "line" ? (async () => { const saved = await persistLogLine(mutation.sheetId, mutation.entity, mutation.isNew); return saved.ok ? reorderLogLines(mutation.sheetId, mutation.lineIds) : saved; })()
+      const current = logbookRef.current;
+      const entity = "entity" in mutation
+        ? withCurrentConcurrency(mutation.entity, mutation.kind === "boat"
+          ? current.boats.find(item => item.id === mutation.entity.id)
+          : mutation.kind === "crew"
+            ? current.crewMembers.find(item => item.id === mutation.entity.id)
+            : mutation.kind === "sheet"
+              ? current.sheets.find(item => item.id === mutation.entity.id)
+              : current.sheets.find(sheet => sheet.id === mutation.sheetId)?.lines.find(item => item.id === mutation.entity.id))
+        : undefined;
+      response = await (mutation.kind === "boat" ? persistBoat(entity as Boat, mutation.isNew)
+        : mutation.kind === "crew" ? persistCrewMember(entity as CrewMember, mutation.isNew)
+        : mutation.kind === "line" ? persistLogLine(mutation.sheetId, entity as LogLine, mutation.isNew)
         : mutation.kind === "line-deletion" ? persistDeleteLogLine(mutation.sheetId, mutation.id)
-        : mutation.kind === "sheet" ? persistSheet("entity" in mutation ? mutation.entity : nextLogbook.sheets.find((sheet) => sheet.id === mutation.id)!)
+        : mutation.kind === "sheet" ? persistSheet(entity as LogSheet ?? current.sheets.find((sheet) => "id" in mutation && sheet.id === mutation.id)!, "isNew" in mutation && mutation.isNew)
         : deleteLogbookEntity(mutation.entityKind, mutation.id)).catch(() => undefined);
+      if (response?.ok && "entity" in mutation) {
+        persistedEntity = await response.clone().json().catch(() => undefined) as typeof persistedEntity;
+        if (persistedEntity) mergeConcurrencyMetadata(mutation.kind, id, persistedEntity, mutation.kind === "line" ? mutation.sheetId : undefined);
+        if (mutation.kind === "line") response = await reorderLogLines(mutation.sheetId, mutation.lineIds).catch(() => undefined);
+      }
     });
     mutationQueuesRef.current.set(key, request);
     await request;
@@ -389,6 +417,23 @@ export function LogbookApp({
       return true;
     }
     return false;
+  }
+
+  function mergeConcurrencyMetadata(kind: "boat" | "crew" | "sheet" | "line", entityId: string, persisted: Boat | CrewMember | LogSheet | LogLine, sheetId?: string) {
+    const metadata = concurrencyMetadata(persisted);
+    if (!metadata) return;
+    const current = logbookRef.current;
+    const updated: PersistedLogbook = kind === "boat"
+      ? { ...current, boats: current.boats.map(entity => entity.id === entityId ? { ...entity, ...metadata } : entity) }
+      : kind === "crew"
+        ? { ...current, crewMembers: current.crewMembers.map(entity => entity.id === entityId ? { ...entity, ...metadata } : entity) }
+        : { ...current, sheets: current.sheets.map(sheet => kind === "sheet" && sheet.id === entityId
+          ? { ...sheet, ...metadata }
+          : kind === "line" && sheet.id === sheetId
+            ? { ...sheet, lines: sheet.lines.map(entity => entity.id === entityId ? { ...entity, ...metadata } : entity) }
+            : sheet) };
+    logbookRef.current = updated;
+    setLogbook(updated);
   }
 
   useEffect(() => {
