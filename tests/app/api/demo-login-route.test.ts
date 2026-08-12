@@ -5,6 +5,11 @@ vi.mock("../../../app/lib/demo/demo-sandboxes", () => ({
   DemoCapacityError: class DemoCapacityError extends Error {},
 }));
 
+vi.mock("../../../app/lib/security/rate-limiter", async () => {
+  const actual = await vi.importActual<typeof import("../../../app/lib/security/rate-limiter")>("../../../app/lib/security/rate-limiter");
+  return { ...actual, enforceRateLimits: vi.fn().mockResolvedValue(undefined) };
+});
+
 const { createDemoSandbox } = await import("../../../app/lib/demo/demo-sandboxes");
 const { POST } = await import("../../../app/api/demo-login/route");
 const { config: proxyConfig } = await import("../../../proxy");

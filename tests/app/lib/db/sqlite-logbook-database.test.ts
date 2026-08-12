@@ -134,7 +134,7 @@ describe("SqliteLogbookDatabase", () => {
 
     await expect(new SqliteLogbookDatabase(databasePath).forUser("new-user").readLogbook()).resolves.toEqual({
       boats: [],
-      crewMembers: [{ id: "me", name: "New User", nationality: "", role: "Owner", address: "", certificate: "", dateOfBirth: "", placeOfBirth: "", gender: "", identityDocumentType: "", identityDocumentNumber: "", identityDocumentIssuingDate: "", identityDocumentExpiryDate: "", isPrimary: true }],
+      crewMembers: [expect.objectContaining({ id: "me", name: "New User", nationality: "", role: "Owner", address: "", certificate: "", dateOfBirth: "", placeOfBirth: "", gender: "", identityDocumentType: "", identityDocumentNumber: "", identityDocumentIssuingDate: "", identityDocumentExpiryDate: "", isPrimary: true, revision: 1, createdAt: expect.any(String), updatedAt: expect.any(String) })],
       sheets: [],
     });
   });
@@ -152,7 +152,7 @@ describe("SqliteLogbookDatabase", () => {
 
     await db.writeLogbook(emptyUserLogbook);
 
-    await expect(new SqliteLogbookDatabase(databasePath).forUser("new-user").readLogbook()).resolves.toEqual(emptyUserLogbook);
+    await expect(new SqliteLogbookDatabase(databasePath).forUser("new-user").readLogbook()).resolves.toEqual({ ...emptyUserLogbook, crewMembers: [expect.objectContaining({ ...emptyUserLogbook.crewMembers[0], revision: 1, createdAt: expect.any(String), updatedAt: expect.any(String) })] });
   });
 
   it("persists replaced logbook data and can read it from a new database wrapper", async () => {
