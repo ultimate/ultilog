@@ -1,7 +1,7 @@
 import type { CrewMember, CrewMemberRow, SheetCrewMember } from "../../models/logbook";
 import type { QueryableDatabase } from "../db/logbook-database";
 import { decryptCrewField, encryptCrewField, isEncryptedCrewFieldValue } from "../crypto/crew-encryption";
-import { imageValues, scopedId } from "./boats-repository";
+import { expectedRevision, imageValues, scopedId } from "./boats-repository";
 
 export class CrewRepository {
   constructor(private db: QueryableDatabase) {}
@@ -20,7 +20,17 @@ export class CrewRepository {
     return (await this.findProfiles(ownerId)).find((crew) => crew.crew_member_id === scopedId(ownerId, id));
   }
 
-  async upsert(crew: CrewMember, ownerId: string) { await this.insertProfile(crew, ownerId); }
+  async upsert(crew: CrewMember, ownerId: string) {
+    const crewMemberId = scopedId(ownerId, crew.id);
+    if (!await this.findProfile(crew.id, ownerId)) return this.insertProfile(crew, ownerId);
+    const columns = ["name", "nationality", "role", "address", "certificate", "is_primary", "image_id", "date_of_birth", "place_of_birth", "gender", "identity_document_type", "identity_document_number", "identity_document_issuing_date", "identity_document_expiry_date"];
+    const assignments = columns.map((column, index) => `${column} = ${this.db.placeholder(index + 1)}`);
+    const result = await this.db.query<{ revision: number }>(
+      `update crew_members set ${assignments.join(", ")}, revision = revision + 1, updated_at = ${this.now()} where id = ${this.db.placeholder(15)} and owner_id = ${this.db.placeholder(16)} and revision = ${this.db.placeholder(17)} returning revision`,
+      [...this.profileValues(crew, ownerId, crewMemberId), crewMemberId, ownerId, expectedRevision(crew.revision)],
+    );
+    if (!result.rows.length) throw Object.assign(new Error("The crew member was changed by another request."), { code: "revision_conflict" });
+  }
 
   async delete(id: string, ownerId: string) {
     await this.db.query(`delete from crew_members where id = ${this.db.placeholder(1)} and owner_id = ${this.db.placeholder(2)}`, [scopedId(ownerId, id), ownerId]);
@@ -110,21 +120,24 @@ export class CrewRepository {
 
   async insertProfile(crew: CrewMember, ownerId: string) {
     const crewMemberId = scopedId(ownerId, crew.id);
+    const values = this.profileValues(crew, ownerId, crewMemberId);
     await this.db.query(
       `insert into crew_members (id, name, nationality, role, address, certificate, is_primary, image_id, owner_id, date_of_birth, place_of_birth, gender, identity_document_type, identity_document_number, identity_document_issuing_date, identity_document_expiry_date) values (${this.values(16)}) on conflict(id) do update set name = excluded.name, nationality = excluded.nationality, role = excluded.role, address = excluded.address, certificate = excluded.certificate, date_of_birth = excluded.date_of_birth, place_of_birth = excluded.place_of_birth, gender = excluded.gender, identity_document_type = excluded.identity_document_type, identity_document_number = excluded.identity_document_number, identity_document_issuing_date = excluded.identity_document_issuing_date, identity_document_expiry_date = excluded.identity_document_expiry_date, is_primary = excluded.is_primary, image_id = excluded.image_id`,
-      [
-        crewMemberId,
-        encryptCrewField(ownerId, crewMemberId, "name", this.plainCrewField(ownerId, crewMemberId, "name", crew.name)),
-        encryptCrewField(ownerId, crewMemberId, "nationality", this.plainCrewField(ownerId, crewMemberId, "nationality", crew.nationality)),
-        encryptCrewField(ownerId, crewMemberId, "role", this.plainCrewField(ownerId, crewMemberId, "role", crew.role)),
-        encryptCrewField(ownerId, crewMemberId, "address", this.plainCrewField(ownerId, crewMemberId, "address", crew.address ?? "")),
-        encryptCrewField(ownerId, crewMemberId, "certificate", this.plainCrewField(ownerId, crewMemberId, "certificate", crew.certificate ?? "")),
-        crew.isPrimary ? 1 : 0,
-        crew.imageId ?? crew.image?.id ?? null,
-        ownerId,
-        ...([ ["date_of_birth", crew.dateOfBirth], ["place_of_birth", crew.placeOfBirth], ["gender", crew.gender], ["identity_document_type", crew.identityDocumentType], ["identity_document_number", crew.identityDocumentNumber], ["identity_document_issuing_date", crew.identityDocumentIssuingDate], ["identity_document_expiry_date", crew.identityDocumentExpiryDate] ] as const).map(([field, value]) => encryptCrewField(ownerId, crewMemberId, field, this.plainCrewField(ownerId, crewMemberId, field, value ?? ""))),
-      ],
+      [crewMemberId, ...values.slice(0, 7), ownerId, ...values.slice(7)],
     );
+  }
+
+  private profileValues(crew: CrewMember, ownerId: string, crewMemberId: string) {
+    return [
+      encryptCrewField(ownerId, crewMemberId, "name", this.plainCrewField(ownerId, crewMemberId, "name", crew.name)),
+      encryptCrewField(ownerId, crewMemberId, "nationality", this.plainCrewField(ownerId, crewMemberId, "nationality", crew.nationality)),
+      encryptCrewField(ownerId, crewMemberId, "role", this.plainCrewField(ownerId, crewMemberId, "role", crew.role)),
+      encryptCrewField(ownerId, crewMemberId, "address", this.plainCrewField(ownerId, crewMemberId, "address", crew.address ?? "")),
+      encryptCrewField(ownerId, crewMemberId, "certificate", this.plainCrewField(ownerId, crewMemberId, "certificate", crew.certificate ?? "")),
+      crew.isPrimary ? 1 : 0,
+      crew.imageId ?? crew.image?.id ?? null,
+      ...([ ["date_of_birth", crew.dateOfBirth], ["place_of_birth", crew.placeOfBirth], ["gender", crew.gender], ["identity_document_type", crew.identityDocumentType], ["identity_document_number", crew.identityDocumentNumber], ["identity_document_issuing_date", crew.identityDocumentIssuingDate], ["identity_document_expiry_date", crew.identityDocumentExpiryDate] ] as const).map(([field, value]) => encryptCrewField(ownerId, crewMemberId, field, this.plainCrewField(ownerId, crewMemberId, field, value ?? ""))),
+    ];
   }
 
 
@@ -176,7 +189,7 @@ export class CrewRepository {
   async replaceAssignments(sheetId: string, crew: SheetCrewMember[], ownerId: string) {
     const id = scopedId(ownerId, sheetId);
     await this.db.query(`delete from sheet_crew_members where sheet_id = ${this.db.placeholder(1)} and exists (select 1 from log_sheets where id = ${this.db.placeholder(1)} and owner_id = ${this.db.placeholder(2)})`, [id, ownerId]);
-    for (const member of crew) await this.upsert(member, ownerId);
+    for (const member of crew) await this.insertProfile(member, ownerId);
     await this.insertAssignments(crew.map((member, sortOrder) => ({ sheetId, sortOrder, crew: member })), ownerId);
   }
 
@@ -215,4 +228,6 @@ export class CrewRepository {
   private values(count: number, start = 1) {
     return Array.from({ length: count }, (_, index) => this.db.placeholder(start + index)).join(", ");
   }
+
+  private now() { return this.db.placeholder(1) === "$1" ? "current_timestamp" : "strftime('%Y-%m-%dT%H:%M:%fZ','now')"; }
 }

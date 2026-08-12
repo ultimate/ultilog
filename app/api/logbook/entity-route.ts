@@ -11,8 +11,9 @@ export async function authenticatedMutation<T>(operation: (ownerId: string) => P
     return NextResponse.json(entity);
   } catch (error) {
     if (error instanceof RequestBodyTooLargeError) return NextResponse.json({ error: error.message, code: "request_body_too_large" }, { status: 413 });
-    if (error instanceof LogbookValidationError || error instanceof SyntaxError) return NextResponse.json({ error: "Invalid entity payload", code: "invalid_payload" }, { status: 400 });
     const code = typeof error === "object" && error && "code" in error ? String(error.code) : undefined;
+    if (code === "invalid_revision") return NextResponse.json({ error: "Invalid entity revision", code }, { status: 400 });
+    if (error instanceof LogbookValidationError || error instanceof SyntaxError) return NextResponse.json({ error: "Invalid entity payload", code: "invalid_payload" }, { status: 400 });
     if (["revision_conflict", "referenced_boat_deleted", "missing_boat", "archived_boat_for_new_sheet", "missing_image", "referenced_image"].includes(code ?? "")) return NextResponse.json({ error: error instanceof Error ? error.message : "Mutation rejected", code }, { status: 409 });
     throw error;
   }

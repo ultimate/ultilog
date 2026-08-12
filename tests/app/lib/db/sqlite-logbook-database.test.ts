@@ -60,7 +60,8 @@ describe("SqliteLogbookDatabase", () => {
 
     const created = { ...source.lines[2], id: "created-line", motorMiles: 7, sailMiles: 3, motorHours: 2 };
     await db.createLogLine(first.id, created);
-    await db.updateLogLine(first.id, created.id, { ...created, motorMiles: 9, remarks: "updated" });
+    const createdWithRevision = (await db.readLogbook()).sheets.find(sheet => sheet.id === first.id)!.lines.find(line => line.id === created.id)!;
+    await db.updateLogLine(first.id, created.id, { ...created, revision: createdWithRevision!.revision, motorMiles: 9, remarks: "updated" });
     await db.reorderLogLines(first.id, [created.id, first.lines[1].id, first.lines[0].id]);
     await db.deleteLogLine(first.id, created.id);
 
@@ -78,8 +79,8 @@ describe("SqliteLogbookDatabase", () => {
     await owner.migrate();
     await owner.query("insert into users (id, name, email, password_hash) values (?, ?, ?, ?), (?, ?, ?, ?)", ["owner-a", "A", "a@example.test", "", "owner-b", "B", "b@example.test", ""]);
     const initial = { id: "shared-id", name: "Owner A boat", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: defaultDeviationTable() };
-    await expect(owner.upsertBoat(initial)).resolves.toMatchObject(initial);
-    await expect(owner.upsertBoat({ ...initial, name: "Updated" })).resolves.toMatchObject({ name: "Updated" });
+    const created = await owner.upsertBoat(initial);
+    await expect(owner.upsertBoat({ ...initial, revision: created!.revision, name: "Updated" })).resolves.toMatchObject({ name: "Updated" });
     const other = new SqliteLogbookDatabase(path).forUser("owner-b");
     await expect(other.deleteBoat(initial.id)).resolves.toBeUndefined();
     await expect(owner.readLogbook()).resolves.toMatchObject({ boats: [{ name: "Updated" }] });
@@ -91,10 +92,10 @@ describe("SqliteLogbookDatabase", () => {
     await db.migrate();
     await db.query("insert into users (id, name, email, password_hash) values (?, ?, ?, ?)", ["policy-user", "Policy", "policy@example.test", ""]);
     const boat = { id: "boat-1", archived: true, name: "Archived", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: defaultDeviationTable() };
-    await db.upsertBoat(boat);
+    const createdBoat = await db.upsertBoat(boat);
     const sheet = { id: "sheet-1", title: "Trip", status: "Draft" as const, boatId: boat.id, route: { from: "", to: "", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] };
     await expect(db.upsertLogSheet(sheet)).rejects.toMatchObject({ code: "archived_boat_for_new_sheet" });
-    await db.upsertBoat({ ...boat, archived: false });
+    await db.upsertBoat({ ...boat, revision: createdBoat!.revision, archived: false });
     await db.upsertLogSheet(sheet);
     await expect(db.deleteBoat(boat.id)).rejects.toMatchObject({ code: "referenced_boat_deleted" });
     await expect(db.deleteLogSheet(sheet.id)).resolves.toMatchObject({ id: sheet.id });
@@ -115,7 +116,8 @@ describe("SqliteLogbookDatabase", () => {
       return query(sql, values);
     });
 
-    await expect(db.upsertLogSheet({ ...original, title: "Must roll back" })).rejects.toThrow("simulated metadata failure");
+    const persistedBeforeFailure = (await db.readLogbook()).sheets.find(sheet => sheet.id === original.id)!;
+    await expect(db.upsertLogSheet({ ...original, revision: persistedBeforeFailure.revision, title: "Must roll back" })).rejects.toThrow("simulated metadata failure");
     failure.mockRestore();
 
     const persisted = await db.readLogbook();
@@ -132,12 +134,13 @@ describe("SqliteLogbookDatabase", () => {
     const sheet = { ...source, id: "sheet-1", boatId: boat.id, crew: [], lines: source.lines.slice(0, 2) };
     await db.upsertLogSheet(sheet);
 
-    await expect(Promise.all([
-      db.upsertLogSheet({ ...sheet, title: "First queued edit" }),
-      db.upsertLogSheet({ ...sheet, title: "Second queued edit" }),
-    ])).resolves.toHaveLength(2);
-
-    await expect(db.readLogbook()).resolves.toMatchObject({ sheets: [{ title: "Second queued edit" }] });
+    const persisted = (await db.readLogbook()).sheets.find(item => item.id === sheet.id)!;
+    const results = await Promise.allSettled([
+      db.upsertLogSheet({ ...sheet, revision: persisted.revision, title: "First queued edit" }),
+      db.upsertLogSheet({ ...sheet, revision: persisted.revision, title: "Second queued edit" }),
+    ]);
+    expect(results.map(result => result.status).sort()).toEqual(["fulfilled", "rejected"]);
+    expect(results.find(result => result.status === "rejected")).toMatchObject({ reason: { code: "revision_conflict" } });
   });
 
   it("requires every logbook access to be scoped to an explicit user", async () => {

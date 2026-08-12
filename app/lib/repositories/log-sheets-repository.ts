@@ -2,7 +2,7 @@ import { normalizeTechnicalCheck } from "../../domain/logbook/technical-log";
 import { calculateLogSheetMetrics } from "../../domain/logbook/sheet-metrics";
 import { defaultLogSheetShareSettings, normalizeDeviationTable, normalizeWindDriftTable, type Boat, type BoatRow, type CrewMemberRow, type LogLine, type LogLineRow, type LogSheet, type LogSheetRow, type PersistedLogbook, type StoredLogSheet } from "../../models/logbook";
 import type { QueryableDatabase } from "../db/logbook-database";
-import { imageFromRow, imageValues, scopedId, unscopedId } from "./boats-repository";
+import { expectedRevision, imageFromRow, imageValues, scopedId, unscopedId } from "./boats-repository";
 
 export class LogSheetsRepository {
   constructor(private db: QueryableDatabase) {}
@@ -21,7 +21,7 @@ export class LogSheetsRepository {
     if (!existing) return this.insert(sheet, ownerId, motionStationaryThresholdNm);
 
     const metrics = calculateLogSheetMetrics(sheet.lines, sheet.route, { stationaryDistanceThresholdNm: motionStationaryThresholdNm });
-    const expectedRevision = sheet.revision ?? Number(existing.revision);
+    const revision = expectedRevision(sheet.revision);
     const values = [
       sheet.title, sheet.status, sheet.source ?? null, sheet.verificationNote ?? null,
       sheet.scannerWarnings ? JSON.stringify(sheet.scannerWarnings) : null,
@@ -33,7 +33,7 @@ export class LogSheetsRepository {
       overallPrivacy(sheet.share), privacyFor(sheet.share?.masterData), privacyFor(sheet.share?.picture),
       privacyFor(sheet.share?.logLines), privacyFor(sheet.share?.metrics), privacyFor(sheet.share?.technicalLog),
       privacyFor(sheet.share?.skipper), privacyFor(sheet.share?.crew),
-      scopedId(ownerId, sheet.id), ownerId, expectedRevision,
+      scopedId(ownerId, sheet.id), ownerId, revision,
     ];
     const columns = [
       "title", "status", "source", "verification_note", "scanner_warnings", "boat_id", "skipper", "route",
