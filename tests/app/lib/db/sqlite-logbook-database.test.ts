@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { defaultDeviationTable } from "../../../../app/models/logbook";
 import { SqliteLogbookDatabase } from "../../../../app/lib/db/sqlite-logbook-database";
-import { sampleLogSheets } from "../../../fixtures/logbook";
+import { sampleBoats, sampleLogSheets } from "../../../fixtures/logbook";
 import { calculateLogSheetMetrics } from "../../../../app/domain/logbook/sheet-metrics";
 
 const tempDirs: string[] = [];
@@ -14,6 +14,36 @@ afterEach(async () => {
 });
 
 describe("SqliteLogbookDatabase", () => {
+  it("updates sheet metadata atomically without rewriting lines, engine hours, or unrelated sheets", async () => {
+    const db = new SqliteLogbookDatabase(await tempDatabasePath()).forUser("metadata-user");
+    await db.migrate();
+    await db.query("insert into users (id, name, email, password_hash) values (?, ?, ?, ?)", ["metadata-user", "Metadata", "metadata@example.test", ""]);
+    const boat = { ...sampleBoats[0], id: "boat-1" };
+    await db.upsertBoat(boat);
+    const source = sampleLogSheets[0];
+    const line = { ...source.lines[0], engineHours: { "main-engine": 1.25 }, motorHours: 1.25 };
+    const affected = { ...source, id: "affected", boatId: boat.id, crew: [], lines: [line] };
+    const unrelated = { ...source, id: "unrelated", title: "Untouched", boatId: boat.id, crew: [], lines: source.lines.slice(1, 3) };
+    await db.upsertLogSheet(affected);
+    await db.upsertLogSheet(unrelated);
+    await db.query("update log_sheets set created_at = ?, updated_at = ? where id = ?", ["2025-01-01T00:00:00.000Z", "2025-01-02T00:00:00.000Z", "metadata-user:affected"]);
+
+    const linesBefore = await db.query("select * from log_lines order by sheet_id, sort_order");
+    const engineHoursBefore = await db.query("select * from log_line_engine_hours order by sheet_id, line_sort_order, engine_id");
+    const unrelatedBefore = await db.query("select * from log_sheets where id = ?", ["metadata-user:unrelated"]);
+    const sheetBefore = (await db.query<{ revision: number; created_at: string; updated_at: string }>("select revision, created_at, updated_at from log_sheets where id = ?", ["metadata-user:affected"])).rows[0];
+    const persisted = (await db.readLogbook()).sheets.find((sheet) => sheet.id === affected.id)!;
+
+    await db.upsertLogSheet({ ...persisted, title: "Metadata changed", route: { ...persisted.route, to: "New destination" }, lines: [{ ...line, remarks: "must be ignored" }] });
+
+    expect(await db.query("select * from log_lines order by sheet_id, sort_order")).toEqual(linesBefore);
+    expect(await db.query("select * from log_line_engine_hours order by sheet_id, line_sort_order, engine_id")).toEqual(engineHoursBefore);
+    expect(await db.query("select * from log_sheets where id = ?", ["metadata-user:unrelated"])).toEqual(unrelatedBefore);
+    const sheetAfter = (await db.query<{ title: string; revision: number; created_at: string; updated_at: string }>("select title, revision, created_at, updated_at from log_sheets where id = ?", ["metadata-user:affected"])).rows[0];
+    expect(sheetAfter).toMatchObject({ title: "Metadata changed", revision: sheetBefore.revision + 1, created_at: sheetBefore.created_at });
+    expect(new Date(sheetAfter.updated_at).getTime()).toBeGreaterThan(new Date(sheetBefore.updated_at).getTime());
+  });
+
   it("mutates only the addressed line and sheet while keeping cached metrics current", async () => {
     const db = new SqliteLogbookDatabase(await tempDatabasePath()).forUser("focused-lines");
     await db.migrate();
@@ -81,11 +111,11 @@ describe("SqliteLogbookDatabase", () => {
     await db.upsertLogSheet(original);
     const query = db.query.bind(db);
     const failure = vi.spyOn(db, "query").mockImplementation(async (sql, values) => {
-      if (sql.startsWith("update log_sheets set motor_miles")) throw new Error("simulated metrics failure");
+      if (sql.startsWith("update log_sheets set title")) throw new Error("simulated metadata failure");
       return query(sql, values);
     });
 
-    await expect(db.upsertLogSheet({ ...original, title: "Must roll back" })).rejects.toThrow("simulated metrics failure");
+    await expect(db.upsertLogSheet({ ...original, title: "Must roll back" })).rejects.toThrow("simulated metadata failure");
     failure.mockRestore();
 
     const persisted = await db.readLogbook();
