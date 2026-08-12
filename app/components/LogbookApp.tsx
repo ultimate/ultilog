@@ -46,6 +46,7 @@ import {
   routeFromPathname,
 } from "./logbook/persistence";
 import { mergeMutationResult } from "./logbook/mutation-merge";
+import { LineMutationQueue } from "./logbook/line-mutation-queue";
 import {
   dateTimeLocalFromParts,
   dateTimeLocalFromStamp,
@@ -271,6 +272,7 @@ export function LogbookApp({
   const pendingMutationsRef = useRef(new Map<string, number>());
   const failedMutationsRef = useRef(new Map<string, number>());
   const mutationQueuesRef = useRef(new Map<string, Promise<void>>());
+  const lineMutationQueueRef = useRef(new LineMutationQueue());
   const mutationSequenceRef = useRef(0);
 
   function pushAppPath(path: string) {
@@ -360,7 +362,7 @@ export function LogbookApp({
     | { kind: "crew"; entity: PersistedLogbook["crewMembers"][number]; isNew?: boolean }
     | { kind: "sheet"; entity: LogSheet; isNew?: boolean }
     | { kind: "sheet"; id: string }
-    | { kind: "line"; sheetId: string; entity: LogLine; isNew: boolean; lineIds: string[] }
+    | { kind: "line"; sheetId: string; entity: LogLine; isNew: boolean; previousLineIds: string[]; lineIds: string[] }
     | { kind: "line-deletion"; sheetId: string; id: string }
     | { kind: "deletion"; entityKind: "boat" | "crew" | "sheet"; id: string };
 
@@ -378,6 +380,39 @@ export function LogbookApp({
     if (!isBackendReady) return true;
     // Sheet saves replace their child collections, so requests for the same entity
     // must not overlap. The queue also preserves the order of rapid optimistic edits.
+    if (mutation.kind === "line") {
+      const submitted = mutation.entity;
+      const succeeded = await lineMutationQueueRef.current.enqueue(
+        {
+          sheetId: mutation.sheetId,
+          lineId: submitted.id,
+          isNew: mutation.isNew,
+          previousLineIds: mutation.previousLineIds,
+          lineIds: mutation.lineIds,
+        },
+        async () => {
+          const current = logbookRef.current;
+          const entity = withCurrentConcurrency(submitted, current.sheets.find(sheet => sheet.id === mutation.sheetId)?.lines.find(line => line.id === submitted.id));
+          const response = await persistLogLine(mutation.sheetId, entity, mutation.isNew).catch(() => undefined);
+          if (!response?.ok) return false;
+          const persisted = await response.clone().json().catch(() => undefined) as LogLine | undefined;
+          if (persisted) mergePersistedMutation("line", submitted.id, entity, persisted, mutation.sheetId);
+          return true;
+        },
+        async ({ lineIds }) => (await reorderLogLines(mutation.sheetId, lineIds).catch(() => undefined))?.ok ?? false,
+      );
+      if (!succeeded) {
+        failedMutationsRef.current.set(key, sequence);
+        setSaveError(t("logbook.saveError"));
+      }
+      if (pendingMutationsRef.current.get(key) !== sequence) return succeeded;
+      pendingMutationsRef.current.delete(key);
+      if (succeeded) {
+        failedMutationsRef.current.delete(key);
+        if (failedMutationsRef.current.size === 0) setSaveError(null);
+      }
+      return succeeded;
+    }
     const previousRequest = mutationQueuesRef.current.get(key) ?? Promise.resolve();
     let response: Response | undefined;
     let persistedEntity: Boat | CrewMember | LogSheet | LogLine | undefined;
@@ -388,20 +423,16 @@ export function LogbookApp({
           ? current.boats.find(item => item.id === mutation.entity.id)
           : mutation.kind === "crew"
             ? current.crewMembers.find(item => item.id === mutation.entity.id)
-            : mutation.kind === "sheet"
-              ? current.sheets.find(item => item.id === mutation.entity.id)
-              : current.sheets.find(sheet => sheet.id === mutation.sheetId)?.lines.find(item => item.id === mutation.entity.id))
+            : current.sheets.find(item => item.id === mutation.entity.id))
         : undefined;
       response = await (mutation.kind === "boat" ? persistBoat(entity as Boat, mutation.isNew)
         : mutation.kind === "crew" ? persistCrewMember(entity as CrewMember, mutation.isNew)
-        : mutation.kind === "line" ? persistLogLine(mutation.sheetId, entity as LogLine, mutation.isNew)
         : mutation.kind === "line-deletion" ? persistDeleteLogLine(mutation.sheetId, mutation.id)
         : mutation.kind === "sheet" ? persistSheet(entity as LogSheet ?? current.sheets.find((sheet) => "id" in mutation && sheet.id === mutation.id)!, "isNew" in mutation && mutation.isNew)
         : deleteLogbookEntity(mutation.entityKind, mutation.id)).catch(() => undefined);
       if (response?.ok && "entity" in mutation) {
         persistedEntity = await response.clone().json().catch(() => undefined) as typeof persistedEntity;
-        if (persistedEntity) mergePersistedMutation(mutation.kind, id, entity as typeof persistedEntity, persistedEntity, mutation.kind === "line" ? mutation.sheetId : undefined);
-        if (mutation.kind === "line") response = await reorderLogLines(mutation.sheetId, mutation.lineIds).catch(() => undefined);
+        if (persistedEntity) mergePersistedMutation(mutation.kind, id, entity as typeof persistedEntity, persistedEntity);
       }
     });
     mutationQueuesRef.current.set(key, request);
@@ -488,6 +519,7 @@ export function LogbookApp({
       pendingMutationsRef.current.clear();
       failedMutationsRef.current.clear();
       mutationQueuesRef.current.clear();
+      lineMutationQueueRef.current.clear();
       setLogbook(normalizedLogbook);
       setActiveSheetId(routedSheet?.id ?? "");
       setSheetForm(
@@ -1251,7 +1283,8 @@ export function LogbookApp({
       }),
     };
     const nextSheet = nextLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)!;
-    if (!(await saveLogbookNow(nextLogbook, { kind: "line", sheetId: activeSheet.id, entity: line, isNew: editingLineId === null, lineIds: nextSheet.lines.map(candidate => candidate.id) }))) return;
+    const previousLineIds = currentLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)?.lines.map((candidate) => candidate.id) ?? [];
+    if (!(await saveLogbookNow(nextLogbook, { kind: "line", sheetId: activeSheet.id, entity: line, isNew: editingLineId === null, previousLineIds, lineIds: nextSheet.lines.map(candidate => candidate.id) }))) return;
     setLineForm(lineDefaults);
     setEditingLineId(null);
     setShowAddLine(false);
@@ -1826,6 +1859,7 @@ export function LogbookApp({
     pendingMutationsRef.current.clear();
     failedMutationsRef.current.clear();
     mutationQueuesRef.current.clear();
+    lineMutationQueueRef.current.clear();
     setLogbook(resetLogbook);
     setActiveSheetId(firstSheet.id);
     setSelectedBoatId(firstBoat.id);
