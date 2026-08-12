@@ -1,6 +1,6 @@
 import { deleteLogSheet, upsertLogSheet } from "../../../../lib/logbook-store";
 import { validateFocusedLogSheetUpdate } from "../../../../lib/validation/log-sheet";
-import { authenticatedMutation, ENTITY_REQUEST_LIMITS, jsonBody } from "../../entity-route";
+import { authenticatedMutation, deleteRevision, ENTITY_REQUEST_LIMITS, jsonBody } from "../../entity-route";
 
 type Context = { params: Promise<{ id: string }> };
 export const PUT = (request: Request, context: Context) => authenticatedMutation(async ownerId => {
@@ -8,4 +8,4 @@ export const PUT = (request: Request, context: Context) => authenticatedMutation
   if (sheet.id !== id) throw new SyntaxError("Route and entity ids differ");
   return upsertLogSheet(sheet, ownerId);
 });
-export const DELETE = (_request: Request, context: Context) => authenticatedMutation(async ownerId => deleteLogSheet((await context.params).id, ownerId));
+export const DELETE = (request: Request, context: Context) => authenticatedMutation(async ownerId => deleteLogSheet((await context.params).id, await deleteRevision(request), ownerId));

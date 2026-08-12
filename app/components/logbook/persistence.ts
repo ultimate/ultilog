@@ -106,6 +106,16 @@ function entityRequest(path: string, method: "POST" | "PUT" | "DELETE", entity?:
   });
 }
 
+function deletionRequest(path: string, revision: number, options?: RequestOptions) {
+  return fetch(path, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ revision }),
+    signal: options?.signal,
+    keepalive: options?.keepalive,
+  });
+}
+
 /** Upload image bytes once. Entity writes subsequently carry only this stable id. */
 export async function uploadStoredImage(image: import("../../models/stored-image").StoredImage) {
   const response = await fetch("/api/images", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(image) });
@@ -121,9 +131,9 @@ export const persistSheet = (sheet: LogSheet, isNew = false, options?: RequestOp
   entityRequest(isNew ? "/api/logbook/sheets" : `/api/logbook/sheets/${encodeURIComponent(sheet.id)}`, isNew ? "POST" : "PUT", sheet, options);
 export const persistLogLine = (sheetId: string, line: LogLine, isNew: boolean) =>
   entityRequest(`/api/logbook/sheets/${encodeURIComponent(sheetId)}/lines${isNew ? "" : `/${encodeURIComponent(line.id)}`}`, isNew ? "POST" : "PUT", line);
-export const deleteLogLine = (sheetId: string, lineId: string) => entityRequest(`/api/logbook/sheets/${encodeURIComponent(sheetId)}/lines/${encodeURIComponent(lineId)}`, "DELETE");
+export const deleteLogLine = (sheetId: string, lineId: string, revision: number) => deletionRequest(`/api/logbook/sheets/${encodeURIComponent(sheetId)}/lines/${encodeURIComponent(lineId)}`, revision);
 export const reorderLogLines = (sheetId: string, lineIds: string[]) => fetch(`/api/logbook/sheets/${encodeURIComponent(sheetId)}/lines/reorder`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lineIds }) });
-export const deleteLogbookEntity = (kind: "boat" | "crew" | "sheet", id: string, options?: RequestOptions) => {
+export const deleteLogbookEntity = (kind: "boat" | "crew" | "sheet", id: string, revision: number, options?: RequestOptions) => {
   const collection = kind === "boat" ? "boats" : kind === "sheet" ? "sheets" : "crew";
-  return entityRequest(`/api/logbook/${collection}/${encodeURIComponent(id)}`, "DELETE", undefined, options);
+  return deletionRequest(`/api/logbook/${collection}/${encodeURIComponent(id)}`, revision, options);
 };

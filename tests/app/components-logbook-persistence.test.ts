@@ -76,12 +76,12 @@ describe("logbook persistence", () => {
 
     await persistBoat(boat);
     await persistCrewMember(crew);
-    await deleteLogbookEntity("sheet", "sheet-1");
+    await deleteLogbookEntity("sheet", "sheet-1", 7);
 
     expect(fetchMock.mock.calls.map(([url, init]) => [url, init.method, init.body && JSON.parse(init.body)])).toEqual([
       ["/api/logbook/boats/boat-1", "PUT", boat],
       ["/api/logbook/crew/crew-1", "PUT", crew],
-      ["/api/logbook/sheets/sheet-1", "DELETE", undefined],
+      ["/api/logbook/sheets/sheet-1", "DELETE", { revision: 7 }],
     ]);
   });
 

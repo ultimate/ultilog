@@ -46,8 +46,9 @@ export class BoatsRepository {
     return this.findById(boat.id, ownerId);
   }
 
-  async delete(id: string, ownerId: string) {
-    await this.db.query(`delete from boats where id = ${this.db.placeholder(1)} and owner_id = ${this.db.placeholder(2)}`, [scopedId(ownerId, id), ownerId]);
+  async delete(id: string, ownerId: string, revision: number) {
+    const result = await this.db.query<{ id: string }>(`delete from boats where id = ${this.db.placeholder(1)} and owner_id = ${this.db.placeholder(2)} and revision = ${this.db.placeholder(3)} returning id`, [scopedId(ownerId, id), ownerId, expectedRevision(revision)]);
+    if (!result.rows.length) throw Object.assign(new Error("The boat was changed by another request."), { code: "revision_conflict" });
   }
 
   async deleteAll(ownerId: string) {

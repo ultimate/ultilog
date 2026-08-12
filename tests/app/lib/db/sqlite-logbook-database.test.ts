@@ -63,7 +63,10 @@ describe("SqliteLogbookDatabase", () => {
     const createdWithRevision = (await db.readLogbook()).sheets.find(sheet => sheet.id === first.id)!.lines.find(line => line.id === created.id)!;
     await db.updateLogLine(first.id, created.id, { ...created, revision: createdWithRevision!.revision, motorMiles: 9, remarks: "updated" });
     await db.reorderLogLines(first.id, [created.id, first.lines[1].id, first.lines[0].id]);
-    await db.deleteLogLine(first.id, created.id);
+    const updatedLine = (await db.readLogbook()).sheets.find(sheet => sheet.id === first.id)!.lines.find(line => line.id === created.id)!;
+    await expect(db.deleteLogLine(first.id, created.id, createdWithRevision.revision!)).rejects.toMatchObject({ code: "revision_conflict" });
+    expect((await db.readLogbook()).sheets.find(sheet => sheet.id === first.id)!.lines).toContainEqual(expect.objectContaining({ id: created.id, remarks: "updated" }));
+    await db.deleteLogLine(first.id, created.id, updatedLine.revision!);
 
     const persisted = await db.readLogbook();
     const changed = persisted.sheets.find(sheet => sheet.id === first.id)!;
@@ -82,9 +85,11 @@ describe("SqliteLogbookDatabase", () => {
     const created = await owner.upsertBoat(initial);
     await expect(owner.upsertBoat({ ...initial, revision: created!.revision, name: "Updated" })).resolves.toMatchObject({ name: "Updated" });
     const other = new SqliteLogbookDatabase(path).forUser("owner-b");
-    await expect(other.deleteBoat(initial.id)).resolves.toBeUndefined();
+    await expect(other.deleteBoat(initial.id, 2)).resolves.toBeUndefined();
     await expect(owner.readLogbook()).resolves.toMatchObject({ boats: [{ name: "Updated" }] });
-    await expect(owner.deleteBoat(initial.id)).resolves.toMatchObject({ id: initial.id });
+    await expect(owner.deleteBoat(initial.id, 1)).rejects.toMatchObject({ code: "revision_conflict" });
+    await expect(owner.readLogbook()).resolves.toMatchObject({ boats: [{ id: initial.id, name: "Updated", revision: 2 }] });
+    await expect(owner.deleteBoat(initial.id, 2)).resolves.toMatchObject({ id: initial.id });
   });
 
   it("enforces referenced and archived boat policies for focused mutations", async () => {
@@ -97,9 +102,9 @@ describe("SqliteLogbookDatabase", () => {
     await expect(db.upsertLogSheet(sheet)).rejects.toMatchObject({ code: "archived_boat_for_new_sheet" });
     await db.upsertBoat({ ...boat, revision: createdBoat!.revision, archived: false });
     await db.upsertLogSheet(sheet);
-    await expect(db.deleteBoat(boat.id)).rejects.toMatchObject({ code: "referenced_boat_deleted" });
-    await expect(db.deleteLogSheet(sheet.id)).resolves.toMatchObject({ id: sheet.id });
-    await expect(db.deleteBoat(boat.id)).resolves.toMatchObject({ id: boat.id });
+    await expect(db.deleteBoat(boat.id, 2)).rejects.toMatchObject({ code: "referenced_boat_deleted" });
+    await expect(db.deleteLogSheet(sheet.id, 1)).resolves.toMatchObject({ id: sheet.id });
+    await expect(db.deleteBoat(boat.id, 2)).resolves.toMatchObject({ id: boat.id });
   });
 
   it("rolls back a failed focused sheet mutation", async () => {

@@ -47,14 +47,14 @@ function mutate<T>(userId: string, operation: (database: LogbookDatabase) => Pro
 }
 
 export const upsertBoat = (boat: Boat, userId: string) => mutate(userId, db => db.upsertBoat(boat));
-export const deleteBoat = (id: string, userId: string) => mutate(userId, db => db.deleteBoat(id));
+export const deleteBoat = (id: string, revision: number, userId: string) => mutate(userId, db => db.deleteBoat(id, revision));
 export const upsertCrewMember = (crew: CrewMember, userId: string) => mutate(userId, db => db.upsertCrewMember(crew));
-export const deleteCrewMember = (id: string, userId: string) => mutate(userId, db => db.deleteCrewMember(id));
+export const deleteCrewMember = (id: string, revision: number, userId: string) => mutate(userId, db => db.deleteCrewMember(id, revision));
 export const upsertLogSheet = (sheet: LogSheet, userId: string) => mutate(userId, db => db.upsertLogSheet(sheet));
-export const deleteLogSheet = (id: string, userId: string) => mutate(userId, db => db.deleteLogSheet(id));
+export const deleteLogSheet = (id: string, revision: number, userId: string) => mutate(userId, db => db.deleteLogSheet(id, revision));
 export const createLogLine = (sheetId: string, line: LogLine, userId: string) => mutate(userId, db => db.createLogLine(sheetId, line));
 export const updateLogLine = (sheetId: string, lineId: string, line: LogLine, userId: string) => mutate(userId, db => db.updateLogLine(sheetId, lineId, line));
-export const deleteLogLine = (sheetId: string, lineId: string, userId: string) => mutate(userId, db => db.deleteLogLine(sheetId, lineId));
+export const deleteLogLine = (sheetId: string, lineId: string, revision: number, userId: string) => mutate(userId, db => db.deleteLogLine(sheetId, lineId, revision));
 export const reorderLogLines = (sheetId: string, lineIds: string[], userId: string) => mutate(userId, db => db.reorderLogLines(sheetId, lineIds));
 export const createStoredImage = (id: string, image: import("../models/stored-image").StoredImage, userId: string) => mutate(userId, db => db.createStoredImage(id, image));
 export const readStoredImage = (id: string, userId: string) => mutate(userId, db => db.readStoredImage(id));

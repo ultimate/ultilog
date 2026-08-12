@@ -1,6 +1,6 @@
 import { deleteBoat, upsertBoat } from "../../../../lib/logbook-store";
 import { validateBoatUpdate } from "../../../../lib/validation/boat";
-import { authenticatedMutation, ENTITY_REQUEST_LIMITS, jsonBody } from "../../entity-route";
+import { authenticatedMutation, deleteRevision, ENTITY_REQUEST_LIMITS, jsonBody } from "../../entity-route";
 
 type Context = { params: Promise<{ id: string }> };
 export const PUT = (request: Request, context: Context) => authenticatedMutation(async ownerId => {
@@ -8,4 +8,4 @@ export const PUT = (request: Request, context: Context) => authenticatedMutation
   if (boat.id !== id) throw new SyntaxError("Route and entity ids differ");
   return upsertBoat(boat, ownerId);
 });
-export const DELETE = (_request: Request, context: Context) => authenticatedMutation(async ownerId => deleteBoat((await context.params).id, ownerId));
+export const DELETE = (request: Request, context: Context) => authenticatedMutation(async ownerId => deleteBoat((await context.params).id, await deleteRevision(request), ownerId));
