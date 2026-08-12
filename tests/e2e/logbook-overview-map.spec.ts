@@ -33,7 +33,7 @@ async function loginWithSeededDemoData(page: Page) {
   await expect(page.getByRole("button", { name: "Logout" })).toBeVisible({ timeout: 30_000 });
   await page.waitForLoadState("networkidle");
   await removeDemoLogsheets(page);
-  const seedResponse = await page.request.put("/api/logbook", {
+  const seedResponse = await page.request.put("/api/logbook/import", { headers: { "X-Ultilog-Confirm-Replace": "replace-my-entire-logbook" },
     data: { boats: sampleBoats, crewMembers: crewProfilesFromSheets(sampleLogSheets), sheets: sampleLogSheets },
   });
   expect(seedResponse.ok(), await seedResponse.text()).toBeTruthy();
@@ -47,7 +47,7 @@ async function removeDemoLogsheets(page: Page) {
   const currentLogbook = await currentResponse.json();
   // Clear sheets in one write so queued client normalization cannot restore a
   // reference between individual deletes and replacement demo seeding.
-  const clearResponse = await page.request.put("/api/logbook", { data: { ...currentLogbook, sheets: [] } });
+  const clearResponse = await page.request.put("/api/logbook/import", { headers: { "X-Ultilog-Confirm-Replace": "replace-my-entire-logbook" }, data: { ...currentLogbook, sheets: [] } });
   expect(clearResponse.ok(), await clearResponse.text()).toBeTruthy();
 }
 

@@ -153,7 +153,7 @@ async function loginWithSeededDemoData(page: Page, sheets = sampleLogSheets) {
   await page.getByRole("button", { name: "Log in" }).click();
   await expectLoggedIn(page);
 
-  const seedResponse = await page.request.put("/api/logbook", {
+  const seedResponse = await page.request.put("/api/logbook/import", { headers: { "X-Ultilog-Confirm-Replace": "replace-my-entire-logbook" },
     data: { boats: sampleBoats, crewMembers: crewProfilesFromSheets(sheets), sheets },
   });
   expect(seedResponse.ok()).toBeTruthy();
