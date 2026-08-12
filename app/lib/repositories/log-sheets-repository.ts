@@ -18,14 +18,35 @@ export class LogSheetsRepository {
 
   async upsert(sheet: LogSheet, ownerId: string, motionStationaryThresholdNm = 0.1) {
     const existing = await this.findById(sheet.id, ownerId);
-    if (existing) {
-      const expected = sheet.revision ?? Number(existing.revision);
-      const claimed = await this.db.query<{ revision: number }>(`update log_sheets set revision = revision where id = ${this.db.placeholder(1)} and owner_id = ${this.db.placeholder(2)} and revision = ${this.db.placeholder(3)} returning revision`, [scopedId(ownerId, sheet.id), ownerId, expected]);
-      if (!claimed.rows.length) throw Object.assign(new Error("The log sheet was changed by another request."), { code: "revision_conflict" });
-      await this.db.query(`delete from log_sheets where id = ${this.db.placeholder(1)} and owner_id = ${this.db.placeholder(2)}`, [scopedId(ownerId, sheet.id), ownerId]);
-    }
-    await this.insert(sheet, ownerId, motionStationaryThresholdNm);
-    if (existing) await this.db.query(`update log_sheets set revision = ${this.db.placeholder(1)}, created_at = ${this.db.placeholder(2)}, updated_at = ${this.now()} where id = ${this.db.placeholder(3)} and owner_id = ${this.db.placeholder(4)}`, [Number(existing.revision) + 1, existing.created_at, scopedId(ownerId, sheet.id), ownerId]);
+    if (!existing) return this.insert(sheet, ownerId, motionStationaryThresholdNm);
+
+    const metrics = calculateLogSheetMetrics(sheet.lines, sheet.route, { stationaryDistanceThresholdNm: motionStationaryThresholdNm });
+    const expectedRevision = sheet.revision ?? Number(existing.revision);
+    const values = [
+      sheet.title, sheet.status, sheet.source ?? null, sheet.verificationNote ?? null,
+      sheet.scannerWarnings ? JSON.stringify(sheet.scannerWarnings) : null,
+      scopedId(ownerId, sheet.boatId), JSON.stringify({}), JSON.stringify(sheet.route),
+      JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan),
+      JSON.stringify(sheet.technicalChecks), sheet.imageId ?? sheet.image?.id ?? null,
+      metrics.motorMiles, metrics.sailMiles, metrics.totalMiles, metrics.durationMinutes,
+      metrics.motorHours, metrics.overallDurationMinutes, metrics.motionDurationMinutes,
+      overallPrivacy(sheet.share), privacyFor(sheet.share?.masterData), privacyFor(sheet.share?.picture),
+      privacyFor(sheet.share?.logLines), privacyFor(sheet.share?.metrics), privacyFor(sheet.share?.technicalLog),
+      privacyFor(sheet.share?.skipper), privacyFor(sheet.share?.crew),
+      scopedId(ownerId, sheet.id), ownerId, expectedRevision,
+    ];
+    const columns = [
+      "title", "status", "source", "verification_note", "scanner_warnings", "boat_id", "skipper", "route",
+      "weather_briefing", "day_summary", "remarks", "watch_plan", "technical_checks", "image_id",
+      "motor_miles", "sail_miles", "total_miles", "duration_minutes", "motor_hours", "overall_duration_minutes", "motion_duration_minutes",
+      "share_privacy", "share_master_data", "share_picture", "share_loglines", "share_metrics", "share_technical_log", "share_skipper", "share_crew",
+    ];
+    const assignments = columns.map((column, index) => `${column} = ${this.db.placeholder(index + 1)}`).join(", ");
+    const result = await this.db.query<{ revision: number }>(
+      `update log_sheets set ${assignments}, revision = revision + 1, updated_at = ${this.now()} where id = ${this.db.placeholder(30)} and owner_id = ${this.db.placeholder(31)} and revision = ${this.db.placeholder(32)} returning revision`,
+      values,
+    );
+    if (!result.rows.length) throw Object.assign(new Error("The log sheet was changed by another request."), { code: "revision_conflict" });
   }
 
   async delete(id: string, ownerId: string) {
@@ -56,8 +77,8 @@ export class LogSheetsRepository {
   async updateMetrics(sheet: Pick<LogSheet, "id" | "route">, lines: LogLine[], ownerId: string, motionStationaryThresholdNm = 0.1) {
     const metrics = calculateLogSheetMetrics(lines, sheet.route, { stationaryDistanceThresholdNm: motionStationaryThresholdNm });
     await this.db.query(
-      `update log_sheets set motor_miles = ${this.db.placeholder(1)}, sail_miles = ${this.db.placeholder(2)}, total_miles = ${this.db.placeholder(3)}, duration_minutes = ${this.db.placeholder(4)}, motor_hours = ${this.db.placeholder(5)}, overall_duration_minutes = ${this.db.placeholder(6)}, motion_duration_minutes = ${this.db.placeholder(7)} where id = ${this.db.placeholder(8)}`,
-      [metrics.motorMiles, metrics.sailMiles, metrics.totalMiles, metrics.durationMinutes, metrics.motorHours, metrics.overallDurationMinutes, metrics.motionDurationMinutes, scopedId(ownerId, sheet.id)],
+      `update log_sheets set motor_miles = ${this.db.placeholder(1)}, sail_miles = ${this.db.placeholder(2)}, total_miles = ${this.db.placeholder(3)}, duration_minutes = ${this.db.placeholder(4)}, motor_hours = ${this.db.placeholder(5)}, overall_duration_minutes = ${this.db.placeholder(6)}, motion_duration_minutes = ${this.db.placeholder(7)} where id = ${this.db.placeholder(8)} and owner_id = ${this.db.placeholder(9)}`,
+      [metrics.motorMiles, metrics.sailMiles, metrics.totalMiles, metrics.durationMinutes, metrics.motorHours, metrics.overallDurationMinutes, metrics.motionDurationMinutes, scopedId(ownerId, sheet.id), ownerId],
     );
   }
 

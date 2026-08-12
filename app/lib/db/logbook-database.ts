@@ -160,16 +160,22 @@ export abstract class LogbookDatabase implements QueryableDatabase {
       const policyError = sheetBoatMutationError(boatRow ? { name: boatRow.name, archived: Boolean(boatRow.archived) } : undefined, Boolean(prior && prior.boat_id === scopedId(ownerId, sheet.boatId)));
       if (policyError) throw Object.assign(new Error(policyError.message), { code: policyError.code });
       if (!boatRow) throw new Error("Boat policy failed to reject a missing boat.");
-      await database.sheets.upsert(sheet, ownerId, await database.motionStationaryThresholdNm());
+      const threshold = await database.motionStationaryThresholdNm();
+      const persistedLineRows = prior ? await database.lines.findForSheet(prior.id) : [];
+      const persistedLines = prior ? LogSheetsRepository.toLogbook([], [prior], [], persistedLineRows).sheets[0].lines : [];
+      await database.sheets.upsert({ ...sheet, lines: persistedLines }, ownerId, threshold);
       await database.crew.replaceAssignments(sheet.id, sheet.crew, ownerId);
       // Focused sheet writes own metadata and assignments only. Log lines are
       // independently versioned resources and are never collection-replaced.
       // Internal imports may still seed a brand-new aggregate in one operation;
       // focused HTTP creates always pass an empty collection.
       if (!prior && sheet.lines.length) await database.lines.insertMany(sheet.lines.map((line, sortOrder) => ({ sheetId: sheet.id, sortOrder, line })), ownerId);
-      const persistedLineRows = await database.lines.findForSheet(scopedId(ownerId, sheet.id));
-      const persistedLines = persistedLineRows.length ? LogSheetsRepository.toLogbook([], [prior ?? (await database.sheets.findById(sheet.id, ownerId))!], [], persistedLineRows).sheets[0].lines : [];
-      await database.sheets.updateMetrics(sheet, persistedLines, ownerId, await database.motionStationaryThresholdNm());
+      if (!prior && sheet.lines.length) {
+        const createdRow = (await database.sheets.findById(sheet.id, ownerId))!;
+        const createdLineRows = await database.lines.findForSheet(createdRow.id);
+        const createdLines = LogSheetsRepository.toLogbook([], [createdRow], [], createdLineRows).sheets[0].lines;
+        await database.sheets.updateMetrics(sheet, createdLines, ownerId, threshold);
+      }
       if (previousImageId !== nextImageId) await database.images.deleteIfOrphaned(previousImageId, ownerId);
       const [row, crew, lines] = await Promise.all([database.sheets.findById(sheet.id, ownerId), database.crew.findForSheet(scopedId(ownerId, sheet.id), ownerId), database.lines.findForSheet(scopedId(ownerId, sheet.id))]);
       return row ? LogSheetsRepository.toLogbook([], [row], crew, lines).sheets[0] : undefined;
