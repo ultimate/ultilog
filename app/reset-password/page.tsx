@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { LocaleSelect, useI18n } from "../lib/i18n";
 import { PasswordField } from "../components/PasswordField";
+import { PASSWORD_MAX_UTF8_BYTES, PASSWORD_MIN_CHARACTERS } from "../lib/security/password-policy";
 
 export default function ResetPasswordPage() {
   return <Suspense><ResetPasswordForm /></Suspense>;
@@ -55,8 +56,8 @@ function ResetPasswordForm() {
           <h1>{t("auth.resetPasswordTitle")}</h1>
           <p>{t("auth.resetPasswordSubtitle")}</p>
         </div>
-        <PasswordField label={t("auth.newPassword")} name="password" required minLength={8} />
-        <PasswordField label={t("auth.confirmNewPassword")} name="confirmPassword" required minLength={8} />
+        <PasswordField label={t("auth.newPassword")} name="password" required minLength={PASSWORD_MIN_CHARACTERS} maxLength={PASSWORD_MAX_UTF8_BYTES} />
+        <PasswordField label={t("auth.confirmNewPassword")} name="confirmPassword" required minLength={PASSWORD_MIN_CHARACTERS} maxLength={PASSWORD_MAX_UTF8_BYTES} />
         {error && <p className="auth-error">{error}</p>}
         {message && <p className="auth-success">{message}</p>}
         <button disabled={isSubmitting || !token} type="submit">{isSubmitting ? t("auth.pleaseWait") : t("auth.resetPassword")}</button>

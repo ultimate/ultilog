@@ -103,6 +103,10 @@ export async function PATCH(request: Request) {
     }
     return NextResponse.json({ error: "Unsupported profile update." }, { status: 400 });
   } catch (error) {
+    // Password-policy details are intentionally not exposed through the API.
+    if (error instanceof Error && error.name === "PasswordPolicyError") {
+      return NextResponse.json({ error: "Unable to update password with the supplied details." }, { status: 400 });
+    }
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to update profile." }, { status: 400 });
   }
 }

@@ -5,6 +5,7 @@ import { signIn } from "next-auth/react";
 import Image from "next/image";
 import { LocaleSelect, useI18n } from "../lib/i18n";
 import { PasswordField } from "./PasswordField";
+import { PASSWORD_MAX_UTF8_BYTES, PASSWORD_MIN_CHARACTERS } from "../lib/security/password-policy";
 
 type Props = { mode: "login" | "register"; footer: ReactNode };
 
@@ -102,8 +103,8 @@ export function AuthForm({ mode, footer }: Props) {
         </div>
         {mode === "register" && <label>{t("auth.username")}<input aria-label={t("auth.name")} name="name" required /></label>}
         <label>{t("auth.email")}<input name="email" required type="email" /></label>
-        <PasswordField label={t("auth.password")} name="password" required minLength={8} />
-        {mode === "register" && <PasswordField label={t("auth.confirm")} name="confirmPassword" required minLength={8} />}
+        <PasswordField label={t("auth.password")} name="password" required minLength={mode === "register" ? PASSWORD_MIN_CHARACTERS : undefined} maxLength={PASSWORD_MAX_UTF8_BYTES} />
+        {mode === "register" && <PasswordField label={t("auth.confirm")} name="confirmPassword" required minLength={PASSWORD_MIN_CHARACTERS} maxLength={PASSWORD_MAX_UTF8_BYTES} />}
         {error && <p className="auth-error">{error}</p>}
         <button disabled={isSubmitting} type="submit">{isSubmitting && !isPreparingDemo ? t("auth.pleaseWait") : mode === "login" ? t("auth.login") : t("auth.register")}</button>
         {mode === "login" && <button className="demo-login-button" disabled={isSubmitting} type="button" onClick={demoLogin}>{isPreparingDemo ? t("auth.preparingDemo") : t("auth.tryDemo")}</button>}

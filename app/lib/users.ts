@@ -7,6 +7,7 @@ import { normalizeStandardTechnicalCheckIds, STANDARD_TECHNICAL_CHECK_IDS, type 
 import { dateFormats, defaultDateFormat, defaultTimeFormat, timeFormats, type DateFormat, type TimeFormat } from "./date-time-format";
 import { isSupportedCountryCode } from "./flags";
 import { validateStoredImage } from "./validation/stored-image";
+import { applyPasswordPolicy } from "./security/password-policy";
 
 export type UserTheme = "light" | "dark" | "auto";
 export type UserPreferences = {
@@ -292,7 +293,8 @@ async function findUserRowByEmail(email: string) {
 export async function validateUser(email: string, password: string): Promise<AppUser | null> {
   const user = await findUserRowByEmail(email);
   if (!user?.password_hash) return null;
-  const isValid = await bcrypt.compare(password, user.password_hash);
+  // New passwords are stored in NFC; normalize login input to the same form.
+  const isValid = await bcrypt.compare(password.normalize("NFC"), user.password_hash);
   if (!isValid) return null;
   if (!user.email_verified_at) await sendEmailVerificationIfNeeded(user);
   return toAppUser(user, await manualGroupsForUser(user.id));
@@ -311,12 +313,12 @@ export async function registerUser(input: { name: string; email: string; passwor
   const email = normalizeEmail(input.email);
   assertAllowedName(name);
   if (!email.includes("@")) throw new Error("Enter a valid email address.");
-  if (input.password.length < 8) throw new Error("Password must be at least 8 characters.");
+  const password = applyPasswordPolicy(input.password);
   if (await findUserByEmail(email)) throw new Error("An account with this email already exists.");
   if (await findUserByName(name)) throw new Error("An account with this name already exists.");
 
   const user: AppUser = { id: randomUUID(), name, email, emailVerified: false, hasUploadedAvatar: false, groups: [], onboardingCompletedTasks: [], hasReadCompliance: false, ...normalizeUserPreferences({}) };
-  const passwordHash = await bcrypt.hash(input.password, 10);
+  const passwordHash = await bcrypt.hash(password, 10);
   const db = getDatabase();
   await db.query(
     `insert into users (id, name, email, password_hash) values (${db.placeholder(1)}, ${db.placeholder(2)}, ${db.placeholder(3)}, ${db.placeholder(4)})`,
@@ -343,13 +345,13 @@ export async function updateUserEmail(userId: string, input: { email: string; cu
 }
 
 export async function updateUserPassword(userId: string, input: { currentPassword: string; newPassword: string }): Promise<void> {
-  if (input.newPassword.length < 8) throw new Error("Password must be at least 8 characters.");
+  const newPassword = applyPasswordPolicy(input.newPassword);
   const db = getDatabase();
   await db.migrate();
   const current = (await db.query<UserRow>(`select ${USER_COLUMNS} from users where id = ${db.placeholder(1)}`, [userId])).rows[0];
   if (!current) throw new Error("User not found.");
   if (!await bcrypt.compare(input.currentPassword, current.password_hash)) throw new Error("Current password is incorrect.");
-  const passwordHash = await bcrypt.hash(input.newPassword, 10);
+  const passwordHash = await bcrypt.hash(newPassword, 10);
   await db.query(`update users set password_hash = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [passwordHash, userId]);
 }
 
@@ -422,7 +424,7 @@ export async function requestEmailVerification(emailInput: string): Promise<void
 }
 
 export async function resetPasswordWithToken(token: string, newPassword: string): Promise<void> {
-  if (newPassword.length < 8) throw new Error("Password must be at least 8 characters.");
+  const normalizedPassword = applyPasswordPolicy(newPassword);
   const db = getDatabase();
   await db.migrate();
   const tokenHash = hashToken(token.trim());
@@ -433,7 +435,7 @@ export async function resetPasswordWithToken(token: string, newPassword: string)
   if (!resetToken || resetToken.used_at) throw new Error("This password reset link is invalid or has already been used.");
   if (new Date(resetToken.expires_at).getTime() <= Date.now()) throw new Error("This password reset link has expired.");
 
-  const passwordHash = await bcrypt.hash(newPassword, 10);
+  const passwordHash = await bcrypt.hash(normalizedPassword, 10);
   await db.query(`update users set password_hash = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [passwordHash, resetToken.user_id]);
   await db.query(`update password_reset_tokens set used_at = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [new Date().toISOString(), resetToken.id]);
 }

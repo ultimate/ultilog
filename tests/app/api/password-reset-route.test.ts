@@ -53,7 +53,7 @@ describe("password reset confirm endpoint", () => {
     expect(mockedResetPasswordWithToken).toHaveBeenCalledWith("raw-token", "new-password");
   });
 
-  it("returns reset validation errors", async () => {
+  it("does not disclose reset validation internals", async () => {
     mockedResetPasswordWithToken.mockRejectedValueOnce(new Error("This password reset link has expired."));
 
     const response = await confirmRoute.POST(new Request("https://ultilog.test/api/password-reset/confirm", {
@@ -62,6 +62,6 @@ describe("password reset confirm endpoint", () => {
     }));
 
     expect(response.status).toBe(400);
-    await expect(response.json()).resolves.toEqual({ error: "This password reset link has expired." });
+    await expect(response.json()).resolves.toEqual({ error: "Unable to reset password with the supplied details." });
   });
 });

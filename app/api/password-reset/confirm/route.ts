@@ -6,7 +6,7 @@ export async function POST(request: Request) {
     const body = await request.json() as { token?: string; password?: string };
     await resetPasswordWithToken(body.token ?? "", body.password ?? "");
     return NextResponse.json({ message: "Password updated." });
-  } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to reset password." }, { status: 400 });
+  } catch {
+    return NextResponse.json({ error: "Unable to reset password with the supplied details." }, { status: 400 });
   }
 }
