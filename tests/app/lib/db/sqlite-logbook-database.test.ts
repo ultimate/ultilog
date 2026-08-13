@@ -70,7 +70,7 @@ describe("SqliteLogbookDatabase", () => {
 
     const persisted = await db.readLogbook();
     const changed = persisted.sheets.find(sheet => sheet.id === first.id)!;
-    expect(changed.lines.map(line => line.id)).toEqual([first.lines[1].id]);
+    expect(changed.lines.map(line => line.id)).toEqual([first.lines[1].id, first.lines[0].id]);
     expect(calculateLogSheetMetrics(changed.lines, changed.route)).toMatchObject(changed.metrics!);
     expect(await db.query("select * from log_lines where sheet_id = ? order by sort_order", ["focused-lines:unrelated"])).toEqual(untouchedBefore);
     expect(persisted.sheets.find(sheet => sheet.id === unrelated.id)).toMatchObject({ title: unrelated.title, lines: unrelated.lines });

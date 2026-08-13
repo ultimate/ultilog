@@ -118,6 +118,19 @@ Keep the app organized by responsibility so feature work does not collect in a s
 - `npm run lint` - run ESLint.
 - `npm run typecheck` - validate TypeScript types.
 
+### PostgreSQL database contract tests
+
+Set `TEST_POSTGRES_URL` to an administrative PostgreSQL connection URL whose
+role can create and drop schemas, then run the shared SQLite/PostgreSQL contract:
+
+```bash
+TEST_POSTGRES_URL=postgresql://user:password@localhost:5432/ultilog_test npm run test:db:postgres
+```
+
+Each PostgreSQL case creates a uniquely named schema, sets that schema as its
+connection `search_path`, and drops it with `cascade` during cleanup. Use a
+dedicated test database: the command must never point at production.
+
 ### Destructive logbook import
 
 `PUT /api/logbook/import` exists for controlled backups, migrations, and test

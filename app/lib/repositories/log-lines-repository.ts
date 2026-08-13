@@ -35,7 +35,11 @@ export class LogLinesRepository {
     const scopedSheetId = scopedId(ownerId, sheetId);
     const existing = await this.findOwnedLine(scopedSheetId, line.id, ownerId);
     if (existing) throw new Error("A line with this id already exists.");
-    const result = await this.db.query<{ sort_order: number }>(`select coalesce(max(sort_order), -1) + 1 as sort_order from log_lines where sheet_id = ${this.db.placeholder(1)} and exists (select 1 from log_sheets where id = ${this.db.placeholder(1)} and owner_id = ${this.db.placeholder(2)})`, [scopedSheetId, ownerId]);
+    // Correlating the ownership check avoids repeating a numbered placeholder.
+    // SQLite uses positional `?` parameters, while PostgreSQL can reuse `$1`;
+    // a repeated placeholder with only two values therefore addressed different
+    // parameters on the two adapters and made SQLite choose sort order zero.
+    const result = await this.db.query<{ sort_order: number }>(`select coalesce(max(sort_order), -1) + 1 as sort_order from log_lines where sheet_id = ${this.db.placeholder(1)} and exists (select 1 from log_sheets where id = log_lines.sheet_id and owner_id = ${this.db.placeholder(2)})`, [scopedSheetId, ownerId]);
     if (!result.rows.length) return undefined;
     await this.insert(sheetId, Number(result.rows[0].sort_order), line, ownerId);
     const stored = (await this.findForSheet(scopedSheetId)).find(row => row.id === line.id);
