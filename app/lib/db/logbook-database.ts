@@ -32,6 +32,10 @@ export abstract class LogbookDatabase implements QueryableDatabase {
 
   protected abstract withTransaction<T>(operation: (database: LogbookDatabase) => Promise<T>): Promise<T>;
 
+  async transaction<T>(operation: (database: LogbookDatabase) => Promise<T>): Promise<T> {
+    return this.withTransaction(operation);
+  }
+
   async flush() {}
 
   async migrate() {

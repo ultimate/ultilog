@@ -30,17 +30,17 @@ export type UserPreferences = {
   technicalLogTemplate?: string[];
   enabledStandardTechnicalChecks?: StandardTechnicalCheckId[];
 };
-export type AppUser = { id: string; name: string; email: string; emailVerified?: boolean; avatar?: string; hasUploadedAvatar?: boolean; groups: string[]; onboardingCompletedTasks: OnboardingTaskId[]; hasReadCompliance: boolean; demoSandboxExpiresAt?: string } & UserPreferences;
+export type AppUser = { id: string; name: string; email: string; sessionVersion?: number; emailVerified?: boolean; avatar?: string; hasUploadedAvatar?: boolean; groups: string[]; onboardingCompletedTasks: OnboardingTaskId[]; hasReadCompliance: boolean; demoSandboxExpiresAt?: string } & UserPreferences;
 export type AdminUserListItem = AppUser;
 export type DirectoryUserListItem = { id: string; username: string; avatar?: string; sailMiles: number; motorMiles: number; logbookSheets: number; boats: number };
 
-type UserRow = Omit<AppUser, "avatar" | "hasUploadedAvatar" | "groups" | "onboardingCompletedTasks" | "hasReadCompliance" | "isNavSlim" | "countryCode" | "dateFormat" | "timeFormat" | "windUnit" | "waterHeightUnit" | "temperatureUnit" | "coordinateFormat" | "distanceDisplayUnit" | "defaultBoatId" | "defaultCrewMemberIds" | "showCourseConversionTable" | "showAvatarOnPrint" | "motionStationaryThresholdNm" | "technicalLogTemplate" | "enabledStandardTechnicalChecks" | "emailVerified"> & { avatar_data: string | null; avatar_mime_type: string | null; password_hash: string; onboarding_completed_tasks: string; country_code: string; date_format: string; time_format: string; wind_unit: string; water_height_unit: string; temperature_unit: string; coordinate_format: string; distance_display_unit: string; default_boat_id: string; default_crew_member_ids: string; nav_slim: number | boolean; has_read_compliance: number | boolean; show_course_conversion_table: number | boolean; show_avatar_on_print: number | boolean; motion_stationary_threshold_nm: number | string | null; technical_log_template: string; technical_log_standard_checks: string | null; email_verified_at: string | null };
+type UserRow = Omit<AppUser, "avatar" | "hasUploadedAvatar" | "groups" | "onboardingCompletedTasks" | "hasReadCompliance" | "isNavSlim" | "countryCode" | "dateFormat" | "timeFormat" | "windUnit" | "waterHeightUnit" | "temperatureUnit" | "coordinateFormat" | "distanceDisplayUnit" | "defaultBoatId" | "defaultCrewMemberIds" | "showCourseConversionTable" | "showAvatarOnPrint" | "motionStationaryThresholdNm" | "technicalLogTemplate" | "enabledStandardTechnicalChecks" | "emailVerified"> & { avatar_data: string | null; avatar_mime_type: string | null; password_hash: string; onboarding_completed_tasks: string; country_code: string; date_format: string; time_format: string; wind_unit: string; water_height_unit: string; temperature_unit: string; coordinate_format: string; distance_display_unit: string; default_boat_id: string; default_crew_member_ids: string; nav_slim: number | boolean; has_read_compliance: number | boolean; show_course_conversion_table: number | boolean; show_avatar_on_print: number | boolean; motion_stationary_threshold_nm: number | string | null; technical_log_template: string; technical_log_standard_checks: string | null; email_verified_at: string | null; session_version: number | string };
 type GroupRow = { user_id?: string; name: string };
 type PasswordResetTokenRow = { id: string; user_id: string; token_hash: string; expires_at: string; used_at: string | null };
 type EmailVerificationTokenRow = PasswordResetTokenRow;
 type DirectoryUserRow = { id: string; username: string; email: string; avatar_data: string | null; avatar_mime_type: string | null; sail_miles: number | string | null; motor_miles: number | string | null; logbook_sheets: number | string | null; boats: number | string | null };
 
-const USER_COLUMNS = "id, name, email, avatar_data, avatar_mime_type, password_hash, onboarding_completed_tasks, theme, nav_slim, has_read_compliance, country_code, language, date_format, time_format, wind_unit, water_height_unit, temperature_unit, coordinate_format, distance_display_unit, default_boat_id, default_crew_member_ids, show_course_conversion_table, show_avatar_on_print, motion_stationary_threshold_nm, technical_log_template, technical_log_standard_checks, email_verified_at";
+const USER_COLUMNS = "id, name, email, avatar_data, avatar_mime_type, password_hash, onboarding_completed_tasks, theme, nav_slim, has_read_compliance, country_code, language, date_format, time_format, wind_unit, water_height_unit, temperature_unit, coordinate_format, distance_display_unit, default_boat_id, default_crew_member_ids, show_course_conversion_table, show_avatar_on_print, motion_stationary_threshold_nm, technical_log_template, technical_log_standard_checks, email_verified_at, session_version";
 
 export function gravatarAvatarUrl(email: string) {
   const emailHash = createHash("sha256").update(normalizeEmail(email)).digest("hex");
@@ -190,6 +190,7 @@ function toAppUser(user: UserRow, groups: string[]): AppUser {
     name: user.name,
     email: user.email,
     emailVerified: Boolean(user.email_verified_at),
+    sessionVersion: Number(user.session_version) || 0,
     avatar: avatarFromRow(user),
     hasUploadedAvatar: Boolean(user.avatar_data && user.avatar_mime_type),
     groups,
@@ -259,6 +260,16 @@ export async function findUserByEmail(email: string) {
   return withGroups(result.rows[0]);
 }
 
+export async function getUserSessionVersion(userId: string): Promise<number | undefined> {
+  const db = getDatabase();
+  await db.migrate();
+  const row = (await db.query<{ session_version: number | string }>(
+    `select session_version from users where id = ${db.placeholder(1)}`,
+    [userId],
+  )).rows[0];
+  return row ? Number(row.session_version) || 0 : undefined;
+}
+
 export async function findUserById(userId: string) {
   const db = getDatabase();
   await db.migrate();
@@ -317,7 +328,7 @@ export async function registerUser(input: { name: string; email: string; passwor
   if (await findUserByEmail(email)) throw new Error("An account with this email already exists.");
   if (await findUserByName(name)) throw new Error("An account with this name already exists.");
 
-  const user: AppUser = { id: randomUUID(), name, email, emailVerified: false, hasUploadedAvatar: false, groups: [], onboardingCompletedTasks: [], hasReadCompliance: false, ...normalizeUserPreferences({}) };
+  const user: AppUser = { id: randomUUID(), name, email, sessionVersion: 0, emailVerified: false, hasUploadedAvatar: false, groups: [], onboardingCompletedTasks: [], hasReadCompliance: false, ...normalizeUserPreferences({}) };
   const passwordHash = await bcrypt.hash(password, 10);
   const db = getDatabase();
   await db.query(
@@ -352,7 +363,7 @@ export async function updateUserPassword(userId: string, input: { currentPasswor
   if (!current) throw new Error("User not found.");
   if (!await bcrypt.compare(input.currentPassword, current.password_hash)) throw new Error("Current password is incorrect.");
   const passwordHash = await bcrypt.hash(newPassword, 10);
-  await db.query(`update users set password_hash = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [passwordHash, userId]);
+  await db.query(`update users set password_hash = ${db.placeholder(1)}, session_version = session_version + 1 where id = ${db.placeholder(2)}`, [passwordHash, userId]);
 }
 
 export async function requestPasswordReset(emailInput: string): Promise<void> {
@@ -428,16 +439,26 @@ export async function resetPasswordWithToken(token: string, newPassword: string)
   const db = getDatabase();
   await db.migrate();
   const tokenHash = hashToken(token.trim());
-  const resetToken = (await db.query<PasswordResetTokenRow>(
-    `select id, user_id, token_hash, expires_at, used_at from password_reset_tokens where token_hash = ${db.placeholder(1)}`,
-    [tokenHash],
-  )).rows[0];
-  if (!resetToken || resetToken.used_at) throw new Error("This password reset link is invalid or has already been used.");
-  if (new Date(resetToken.expires_at).getTime() <= Date.now()) throw new Error("This password reset link has expired.");
-
   const passwordHash = await bcrypt.hash(normalizedPassword, 10);
-  await db.query(`update users set password_hash = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [passwordHash, resetToken.user_id]);
-  await db.query(`update password_reset_tokens set used_at = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [new Date().toISOString(), resetToken.id]);
+  await db.transaction(async (transaction) => {
+    const now = new Date().toISOString();
+    const resetToken = (await transaction.query<PasswordResetTokenRow>(
+      `select id, user_id, token_hash, expires_at, used_at from password_reset_tokens where token_hash = ${transaction.placeholder(1)}`,
+      [tokenHash],
+    )).rows[0];
+    if (!resetToken || resetToken.used_at) throw new Error("This password reset link is invalid or has already been used.");
+    if (new Date(resetToken.expires_at).getTime() <= new Date(now).getTime()) throw new Error("This password reset link has expired.");
+
+    const claimed = await transaction.query<{ user_id: string }>(
+      `update password_reset_tokens set used_at = ${transaction.placeholder(1)} where id = ${transaction.placeholder(2)} and used_at is null and expires_at > ${transaction.placeholder(3)} returning user_id`,
+      [now, resetToken.id, now],
+    );
+    if (claimed.rows.length !== 1) throw new Error("This password reset link is invalid, expired, or has already been used.");
+    await transaction.query(
+      `update users set password_hash = ${transaction.placeholder(1)}, session_version = session_version + 1 where id = ${transaction.placeholder(2)}`,
+      [passwordHash, claimed.rows[0].user_id],
+    );
+  });
 }
 
 export async function updateUserName(userId: string, input: { name: string; currentPassword: string }): Promise<AppUser> {

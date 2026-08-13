@@ -26,7 +26,7 @@ export class PostgresLogbookDatabase extends LogbookDatabase {
 
   protected async withTransaction<T>(operation: (database: LogbookDatabase) => Promise<T>) {
     const client = await this.pool.connect();
-    try { await client.query("begin"); const result = await operation(new PostgresTransactionLogbookDatabase(client, this.requireOwnerId())); await client.query("commit"); return result; }
+    try { await client.query("begin"); const result = await operation(new PostgresTransactionLogbookDatabase(client, this.ownerId)); await client.query("commit"); return result; }
     catch (error) { await client.query("rollback"); throw error; }
     finally { client.release(); }
   }
@@ -36,7 +36,7 @@ export class PostgresLogbookDatabase extends LogbookDatabase {
     const client = await this.pool.connect();
     try {
       await client.query("begin");
-      await new PostgresTransactionLogbookDatabase(client, this.requireOwnerId()).writeLogbook(logbook);
+      await new PostgresTransactionLogbookDatabase(client, this.ownerId).writeLogbook(logbook);
       await client.query("commit");
       return logbook;
     } catch (error) {
@@ -69,7 +69,7 @@ export class PostgresLogbookDatabase extends LogbookDatabase {
 }
 
 class PostgresTransactionLogbookDatabase extends LogbookDatabase {
-  constructor(private client: PoolClient, ownerId: string) {
+  constructor(private client: PoolClient, ownerId?: string) {
     super();
     this.ownerId = ownerId;
   }

@@ -245,3 +245,54 @@ describe("password policy enforcement", () => {
     await expect(registerUser({ name: "Manager User", email: "manager@example.test", password: "vB4!q9_Zx7@Lp2#Nm8$Kr5" })).resolves.toMatchObject({ email: "manager@example.test" });
   });
 });
+
+describe("password session invalidation", () => {
+  it("allows only one concurrent request to consume a reset token", async () => {
+    const { createHash } = await import("node:crypto");
+    const { getUserSessionVersion, registerUser, resetPasswordWithToken } = await importUsersWithTempDatabase();
+    const { getDatabase } = await import("../../../app/lib/logbook-store");
+    const user = await registerUser({ name: "Concurrent Reset", email: "concurrent-reset@example.test", password: "Harbor lantern atlas 2026" });
+    const token = "single-use-reset-token";
+    await getDatabase().query(
+      "insert into password_reset_tokens (id, user_id, token_hash, expires_at) values (?, ?, ?, ?)",
+      ["concurrent-token", user.id, createHash("sha256").update(token).digest("hex"), new Date(Date.now() + 60_000).toISOString()],
+    );
+
+    const results = await Promise.allSettled([
+      resetPasswordWithToken(token, "First replacement phrase 2026"),
+      resetPasswordWithToken(token, "Second replacement phrase 2026"),
+    ]);
+
+    expect(results.filter((result) => result.status === "fulfilled")).toHaveLength(1);
+    expect(results.filter((result) => result.status === "rejected")).toHaveLength(1);
+    await expect(getUserSessionVersion(user.id)).resolves.toBe(1);
+  });
+
+  it("rejects the prior session version after a profile password change", async () => {
+    const { registerUser, updateUserPassword } = await importUsersWithTempDatabase();
+    const { isUserSessionVersionCurrent } = await import("../../../app/lib/auth/session-version");
+    const user = await registerUser({ name: "Profile Password", email: "profile-password@example.test", password: "Harbor lantern atlas 2026" });
+    const issuedVersion = user.sessionVersion ?? 0;
+
+    await expect(isUserSessionVersionCurrent(user.id, issuedVersion)).resolves.toBe(true);
+    await updateUserPassword(user.id, { currentPassword: "Harbor lantern atlas 2026", newPassword: "Fresh profile password 2026" });
+    await expect(isUserSessionVersionCurrent(user.id, issuedVersion)).resolves.toBe(false);
+  });
+
+  it("rejects the prior session version after a token password reset", async () => {
+    const { createHash } = await import("node:crypto");
+    const { registerUser, resetPasswordWithToken } = await importUsersWithTempDatabase();
+    const { getDatabase } = await import("../../../app/lib/logbook-store");
+    const { isUserSessionVersionCurrent } = await import("../../../app/lib/auth/session-version");
+    const user = await registerUser({ name: "Token Password", email: "token-password@example.test", password: "Harbor lantern atlas 2026" });
+    const token = "session-invalidating-token";
+    await getDatabase().query(
+      "insert into password_reset_tokens (id, user_id, token_hash, expires_at) values (?, ?, ?, ?)",
+      ["session-token", user.id, createHash("sha256").update(token).digest("hex"), new Date(Date.now() + 60_000).toISOString()],
+    );
+
+    await resetPasswordWithToken(token, "Fresh token password 2026");
+
+    await expect(isUserSessionVersionCurrent(user.id, user.sessionVersion ?? 0)).resolves.toBe(false);
+  });
+});
