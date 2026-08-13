@@ -65,6 +65,21 @@ describe("focused request body byte limits", () => {
   for (const [name, method, path, limit, minimal, representative, invoke] of cases) {
     testRequestBodyLimit({ name, method, url: `https://ultilog.test${path}`, limit, fixtures: tiers(minimal, representative, limit), invoke });
   }
+
+  it("keeps every documented focused limit equal to its runtime fallback", () => {
+    const documented = Object.fromEntries(
+      [...readFileSync(new URL("../../../.env.example", import.meta.url), "utf8").matchAll(/^(LOGBOOK_[A-Z_]+_REQUEST_BYTES)=(\d+)$/gm)]
+        .map(([, name, value]) => [name, Number(value)]),
+    );
+    expect(documented).toMatchObject({
+      LOGBOOK_BOAT_REQUEST_BYTES: ENTITY_REQUEST_LIMITS.boat,
+      LOGBOOK_CREW_REQUEST_BYTES: ENTITY_REQUEST_LIMITS.crew,
+      LOGBOOK_SHEET_REQUEST_BYTES: ENTITY_REQUEST_LIMITS.sheet,
+      LOGBOOK_LINE_REQUEST_BYTES: ENTITY_REQUEST_LIMITS.line,
+      LOGBOOK_LINE_REORDER_REQUEST_BYTES: ENTITY_REQUEST_LIMITS.lineOrder,
+      LOGBOOK_IMPORT_REQUEST_BYTES: LOGBOOK_LIMITS.requestBytes,
+    });
+  });
 });
 
 describe("stored image request body byte limit", () => {
