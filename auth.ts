@@ -3,7 +3,8 @@ import Credentials from "next-auth/providers/credentials";
 import type { NextRequest } from "next/server";
 import { consumeDemoSandboxLogin } from "./app/lib/demo/demo-sandboxes";
 import { isDemoSandboxSessionExpired } from "./app/lib/demo/demo-session";
-import { validateUser } from "./app/lib/users";
+import { getUserSessionVersion, validateUser } from "./app/lib/users";
+import { isUserSessionVersionCurrent } from "./app/lib/auth/session-version";
 import { enforceRateLimits, normalizeEmail, rateLimitResponse, requestIp, securityEvent } from "./app/lib/security/rate-limiter";
 
 const nextAuth = NextAuth({
@@ -26,14 +27,22 @@ const nextAuth = NextAuth({
     }),
   ],
   callbacks: {
-    authorized({ auth }) {
-      return Boolean(auth?.user?.id) && !isDemoSandboxSessionExpired(auth?.user?.demoSandboxExpiresAt);
+    async authorized({ auth }) {
+      if (!auth?.user?.id || isDemoSandboxSessionExpired(auth.user.demoSandboxExpiresAt)) return false;
+      return isUserSessionVersionCurrent(auth.user.id, auth.user.sessionVersion);
     },
-    jwt({ token, user }) {
+    async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
         token.groups = user.groups ?? [];
+        token.sessionVersion = user.sessionVersion ?? 0;
         token.demoSandboxExpiresAt = user.demoSandboxExpiresAt;
+      } else if (token.id) {
+        const currentVersion = await getUserSessionVersion(String(token.id));
+        if (currentVersion === undefined || currentVersion !== token.sessionVersion) {
+          token.id = undefined;
+          token.groups = [];
+        }
       }
       return token;
     },
@@ -41,6 +50,7 @@ const nextAuth = NextAuth({
       if (session.user) {
         const isExpired = isDemoSandboxSessionExpired(token.demoSandboxExpiresAt);
         session.user.id = isExpired ? "" : token.id as string;
+        session.user.sessionVersion = typeof token.sessionVersion === "number" ? token.sessionVersion : -1;
         // This snapshot supports UI presentation only and can become stale.
         // Protected server operations must resolve current entitlements from
         // the database rather than authorizing from session.user.groups.
