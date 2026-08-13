@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { guardMutationOrigin } from "../../../lib/security/request-origin";
 import { auth } from "../../../../auth";
 import { validateLogbookMutation } from "../../../domain/boats/boat-policy";
 import { applyDemoLogbookRestrictions } from "../../../lib/demo/demo-logbook-policy";
@@ -12,6 +13,8 @@ import { LOGBOOK_LIMITS, LogbookValidationError, validatePersistedLogbook } from
  * import boundary, not a persistence/autosave endpoint.
  */
 export async function PUT(request: Request) {
+  const originError = guardMutationOrigin(request);
+  if (originError) return originError;
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (request.headers.get("x-ultilog-confirm-replace") !== "replace-my-entire-logbook") {

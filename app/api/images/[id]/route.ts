@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { guardMutationOrigin } from "../../../lib/security/request-origin";
 import { auth } from "../../../../auth";
 import { deleteStoredImage, readStoredImage } from "../../../lib/logbook-store";
 
@@ -12,7 +13,9 @@ export async function GET(_request: Request, context: Context) {
   return image ? NextResponse.json(image) : NextResponse.json({ error: "Not found" }, { status: 404 });
 }
 
-export async function DELETE(_request: Request, context: Context) {
+export async function DELETE(request: Request, context: Context) {
+  const originError = guardMutationOrigin(request);
+  if (originError) return originError;
   const ownerId = await owner();
   if (!ownerId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {

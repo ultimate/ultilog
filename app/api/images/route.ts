@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
+import { guardMutationOrigin } from "../../lib/security/request-origin";
 import { auth } from "../../../auth";
 import { createStoredImage } from "../../lib/logbook-store";
 import { StoredImageValidationError, validateStoredImage } from "../../lib/validation/stored-image";
@@ -12,6 +13,8 @@ export const MAX_STORED_IMAGE_REQUEST_BYTES = Number.isSafeInteger(configuredReq
   : DEFAULT_STORED_IMAGE_REQUEST_BYTES;
 
 export async function POST(request: Request) {
+  const originError = guardMutationOrigin(request);
+  if (originError) return originError;
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const declared = Number(request.headers.get("content-length"));

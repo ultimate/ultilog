@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { guardMutationOrigin } from "../../lib/security/request-origin";
 import { auth } from "../../../auth";
 import { deleteUserAccount, findUserById, removeUserAvatar, updateUserAvatar, updateUserComplianceRead, updateUserEmail, updateUserName, updateUserOnboardingCompletedTasks, updateUserPassword, updateUserViewPreferences } from "../../lib/users";
 
@@ -42,6 +43,8 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
+  const originError = guardMutationOrigin(request);
+  if (originError) return originError;
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {
@@ -112,6 +115,8 @@ export async function PATCH(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  const originError = guardMutationOrigin(request);
+  if (originError) return originError;
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {

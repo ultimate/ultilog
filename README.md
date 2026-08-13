@@ -76,6 +76,18 @@ Create `.env.local` from `.env.example` for development. The app uses these envi
 
 The public demo has no static account or reusable credentials. Each demo login creates a separate, expiring sandbox identity; the former shared demo identity is removed by the database migrations.
 
+### Authenticated API request origins
+
+Cookie-authenticated `POST`, `PUT`, `PATCH`, and `DELETE` requests must include an
+`Origin` header equal to the canonical application origin configured above.
+Browser-shaped requests with cookies or Fetch Metadata but no `Origin` are
+rejected. Trusted non-browser automation is supported only by endpoints that
+explicitly document and validate a separate Bearer credential (currently the
+demo-cleanup cron endpoint); it must not replay a session cookie. Add a
+synchronizer or signed double-submit CSRF token before supporting any
+cross-origin cookie-authenticated client—do not solve that use case with broad
+CORS allowances.
+
 ## Logbook scanner
 
 The scanner imports photographed or handwritten paper logbook sheets and turns extracted fields into a new digital sheet. It is an assistive import flow, not an automatic source of truth.

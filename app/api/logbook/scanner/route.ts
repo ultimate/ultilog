@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { guardMutationOrigin } from "../../../lib/security/request-origin";
 import { auth } from "../../../../auth";
 import { createScannedSheet } from "../../../lib/logbook-scanner/create-scanned-sheet";
 import { openAiScannerProvider } from "../../../lib/logbook-scanner/openai-provider";
@@ -33,6 +34,8 @@ type ScannerErrorResponse = {
 
 
 export async function POST(request: Request) {
+  const originError = guardMutationOrigin(request);
+  if (originError) return originError;
   const session = await auth();
   if (!session?.user?.id) return scannerError("unauthenticated", "Sign in to scan logbook pages.", 401);
   const quota = await consumeRateLimit({ name: "scanner-user", limit: 10, windowMs: 60 * 60_000 }, session.user.id);
