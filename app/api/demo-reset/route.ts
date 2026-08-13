@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
+import { guardMutationOrigin } from "../../lib/security/request-origin";
 import { auth } from "../../../auth";
 import { resetDemoSandbox } from "../../lib/demo/demo-sandboxes";
 
-export async function POST() {
+export async function POST(request: Request = new Request("http://localhost/api/demo-reset", { method: "POST" })) {
+  const originError = guardMutationOrigin(request);
+  if (originError) return originError;
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

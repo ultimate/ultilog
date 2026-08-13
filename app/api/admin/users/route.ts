@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { guardMutationOrigin } from "../../../lib/security/request-origin";
 import { auth } from "../../../../auth";
 import { userHasEntitlement } from "../../../lib/authorization";
 import { deleteUserAccountAsAdmin, listKnownGroups, listUsersForAdmin, updateUserGroups } from "../../../lib/users";
@@ -15,6 +16,8 @@ export async function GET() {
 }
 
 export async function PATCH(request: Request) {
+  const originError = guardMutationOrigin(request);
+  if (originError) return originError;
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!await canManageUsers(session.user.id)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -34,6 +37,8 @@ export async function PATCH(request: Request) {
 
 
 export async function DELETE(request: Request) {
+  const originError = guardMutationOrigin(request);
+  if (originError) return originError;
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!await canManageUsers(session.user.id)) return NextResponse.json({ error: "Forbidden" }, { status: 403 });

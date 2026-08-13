@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { guardMutationOrigin } from "../../../lib/security/request-origin";
 import { auth } from "../../../../auth";
 import { createFreeMeteoService, meteoSnapshotToLogLineAutofill, type MeteoLogLineAutofillOptions } from "../../../domain/meteo";
 import { consumeRateLimit, rateLimitResponse } from "../../../lib/security/rate-limiter";
@@ -12,6 +13,8 @@ type MeteoAutofillRequest = MeteoLogLineAutofillOptions & {
 };
 
 export async function POST(request: Request) {
+  const originError = guardMutationOrigin(request);
+  if (originError) return originError;
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const quota = await consumeRateLimit({ name: "meteo-autofill-user", limit: 30, windowMs: 60 * 60_000 }, session.user.id);
