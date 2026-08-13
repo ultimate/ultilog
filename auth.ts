@@ -4,7 +4,6 @@ import type { NextRequest } from "next/server";
 import { consumeDemoSandboxLogin } from "./app/lib/demo/demo-sandboxes";
 import { isDemoSandboxSessionExpired } from "./app/lib/demo/demo-session";
 import { getUserSessionVersion, validateUser } from "./app/lib/users";
-import { isUserSessionVersionCurrent } from "./app/lib/auth/session-version";
 import { enforceRateLimits, normalizeEmail, rateLimitResponse, requestIp, securityEvent } from "./app/lib/security/rate-limiter";
 
 const nextAuth = NextAuth({
@@ -27,9 +26,10 @@ const nextAuth = NextAuth({
     }),
   ],
   callbacks: {
-    async authorized({ auth }) {
-      if (!auth?.user?.id || isDemoSandboxSessionExpired(auth.user.demoSandboxExpiresAt)) return false;
-      return isUserSessionVersionCurrent(auth.user.id, auth.user.sessionVersion);
+    authorized({ auth }) {
+      // The JWT callback resolves the current database version before Auth.js
+      // constructs this session and clears token.id when the cookie is stale.
+      return Boolean(auth?.user?.id) && !isDemoSandboxSessionExpired(auth?.user?.demoSandboxExpiresAt);
     },
     async jwt({ token, user }) {
       if (user) {
