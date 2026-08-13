@@ -10,9 +10,24 @@ jobs:
   test:
     name: Typecheck, test, build, and e2e
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: ultilog
+          POSTGRES_PASSWORD: ultilog
+          POSTGRES_DB: ultilog_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ultilog -d ultilog_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     environment: Preview
     env:
       CREW_ENCRYPTION_MASTER_KEY: ${{ secrets.CREW_ENCRYPTION_MASTER_KEY }}
+      TEST_POSTGRES_URL: postgres://ultilog:ultilog@localhost:5432/ultilog_test
 
     steps:
       - name: Check out repository

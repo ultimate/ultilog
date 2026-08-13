@@ -99,7 +99,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
       await database.boats.upsert(boat, ownerId);
       if (previousImageId !== nextImageId) await database.images.deleteIfOrphaned(previousImageId, ownerId);
       const row = await database.boats.findById(boat.id, ownerId);
-      return row ? LogSheetsRepository.toLogbook([row], [], [], []).boats[0] : undefined;
+      return row ? withoutImageBytes(LogSheetsRepository.toLogbook([row], [], [], []).boats[0]) : undefined;
     });
   }
 
@@ -130,7 +130,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
       await database.crew.upsert(crew, ownerId);
       if (previousImageId !== nextImageId) await database.images.deleteIfOrphaned(previousImageId, ownerId);
       const row = await database.crew.findProfile(crew.id, ownerId);
-      return row ? LogSheetsRepository.toLogbook([], [], [], [], [row]).crewMembers[0] : undefined;
+      return row ? withoutImageBytes(LogSheetsRepository.toLogbook([], [], [], [], [row]).crewMembers[0]) : undefined;
     });
   }
 
@@ -179,7 +179,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
       }
       if (previousImageId !== nextImageId) await database.images.deleteIfOrphaned(previousImageId, ownerId);
       const [row, crew, lines] = await Promise.all([database.sheets.findById(sheet.id, ownerId), database.crew.findForSheet(scopedId(ownerId, sheet.id), ownerId), database.lines.findForSheet(scopedId(ownerId, sheet.id))]);
-      return row ? LogSheetsRepository.toLogbook([], [row], crew, lines).sheets[0] : undefined;
+      return row ? withoutImageBytes(LogSheetsRepository.toLogbook([], [row], crew, lines).sheets[0]) : undefined;
     });
   }
 
@@ -215,7 +215,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
         database.sheets.findById(sheet.id, ownerId),
         database.crew.findForSheet(row.id, ownerId),
       ]);
-      return createdRow ? LogSheetsRepository.toLogbook([], [createdRow], crew, lineRows).sheets[0] : undefined;
+      return createdRow ? withoutImageBytes(LogSheetsRepository.toLogbook([], [createdRow], crew, lineRows).sheets[0]) : undefined;
     });
   }
 
@@ -323,6 +323,18 @@ export abstract class LogbookDatabase implements QueryableDatabase {
     await this.insertLogbook(logbook);
     await this.crew.ensurePrimaryProfile(this.requireOwnerId());
   }
+}
+
+/** Focused mutations return stable references; image bytes have their own endpoint. */
+function withoutImageBytes<T extends Boat | CrewMember | LogSheet>(entity: T): T {
+  const result = { ...entity };
+  delete result.image;
+  if ("crew" in result) result.crew = result.crew.map(member => {
+    const reference = { ...member };
+    delete reference.image;
+    return reference;
+  });
+  return result;
 }
 
 type SectionVisibility = Record<keyof NonNullable<LogSheet["share"]>, boolean>;

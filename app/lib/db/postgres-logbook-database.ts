@@ -47,6 +47,10 @@ export class PostgresLogbookDatabase extends LogbookDatabase {
     }
   }
 
+  async close() {
+    await this.pool.end();
+  }
+
   protected async insertLogbook(logbook: PersistedLogbook) {
     await this.insertPostgresLogbook(logbook);
   }
