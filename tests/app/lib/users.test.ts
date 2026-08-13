@@ -22,7 +22,7 @@ describe("users preferences", () => {
 
   it("returns the Gravatar fallback as the user's profile avatar", async () => {
     const { findUserById, gravatarAvatarUrl, registerUser } = await importUsersWithTempDatabase();
-    const user = await registerUser({ name: "Avatar User", email: "avatar@example.test", password: "password123" });
+    const user = await registerUser({ name: "Avatar User", email: "avatar@example.test", password: "Harbor lantern atlas 2026" });
 
     await expect(findUserById(user.id)).resolves.toMatchObject({
       avatar: gravatarAvatarUrl("avatar@example.test"),
@@ -32,7 +32,7 @@ describe("users preferences", () => {
   it("stores uploaded profile pictures without encryption", async () => {
     const { findUserById, registerUser, updateUserAvatar } = await importUsersWithTempDatabase();
     const { getDatabase } = await import("../../../app/lib/logbook-store");
-    const user = await registerUser({ name: "Picture User", email: "picture@example.test", password: "password123" });
+    const user = await registerUser({ name: "Picture User", email: "picture@example.test", password: "Harbor lantern atlas 2026" });
     const avatarData = Buffer.from([0xff, 0xd8, 0xff, 0xd9]).toString("base64");
 
     await updateUserAvatar(user.id, { data: avatarData, mimeType: "image/jpeg" });
@@ -45,7 +45,7 @@ describe("users preferences", () => {
 
   it("removes an uploaded picture and restores the Gravatar fallback", async () => {
     const { findUserById, gravatarAvatarUrl, registerUser, removeUserAvatar, updateUserAvatar } = await importUsersWithTempDatabase();
-    const user = await registerUser({ name: "Remove Picture", email: "remove-picture@example.test", password: "password123" });
+    const user = await registerUser({ name: "Remove Picture", email: "remove-picture@example.test", password: "Harbor lantern atlas 2026" });
     await updateUserAvatar(user.id, { data: Buffer.from([0xff, 0xd8, 0xff, 0xd9]).toString("base64"), mimeType: "image/jpeg" });
 
     await expect(removeUserAvatar(user.id)).resolves.toBe(gravatarAvatarUrl(user.email));
@@ -55,7 +55,7 @@ describe("users preferences", () => {
   it("returns defaults for a newly registered user", async () => {
     const { registerUser } = await importUsersWithTempDatabase();
 
-    const user = await registerUser({ name: "Preference User", email: "preference@example.test", password: "password123" });
+    const user = await registerUser({ name: "Preference User", email: "preference@example.test", password: "Harbor lantern atlas 2026" });
 
     expect(user).toMatchObject({
       countryCode: "",
@@ -78,7 +78,7 @@ describe("users preferences", () => {
     const { registerUser } = await importUsersWithTempDatabase();
     const { readLogbook } = await import("../../../app/lib/logbook-store");
 
-    const user = await registerUser({ name: "Fresh User", email: "fresh@example.test", password: "password123" });
+    const user = await registerUser({ name: "Fresh User", email: "fresh@example.test", password: "Harbor lantern atlas 2026" });
 
     await expect(readLogbook(user.id)).resolves.toEqual({
       boats: [],
@@ -89,7 +89,7 @@ describe("users preferences", () => {
 
   it("validates and persists the full preference object", async () => {
     const { findUserById, registerUser, updateUserViewPreferences } = await importUsersWithTempDatabase();
-    const user = await registerUser({ name: "Persist User", email: "persist@example.test", password: "password123" });
+    const user = await registerUser({ name: "Persist User", email: "persist@example.test", password: "Harbor lantern atlas 2026" });
 
     const updated = await updateUserViewPreferences(user.id, {
       countryCode: " de ",
@@ -129,7 +129,7 @@ describe("users preferences", () => {
 
   it("rejects invalid preference enum values", async () => {
     const { registerUser, updateUserViewPreferences } = await importUsersWithTempDatabase();
-    const user = await registerUser({ name: "Invalid User", email: "invalid@example.test", password: "password123" });
+    const user = await registerUser({ name: "Invalid User", email: "invalid@example.test", password: "Harbor lantern atlas 2026" });
 
     await expect(updateUserViewPreferences(user.id, { windUnit: "mph" })).rejects.toThrow("Wind unit is not supported.");
     await expect(updateUserViewPreferences(user.id, { countryCode: "ZZ" })).rejects.toThrow("Country code must be a supported ISO country code.");
@@ -151,7 +151,7 @@ describe("email verification", () => {
     const { createHash } = await import("node:crypto");
     const { registerUser, verifyEmailWithToken } = await importUsersWithTempDatabase();
     const { getDatabase } = await import("../../../app/lib/logbook-store");
-    const user = await registerUser({ name: "Verify User", email: "verify@example.test", password: "password123" });
+    const user = await registerUser({ name: "Verify User", email: "verify@example.test", password: "Harbor lantern atlas 2026" });
     const db = getDatabase();
     const token = "raw-verification-token";
     const tokenHash = createHash("sha256").update(token).digest("hex");
@@ -166,7 +166,7 @@ describe("email verification", () => {
   it("only creates password reset tokens for verified email addresses", async () => {
     const { registerUser, requestPasswordReset } = await importUsersWithTempDatabase();
     const { getDatabase } = await import("../../../app/lib/logbook-store");
-    const user = await registerUser({ name: "Reset Verify User", email: "reset-verify@example.test", password: "password123" });
+    const user = await registerUser({ name: "Reset Verify User", email: "reset-verify@example.test", password: "Harbor lantern atlas 2026" });
     const db = getDatabase();
 
     await requestPasswordReset(user.email);
@@ -182,7 +182,7 @@ describe("email verification", () => {
   it("allows users to request another verification email immediately", async () => {
     const { registerUser, requestEmailVerification } = await importUsersWithTempDatabase();
     const { getDatabase } = await import("../../../app/lib/logbook-store");
-    const user = await registerUser({ name: "Resend Verify User", email: "resend-verify@example.test", password: "password123" });
+    const user = await registerUser({ name: "Resend Verify User", email: "resend-verify@example.test", password: "Harbor lantern atlas 2026" });
     const db = getDatabase();
 
     await requestEmailVerification(user.email);
@@ -193,15 +193,55 @@ describe("email verification", () => {
   it("resends verification on login only when no active verification token remains", async () => {
     const { registerUser, validateUser } = await importUsersWithTempDatabase();
     const { getDatabase } = await import("../../../app/lib/logbook-store");
-    const user = await registerUser({ name: "Login Verify User", email: "login-verify@example.test", password: "password123" });
+    const user = await registerUser({ name: "Login Verify User", email: "login-verify@example.test", password: "Harbor lantern atlas 2026" });
     const db = getDatabase();
 
-    await expect(validateUser(user.email, "password123")).resolves.toMatchObject({ id: user.id });
+    await expect(validateUser(user.email, "Harbor lantern atlas 2026")).resolves.toMatchObject({ id: user.id });
     await expect(db.query<{ count: number }>("select count(*) as count from email_verification_tokens where user_id = ?", [user.id])).resolves.toMatchObject({ rows: [{ count: 1 }] });
 
     await db.query("update email_verification_tokens set expires_at = ? where user_id = ?", [new Date(Date.now() - 60_000).toISOString(), user.id]);
-    await expect(validateUser(user.email, "password123")).resolves.toMatchObject({ id: user.id });
+    await expect(validateUser(user.email, "Harbor lantern atlas 2026")).resolves.toMatchObject({ id: user.id });
 
     await expect(db.query<{ count: number }>("select count(*) as count from email_verification_tokens where user_id = ?", [user.id])).resolves.toMatchObject({ rows: [{ count: 2 }] });
+  });
+});
+
+describe("password policy enforcement", () => {
+  it.each([
+    ["too short", "Short phrase"],
+    ["known compromised", "password123456789"],
+    ["predictable", "aaaaaaaaaaaaaaaa"],
+    ["over bcrypt's byte limit", "🚤".repeat(19)],
+  ])("rejects %s passwords identically in registration, profile updates, and token resets", async (_case, password) => {
+    const { registerUser, resetPasswordWithToken, updateUserPassword } = await importUsersWithTempDatabase();
+
+    const attempts = [
+      registerUser({ name: "Policy User", email: "policy@example.test", password }),
+      updateUserPassword("any-user", { currentPassword: "irrelevant", newPassword: password }),
+      resetPasswordWithToken("any-token", password),
+    ];
+
+    for (const attempt of attempts) {
+      await expect(attempt).rejects.toMatchObject({
+        name: "PasswordPolicyError",
+        message: "Password does not meet the password policy.",
+      });
+    }
+  });
+
+  it("normalizes Unicode to NFC before storage and authentication", async () => {
+    const { registerUser, validateUser } = await importUsersWithTempDatabase();
+    const decomposed = "Cafe\u0301 harbor lantern 2026";
+    const composed = decomposed.normalize("NFC");
+    const user = await registerUser({ name: "Unicode User", email: "unicode@example.test", password: decomposed });
+
+    await expect(validateUser(user.email, composed)).resolves.toMatchObject({ id: user.id });
+  });
+
+  it("permits long passphrases and password-manager generated credentials without composition rules", async () => {
+    const { registerUser } = await importUsersWithTempDatabase();
+
+    await expect(registerUser({ name: "Phrase User", email: "phrase@example.test", password: "four quiet boats cross midnight" })).resolves.toMatchObject({ email: "phrase@example.test" });
+    await expect(registerUser({ name: "Manager User", email: "manager@example.test", password: "vB4!q9_Zx7@Lp2#Nm8$Kr5" })).resolves.toMatchObject({ email: "manager@example.test" });
   });
 });

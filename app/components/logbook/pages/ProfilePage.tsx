@@ -4,6 +4,7 @@ import { useI18n } from "../../../lib/i18n";
 import type { ChangeEvent, FormEvent, Dispatch, ReactNode, SetStateAction } from "react";
 import type { Boat, PersistedLogbook } from "../../../models/logbook";
 import { PasswordField } from "../../PasswordField";
+import { PASSWORD_MAX_UTF8_BYTES, PASSWORD_MIN_CHARACTERS } from "../../../lib/security/password-policy";
 import type { ProfilePreferences } from "../../onboarding/useOnboardingProfile";
 import { dateFormats, formatStoredDate, formatStoredTime, timeFormats } from "../../../lib/date-time-format";
 import { STANDARD_TECHNICAL_CHECK_IDS, standardTechnicalLogTemplate, type StandardTechnicalCheckId } from "../../../domain/logbook/technical-log";
@@ -358,7 +359,8 @@ export function ProfilePage(props: ProfilePageProps) {
             className="wide-field"
             label={t("profile.newPassword")}
             required
-            minLength={8}
+            minLength={PASSWORD_MIN_CHARACTERS}
+            maxLength={PASSWORD_MAX_UTF8_BYTES}
             value={passwordForm.newPassword}
             onChange={(e) =>
               setPasswordForm({ ...passwordForm, newPassword: e.target.value })
@@ -368,7 +370,8 @@ export function ProfilePage(props: ProfilePageProps) {
             className="wide-field"
             label={t("profile.confirmNewPassword")}
             required
-            minLength={8}
+            minLength={PASSWORD_MIN_CHARACTERS}
+            maxLength={PASSWORD_MAX_UTF8_BYTES}
             value={passwordForm.confirmPassword}
             onChange={(e) =>
               setPasswordForm({
