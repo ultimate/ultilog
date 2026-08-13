@@ -41,7 +41,7 @@ async function loginWithSeededDemoData(page: Page) {
   await expect(page.getByRole("button", { name: "Logout" })).toBeVisible({ timeout: 30_000 });
   await page.waitForLoadState("networkidle");
   await removeDemoLogsheets(page);
-  const seedResponse = await page.request.put("/api/logbook/import", { headers: { "X-Ultilog-Confirm-Replace": "replace-my-entire-logbook" },
+  const seedResponse = await page.request.put("/api/logbook/import", { headers: { Origin: "http://127.0.0.1:3000", "X-Ultilog-Confirm-Replace": "replace-my-entire-logbook" },
     data: { boats: sampleBoats, crewMembers: crewProfilesFromSheets(sampleLogSheets), sheets: sampleLogSheets },
   });
   expect(seedResponse.ok(), await seedResponse.text()).toBeTruthy();
@@ -55,7 +55,7 @@ async function removeDemoLogsheets(page: Page) {
   const currentLogbook = await currentResponse.json();
   // Clear the sheets atomically before replacing demo boat IDs. Individual
   // deletes can race the client's queued normalization saves after login.
-  const clearResponse = await page.request.put("/api/logbook/import", { headers: { "X-Ultilog-Confirm-Replace": "replace-my-entire-logbook" }, data: { ...currentLogbook, sheets: [] } });
+  const clearResponse = await page.request.put("/api/logbook/import", { headers: { Origin: "http://127.0.0.1:3000", "X-Ultilog-Confirm-Replace": "replace-my-entire-logbook" }, data: { ...currentLogbook, sheets: [] } });
   expect(clearResponse.ok(), await clearResponse.text()).toBeTruthy();
 }
 
