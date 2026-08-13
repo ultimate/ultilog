@@ -270,20 +270,20 @@ describe("password session invalidation", () => {
 
   it("rejects the prior session version after a profile password change", async () => {
     const { registerUser, updateUserPassword } = await importUsersWithTempDatabase();
-    const { isUserSessionVersionCurrent } = await import("../../../app/lib/auth/session-version");
+    const { getUserSessionVersion } = await import("../../../app/lib/users");
     const user = await registerUser({ name: "Profile Password", email: "profile-password@example.test", password: "Harbor lantern atlas 2026" });
     const issuedVersion = user.sessionVersion ?? 0;
 
-    await expect(isUserSessionVersionCurrent(user.id, issuedVersion)).resolves.toBe(true);
+    await expect(getUserSessionVersion(user.id)).resolves.toBe(issuedVersion);
     await updateUserPassword(user.id, { currentPassword: "Harbor lantern atlas 2026", newPassword: "Fresh profile password 2026" });
-    await expect(isUserSessionVersionCurrent(user.id, issuedVersion)).resolves.toBe(false);
+    await expect(getUserSessionVersion(user.id)).resolves.not.toBe(issuedVersion);
   });
 
   it("rejects the prior session version after a token password reset", async () => {
     const { createHash } = await import("node:crypto");
     const { registerUser, resetPasswordWithToken } = await importUsersWithTempDatabase();
     const { getDatabase } = await import("../../../app/lib/logbook-store");
-    const { isUserSessionVersionCurrent } = await import("../../../app/lib/auth/session-version");
+    const { getUserSessionVersion } = await import("../../../app/lib/users");
     const user = await registerUser({ name: "Token Password", email: "token-password@example.test", password: "Harbor lantern atlas 2026" });
     const token = "session-invalidating-token";
     await getDatabase().query(
@@ -293,6 +293,6 @@ describe("password session invalidation", () => {
 
     await resetPasswordWithToken(token, "Fresh token password 2026");
 
-    await expect(isUserSessionVersionCurrent(user.id, user.sessionVersion ?? 0)).resolves.toBe(false);
+    await expect(getUserSessionVersion(user.id)).resolves.not.toBe(user.sessionVersion ?? 0);
   });
 });
