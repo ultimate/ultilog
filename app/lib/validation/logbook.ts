@@ -13,7 +13,7 @@ export const LOGBOOK_LIMITS = {
 } as const;
 
 export class LogbookValidationError extends Error {
-  constructor(message: string, readonly kind: "structure" | "limit" = "structure") { super(message); }
+  constructor(message: string, readonly kind: "structure" | "limit" = "structure", readonly code?: string) { super(message); }
 }
 
 export function requireRevision(value: unknown) {
@@ -34,7 +34,7 @@ const numberRecord = (v: unknown) => record(v) && Object.entries(v).every(([k, x
 function assert(ok: unknown, message: string): asserts ok { if (!ok) throw new LogbookValidationError(message); }
 function count(array: unknown, max: number, name: string): asserts array is unknown[] {
   assert(Array.isArray(array), `${name} must be an array.`);
-  if (array.length > max) throw new LogbookValidationError(`Too many ${name}.`, "limit");
+  if (array.length > max) throw new LogbookValidationError(`Too many ${name}.`, "limit", `too_many_${name.replaceAll(" ", "_")}`);
 }
 function image(value: unknown, path: string) { if (value === undefined) return; try { validateStoredImage(value); } catch (e) { throw new LogbookValidationError(`${path}: ${e instanceof StoredImageValidationError ? e.message : "Invalid image."}`, e instanceof StoredImageValidationError && e.message.includes("byte limit") ? "limit" : "structure"); } }
 
@@ -73,10 +73,10 @@ export function validatePersistedLogbook(value: unknown): PersistedLogbook {
     assert(record(sheet) && ["id", "title", "boatId"].every(k => string(sheet[k])) && ["Draft", "Locked"].includes(sheet.status as string) && record(sheet.route) && ["from", "to", "departed", "arrived"].every(k => string((sheet.route as Record<string, unknown>)[k])) && Array.isArray(sheet.crew) && strings(sheet.watchPlan) && Array.isArray(sheet.technicalChecks) && Array.isArray(sheet.lines), `sheets[${i}] is malformed.`);
     sheet.crew.forEach((crew, j) => validateCrew(crew, `sheets[${i}].crew[${j}]`, true));
     totalSheetCrew += sheet.crew.length;
-    if (totalSheetCrew > LOGBOOK_LIMITS.crewMembers) throw new LogbookValidationError("Too many crew members.", "limit");
+    if (totalSheetCrew > LOGBOOK_LIMITS.crewMembers) throw new LogbookValidationError("Too many crew members.", "limit", "too_many_crew_members");
     assert(sheet.technicalChecks.every(check => record(check) && string(check.status) && string(check.text)), `sheets[${i}].technicalChecks is malformed.`);
     sheet.lines.forEach((line, j) => validateLine(line, `sheets[${i}].lines[${j}]`)); totalLines += sheet.lines.length;
-    if (totalLines > LOGBOOK_LIMITS.logLines) throw new LogbookValidationError("Too many log lines.", "limit");
+    if (totalLines > LOGBOOK_LIMITS.logLines) throw new LogbookValidationError("Too many log lines.", "limit", "too_many_log_lines");
     if (sheet.share !== undefined) assert(record(sheet.share) && ["masterData", "picture", "logLines", "metrics", "technicalLog", "skipper", "crew"].every(k => ["private", "registered", "public"].includes((sheet.share as Record<string, unknown>)[k] as string)), `sheets[${i}].share is malformed.`);
     if (sheet.metrics !== undefined) assert(record(sheet.metrics) && Object.entries(sheet.metrics).every(([, x]) => x === null || finite(x) || numberRecord(x)), `sheets[${i}].metrics is malformed.`);
     assert(optional(sheet.source, x => x === "manual" || x === "scanner") && optional(sheet.verificationNote, string) && optional(sheet.scannerWarnings, strings), `sheets[${i}] optional values are malformed.`);

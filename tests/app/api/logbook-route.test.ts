@@ -114,7 +114,9 @@ describe("logbook endpoint", () => {
     const boat = { id: "boat", name: "Boat", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [] };
     const atLimit = { ...logbook, boats: Array.from({ length: LOGBOOK_LIMITS.boats }, (_, i) => ({ ...boat, id: `boat-${i}` })) };
     expect((await PUT(importRequest("https://ultilog.test/api/logbook", { method: "PUT", body: JSON.stringify(atLimit) }))).status).toBe(200);
-    expect((await PUT(importRequest("https://ultilog.test/api/logbook", { method: "PUT", body: JSON.stringify({ ...atLimit, boats: [...atLimit.boats, boat] }) }))).status).toBe(413);
+    const overLimit = await PUT(importRequest("https://ultilog.test/api/logbook", { method: "PUT", body: JSON.stringify({ ...atLimit, boats: [...atLimit.boats, boat] }) }));
+    expect(overLimit.status).toBe(413);
+    await expect(overLimit.json()).resolves.toMatchObject({ code: "too_many_boats" });
   });
 
   it("rejects malformed nested values and unsupported or oversized images", async () => {

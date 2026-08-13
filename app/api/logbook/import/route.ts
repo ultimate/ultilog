@@ -28,7 +28,7 @@ export async function PUT(request: Request) {
   catch (error) {
     const status = error instanceof LogbookValidationError && error.kind === "limit" ? 413 : 400;
     const message = error instanceof LogbookValidationError && error.kind === "limit" ? error.message : "Invalid logbook payload";
-    return NextResponse.json({ error: message }, { status });
+    return NextResponse.json({ error: message, ...(error instanceof LogbookValidationError && error.code ? { code: error.code } : {}) }, { status });
   }
   const persistedLogbook = await isActiveDemoSandbox(session.user.id) ? applyDemoLogbookRestrictions(logbook) : logbook;
   const currentLogbook = await readLogbook(session.user.id);

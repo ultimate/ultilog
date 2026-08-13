@@ -16,6 +16,7 @@ export function validateLogLineUpdate(value: unknown): LogLine {
 export function validateLineOrder(value: unknown): string[] {
   if (!value || typeof value !== "object" || !Array.isArray((value as { lineIds?: unknown }).lineIds)) throw new LogbookValidationError("lineIds must be an array.");
   const ids = (value as { lineIds: unknown[] }).lineIds;
-  if (ids.length > LOGBOOK_LIMITS.logLines || !ids.every(id => typeof id === "string" && id.length > 0) || new Set(ids).size !== ids.length) throw new LogbookValidationError("lineIds is invalid.");
+  if (ids.length > LOGBOOK_LIMITS.logLines) throw new LogbookValidationError("Too many log lines.", "limit", "too_many_log_lines");
+  if (!ids.every(id => typeof id === "string" && id.length > 0) || new Set(ids).size !== ids.length) throw new LogbookValidationError("lineIds is invalid.");
   return ids as string[];
 }

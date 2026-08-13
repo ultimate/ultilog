@@ -2,13 +2,14 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { auth } from "../../../auth";
 import { createStoredImage } from "../../lib/logbook-store";
-import { MAX_STORED_IMAGE_BYTES, StoredImageValidationError, validateStoredImage } from "../../lib/validation/stored-image";
+import { StoredImageValidationError, validateStoredImage } from "../../lib/validation/stored-image";
 
-// Base64 expands bytes by 4/3; leave a small, fixed allowance for JSON metadata.
+// Keep this fallback identical to STORED_IMAGE_REQUEST_BYTES in .env.example.
+export const DEFAULT_STORED_IMAGE_REQUEST_BYTES = 1_402_200;
 const configuredRequestBytes = Number(process.env.STORED_IMAGE_REQUEST_BYTES);
 export const MAX_STORED_IMAGE_REQUEST_BYTES = Number.isSafeInteger(configuredRequestBytes) && configuredRequestBytes > 0
   ? configuredRequestBytes
-  : Math.ceil(MAX_STORED_IMAGE_BYTES * 4 / 3) + 4096;
+  : DEFAULT_STORED_IMAGE_REQUEST_BYTES;
 
 export async function POST(request: Request) {
   const session = await auth();
