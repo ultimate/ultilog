@@ -1,26 +1,31 @@
 import type { NextConfig } from "next";
+import { PHASE_DEVELOPMENT_SERVER } from "next/constants";
 
-const contentSecurityPolicy = [
-  "default-src 'self'",
-  // Next's static bootstrap currently emits inline scripts without exposing a
-  // nonce to next.config headers. Keep this exception confined to scripts;
-  // eval and third-party script origins remain forbidden.
-  "script-src 'self' 'unsafe-inline'",
-  // Leaflet positions map panes and markers with element style attributes, and
-  // the print view emits scoped inline CSS.
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: https://*.tile.openstreetmap.org https://tiles.openseamap.org https://www.gravatar.com",
-  "font-src 'self'",
-  "connect-src 'self'",
-  "frame-ancestors 'none'",
-  "base-uri 'self'",
-  "object-src 'none'",
-  "form-action 'self'",
-].join("; ");
+function contentSecurityPolicy(developmentServer: boolean) {
+  return [
+    "default-src 'self'",
+    // Next's static bootstrap currently emits inline scripts without exposing a
+    // nonce to next.config headers. Keep this exception confined to scripts;
+    // third-party script origins remain forbidden. React's development runtime
+    // uses eval to reconstruct debugging call stacks, so permit it only when
+    // Next is explicitly running its development server.
+    `script-src 'self' 'unsafe-inline'${developmentServer ? " 'unsafe-eval'" : ""}`,
+    // Leaflet positions map panes and markers with element style attributes, and
+    // the print view emits scoped inline CSS.
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: https://*.tile.openstreetmap.org https://tiles.openseamap.org https://www.gravatar.com",
+    "font-src 'self'",
+    "connect-src 'self'",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "object-src 'none'",
+    "form-action 'self'",
+  ].join("; ");
+}
 
-export function securityHeaders(productionHttps: boolean) {
+export function securityHeaders(productionHttps: boolean, developmentServer = false) {
   const headers = [
-    { key: "Content-Security-Policy", value: contentSecurityPolicy },
+    { key: "Content-Security-Policy", value: contentSecurityPolicy(developmentServer) },
     { key: "X-Content-Type-Options", value: "nosniff" },
     { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
     {
@@ -52,18 +57,20 @@ function isProductionHttpsDeployment() {
   ].some((url) => url?.startsWith("https://"));
 }
 
-const nextConfig: NextConfig = {
-  reactStrictMode: true,
-  async headers() {
-    return [
-      {
-        // Applying the common policy here protects rendered pages, static
-        // assets, and API responses (including error responses) consistently.
-        source: "/:path*",
-        headers: securityHeaders(isProductionHttpsDeployment()),
-      },
-    ];
-  },
-};
+export default function nextConfig(phase: string): NextConfig {
+  const developmentServer = phase === PHASE_DEVELOPMENT_SERVER;
 
-export default nextConfig;
+  return {
+    reactStrictMode: true,
+    async headers() {
+      return [
+        {
+          // Applying the common policy here protects rendered pages, static
+          // assets, and API responses (including error responses) consistently.
+          source: "/:path*",
+          headers: securityHeaders(isProductionHttpsDeployment(), developmentServer),
+        },
+      ];
+    },
+  };
+}

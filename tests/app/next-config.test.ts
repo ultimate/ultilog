@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { PHASE_DEVELOPMENT_SERVER, PHASE_PRODUCTION_BUILD } from "next/constants";
 
-import nextConfig, { securityHeaders } from "../../next.config";
+import createNextConfig, { securityHeaders } from "../../next.config";
 
 function asHeaderMap(headers: Array<{ key: string; value: string }>) {
   return new Map(headers.map(({ key, value }) => [key, value]));
@@ -8,6 +9,7 @@ function asHeaderMap(headers: Array<{ key: string; value: string }>) {
 
 describe("Next.js security headers", () => {
   it("applies the security policy to every application and API path", async () => {
+    const nextConfig = createNextConfig(PHASE_PRODUCTION_BUILD);
     expect(nextConfig.headers).toBeTypeOf("function");
     const rules = await nextConfig.headers!();
 
@@ -41,6 +43,21 @@ describe("Next.js security headers", () => {
     expect(csp).toContain("img-src 'self' data:");
     expect(csp).not.toContain("openai.com");
     expect(csp).not.toMatch(/smtp/i);
+    expect(csp).not.toContain("'unsafe-eval'");
+  });
+
+  it("permits eval only for React's development runtime", async () => {
+    const developmentConfig = createNextConfig(PHASE_DEVELOPMENT_SERVER);
+    const productionConfig = createNextConfig(PHASE_PRODUCTION_BUILD);
+    const developmentRules = await developmentConfig.headers!();
+    const productionRules = await productionConfig.headers!();
+
+    expect(asHeaderMap(developmentRules[0].headers).get("Content-Security-Policy")).toContain(
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+    );
+    expect(asHeaderMap(productionRules[0].headers).get("Content-Security-Policy")).not.toContain(
+      "'unsafe-eval'",
+    );
   });
 
   it("only adds HSTS when the caller has identified production HTTPS", () => {
