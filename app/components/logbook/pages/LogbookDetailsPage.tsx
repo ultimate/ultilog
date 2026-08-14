@@ -13,7 +13,7 @@ import type {
   LogSheetShareSettings,
   PersistedLogbook,
 } from "../../../models/logbook";
-import { coordinateToInput, decimalToDmsParts, dmsPartsToDecimal, parseCoordinate, type CoordinateFormat, type DmsParts } from "../../../domain/nautical/coordinates";
+import { coordinateToInput, decimalToDdmParts, decimalToDmsParts, ddmPartsToDecimal, dmsPartsToDecimal, parseCoordinate, type CoordinateFormat, type DmsParts } from "../../../domain/nautical/coordinates";
 import { boatToForm, sheetToForm } from "../forms";
 import { dateTimeLocalFromParts, isoDateTimeWithTimezone, splitDateTimeLocal, timeZoneOffsetOptions, timezoneOffsetFromStamp, dateTimeLocalFromStamp } from "../date-utils";
 import { updateLogLineFormForInput } from "../../../domain/log-lines/log-line-editor";
@@ -307,6 +307,25 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
 
   const renderCoordinateInput = (field: "latitude" | "longitude", label: string) => {
     if (coordinateFormat === "decimal") return <input aria-label={label} value={lineForm[field]} onChange={(e) => updateCoordinateField(field, e.target.value)} />;
+    if (coordinateFormat === "ddm") {
+      const parts = decimalToDdmParts(parseCoordinate(lineForm[field]));
+      return (
+        <div
+          className="compound-inputs dms-inputs"
+          aria-label={label}
+          onBlur={(event) => {
+            if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) return;
+            updateCoordinateField(field, String(ddmPartsToDecimal({
+              degrees: dmsInputValue(event.currentTarget, "degrees"),
+              minutes: dmsInputValue(event.currentTarget, "minutes"),
+            })));
+          }}
+        >
+          <label><span>[°]</span><input aria-label={`${label} degrees`} type="text" inputMode="decimal" data-dms-part="degrees" defaultValue={parts.degrees} /></label>
+          <label><span>[&prime;]</span><input aria-label={`${label} decimal minutes`} type="text" inputMode="decimal" data-dms-part="minutes" defaultValue={parts.minutes} /></label>
+        </div>
+      );
+    }
     const parts = decimalToDmsParts(parseCoordinate(lineForm[field]));
     const commitDmsInput = (container: HTMLDivElement) => {
       updateCoordinateField(field, String(dmsPartsToDecimal({
@@ -812,7 +831,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                 <div className="table-header">
                   <div><h3>{t("details.logTitle")}</h3></div>
                   <div className="table-actions">
-                    <button type="button" onClick={() => onCoordinateFormatChange(coordinateFormat === "decimal" ? "dms" : "decimal")}>{t("details.coordinates")}: {coordinateFormat === "decimal" ? t("details.decimal") : "DMS"}</button>
+                    <button type="button" onClick={() => onCoordinateFormatChange(coordinateFormat === "decimal" ? "ddm" : coordinateFormat === "ddm" ? "dms" : "decimal")}>{t("details.coordinates")}: {coordinateFormat === "decimal" ? t("profile.coordinateDecimal") : coordinateFormat === "ddm" ? t("profile.coordinateDdm") : t("profile.coordinateDms")}</button>
                     <button type="button" onClick={() => onShowCourseColumnsChange(!showCourseColumns)}>{showCourseColumns ? t("details.hide") : t("details.show")} {t("details.courseColumns")}</button>
                     <button type="button" disabled={isActiveSheetLocked} onClick={startAddingLine}>{t("details.addLine")}</button>
                     <button type="button" disabled={isActiveSheetLocked || smartLineStatus === "loading"} onClick={() => void startAddingSmartLine()}>{smartLineStatus === "loading" ? t("details.addSmartLineLoading") : t("details.addSmartLine")}</button>

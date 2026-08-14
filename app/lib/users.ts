@@ -18,7 +18,7 @@ export type UserPreferences = {
   windUnit: "bft" | "kn" | "km/h" | "mp/h" | "m/s";
   waterHeightUnit: "m" | "ft";
   temperatureUnit: "°C" | "°F";
-  coordinateFormat: "decimal" | "dms";
+  coordinateFormat: "decimal" | "ddm" | "dms";
   distanceDisplayUnit: "off" | "m" | "km";
   defaultBoatId: string;
   defaultCrewMemberIds: string[];
@@ -162,7 +162,7 @@ function normalizeUserPreferences(input: Partial<Record<keyof UserPreferences, u
     windUnit: normalizeEnum(input.windUnit, ["bft", "kn", "km/h", "mp/h", "m/s"] as const, currentUser?.windUnit ?? "bft", "Wind unit", strict),
     waterHeightUnit: normalizeEnum(input.waterHeightUnit, ["m", "ft"] as const, currentUser?.waterHeightUnit ?? "m", "Water height unit", strict),
     temperatureUnit: normalizeEnum(input.temperatureUnit, ["°C", "°F"] as const, currentUser?.temperatureUnit ?? "°C", "Temperature unit", strict),
-    coordinateFormat: normalizeEnum(input.coordinateFormat, ["decimal", "dms"] as const, currentUser?.coordinateFormat ?? "decimal", "Coordinate format", strict),
+    coordinateFormat: normalizeEnum(input.coordinateFormat, ["decimal", "ddm", "dms"] as const, currentUser?.coordinateFormat ?? "decimal", "Coordinate format", strict),
     distanceDisplayUnit: normalizeEnum(input.distanceDisplayUnit, ["off", "m", "km"] as const, currentUser?.distanceDisplayUnit ?? "off", "Distance display unit", strict),
     defaultBoatId: typeof input.defaultBoatId === "string" ? input.defaultBoatId.trim() : currentUser?.defaultBoatId ?? "",
     defaultCrewMemberIds: input.defaultCrewMemberIds === undefined ? currentUser?.defaultCrewMemberIds ?? [] : normalizeStringList(input.defaultCrewMemberIds),
@@ -205,7 +205,7 @@ function toAppUser(user: UserRow, groups: string[]): AppUser {
     windUnit: normalizeEnum(user.wind_unit, ["bft", "kn", "km/h", "mp/h", "m/s"] as const, "bft", "Wind unit"),
     waterHeightUnit: normalizeEnum(user.water_height_unit, ["m", "ft"] as const, "m", "Water height unit"),
     temperatureUnit: normalizeEnum(user.temperature_unit, ["°C", "°F"] as const, "°C", "Temperature unit"),
-    coordinateFormat: normalizeEnum(user.coordinate_format, ["decimal", "dms"] as const, "decimal", "Coordinate format"),
+    coordinateFormat: normalizeEnum(user.coordinate_format, ["decimal", "ddm", "dms"] as const, "decimal", "Coordinate format"),
     distanceDisplayUnit: normalizeEnum(user.distance_display_unit, ["off", "m", "km"] as const, "off", "Distance display unit"),
     defaultBoatId: user.default_boat_id ?? "",
     defaultCrewMemberIds: normalizeStringList(user.default_crew_member_ids),
