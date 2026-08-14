@@ -67,8 +67,8 @@ export default async function SharedLogbookPage({ params }: { params: Promise<{ 
             <div className="table-header"><h2>Log lines</h2></div>
             <div className="table-scroll">
               <table className="log-lines-table">
-                <thead><tr><th>Time</th><th>Lat</th><th>Lon</th><th>Weather</th><th>Wind</th><th>Log</th><th>Remarks</th></tr></thead>
-                <tbody>{sheet.lines.map((line, index) => <tr key={`${line.time}-${index}`}><td>{line.time}</td><td>{line.latitude}</td><td>{line.longitude}</td><td>{line.weather} {line.weatherRemark}</td><td>{line.windDirection} {line.windStrength} {line.windUnit}</td><td>{line.logNm} nm</td><td>{line.remarks}</td></tr>)}</tbody>
+                <thead><tr><th scope="col" aria-label="Log line number">#</th><th>Time</th><th>Lat</th><th>Lon</th><th>Weather</th><th>Wind</th><th>Log</th><th>Remarks</th></tr></thead>
+                <tbody>{sheet.lines.map((line, index) => <tr key={`${line.time}-${index}`}><td>{index + 1}</td><td>{line.time}</td><td>{line.latitude}</td><td>{line.longitude}</td><td>{line.weather} {line.weatherRemark}</td><td>{line.windDirection} {line.windStrength} {line.windUnit}</td><td>{line.logNm} nm</td><td>{line.remarks}</td></tr>)}</tbody>
               </table>
             </div>
           </article>
