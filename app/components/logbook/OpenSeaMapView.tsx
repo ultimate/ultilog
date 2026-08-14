@@ -76,8 +76,9 @@ function lineToPoint(line: LogLine, index: number, routeId: string, labels: { we
 
 function logLinesToRoute(logLines: LogLine[], labels: { weather: string; wind: string; logLinePositions: string }, formatTime: (value?: string | null) => string): MapRoute {
   const points = logLines
-    .filter(isValidCoordinate)
-    .map((line, index) => lineToPoint(line, index, "log-lines", labels, formatTime));
+    .map((line, index) => ({ line, index }))
+    .filter(({ line }) => isValidCoordinate(line))
+    .map(({ line, index }) => lineToPoint(line, index, "log-lines", labels, formatTime));
 
   return {
     id: "log-lines",
@@ -89,8 +90,9 @@ function logLinesToRoute(logLines: LogLine[], labels: { weather: string; wind: s
 
 function logSheetToRoute(sheet: LogSheet, labels: { weather: string; wind: string }, formatDateRange: (from?: string | null, to?: string | null) => string, formatTime: (value?: string | null) => string): MapRoute {
   const points = sheet.lines
-    .filter(isValidCoordinate)
-    .map((line, index) => lineToPoint(line, index, sheet.id, labels, formatTime));
+    .map((line, index) => ({ line, index }))
+    .filter(({ line }) => isValidCoordinate(line))
+    .map(({ line, index }) => lineToPoint(line, index, sheet.id, labels, formatTime));
 
   return {
     id: sheet.id,

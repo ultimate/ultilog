@@ -22,6 +22,14 @@ test("opens a seeded logsheet detail page from the overview log sheet list", asy
   await expect(page.getByRole("heading", { name: demoSheet.title })).toBeVisible();
   await expect(page.getByLabel("Logbook sheet header")).toContainText("Preveza Marina");
   await expect(page.getByLabel("Logbook sheet header")).toContainText("Fiskardo");
+
+  const logLineRows = page.locator(".log-lines-table tbody tr");
+  await expect(logLineRows).toHaveCount(sampleLogSheets[0].lines.length);
+  await expect(logLineRows.nth(0).locator("td").first()).toHaveText("1");
+  await expect(logLineRows.nth(1).locator("td").first()).toHaveText("2");
+  await expect(page.locator(".open-seamap-detail .open-seamap-marker b")).toHaveText(
+    sampleLogSheets[0].lines.map((_, index) => `${index + 1}`),
+  );
 });
 
 async function loginWithSeededDemoData(page: Page) {

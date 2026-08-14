@@ -346,8 +346,9 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   };
 
 
-  const renderLineEditor = (key: string) => (
+  const renderLineEditor = (key: string, lineNumber: number) => (
     <tr key={key} className="inline-line-row">
+      <td>{lineNumber}</td>
       <td><div className="compound-inputs"><input type="datetime-local" value={dateTimeLocalFromStamp(lineForm.time)} onChange={(e) => updateLineFormField("time", isoDateTimeWithTimezone(e.target.value, timezoneOffsetFromStamp(lineForm.time)))} /><select aria-label="Line time zone" value={timezoneOffsetFromStamp(lineForm.time)} onChange={(e) => updateLineFormField("time", isoDateTimeWithTimezone(dateTimeLocalFromStamp(lineForm.time), e.target.value))}>{timeZoneOffsetOptions.map((offset) => <option key={offset} value={offset}>UTC{offset}</option>)}</select></div></td><td>{renderCoordinateInput("latitude", t("details.lat"))}</td><td>{renderCoordinateInput("longitude", t("details.lon"))}</td>
       <td><select value={lineForm.weather} onChange={(e) => setLineForm({ ...lineForm, weather: e.target.value })}><option value="">—</option>{weatherEmojis.map((emoji) => <option key={emoji} value={emoji}>{emoji}</option>)}</select></td>
       <td>{renderTextInput("weatherRemark", t("details.weatherRemark"))}</td>
@@ -822,17 +823,17 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                   <table className={showCourseColumns ? "log-lines-table with-course-columns" : "log-lines-table"}>
                     <thead>
                       <tr className="column-groups">
-                        <th colSpan={3}>{t("details.timePos")}</th><th colSpan={8}>{t("details.weatherSea")}</th><th colSpan={showCourseColumns ? 9 : 2}>{t("details.course")}</th><th colSpan={4}>{t("details.travel")}</th><th>{t("details.remarks")}</th><th colSpan={2}>{t("details.actions")}</th>
+                        <th colSpan={4}>{t("details.timePos")}</th><th colSpan={8}>{t("details.weatherSea")}</th><th colSpan={showCourseColumns ? 9 : 2}>{t("details.course")}</th><th colSpan={4}>{t("details.travel")}</th><th>{t("details.remarks")}</th><th colSpan={2}>{t("details.actions")}</th>
                       </tr>
                       <tr>
-                        <th>{t("details.time")}</th><th>{t("details.lat")}</th><th>{t("details.lon")}</th><th>{t("details.weather")}</th><th>{t("details.weatherRemark")}</th><th>{t("details.temperature")}</th><th>{t("details.baro")}</th><th>{t("details.wind")}</th><th>{t("details.sea")}</th><th>{t("details.tide")}</th><th>{t("details.moon")}</th>{courseConversionColumns.map((column) => (!column.isOptional || showCourseColumns) && renderCourseHeader(column))}<th>{t("details.speed")}</th><th>{t("details.log")}</th><th>{t("details.sail")}</th><th>{t("details.motor")}</th><th>{t("details.remarksEvent")}</th><th>{t("details.edit")}</th><th>{t("common.delete")}</th>
+                        <th scope="col" aria-label="Log line number">#</th><th>{t("details.time")}</th><th>{t("details.lat")}</th><th>{t("details.lon")}</th><th>{t("details.weather")}</th><th>{t("details.weatherRemark")}</th><th>{t("details.temperature")}</th><th>{t("details.baro")}</th><th>{t("details.wind")}</th><th>{t("details.sea")}</th><th>{t("details.tide")}</th><th>{t("details.moon")}</th>{courseConversionColumns.map((column) => (!column.isOptional || showCourseColumns) && renderCourseHeader(column))}<th>{t("details.speed")}</th><th>{t("details.log")}</th><th>{t("details.sail")}</th><th>{t("details.motor")}</th><th>{t("details.remarksEvent")}</th><th>{t("details.edit")}</th><th>{t("common.delete")}</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {showAddLine && renderLineEditor("new")}
-                      {activeSheet.lines.map((line) => editingLineId === line.id ? renderLineEditor(`edit-${line.id}`) : (
+                      {showAddLine && renderLineEditor("new", activeSheet.lines.length + 1)}
+                      {activeSheet.lines.map((line, index) => editingLineId === line.id ? renderLineEditor(`edit-${line.id}`, index + 1) : (
                         <tr key={line.id}>
-                          <td>{formatTime(line.time)}</td><td>{coordinateToInput(line.latitude, "lat", coordinateFormat)}</td><td>{coordinateToInput(line.longitude, "lon", coordinateFormat)}</td><td>{line.weather}</td><td>{renderClampedLogText(t("details.weatherRemark"), line.weatherRemark)}</td><td>{line.temperature} {line.temperatureUnit}</td><td>{line.barometer}</td><td>{line.windDirection} {line.windStrength} {line.windUnit}</td><td>{line.waves} {line.seaUnit}</td><td>{line.tide} {line.tideUnit}</td><td>{line.moon}</td>
+                          <td>{index + 1}</td><td>{formatTime(line.time)}</td><td>{coordinateToInput(line.latitude, "lat", coordinateFormat)}</td><td>{coordinateToInput(line.longitude, "lon", coordinateFormat)}</td><td>{line.weather}</td><td>{renderClampedLogText(t("details.weatherRemark"), line.weatherRemark)}</td><td>{line.temperature} {line.temperatureUnit}</td><td>{line.barometer}</td><td>{line.windDirection} {line.windStrength} {line.windUnit}</td><td>{line.waves} {line.seaUnit}</td><td>{line.tide} {line.tideUnit}</td><td>{line.moon}</td>
                           {courseConversionColumns.map((column) => (!column.isOptional || showCourseColumns) && (
                             <td className={column.isOptional ? "optional-course-cell" : undefined} key={`${line.id}-${column.field}`}>{line[column.field]}</td>
                           ))}
