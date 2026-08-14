@@ -1,6 +1,7 @@
-export type CoordinateFormat = "decimal" | "dms";
+export type CoordinateFormat = "decimal" | "ddm" | "dms";
 export type CoordinateAxis = "lat" | "lon";
 export type DmsParts = { degrees: string; minutes: string; seconds: string };
+export type DdmParts = Omit<DmsParts, "seconds">;
 
 const dmsPattern = /^\s*([NSEW])?\s*([+-])?(\d+(?:\.\d+)?)\s*(?:°|deg|d)?\s*(?:(\d+(?:\.\d+)?)\s*(?:'|′|m|min)?)?\s*(?:(\d+(?:\.\d+)?)\s*(?:"|″|s|sec)?)?\s*([NSEW])?\s*$/i;
 
@@ -8,6 +9,27 @@ export function decimalToDms(value: number, axis: CoordinateAxis) {
   const direction = value < 0 ? (axis === "lat" ? "S" : "W") : axis === "lat" ? "N" : "E";
   const { degrees, minutes, seconds } = decimalToDmsParts(value);
   return `${Math.abs(Number(degrees))}° ${minutes}' ${Number(seconds).toFixed(2)}\" ${direction}`;
+}
+
+export function decimalToDdm(value: number, axis: CoordinateAxis) {
+  const direction = value < 0 ? (axis === "lat" ? "S" : "W") : axis === "lat" ? "N" : "E";
+  const { degrees, minutes } = decimalToDdmParts(value);
+  return `${Math.abs(Number(degrees))}° ${minutes}' ${direction}`;
+}
+
+export function decimalToDdmParts(value: number): DdmParts {
+  if (!Number.isFinite(value)) return { degrees: "", minutes: "" };
+  const sign = value < 0 ? "-" : "";
+  const absolute = Math.abs(value);
+  let degrees = Math.floor(absolute);
+  let minutes = (absolute - degrees) * 60;
+
+  if (Number(minutes.toFixed(4)) >= 60) {
+    minutes = 0;
+    degrees += 1;
+  }
+
+  return { degrees: `${sign}${degrees}`, minutes: minutes.toFixed(4) };
 }
 
 export function decimalToDmsParts(value: number): DmsParts {
@@ -33,9 +55,13 @@ export function decimalToDmsParts(value: number): DmsParts {
 
 export function dmsPartsToDecimal({ degrees, minutes, seconds }: DmsParts) {
   const parsedDegrees = Number.parseFloat(degrees) || 0;
-  const sign = parsedDegrees < 0 ? -1 : 1;
+  const sign = degrees.trim().startsWith("-") ? -1 : 1;
   const absoluteDegrees = Math.abs(parsedDegrees);
   return sign * (absoluteDegrees + (Number.parseFloat(minutes) || 0) / 60 + (Number.parseFloat(seconds) || 0) / 3600);
+}
+
+export function ddmPartsToDecimal({ degrees, minutes }: DdmParts) {
+  return dmsPartsToDecimal({ degrees, minutes, seconds: "0" });
 }
 
 export function normalizeCoordinate(value: number, axis: CoordinateAxis) {
@@ -55,6 +81,7 @@ export function normalizeLongitude(value: number) {
 
 export function coordinateToInput(value: number, axis: CoordinateAxis, format: CoordinateFormat) {
   const normalized = normalizeCoordinate(value, axis);
+  if (format === "ddm") return decimalToDdm(normalized, axis);
   return format === "dms" ? decimalToDms(normalized, axis) : normalized.toFixed(5);
 }
 

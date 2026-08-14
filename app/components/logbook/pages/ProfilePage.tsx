@@ -449,6 +449,7 @@ export function ProfilePage(props: ProfilePageProps) {
                 {t("profile.coordinateFormat")}
                 <select value={profilePreferences.coordinateFormat} onChange={(event) => updateViewPreferences({ coordinateFormat: event.target.value as ProfilePreferences["coordinateFormat"] })}>
                   <option value="decimal">{t("profile.coordinateDecimal")}</option>
+                  <option value="ddm">{t("profile.coordinateDdm")}</option>
                   <option value="dms">{t("profile.coordinateDms")}</option>
                 </select>
               </label>

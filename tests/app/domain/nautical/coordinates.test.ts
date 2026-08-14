@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { coordinateToInput, decimalToDmsParts, dmsPartsToDecimal, normalizeCoordinate, parseCoordinate } from "../../../../app/domain/nautical/coordinates";
+import { coordinateToInput, decimalToDdmParts, decimalToDmsParts, ddmPartsToDecimal, dmsPartsToDecimal, normalizeCoordinate, parseCoordinate } from "../../../../app/domain/nautical/coordinates";
 
 describe("coordinate helpers", () => {
   it("round-trips DMS input parts through decimal storage", () => {
@@ -17,6 +17,15 @@ describe("coordinate helpers", () => {
   it("parses nautical DDM coordinates with leading hemisphere letters", () => {
     expect(parseCoordinate("N49°27.3346'")).toBeCloseTo(49.4555767, 6);
     expect(parseCoordinate("W2°32.0386'")).toBeCloseTo(-2.5339767, 6);
+  });
+
+  it("round-trips and displays DDM coordinates", () => {
+    const decimal = ddmPartsToDecimal({ degrees: "-2", minutes: "32.0386" });
+
+    expect(decimal).toBeCloseTo(-2.5339767, 6);
+    expect(decimalToDdmParts(decimal)).toEqual({ degrees: "-2", minutes: "32.0386" });
+    expect(coordinateToInput(decimal, "lon", "ddm")).toBe("2° 32.0386' W");
+    expect(ddmPartsToDecimal({ degrees: "-0", minutes: "30.0000" })).toBe(-0.5);
   });
 
   it("normalizes minute and second rollover through decimal storage", () => {

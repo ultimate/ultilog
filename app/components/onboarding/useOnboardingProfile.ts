@@ -15,7 +15,7 @@ export type ProfilePreferences = {
   windUnit: "bft" | "kn" | "km/h" | "mp/h" | "m/s";
   waterHeightUnit: "m" | "ft";
   temperatureUnit: "°C" | "°F";
-  coordinateFormat: "decimal" | "dms";
+  coordinateFormat: "decimal" | "ddm" | "dms";
   distanceDisplayUnit: "off" | "m" | "km";
   defaultBoatId: string;
   defaultCrewMemberIds: string[];
