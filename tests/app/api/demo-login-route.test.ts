@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../../app/lib/demo/demo-sandboxes", () => ({
   createDemoSandbox: vi.fn(),
@@ -11,10 +11,18 @@ vi.mock("../../../app/lib/security/rate-limiter", async () => {
 });
 
 const { createDemoSandbox } = await import("../../../app/lib/demo/demo-sandboxes");
+const { enforceRateLimits } = await import("../../../app/lib/security/rate-limiter");
 const { POST } = await import("../../../app/api/demo-login/route");
 const { config: proxyConfig } = await import("../../../proxy");
 
 const mockedCreateDemoSandbox = vi.mocked(createDemoSandbox);
+const mockedEnforceRateLimits = vi.mocked(enforceRateLimits);
+const originalVercelEnv = process.env.VERCEL_ENV;
+
+afterEach(() => {
+  if (originalVercelEnv === undefined) delete process.env.VERCEL_ENV;
+  else process.env.VERCEL_ENV = originalVercelEnv;
+});
 
 describe("demo login endpoint", () => {
   it("creates a sandbox and returns its one-time login token", async () => {
@@ -39,6 +47,19 @@ describe("demo login endpoint", () => {
     expect(response.status).toBe(503);
     await expect(response.json()).resolves.toEqual({ error: "Demo is temporarily unavailable." });
     consoleError.mockRestore();
+  });
+
+  it("uses expanded capacity only on Vercel preview deployments", async () => {
+    process.env.VERCEL_ENV = "preview";
+    mockedCreateDemoSandbox.mockResolvedValueOnce({ token: "preview-token", expiresAt: "2026-07-29T00:00:00.000Z" });
+
+    await POST(new Request("https://preview.example/api/demo-login", { method: "POST", headers: { "x-real-ip": "192.0.2.2", "x-device-id": "preview-device" } }));
+
+    expect(mockedEnforceRateLimits).toHaveBeenLastCalledWith([
+      { rule: { name: "demo-ip", limit: 30, windowMs: 21_600_000 }, principal: "192.0.2.2" },
+      { rule: { name: "demo-device", limit: 20, windowMs: 21_600_000 }, principal: "preview-device" },
+      { rule: { name: "demo-global", limit: 500, windowMs: 21_600_000 }, principal: "global" },
+    ]);
   });
 
   it("excludes demo-login requests from the auth proxy matcher", () => {
