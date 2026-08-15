@@ -77,7 +77,9 @@ Create `.env.local` from `.env.example` for development. The app uses these envi
 The public demo has no static account or reusable credentials. Each demo login creates a separate, expiring sandbox identity; the former shared demo identity is removed by the database migrations.
 New sandboxes are abuse-limited to 2 per browser installation, 3 per source IP,
 and 100 globally in each six-hour window. Active sandboxes use the same limits
-and expire after `DEMO_SANDBOX_TTL_HOURS` (six hours by default).
+and expire after `DEMO_SANDBOX_TTL_HOURS` (six hours by default). Vercel preview
+deployments (`VERCEL_ENV=preview`) raise those limits to 20, 30, and 500,
+respectively, so shared testing does not consume production capacity.
 
 ### Authenticated API request origins
 

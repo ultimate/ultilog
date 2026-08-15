@@ -4,6 +4,7 @@ import type { PersistedLogbook } from "../../models/logbook";
 import { getDatabase, writeLogbook } from "../logbook-store";
 import { findUserById, type AppUser } from "../users";
 import { DEMO_LOGBOOK_TEMPLATE, DEMO_TEMPLATE_VERSION } from "./demo-template";
+import { demoCapacityLimits } from "./demo-capacity";
 
 const DEFAULT_SANDBOX_TTL_HOURS = 6;
 const LOGIN_TOKEN_TTL_MINUTES = 5;
@@ -40,12 +41,13 @@ export async function createDemoSandbox(options: { ipHash?: string; deviceHash?:
   const now = new Date();
   const expiresAt = new Date(now.getTime() + sandboxTtlHours() * 60 * 60 * 1000).toISOString();
   const tokenExpiresAt = new Date(now.getTime() + LOGIN_TOKEN_TTL_MINUTES * 60 * 1000).toISOString();
+  const limits = demoCapacityLimits();
 
   const active = async (column?: "requester_ip_hash" | "requester_device_hash", value?: string) => Number((await db.query<{ count: number | string }>(
     `select count(*) as count from demo_sandboxes where expires_at > ${db.placeholder(1)}${column ? ` and ${column} = ${db.placeholder(2)}` : ""}`,
     column ? [now.toISOString(), value] : [now.toISOString()],
   )).rows[0]?.count) || 0;
-  if (await active() >= 100 || (options.ipHash && await active("requester_ip_hash", options.ipHash) >= 3) || (options.deviceHash && await active("requester_device_hash", options.deviceHash) >= 2)) {
+  if (await active() >= limits.global || (options.ipHash && await active("requester_ip_hash", options.ipHash) >= limits.perIp) || (options.deviceHash && await active("requester_device_hash", options.deviceHash) >= limits.perDevice)) {
     throw new DemoCapacityError("Demo sandbox capacity reached.");
   }
 
