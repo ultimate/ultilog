@@ -26,10 +26,31 @@ export function guardMutationOrigin(request: Request): NextResponse | undefined 
 
   // Origin is a serialized origin, never a URL containing credentials, paths,
   // query strings, or fragments. URL.origin also normalizes default ports.
-  if (supplied !== parsed.origin || parsed.origin !== canonicalApplicationOrigin()) {
+  if (supplied !== parsed.origin || !allowedApplicationOrigins().has(parsed.origin)) {
     return rejectedOrigin();
   }
   return undefined;
+}
+
+/**
+ * Every hostname in this set comes from deployment configuration, rather than
+ * request-controlled forwarding headers. Vercel gives preview deployments a
+ * unique VERCEL_URL in addition to the stable branch and production aliases.
+ */
+export function allowedApplicationOrigins() {
+  const origins = new Set([canonicalApplicationOrigin()]);
+  for (const configured of [
+    process.env.NEXT_PUBLIC_APP_URL,
+    vercelUrl(process.env.VERCEL_URL),
+    vercelUrl(process.env.VERCEL_BRANCH_URL),
+    vercelUrl(process.env.VERCEL_PROJECT_PRODUCTION_URL),
+    process.env.AUTH_URL,
+    process.env.NEXTAUTH_URL,
+  ]) {
+    if (!configured) continue;
+    try { origins.add(new URL(configured).origin); } catch { /* canonicalApplicationOrigin validates the selected primary URL. */ }
+  }
+  return origins;
 }
 
 export function canonicalApplicationOrigin() {

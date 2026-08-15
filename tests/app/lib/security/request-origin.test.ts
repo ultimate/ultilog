@@ -1,11 +1,19 @@
-import { afterEach, describe, expect, it } from "vitest";
-import { canonicalApplicationOrigin, guardMutationOrigin } from "../../../../app/lib/security/request-origin";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { allowedApplicationOrigins, canonicalApplicationOrigin, guardMutationOrigin } from "../../../../app/lib/security/request-origin";
 
-const originalUrl = process.env.NEXT_PUBLIC_APP_URL;
+const deploymentUrlVariables = ["NEXT_PUBLIC_APP_URL", "VERCEL_URL", "VERCEL_BRANCH_URL", "VERCEL_PROJECT_PRODUCTION_URL", "AUTH_URL", "NEXTAUTH_URL"] as const;
+const originalUrls = Object.fromEntries(deploymentUrlVariables.map(name => [name, process.env[name]]));
+
+beforeEach(() => {
+  for (const name of deploymentUrlVariables) delete process.env[name];
+});
 
 afterEach(() => {
-  if (originalUrl === undefined) delete process.env.NEXT_PUBLIC_APP_URL;
-  else process.env.NEXT_PUBLIC_APP_URL = originalUrl;
+  for (const name of deploymentUrlVariables) {
+    const original = originalUrls[name];
+    if (original === undefined) delete process.env[name];
+    else process.env[name] = original;
+  }
 });
 
 function mutation(headers: HeadersInit = {}) {
@@ -17,6 +25,23 @@ describe("mutation request origin guard", () => {
     process.env.NEXT_PUBLIC_APP_URL = "https://app.example/account";
     expect(canonicalApplicationOrigin()).toBe("https://app.example");
     expect(guardMutationOrigin(mutation({ origin: "https://app.example", cookie: "session=value" }))).toBeUndefined();
+  });
+
+  it("accepts configured Vercel preview and alias origins without trusting arbitrary hosts", () => {
+    process.env.NEXT_PUBLIC_APP_URL = "https://app.example";
+    process.env.VERCEL_URL = "ultilog-git-feature-team.vercel.app";
+    process.env.VERCEL_BRANCH_URL = "ultilog-feature-team.vercel.app";
+    process.env.VERCEL_PROJECT_PRODUCTION_URL = "ultilog.vercel.app";
+
+    expect(allowedApplicationOrigins()).toEqual(new Set([
+      "https://app.example",
+      "https://ultilog-git-feature-team.vercel.app",
+      "https://ultilog-feature-team.vercel.app",
+      "https://ultilog.vercel.app",
+    ]));
+    expect(guardMutationOrigin(mutation({ origin: "https://ultilog-git-feature-team.vercel.app", cookie: "session=value" }))).toBeUndefined();
+    expect(guardMutationOrigin(mutation({ origin: "https://ultilog-feature-team.vercel.app", cookie: "session=value" }))).toBeUndefined();
+    expect(guardMutationOrigin(mutation({ origin: "https://unconfigured-preview.vercel.app", cookie: "session=value" }))?.status).toBe(403);
   });
 
   it("rejects a foreign origin", async () => {
