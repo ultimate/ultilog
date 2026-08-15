@@ -6,6 +6,7 @@ import Image from "next/image";
 import { LocaleSelect, useI18n } from "../lib/i18n";
 import { PasswordField } from "./PasswordField";
 import { PASSWORD_MAX_UTF8_BYTES, PASSWORD_MIN_CHARACTERS } from "../lib/security/password-policy";
+import { demoDeviceId } from "./demo-device";
 
 type Props = { mode: "login" | "register"; footer: ReactNode };
 
@@ -21,7 +22,7 @@ export function AuthForm({ mode, footer }: Props) {
     setError(null);
     setIsSubmitting(true);
     setIsPreparingDemo(true);
-    const response = await fetch("/api/demo-login", { method: "POST" });
+    const response = await fetch("/api/demo-login", { method: "POST", headers: { "X-Device-Id": demoDeviceId() } });
     if (!response.ok) {
       const payload = await response.json().catch(() => ({})) as { error?: string };
       setError(payload.error ?? t("auth.demoError"));
