@@ -94,7 +94,10 @@ export abstract class LogbookDatabase implements QueryableDatabase {
   }
 
   async upsertBoat(boat: Boat) {
-    await this.ensureSchemaAndBackfill();
+    // Boat writes do not read or write crew details. Running the crew encryption
+    // backfill here made an otherwise valid boat create depend on the crew
+    // encryption key and could reject it before the boat transaction even began.
+    await this.ensureSchema();
     return this.withTransaction(async (database) => {
       const ownerId = database.requireOwnerId();
       const previousImageId = (await database.boats.findById(boat.id, ownerId))?.image_id ?? undefined;
