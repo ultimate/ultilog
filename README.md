@@ -79,7 +79,10 @@ The public demo has no static account or reusable credentials. Each demo login c
 ### Authenticated API request origins
 
 Cookie-authenticated `POST`, `PUT`, `PATCH`, and `DELETE` requests must include an
-`Origin` header equal to the canonical application origin configured above.
+`Origin` header equal to a configured application origin. In addition to the
+canonical URL above, Vercel's `VERCEL_URL`, `VERCEL_BRANCH_URL`, and
+`VERCEL_PROJECT_PRODUCTION_URL` deployment hostnames are accepted so preview
+deployments remain usable without allowing arbitrary `*.vercel.app` origins.
 Browser-shaped requests with cookies or Fetch Metadata but no `Origin` are
 rejected. Trusted non-browser automation is supported only by endpoints that
 explicitly document and validate a separate Bearer credential (currently the
