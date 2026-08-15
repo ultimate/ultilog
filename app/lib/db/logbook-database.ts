@@ -79,17 +79,17 @@ export abstract class LogbookDatabase implements QueryableDatabase {
   }
 
   async createStoredImage(id: string, image: import("../../models/stored-image").StoredImage) {
-    await this.ensureSchemaAndBackfill();
+    await this.ensureSchema();
     return this.images.create(id, this.requireOwnerId(), image);
   }
 
   async readStoredImage(id: string) {
-    await this.ensureSchemaAndBackfill();
+    await this.ensureSchema();
     return this.images.findById(id, this.requireOwnerId());
   }
 
   async deleteStoredImage(id: string) {
-    await this.ensureSchemaAndBackfill();
+    await this.ensureSchema();
     return this.images.delete(id, this.requireOwnerId());
   }
 
@@ -111,7 +111,8 @@ export abstract class LogbookDatabase implements QueryableDatabase {
   }
 
   async deleteBoat(id: string, revision: number) {
-    await this.ensureSchemaAndBackfill();
+    // Like upserts, focused boat deletions never access crew data.
+    await this.ensureSchema();
     return this.withTransaction(async (database) => {
       const ownerId = database.requireOwnerId();
       const row = await database.boats.findById(id, ownerId);
@@ -258,7 +259,9 @@ export abstract class LogbookDatabase implements QueryableDatabase {
   }
 
   private async mutateLogLines<T>(sheetId: string, mutation: (database: LogbookDatabase) => Promise<T | undefined>) {
-    await this.ensureSchemaAndBackfill();
+    // Line mutations only read sheet metadata and line rows. Crew encryption is
+    // deliberately outside this focused persistence path.
+    await this.ensureSchema();
     return this.withTransaction(async database => {
       const ownerId = database.requireOwnerId();
       const sheetRow = await database.sheets.findById(sheetId, ownerId);

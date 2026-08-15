@@ -10,10 +10,30 @@ import { calculateLogSheetMetrics } from "../../../../app/domain/logbook/sheet-m
 const tempDirs: string[] = [];
 
 afterEach(async () => {
+  vi.unstubAllEnvs();
   await Promise.all(tempDirs.splice(0).map((dir) => rm(dir, { force: true, recursive: true })));
 });
 
 describe("SqliteLogbookDatabase", () => {
+  it("keeps crew-independent focused mutations independent from the encryption backfill", async () => {
+    const db = new SqliteLogbookDatabase(await tempDatabasePath()).forUser("focused-user");
+    await db.migrate();
+    await db.query("insert into users (id, name, email, password_hash) values (?, ?, ?, ?)", ["focused-user", "Focused", "focused@example.test", ""]);
+    await db.query("insert into crew_members (id, name, nationality, role, owner_id) values (?, ?, ?, ?, ?)", ["focused-user:legacy-crew", "Legacy plaintext", "", "Crew", "focused-user"]);
+
+    const boat = { id: "boat-1", name: "Boat", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: defaultDeviationTable() };
+    const createdBoat = await db.upsertBoat(boat);
+    const sheet = { id: "sheet-1", title: "Trip", status: "Draft" as const, boatId: boat.id, route: { from: "", to: "", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] };
+    await db.upsertLogSheet(sheet);
+
+    vi.stubEnv("CREW_DATA_ENCRYPTION_KEY", "");
+    await expect(db.createStoredImage("unattached", { data: "aW1hZ2U=", mimeType: "image/png", width: 1, height: 1 })).resolves.toMatchObject({ id: "unattached" });
+    await expect(db.readStoredImage("unattached")).resolves.toMatchObject({ id: "unattached" });
+    await expect(db.deleteStoredImage("unattached")).resolves.toBe(true);
+    await expect(db.createLogLine(sheet.id, sampleLogSheets[0].lines[0])).resolves.toMatchObject({ id: sampleLogSheets[0].lines[0].id });
+    await expect(db.deleteBoat(boat.id, createdBoat!.revision!)).rejects.toMatchObject({ code: "referenced_boat_deleted" });
+  });
+
   it("updates sheet metadata atomically without rewriting lines, engine hours, or unrelated sheets", async () => {
     const db = new SqliteLogbookDatabase(await tempDatabasePath()).forUser("metadata-user");
     await db.migrate();
