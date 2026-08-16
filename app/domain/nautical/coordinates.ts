@@ -3,6 +3,11 @@ export type CoordinateAxis = "lat" | "lon";
 export type DmsParts = { degrees: string; minutes: string; seconds: string };
 export type DdmParts = Omit<DmsParts, "seconds">;
 
+export function nextCoordinateFormat(format: CoordinateFormat): CoordinateFormat {
+  if (format === "decimal") return "ddm";
+  return format === "ddm" ? "dms" : "decimal";
+}
+
 const dmsPattern = /^\s*([NSEW])?\s*([+-])?(\d+(?:\.\d+)?)\s*(?:°|deg|d)?\s*(?:(\d+(?:\.\d+)?)\s*(?:'|′|m|min)?)?\s*(?:(\d+(?:\.\d+)?)\s*(?:"|″|s|sec)?)?\s*([NSEW])?\s*$/i;
 
 export function decimalToDms(value: number, axis: CoordinateAxis) {

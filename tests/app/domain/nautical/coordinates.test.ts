@@ -1,7 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { coordinateToInput, decimalToDdmParts, decimalToDmsParts, ddmPartsToDecimal, dmsPartsToDecimal, normalizeCoordinate, parseCoordinate } from "../../../../app/domain/nautical/coordinates";
+import { coordinateToInput, decimalToDdmParts, decimalToDmsParts, ddmPartsToDecimal, dmsPartsToDecimal, nextCoordinateFormat, normalizeCoordinate, parseCoordinate } from "../../../../app/domain/nautical/coordinates";
 
 describe("coordinate helpers", () => {
+  it("cycles through DD, DDM, and DMS formats", () => {
+    expect(nextCoordinateFormat("decimal")).toBe("ddm");
+    expect(nextCoordinateFormat("ddm")).toBe("dms");
+    expect(nextCoordinateFormat("dms")).toBe("decimal");
+  });
+
   it("round-trips DMS input parts through decimal storage", () => {
     const decimal = dmsPartsToDecimal({ degrees: "38", minutes: "57", seconds: "21.60" });
 

@@ -343,13 +343,6 @@ export function LogbookApp({
     [preferences],
   );
 
-  const updateCoordinateFormatPreference = useCallback(
-    (coordinateFormat: ProfilePreferences["coordinateFormat"]) => {
-      void updatePreferences({ coordinateFormat });
-    },
-    [updatePreferences],
-  );
-
   const updateShowCourseColumnsDisplay = useCallback(
     (isVisible: boolean) => {
       setShowCourseColumnsOverride({ sheetId: activeSheetId, isVisible });
@@ -1988,7 +1981,6 @@ export function LogbookApp({
               activeSheetSummary={activeSheetSummary}
               showCourseColumns={showCourseColumns}
               coordinateFormat={preferences.coordinateFormat}
-              onCoordinateFormatChange={updateCoordinateFormatPreference}
               onShowCourseColumnsChange={updateShowCourseColumnsDisplay}
               startAddingLine={startAddingLine}
               startAddingLineAtCoordinates={startAddingLineAtCoordinates}

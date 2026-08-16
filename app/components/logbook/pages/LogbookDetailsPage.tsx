@@ -13,7 +13,7 @@ import type {
   LogSheetShareSettings,
   PersistedLogbook,
 } from "../../../models/logbook";
-import { coordinateToInput, decimalToDdmParts, decimalToDmsParts, ddmPartsToDecimal, dmsPartsToDecimal, parseCoordinate, type CoordinateFormat, type DmsParts } from "../../../domain/nautical/coordinates";
+import { coordinateToInput, decimalToDdmParts, decimalToDmsParts, ddmPartsToDecimal, dmsPartsToDecimal, nextCoordinateFormat, parseCoordinate, type CoordinateFormat, type DmsParts } from "../../../domain/nautical/coordinates";
 import { boatToForm, sheetToForm } from "../forms";
 import { dateTimeLocalFromParts, isoDateTimeWithTimezone, splitDateTimeLocal, timeZoneOffsetOptions, timezoneOffsetFromStamp, dateTimeLocalFromStamp } from "../date-utils";
 import { updateLogLineFormForInput } from "../../../domain/log-lines/log-line-editor";
@@ -122,8 +122,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const technicalCheckSuggestions = props.technicalCheckSuggestions as string[];
   const technicalCheckSuggestionsId = "technical-log-suggestions";
   const setLineForm = props.setLineForm as Dispatch<SetStateAction<LineForm>>;
-  const coordinateFormat = props.coordinateFormat as CoordinateFormat;
-  const onCoordinateFormatChange = props.onCoordinateFormatChange as (format: CoordinateFormat) => void;
+  const defaultCoordinateFormat = props.coordinateFormat as CoordinateFormat;
   const onShowCourseColumnsChange = props.onShowCourseColumnsChange as (show: boolean) => void;
   const [isMapExpanded, setIsMapExpanded] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
@@ -132,6 +131,8 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const [technicalCheckDraftState, setTechnicalCheckDraftState] = useState<{ sheetId: string; drafts: Record<number, string> }>({ sheetId: "", drafts: {} });
   const [openCourseTooltip, setOpenCourseTooltip] = useState<TranslationKey | null>(null);
   const [courseTooltipPosition, setCourseTooltipPosition] = useState({ left: 0, top: 0 });
+  const [coordinateFormatOverride, setCoordinateFormatOverride] = useState<{ sheetId: string; format: CoordinateFormat } | null>(null);
+  const coordinateFormat = coordinateFormatOverride?.sheetId === activeSheet.id ? coordinateFormatOverride.format : defaultCoordinateFormat;
   const technicalCheckDrafts = technicalCheckDraftState.sheetId === activeSheet.id ? technicalCheckDraftState.drafts : {};
   const scannerWarnings = activeSheet.scannerWarnings ?? [];
   const logLineEngines = (activeBoat.engines ?? []).filter((engine) => engine.role === "propulsion" && (!engine.archived || activeSheet.lines.some((line) => Number(line.engineHours?.[engine.id]) > 0)));
@@ -831,7 +832,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                 <div className="table-header">
                   <div><h3>{t("details.logTitle")}</h3></div>
                   <div className="table-actions">
-                    <button type="button" onClick={() => onCoordinateFormatChange(coordinateFormat === "decimal" ? "ddm" : coordinateFormat === "ddm" ? "dms" : "decimal")}>{t("details.coordinates")}: {coordinateFormat === "decimal" ? t("profile.coordinateDecimal") : coordinateFormat === "ddm" ? t("profile.coordinateDdm") : t("profile.coordinateDms")}</button>
+                    <button type="button" onClick={() => setCoordinateFormatOverride({ sheetId: activeSheet.id, format: nextCoordinateFormat(coordinateFormat) })}>{t("details.coordinates")}: {coordinateFormat === "decimal" ? t("profile.coordinateDecimal") : coordinateFormat === "ddm" ? t("profile.coordinateDdm") : t("profile.coordinateDms")}</button>
                     <button type="button" onClick={() => onShowCourseColumnsChange(!showCourseColumns)}>{showCourseColumns ? t("details.hide") : t("details.show")} {t("details.courseColumns")}</button>
                     <button type="button" disabled={isActiveSheetLocked} onClick={startAddingLine}>{t("details.addLine")}</button>
                     <button type="button" disabled={isActiveSheetLocked || smartLineStatus === "loading"} onClick={() => void startAddingSmartLine()}>{smartLineStatus === "loading" ? t("details.addSmartLineLoading") : t("details.addSmartLine")}</button>
