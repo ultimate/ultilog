@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ActiveView } from "../../templates/ModuleTabs";
 import type { PersistedLogbook } from "../../models/logbook";
 import { detectOnboardingCompletion } from "../../lib/onboarding/detect";
@@ -117,6 +117,9 @@ export function useOnboardingProfile({ activeModule, initialEmail, initialName, 
   const [hasUploadedAvatar, setHasUploadedAvatar] = useState(false);
   const [isAccountEmailVerified, setIsAccountEmailVerified] = useState(false);
   const [preferences, setPreferences] = useState<ProfilePreferences>(defaultPreferences);
+  const preferencesRef = useRef(defaultPreferences);
+  const preferenceUpdateVersionRef = useRef(0);
+  const preferenceSaveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const [onboardingCompletedTasks, setOnboardingCompletedTasks] = useState<OnboardingTaskId[]>([]);
   const [isSavingOnboarding, setIsSavingOnboarding] = useState(false);
   const [hasReadCompliance, setHasReadCompliance] = useState(false);
@@ -136,6 +139,7 @@ export function useOnboardingProfile({ activeModule, initialEmail, initialName, 
 
   useEffect(() => {
     let isMounted = true;
+    const updateVersionAtLoadStart = preferenceUpdateVersionRef.current;
     async function loadProfile() {
       const response = await fetch("/api/profile").catch(() => undefined);
       if (!response?.ok) return;
@@ -148,9 +152,12 @@ export function useOnboardingProfile({ activeModule, initialEmail, initialName, 
       if (typeof payload.emailVerified === "boolean") setIsAccountEmailVerified(payload.emailVerified);
       if (Array.isArray(payload.onboardingCompletedTasks)) setOnboardingCompletedTasks(payload.onboardingCompletedTasks);
       const nextPreferences = preferencesFromPayload(payload, defaultPreferences);
-      setPreferences(nextPreferences);
-      onCourseConversionPreferenceChange?.(nextPreferences.showCourseConversionTable);
-      if (payload.preferences?.language) onLocaleChange?.(payload.preferences.language);
+      if (preferenceUpdateVersionRef.current === updateVersionAtLoadStart) {
+        preferencesRef.current = nextPreferences;
+        setPreferences(nextPreferences);
+        onCourseConversionPreferenceChange?.(nextPreferences.showCourseConversionTable);
+        if (payload.preferences?.language) onLocaleChange?.(payload.preferences.language);
+      }
       if (typeof payload.hasReadCompliance === "boolean") setHasReadCompliance(payload.hasReadCompliance);
     }
     loadProfile();
@@ -179,26 +186,38 @@ export function useOnboardingProfile({ activeModule, initialEmail, initialName, 
   }, [activeModule, hasReadCompliance]);
 
   async function updatePreferences(nextPreferences: Partial<ProfilePreferences>) {
-    const previousPreferences = preferences;
-    const mergedPreferences = mergePreferences(preferences, nextPreferences);
+    const previousPreferences = preferencesRef.current;
+    const mergedPreferences = mergePreferences(previousPreferences, nextPreferences);
+    const updateVersion = ++preferenceUpdateVersionRef.current;
+    preferencesRef.current = mergedPreferences;
     setPreferences(mergedPreferences);
     onProfileError("");
-    const response = await fetch("/api/profile", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "preferences", preferences: nextPreferences }),
-    });
-    const payload = await response.json().catch(() => ({})) as ProfilePayload;
-    if (!response.ok) {
-      setPreferences(previousPreferences);
-      onProfileError(payload.error ?? t("profile.unableUpdatePreferences"));
-      return;
-    }
-    const savedPreferences = preferencesFromPayload(payload, mergedPreferences);
-    setPreferences(savedPreferences);
-    onLocaleChange?.(savedPreferences.language);
-    onCourseConversionPreferenceChange?.(savedPreferences.showCourseConversionTable);
-    onProfileMessage?.(t("profile.preferencesUpdated"));
+    const save = async () => {
+      const response = await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "preferences", preferences: nextPreferences }),
+      }).catch(() => undefined);
+      const payload = await response?.json().catch(() => ({})) as ProfilePayload | undefined;
+      if (!response?.ok) {
+        if (preferenceUpdateVersionRef.current === updateVersion) {
+          preferencesRef.current = previousPreferences;
+          setPreferences(previousPreferences);
+          onProfileError(payload?.error ?? t("profile.unableUpdatePreferences"));
+        }
+        return;
+      }
+      if (preferenceUpdateVersionRef.current !== updateVersion) return;
+      const savedPreferences = preferencesFromPayload(payload ?? {}, mergedPreferences);
+      preferencesRef.current = savedPreferences;
+      setPreferences(savedPreferences);
+      onLocaleChange?.(savedPreferences.language);
+      onCourseConversionPreferenceChange?.(savedPreferences.showCourseConversionTable);
+      onProfileMessage?.(t("profile.preferencesUpdated"));
+    };
+    const queuedSave = preferenceSaveQueueRef.current.then(save, save);
+    preferenceSaveQueueRef.current = queuedSave;
+    await queuedSave;
   }
 
   async function updateOnboardingCompletedTasks(nextTasks: OnboardingTaskId[]) {
