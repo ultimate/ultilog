@@ -211,14 +211,11 @@ export function LogbookApp({
   const [printTarget, setPrintTarget] = useState<PrintTarget>(null);
   const [demoRestrictedFeature, setDemoRestrictedFeature] = useState<DemoRestrictedFeature | null>(null);
   const [showBoatManager, setShowBoatManager] = useState(false);
-  const [showAddLine, setShowAddLine] = useState(false);
   const [sheetForm, setSheetForm] = useState<SheetForm>(
     defaultSheetForm(""),
   );
   const [boatForm, setBoatForm] = useState<BoatForm>(defaultBoatForm);
-  const [lineForm, setLineForm] = useState<LineForm>(() =>
-    createDefaultLineForm(fallbackLinePreferences),
-  );
+  const [lineForms, setLineForms] = useState<Record<string, { form: LineForm; isNew: boolean }>>({});
   const [crewForm, setCrewForm] = useState<CrewForm>(defaultCrewForm);
   const [editingBoatId, setEditingBoatId] = useState<string | null>(null);
   const [editingSheetId, setEditingSheetId] = useState<string | null>(null);
@@ -226,7 +223,6 @@ export function LogbookApp({
     useState<SheetInlineField | null>(null);
   const [sheetInlineDraft, setSheetInlineDraft] = useState("");
   const [sheetInlineTimezoneDraft, setSheetInlineTimezoneDraft] = useState(timezoneOffsetFromStamp(""));
-  const [editingLineId, setEditingLineId] = useState<string | null>(null);
   const [selectedBoatId, setSelectedBoatId] = useState(
     defaultLogbook.boats[0]?.id ?? "",
   );
@@ -1258,48 +1254,42 @@ export function LogbookApp({
     setShowNewSheet(false);
   }
 
-  async function saveLineFromFields() {
+  async function saveLineFromFields(draftId: string) {
     if (activeSheet.status === "Locked") return;
-    const line = lineFormToLogLine({ ...lineForm, time: isoDateTimeWithTimezone(dateTimeLocalFromStamp(lineForm.time), timezoneOffsetFromStamp(lineForm.time)) });
+    const draft = lineForms[draftId];
+    if (!draft) return;
+    const line = lineFormToLogLine({ ...draft.form, time: isoDateTimeWithTimezone(dateTimeLocalFromStamp(draft.form.time), timezoneOffsetFromStamp(draft.form.time)) });
     const currentLogbook = logbookRef.current;
     const nextLogbook = {
       ...currentLogbook,
       sheets: currentLogbook.sheets.map((sheet) => {
         if (sheet.id !== activeSheet.id) return sheet;
         const lines =
-          editingLineId === null
+          draft.isNew
             ? [...sheet.lines, line]
             : sheet.lines.map((candidate) =>
-                candidate.id === editingLineId ? line : candidate,
+                candidate.id === draftId ? line : candidate,
               );
-        return withCalculatedSheetMetrics({ ...sheet, lines: sortLogLines(lines) }, preferences.motionStationaryThresholdNm);
+        return withCalculatedSheetMetrics({ ...sheet, lines }, preferences.motionStationaryThresholdNm);
       }),
     };
     const nextSheet = nextLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)!;
     const previousLineIds = currentLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)?.lines.map((candidate) => candidate.id) ?? [];
-    if (!(await saveLogbookNow(nextLogbook, { kind: "line", sheetId: activeSheet.id, entity: line, isNew: editingLineId === null, previousLineIds, lineIds: nextSheet.lines.map(candidate => candidate.id) }))) return;
-    setLineForm(lineDefaults);
-    setEditingLineId(null);
-    setShowAddLine(false);
-  }
-
-  async function addLine(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    await saveLineFromFields();
+    // Close this editor in the same optimistic update that reveals the saved row.
+    setLineForms((current) => Object.fromEntries(Object.entries(current).filter(([id]) => id !== draftId)));
+    await saveLogbookNow(nextLogbook, { kind: "line", sheetId: activeSheet.id, entity: line, isNew: draft.isNew, previousLineIds, lineIds: nextSheet.lines.map(candidate => candidate.id) });
   }
 
   function startEditingLine(line: LogLine) {
     if (activeSheet.status === "Locked") return;
-    setEditingLineId(line.id);
-    setLineForm(lineToForm(line));
-    setShowAddLine(false);
+    setLineForms((current) => ({ ...current, [line.id]: { form: lineToForm(line), isNew: false } }));
   }
 
   function startAddingLine() {
     if (activeSheet.status === "Locked") return;
-    setEditingLineId(null);
-    setLineForm(lineDefaultsForActiveSheet());
-    setShowAddLine((show) => !show);
+    const form = lineDefaultsForActiveSheet();
+    const id = createId();
+    setLineForms((current) => ({ ...current, [id]: { form: { ...form, id }, isNew: true } }));
   }
 
   async function startAddingLineAtCoordinates(coordinate: { latitude: number; longitude: number }, selectedTime?: string) {
@@ -1313,9 +1303,10 @@ export function LogbookApp({
     const time = requestedTime ?? dateTimeLocalFromDate(now);
     const timestamp = isoDateTimeWithTimezone(time, timezoneOffsetFromStamp(activeSheet.route.departed));
     const initialFields = coordinate ? calculateSmartNavigationFields(activeSheet.lines, coordinate) : {};
-    setEditingLineId(null);
-    setLineForm({
+    const draftId = createId();
+    setLineForms((current) => ({ ...current, [draftId]: { isNew: true, form: {
       ...lineDefaultsForActiveSheet(),
+      id: draftId,
       ...initialFields,
       time,
       ...(coordinate
@@ -1324,8 +1315,7 @@ export function LogbookApp({
             longitude: String(Number(coordinate.longitude.toFixed(6))),
           }
         : {}),
-    });
-    setShowAddLine(true);
+    } } }));
     setSmartLineStatus("loading");
     setSaveError(null);
 
@@ -1337,7 +1327,7 @@ export function LogbookApp({
       const latitudeValue = String(Number(latitude.toFixed(6)));
       const longitudeValue = String(Number(longitude.toFixed(6)));
       const navigationFields = calculateSmartNavigationFields(activeSheet.lines, linePosition);
-      setLineForm((current) => ({ ...current, ...navigationFields, latitude: latitudeValue, longitude: longitudeValue }));
+      updateLineForm(draftId, (current) => ({ ...current, ...navigationFields, latitude: latitudeValue, longitude: longitudeValue }));
 
       if (initialPosition) setSmartMotionStatus("tracking");
       const motionPromise = initialPosition ? trackDeviceMotion(sampleFromPosition(initialPosition)) : Promise.resolve({});
@@ -1356,7 +1346,7 @@ export function LogbookApp({
       }).then(async (response) => {
         const payload = await response.json() as Partial<MeteoLogLineAutofill> & { error?: string };
         if (!response.ok) throw new Error(payload.error ?? "Unable to fetch meteo data.");
-        setLineForm((current) => ({
+        updateLineForm(draftId, (current) => ({
           ...current,
           ...(payload.fields ?? {}),
           latitude: latitudeValue,
@@ -1368,7 +1358,7 @@ export function LogbookApp({
 
       const [weatherResult, motionResult] = await Promise.allSettled([weatherPromise, motionPromise]);
       setSmartMotionStatus("idle");
-      if (motionResult.status === "fulfilled") setLineForm((current) => ({ ...current, ...motionResult.value }));
+      if (motionResult.status === "fulfilled") updateLineForm(draftId, (current) => ({ ...current, ...motionResult.value }));
       if (weatherResult.status === "rejected") throw weatherResult.reason;
       setSmartLineStatus("idle");
     } catch {
@@ -1398,10 +1388,12 @@ export function LogbookApp({
     }, { kind: "line-deletion", sheetId: activeSheet.id, id: lineIdToDelete, revision: activeSheet.lines.find(line => line.id === lineIdToDelete)?.revision ?? 0 });
   }
 
-  function cancelLineEdit() {
-    setEditingLineId(null);
-    setLineForm(lineDefaults);
-    setShowAddLine(false);
+  function updateLineForm(draftId: string, update: LineForm | ((current: LineForm) => LineForm)) {
+    setLineForms((current) => current[draftId] ? { ...current, [draftId]: { ...current[draftId], form: typeof update === "function" ? update(current[draftId].form) : update } } : current);
+  }
+
+  function cancelLineEdit(draftId: string) {
+    setLineForms((current) => Object.fromEntries(Object.entries(current).filter(([id]) => id !== draftId)));
   }
 
   async function addTechnicalCheck(value: string) {
@@ -1862,7 +1854,7 @@ export function LogbookApp({
     setCrewForm(crewToForm(resetLogbook.crewMembers[0] ?? defaultCrewForm));
     setEditingBoatId(null);
     setEditingSheetId(null);
-    setEditingLineId(null);
+    setLineForms({});
     setSelectedCrewIndex(resetLogbook.crewMembers.length ? 0 : -2);
     setProfileMessage(t("profile.demoResetSuccess"));
     return true;
@@ -1987,11 +1979,9 @@ export function LogbookApp({
               startAddingSmartLine={startAddingSmartLine}
               smartLineStatus={smartLineStatus}
               smartMotionStatus={smartMotionStatus}
-              showAddLine={showAddLine}
-              lineForm={lineForm}
-              setLineForm={setLineForm}
+              lineForms={lineForms}
+              setLineForm={updateLineForm}
               saveLineFromFields={saveLineFromFields}
-              editingLineId={editingLineId}
               cancelLineEdit={cancelLineEdit}
               startEditingLine={startEditingLine}
               deleteLine={deleteLine}
@@ -2289,18 +2279,6 @@ export function LogbookApp({
   );
 }
 
-
-function lineTimeValue(line: LogLine) {
-  const parsed = Date.parse(line.time);
-  if (Number.isFinite(parsed)) return parsed;
-  const match = line.time.match(/^(\d{1,2}):(\d{2})/);
-  if (!match) return Number.MAX_SAFE_INTEGER;
-  return Number(match[1]) * 60 + Number(match[2]);
-}
-
-function sortLogLines(lines: LogLine[]) {
-  return [...lines].sort((a, b) => lineTimeValue(a) - lineTimeValue(b));
-}
 
 function dateTimeLocalFromDate(date: Date) {
   const year = date.getFullYear();
