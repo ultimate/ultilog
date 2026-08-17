@@ -75,6 +75,7 @@ export function validatePersistedLogbook(value: unknown): PersistedLogbook {
     totalSheetCrew += sheet.crew.length;
     if (totalSheetCrew > LOGBOOK_LIMITS.crewMembers) throw new LogbookValidationError("Too many crew members.", "limit", "too_many_crew_members");
     assert(sheet.technicalChecks.every(check => record(check) && string(check.status) && string(check.text)), `sheets[${i}].technicalChecks is malformed.`);
+    if (sheet.engineHourCounters !== undefined) assert(record(sheet.engineHourCounters) && Object.values(sheet.engineHourCounters).every(reading => record(reading) && optional(reading.start, finite) && optional(reading.end, finite) && (reading.start === undefined || Number(reading.start) >= 0) && (reading.end === undefined || Number(reading.end) >= 0)), `sheets[${i}].engineHourCounters is malformed.`);
     sheet.lines.forEach((line, j) => validateLine(line, `sheets[${i}].lines[${j}]`)); totalLines += sheet.lines.length;
     if (totalLines > LOGBOOK_LIMITS.logLines) throw new LogbookValidationError("Too many log lines.", "limit", "too_many_log_lines");
     if (sheet.share !== undefined) assert(record(sheet.share) && ["masterData", "picture", "logLines", "metrics", "technicalLog", "skipper", "crew"].every(k => ["private", "registered", "public"].includes((sheet.share as Record<string, unknown>)[k] as string)), `sheets[${i}].share is malformed.`);
