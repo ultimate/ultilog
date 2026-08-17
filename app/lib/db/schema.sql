@@ -113,6 +113,7 @@ create table if not exists log_sheets (
   remarks text not null,
   watch_plan text not null,
   technical_checks text not null,
+  engine_hour_counters text not null default '{}',
   owner_id text not null references users(id) on delete cascade,
   source text,
   verification_note text,

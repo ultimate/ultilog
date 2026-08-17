@@ -7,7 +7,7 @@ import {
   type SheetCrewMember,
 } from "../../models/logbook";
 
-export const DEMO_TEMPLATE_VERSION = 2;
+export const DEMO_TEMPLATE_VERSION = 3;
 
 export const DEMO_WEATHER_PROVENANCE = deepFreeze({
   source: "Open-Meteo Historical Weather API",
@@ -234,6 +234,8 @@ function logLine(dayData: Day, waypoint: Waypoint, nextWaypoint: Waypoint | unde
   const deviation = Number(closestDeviation?.deviation ?? 0);
   const compassCourse = underway ? (magneticCourse - deviation + 360) % 360 : 0;
   const legDistance = index === 0 ? 0 : Math.round((dayData.distance / (count - 1)) * 10) / 10;
+  const runtimePerEngine = motorBoat ? index === 0 ? 0.2 : Math.round((legDistance / 9.2) * 10) / 10 : index === count - 1 ? 0.4 : 0;
+  const engineHours: Record<string, number> = Object.fromEntries((boat.engines ?? []).map((engine): [string, number] => [engine.id, runtimePerEngine]).filter(([, hours]) => hours > 0));
   return {
     id: `demo-line-${dayData.date}-${index}`,
     time,
@@ -267,7 +269,8 @@ function logLine(dayData: Day, waypoint: Waypoint, nextWaypoint: Waypoint | unde
     sailMiles: motorBoat || index === 0 ? 0 : index === count - 1 ? Math.min(2, legDistance) : legDistance,
     sailNote: motorBoat ? "n/a" : index === 0 ? "Main and genoa set after departure" : index === count - 1 ? "Sails stowed" : "Main and genoa",
     motorMiles: motorBoat && index > 0 ? legDistance : !motorBoat && index === count - 1 ? 2 : 0,
-    motorHours: motorBoat ? index === 0 ? 0.2 : Math.round((legDistance / 9.2) * 10) / 10 : index === count - 1 ? 0.4 : 0,
+    engineHours,
+    motorHours: Object.values(engineHours).reduce((total, hours) => total + hours, 0),
     motorNote: motorBoat ? (index === count - 1 ? "Engines stopped after mooring" : "Both engines, 1,900 rpm") : index === count - 1 ? "Harbor maneuver" : "Engine off",
     remarks: index === 0 ? `Departed after checks. ${dayData.summary}` : index === count - 1 ? "Moored safely; engine, shore power and passage records checked." : "Position fixed by GNSS and visual bearings; log and weather recorded.",
   };

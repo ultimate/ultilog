@@ -12,6 +12,16 @@ test("edits technical log entries and suggests previous checks", async ({ page }
   await expect(page.getByRole("combobox", { name: "Technical log entry 1" })).toHaveValue("Engine oil checked");
   await expect(page.locator('datalist#technical-log-suggestions option[value="Fuel valves open"]')).toHaveCount(1);
   await expect(page.getByRole("combobox", { name: "Check status 1" })).toHaveValue("⌛");
+  await page.getByRole("spinbutton", { name: "Main engine Beginning of sheet" }).fill("120.5");
+  await page.getByRole("spinbutton", { name: "Main engine End of sheet" }).fill("121.5");
+  await page.getByRole("spinbutton", { name: "Main engine End of sheet" }).blur();
+  await expect(page.getByRole("row", { name: /Counter difference/ })).toContainText("1.0 h");
+  await expect(page.getByRole("row", { name: /Runtime tracked on sheet/ })).toContainText("1.0 h");
+  await page.setViewportSize({ width: 375, height: 812 });
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.locator(".engine-hour-counter-section .table-scroll").scrollIntoViewIfNeeded();
+  await expect(page.locator(".engine-hour-counter-section .table-scroll")).toBeInViewport();
+  await page.setViewportSize({ width: 1280, height: 720 });
   await page.getByRole("combobox", { name: "Check status 1" }).selectOption("✅");
   await expect(page.getByRole("combobox", { name: "Check status 1" })).toHaveValue("✅");
 
