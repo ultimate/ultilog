@@ -63,6 +63,7 @@ import { calculateLogSheetMetrics, formatLogSheetDuration } from "../domain/logb
 import { calculateLogbookDayStatistics } from "../domain/logbook/logbook-statistics";
 import { activeBoats } from "../domain/boats/boat-policy";
 import { lineFormToLogLine } from "../domain/log-lines/log-line-form";
+import { sortLogLinesByTime } from "../domain/log-lines/log-line-order";
 import { calculateSmartNavigationFields, calculateTrackedMotionFields, previousSheetLogMiles, type TimedCoordinate } from "../domain/log-lines/smart-line";
 import type { MeteoLogLineAutofill, MeteoSourceRemarkPart } from "../domain/meteo";
 import { ModuleTabs, type ActiveView } from "../templates/ModuleTabs";
@@ -1270,7 +1271,7 @@ export function LogbookApp({
             : sheet.lines.map((candidate) =>
                 candidate.id === draftId ? line : candidate,
               );
-        return withCalculatedSheetMetrics({ ...sheet, lines }, preferences.motionStationaryThresholdNm);
+        return withCalculatedSheetMetrics({ ...sheet, lines: sortLogLinesByTime(lines) }, preferences.motionStationaryThresholdNm);
       }),
     };
     const nextSheet = nextLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)!;
