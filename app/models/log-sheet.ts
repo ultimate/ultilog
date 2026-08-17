@@ -26,6 +26,7 @@ export const defaultLogSheetShareSettings: LogSheetShareSettings = {
 };
 
 export type TechnicalCheck = { status: string; text: string };
+export type EngineHourCounter = { start?: number; end?: number };
 
 export type LogSheet = {
   revision?: number;
@@ -47,6 +48,8 @@ export type LogSheet = {
   crew: SheetCrewMember[];
   watchPlan: string[];
   technicalChecks: TechnicalCheck[];
+  /** Cumulative hour-meter readings for each engine at the sheet boundaries. */
+  engineHourCounters?: Record<string, EngineHourCounter>;
   image?: StoredImage;
   imageId?: string;
   lines: LogLine[];

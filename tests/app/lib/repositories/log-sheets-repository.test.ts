@@ -51,7 +51,7 @@ describe("LogSheetsRepository", () => {
     await new LogSheetsRepository(db).insert(sheet, "repository-user");
 
     expect(db.calls[0].sql).toContain("insert into log_sheets");
-    expect(db.calls[0].values).toEqual([`repository-user:${sheet.id}`, sheet.title, sheet.status, null, null, null, `repository-user:${sheet.boatId}`, JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), null, "repository-user", 9, 54, 63, 635, 1, 635, 635, "private", 0, 0, 0, 0, 0, 0, 0]);
+    expect(db.calls[0].values).toEqual([`repository-user:${sheet.id}`, sheet.title, sheet.status, null, null, null, `repository-user:${sheet.boatId}`, JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), JSON.stringify({}), null, "repository-user", 9, 54, 63, 635, 1, 635, 635, "private", 0, 0, 0, 0, 0, 0, 0]);
   });
 
   it("maps relational rows back to a persisted logbook", () => {
@@ -63,8 +63,19 @@ describe("LogSheetsRepository", () => {
     expect(LogSheetsRepository.toLogbook([boatRow], [sheetRow], [crewRow], [lineRow])).toEqual({
       boats: [{ ...boat, archived: false }],
       crewMembers: [],
-      sheets: [{ ...sheet, metrics: { motorMiles: 0, sailMiles: 0, totalMiles: 0, durationMinutes: null, motorHours: 0, overallDurationMinutes: null, motionDurationMinutes: 0 }, share: { masterData: "private", picture: "private", logLines: "private", metrics: "private", technicalLog: "private", skipper: "private", crew: "private" }, crew: [{ ...crew, isPrimary: false }], lines: [line] }],
+      sheets: [{ ...sheet, engineHourCounters: {}, metrics: { motorMiles: 0, sailMiles: 0, totalMiles: 0, durationMinutes: null, motorHours: 0, overallDurationMinutes: null, motionDurationMinutes: 0 }, share: { masterData: "private", picture: "private", logLines: "private", metrics: "private", technicalLog: "private", skipper: "private", crew: "private" }, crew: [{ ...crew, isPrimary: false }], lines: [line] }],
     });
+  });
+
+  it("persists and maps cumulative engine hour counters", async () => {
+    const counters = { "main-engine": { start: 120.5, end: 123.25 } };
+    const db = new MockDatabase();
+
+    await new LogSheetsRepository(db).insert({ ...sheet, engineHourCounters: counters }, "repository-user");
+
+    expect(db.calls[0].values).toContain(JSON.stringify(counters));
+    const mapped = LogSheetsRepository.toLogbook([], [logSheetRow({ engine_hour_counters: JSON.stringify(counters) })], [], []);
+    expect(mapped.sheets[0].engineHourCounters).toEqual(counters);
   });
 
   it("persists and maps optional scanner metadata", async () => {
@@ -91,7 +102,7 @@ describe("LogSheetsRepository", () => {
 
     await new LogSheetsRepository(db).insert({ ...sheet, image }, "repository-user");
 
-    expect(db.calls[0].values?.slice(14, 16)).toEqual([image.id, "repository-user"]);
+    expect(db.calls[0].values?.slice(15, 17)).toEqual([image.id, "repository-user"]);
 
     const boatRow: BoatRow = { ...boat, flag_state: boat.flagState, home_port: boat.homePort, yacht_data: JSON.stringify(boat.yachtData), deviation_table: JSON.stringify(boat.deviationTable), image_data: "base64-boat", image_mime_type: "image/png", image_width: 640, image_height: 480 };
     const sheetRow = logSheetRow({ image_id: image.id, image_data: image.data, image_mime_type: image.mimeType, image_width: image.width, image_height: image.height });

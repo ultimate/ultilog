@@ -179,6 +179,7 @@ function calculateSheetSummary(sheet: LogSheet, motionStationaryThresholdNm: num
     duration: formatLogSheetDuration(metrics.overallDurationMinutes ?? metrics.durationMinutes),
     motionDuration: formatLogSheetDuration(metrics.motionDurationMinutes),
     motorHours: metrics.motorHours,
+    engineHours: metrics.engineHours ?? {},
     motorHoursDuration: formatLogSheetDuration(metrics.motorHours * 60),
     propulsionDuration: formatLogSheetDuration(metrics.propulsionDurationMinutes ?? 0),
   };
@@ -1102,6 +1103,14 @@ export function LogbookApp({
       crew: existingSheet?.crew ?? initialCrew,
       watchPlan: existingSheet?.watchPlan ?? [],
       technicalChecks: existingSheet?.technicalChecks ?? createTechnicalChecks(preferences.language, preferences.technicalLogTemplate, preferences.enabledStandardTechnicalChecks),
+      engineHourCounters: existingSheet?.engineHourCounters ?? (() => {
+        const previousSheet = currentLogbook.sheets
+          .filter((candidate) => candidate.boatId === sheetForm.boatId && candidate.id !== editingSheetId && candidate.route.departed < route.departed)
+          .sort((left, right) => right.route.departed.localeCompare(left.route.departed))[0];
+        return Object.fromEntries(Object.entries(previousSheet?.engineHourCounters ?? {}).flatMap(([engineId, reading]) =>
+          reading.end === undefined ? [] : [[engineId, { start: reading.end }]],
+        ));
+      })(),
       lines: existingSheet?.lines ?? [],
       image: sheetForm.image,
     };
@@ -1440,6 +1449,21 @@ export function LogbookApp({
           ? { ...sheet, technicalChecks: sheet.technicalChecks.filter((_, index) => index !== indexToDelete) }
           : sheet,
       ),
+    }, { kind: "sheet", id: activeSheet.id });
+  }
+
+  async function updateEngineHourCounter(engineId: string, boundary: "start" | "end", value?: number) {
+    if (activeSheet.status === "Locked") return;
+    const currentLogbook = logbookRef.current;
+    await saveLogbookNow({
+      ...currentLogbook,
+      sheets: currentLogbook.sheets.map((sheet) => {
+        if (sheet.id !== activeSheet.id) return sheet;
+        const reading = { ...(sheet.engineHourCounters?.[engineId] ?? {}) };
+        if (value === undefined) delete reading[boundary];
+        else reading[boundary] = Math.max(0, value);
+        return { ...sheet, engineHourCounters: { ...sheet.engineHourCounters, [engineId]: reading } };
+      }),
     }, { kind: "sheet", id: activeSheet.id });
   }
 
@@ -1993,6 +2017,7 @@ export function LogbookApp({
               addTechnicalCheck={addTechnicalCheck}
               updateTechnicalCheck={updateTechnicalCheck}
               deleteTechnicalCheck={deleteTechnicalCheck}
+              updateEngineHourCounter={updateEngineHourCounter}
               technicalCheckSuggestions={technicalCheckSuggestions}
               onPrintSheet={() => setPrintTarget({ mode: "filled", sheetId: activeSheet.id, showCourseColumns })}
             />

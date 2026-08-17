@@ -37,6 +37,7 @@ export type LogSheetRow = ImageRowFields & {
   remarks: unknown;
   watch_plan: unknown;
   technical_checks: unknown;
+  engine_hour_counters?: unknown;
   motor_miles?: number | null;
   sail_miles?: number | null;
   total_miles?: number | null;
