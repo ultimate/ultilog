@@ -17,6 +17,14 @@ test("edits technical log entries and suggests previous checks", async ({ page }
   await page.getByRole("spinbutton", { name: "Main engine End of sheet" }).blur();
   await expect(page.getByRole("row", { name: /Counter difference/ })).toContainText("1.0 h");
   await expect(page.getByRole("row", { name: /Runtime tracked on sheet/ })).toContainText("1.0 h");
+  await expect.poll(async () => {
+    const stored = await (await page.request.get("/api/logbook")).json();
+    return stored.sheets.find((sheet: { id: string }) => sheet.id === targetSheet.id)?.engineHourCounters?.["main-engine"];
+  }).toEqual({ start: 120.5, end: 121.5 });
+  await expect(page.getByText("Unable to save the latest changes. Please try again.")).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole("spinbutton", { name: "Main engine Beginning of sheet" })).toHaveValue("120.5");
+  await expect(page.getByRole("spinbutton", { name: "Main engine End of sheet" })).toHaveValue("121.5");
   await page.setViewportSize({ width: 375, height: 812 });
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.locator(".engine-hour-counter-section .table-scroll").scrollIntoViewIfNeeded();
