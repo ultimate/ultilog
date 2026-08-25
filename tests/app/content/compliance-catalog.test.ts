@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { complianceCatalog } from "../../../app/content/compliance/catalog";
+import { translations } from "../../../app/lib/i18n";
 
 const idsAreUnique = (ids: string[]) => new Set(ids).size === ids.length;
 
@@ -41,6 +42,14 @@ describe("compliance catalog authoring contract", () => {
       expect(Number.isFinite(requirement.threshold)).toBe(true);
       if (requirement.type !== "manual") {
         expect(["days", "nautical-miles"]).toContain(requirement.unit);
+      }
+    }
+  });
+
+  it("resolves every requirement label in every application language", () => {
+    for (const requirement of complianceCatalog.licenses.flatMap(({ requirements }) => requirements)) {
+      for (const dictionary of Object.values(translations)) {
+        expect(dictionary[requirement.translationKey]).toBeTruthy();
       }
     }
   });

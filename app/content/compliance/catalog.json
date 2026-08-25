@@ -179,35 +179,35 @@
           "type": "manual",
           "threshold": 1,
           "filters": null,
-          "translationKey": "TODO please translate: bestandene Theorieprüfung"
+          "translationKey": "compliance.requirement.theoryExamPassed"
         },
         {
           "id": "ch-2-c",
           "type": "manual",
           "threshold": 1,
           "filters": null,
-          "translationKey": "TODO please translate: Nachweis nautischer Grundausbildung"
+          "translationKey": "compliance.requirement.nauticalBasicTraining"
         },
         {
           "id": "ch-2-d",
           "type": "manual",
           "threshold": 1,
           "filters": null,
-          "translationKey": "TODO please translate: Ausbildung in lebensrettenden Sofortmassnahmen"
+          "translationKey": "compliance.requirement.firstAidTraining"
         },
         {
           "id": "ch-2-e",
           "type": "manual",
           "threshold": 1,
           "filters": null,
-          "translationKey": "TODO please translate: Bestätigung über genügendes Seh- und Hörvermögen"
+          "translationKey": "compliance.requirement.visionAndHearing"
         },
         {
           "id": "ch-2-f",
           "type": "manual",
           "threshold": 1,
           "filters": null,
-          "translationKey": "TODO please translate: Bestätigung geistiger und die körperlicher Eignung"
+          "translationKey": "compliance.requirement.mentalAndPhysicalFitness"
         },
         {
           "id": "ch-7-a-1-1",
@@ -250,7 +250,7 @@
             "propulsion": "sail",
             "withinYears": 4
           },
-          "translationKey": "TODO please translate: nach bestandener Theorieprüfung"
+          "translationKey": "compliance.requirement.afterTheoryExam"
         }
       ]
     },
@@ -327,35 +327,35 @@
           "type": "manual",
           "threshold": 1,
           "filters": null,
-          "translationKey": "TODO please translate: bestandene Theorieprüfung"
+          "translationKey": "compliance.requirement.theoryExamPassed"
         },
         {
           "id": "ch-motor-2-c",
           "type": "manual",
           "threshold": 1,
           "filters": null,
-          "translationKey": "TODO please translate: Nachweis nautischer Grundausbildung"
+          "translationKey": "compliance.requirement.nauticalBasicTraining"
         },
         {
           "id": "ch-motor-2-d",
           "type": "manual",
           "threshold": 1,
           "filters": null,
-          "translationKey": "TODO please translate: Ausbildung in lebensrettenden Sofortmassnahmen"
+          "translationKey": "compliance.requirement.firstAidTraining"
         },
         {
           "id": "ch-motor-2-e",
           "type": "manual",
           "threshold": 1,
           "filters": null,
-          "translationKey": "TODO please translate: Bestätigung über genügendes Seh- und Hörvermögen"
+          "translationKey": "compliance.requirement.visionAndHearing"
         },
         {
           "id": "ch-motor-2-f",
           "type": "manual",
           "threshold": 1,
           "filters": null,
-          "translationKey": "TODO please translate: Bestätigung geistiger und die körperlicher Eignung"
+          "translationKey": "compliance.requirement.mentalAndPhysicalFitness"
         },
         {
           "id": "ch-7-b-1-1",
@@ -398,7 +398,7 @@
             "propulsion": "motor",
             "withinYears": 4
           },
-          "translationKey": "TODO: nach bestandener Theorieprüfung"
+          "translationKey": "compliance.requirement.afterTheoryExam"
         }
       ]
     },
@@ -460,7 +460,7 @@
           "type": "manual",
           "threshold": 1,
           "filters": null,
-          "translationKey": "TODO please translate: bestehender %ch-hochseeausweis-motor%"
+          "translationKey": "compliance.requirement.holdsSwissMotorLicense"
         },
         {
           "id": "ch-8-a-1",
@@ -544,7 +544,7 @@
           "type": "manual",
           "threshold": 1,
           "filters": null,
-          "translationKey": "TODO please translate: bestehender %ch-hochseeausweis-sail%"
+          "translationKey": "compliance.requirement.holdsSwissSailLicense"
         },
         {
           "id": "ch-8-b-1",
@@ -600,7 +600,7 @@
           "filters": {
             "withinYears": 1
           },
-          "translationKey": "TODO please translate: bestandene theoretische Prüfung"
+          "translationKey": "compliance.requirement.theoryExamPassed"
         },
         {
           "id": "de-SpFV-8-2",
@@ -609,7 +609,7 @@
           "filters": {
             "withinYears": 1
           },
-          "translationKey": "TODO please translate: bestandene praktische Prüfung"
+          "translationKey": "compliance.requirement.practicalExamPassed"
         }
       ]
     },
@@ -641,7 +641,7 @@
           "type": "manual",
           "threshold": 1,
           "filters": null,
-          "translationKey": "TODO please translate: im Besitz eines %de-sbf%"
+          "translationKey": "compliance.requirement.holdsGermanSbf"
         },
         {
           "id": "de-SportSeeSchV-6-1-2",
@@ -656,7 +656,7 @@
           "type": "manual",
           "threshold": 1,
           "filters": null,
-          "translationKey": "TODO please translate: Nachweis der seine Befähigung zum Führen von Yachten in Küstengewässern in einer theoretischen und praktischen Prüfung"
+          "translationKey": "compliance.requirement.coastalCompetencyExam"
         }
       ]
     },
@@ -688,7 +688,7 @@
           "type": "manual",
           "threshold": 1,
           "filters": null,
-          "translationKey": "TODO please translate: im Besitz eines %de-sks%"
+          "translationKey": "compliance.requirement.holdsGermanSks"
         },
         {
           "id": "de-SportSeeSchV-6-2-2",
@@ -703,7 +703,7 @@
           "type": "manual",
           "threshold": 1,
           "filters": null,
-          "translationKey": "TODO please translate: Nachweis der seine Befähigung zum Führen von Yachten in Seegewässern in einer theoretischen und praktischen Prüfung"
+          "translationKey": "compliance.requirement.offshoreCompetencyExam"
         }
       ]
     },
@@ -735,7 +735,7 @@
           "type": "manual",
           "threshold": 1,
           "filters": null,
-          "translationKey": "TODO please translate: im Besitz eines %de-sss%"
+          "translationKey": "compliance.requirement.holdsGermanSss"
         },
         {
           "id": "de-SportSeeSchV-6-3-3",
@@ -750,7 +750,7 @@
           "type": "manual",
           "threshold": 1,
           "filters": null,
-          "translationKey": "TODO please translate: Nachweis der seine Befähigung zum Führen von Yachten in der weltweiten Fahrt in einer theoretischen Prüfung"
+          "translationKey": "compliance.requirement.worldwideTheoryExam"
         }
       ]
     }
