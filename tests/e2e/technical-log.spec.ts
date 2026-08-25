@@ -2,9 +2,23 @@ import { expect, type Page, test } from "@playwright/test";
 import { sampleBoats, sampleLogSheets } from "../fixtures/logbook";
 
 const targetSheet = sampleLogSheets[0];
+const legacyIdSheet = { ...sampleLogSheets[1], id: "legacy-normalization-sheet", title: "Legacy ID normalization check", crew: [], lines: [] };
 
 test("edits technical log entries and suggests previous checks", async ({ page }) => {
   await loginWithSeededDemoData(page);
+  await expect.poll(async () => {
+    const stored = await (await page.request.get("/api/logbook")).json();
+    const normalized = stored.sheets.find((sheet: { title: string }) => sheet.title === legacyIdSheet.title);
+    return Boolean(normalized && normalized.id !== legacyIdSheet.id);
+  }).toBe(true);
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Logout" })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Logout" })).toBeVisible();
+  await expect.poll(async () => {
+    const stored = await (await page.request.get("/api/logbook")).json();
+    return stored.sheets.filter((sheet: { title: string }) => sheet.title === legacyIdSheet.title).length;
+  }).toBe(1);
   await page.goto(`/details/${targetSheet.id}`);
 
   await expect(page.getByRole("heading", { name: targetSheet.title })).toBeVisible();
@@ -60,7 +74,7 @@ async function loginWithSeededDemoData(page: Page) {
   await page.waitForLoadState("networkidle");
   await removeDemoLogsheets(page);
   const seedResponse = await page.request.put("/api/logbook/import", { headers: { Origin: "http://127.0.0.1:3000", "X-Ultilog-Confirm-Replace": "replace-my-entire-logbook" },
-    data: { boats: sampleBoats, crewMembers: crewProfilesFromSheets(sampleLogSheets), sheets: sampleLogSheets },
+    data: { boats: sampleBoats, crewMembers: crewProfilesFromSheets(sampleLogSheets), sheets: [...sampleLogSheets, legacyIdSheet] },
   });
   expect(seedResponse.ok(), await seedResponse.text()).toBeTruthy();
   await page.reload();

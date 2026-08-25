@@ -46,6 +46,7 @@ import {
   routeFromPathname,
 } from "./logbook/persistence";
 import { mergeMutationResult } from "./logbook/mutation-merge";
+import { replaceEntireLogbook } from "./logbook/import";
 import { LineMutationQueue } from "./logbook/line-mutation-queue";
 import {
   dateTimeLocalFromParts,
@@ -473,11 +474,23 @@ export function LogbookApp({
       if (!response.ok) throw new Error("Unable to load logbook");
       const storedLogbook = (await response.json()) as PersistedLogbook;
       const {
-        logbook: normalizedLogbook,
+        logbook: initiallyNormalizedLogbook,
         changed,
         boatIds,
         sheetIds,
       } = normalizeLogbookIds(storedLogbook);
+      let normalizedLogbook = initiallyNormalizedLogbook;
+      if (changed) {
+        const normalizationResponse = await replaceEntireLogbook(initiallyNormalizedLogbook).catch(() => undefined);
+        if (!normalizationResponse?.ok) {
+          boatIds.clear();
+          sheetIds.clear();
+          normalizedLogbook = storedLogbook;
+          setSaveError(t("logbook.saveError"));
+        } else {
+          normalizedLogbook = await normalizationResponse.json() as PersistedLogbook;
+        }
+      }
       if (!isMounted) return;
       const route = routeFromPathname(window.location.pathname);
       const normalizedItemId =
@@ -550,13 +563,6 @@ export function LogbookApp({
       if (normalizedItemId) {
         window.history.replaceState(null, "", nextRoutePath);
         setRoutePath(nextRoutePath);
-      }
-      if (changed) {
-        void Promise.all([
-          ...normalizedLogbook.boats.map((boat) => persistBoat(boat)),
-          ...normalizedLogbook.crewMembers.map((crew) => persistCrewMember(crew)),
-          ...normalizedLogbook.sheets.map((sheet) => persistSheet(sheet)),
-        ]).catch(() => setSaveError(t("logbook.saveError")));
       }
       setIsBackendReady(true);
     }
