@@ -66,6 +66,23 @@ describe("LogLinesRepository", () => {
     expect(db.calls[0].values).toHaveLength(78);
     expect(db.calls[0].values?.[39]).toBe(`repository-user:${sheet.id}`);
   });
+
+  it("binds the scoped sheet id separately when inserting engine runtime", async () => {
+    const db = new MockDatabase();
+    const engineLine = { ...line, engineHours: { "main-engine": 1.25 }, motorHours: 1.25 };
+
+    await new LogLinesRepository(db).insert(sheet.id, 0, engineLine, "repository-user");
+
+    expect(db.calls[1].values).toEqual([
+      `repository-user:${sheet.id}`,
+      0,
+      1.25,
+      `repository-user:${sheet.id}`,
+      "main-engine",
+    ]);
+    expect(db.calls[1].sql).toContain("log_sheets.id = $4");
+    expect(db.calls[1].sql).toContain("|| ':' || $5");
+  });
 });
 
 function logLineRow(): LogLineRow {
