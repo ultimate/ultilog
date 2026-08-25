@@ -1,4 +1,5 @@
 import catalogData from "./catalog.json";
+import type { TranslationKey } from "../../lib/i18n";
 
 export type ComplianceSection = {
   id: string;
@@ -23,7 +24,7 @@ export type Requirement = {
   id: string;
   type: string;
   threshold: number;
-  translationKey: string;
+  translationKey: TranslationKey;
   filters: { propulsion?: string; withinYears?: number } | null;
   unit?: "days" | "nautical-miles";
 };
