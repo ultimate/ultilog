@@ -4,15 +4,15 @@ import type { TranslationKey } from "../../lib/i18n";
 export type ComplianceSection = {
   id: string;
   heading: string;
-  citation: string;
+  citation?: string;
 };
 
 export type LocalizedLegalContent = {
   title: string;
-  authority: string;
+  authority?: string;
   sourceUrl: string;
-  checkedAt: string;
-  effectiveFrom: string;
+  checkedAt?: string;
+  effectiveFrom?: string;
   sections: ComplianceSection[];
 };
 
@@ -73,6 +73,7 @@ const fail = (message: string): never => { throw new Error(`Invalid compliance c
 const object = (value: unknown, at: string): Record<string, unknown> =>
   value !== null && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : fail(`${at} must be an object`);
 const string = (value: unknown, at: string): string => typeof value === "string" ? value : fail(`${at} must be a string`);
+const optionalString = (value: unknown, at: string): string | undefined => value === undefined ? undefined : string(value, at);
 const array = (value: unknown, at: string): unknown[] => Array.isArray(value) ? value : fail(`${at} must be an array`);
 const unique = (values: string[], at: string) => {
   if (new Set(values).size !== values.length) fail(`${at} must be unique`);
@@ -85,13 +86,13 @@ function localized(value: unknown, at: string, license: boolean): LocalizedLegal
   const result = {
     ...(license ? { licenseName: string(raw.licenseName, `${at}.licenseName`) } : {}),
     title: string(raw.title, `${at}.title`),
-    authority: string(raw.authority, `${at}.authority`),
+    ...(raw.authority === undefined ? {} : { authority: optionalString(raw.authority, `${at}.authority`) }),
     sourceUrl,
-    checkedAt: string(raw.checkedAt, `${at}.checkedAt`),
-    effectiveFrom: string(raw.effectiveFrom, `${at}.effectiveFrom`),
+    ...(raw.checkedAt === undefined ? {} : { checkedAt: optionalString(raw.checkedAt, `${at}.checkedAt`) }),
+    ...(raw.effectiveFrom === undefined ? {} : { effectiveFrom: optionalString(raw.effectiveFrom, `${at}.effectiveFrom`) }),
     sections: array(raw.sections, `${at}.sections`).map((item, index) => {
       const section = object(item, `${at}.sections[${index}]`);
-      return { id: string(section.id, `${at}.sections[${index}].id`), heading: string(section.heading, `${at}.sections[${index}].heading`), citation: string(section.citation, `${at}.sections[${index}].citation`) };
+      return { id: string(section.id, `${at}.sections[${index}].id`), heading: string(section.heading, `${at}.sections[${index}].heading`), ...(section.citation === undefined ? {} : { citation: optionalString(section.citation, `${at}.sections[${index}].citation`) }) };
     }),
   };
   return result as LocalizedLegalContent | LocalizedLicenseContent;

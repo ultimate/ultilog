@@ -2275,7 +2275,7 @@ export function LogbookApp({
             </section>
           )}
 
-          {activeModule === "compliance" && <CompliancePage />}
+          {activeModule === "compliance" && <CompliancePage countryCode={preferences.countryCode} language={preferences.language} />}
         </section>
       </section>
       </main>
