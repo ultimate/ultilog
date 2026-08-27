@@ -8,6 +8,14 @@ const renderPage = (countryCode: string, language: string) => renderToStaticMark
 );
 
 describe("CompliancePage", () => {
+  it("introduces both page purposes and includes a legal-information disclaimer", () => {
+    const markup = renderPage("CH", "en");
+    expect(markup).toContain("legal logbook requirements");
+    expect(markup).toContain("progress toward sailing licenses");
+    expect(markup).toContain("provided without warranty");
+    expect(markup).toContain("responsible for checking the complete, current legal requirements");
+  });
+
   it("initializes its page-local country from the profile without a profile update control", () => {
     const swiss = renderPage("CH", "en");
     const german = renderPage("DE", "en");
@@ -16,7 +24,7 @@ describe("CompliancePage", () => {
     expect(swiss).not.toContain("/api/profile");
   });
 
-  it("renders supported content in the requested language and falls back to the legal default", () => {
+  it("renders supported content in the profile language and falls back to the first available translation", () => {
     expect(renderPage("CH", "fr")).toContain("Dispositions générales concernant les yachts suisses");
     expect(renderPage("DE", "fr")).toContain("Schiffssicherheitsverordnung");
   });

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { CountryFlagSelector } from "../../CountryFlagSelector";
-import { findLegalRequirement, withLanguageFallback } from "../../../domain/compliance/catalog";
+import { findLegalRequirement } from "../../../domain/compliance/catalog";
 import { localeLabels, useI18n, type Locale } from "../../../lib/i18n";
 
 type Props = { profileCountryCode: string; requestedLanguage: string };
@@ -12,8 +12,8 @@ export function LegalInformationSection({ profileCountryCode, requestedLanguage 
 
   const entry = useMemo(() => findLegalRequirement(countryCode), [countryCode]);
   const languages = Object.keys(entry?.translations ?? {});
-  const resolvedLanguage = entry && languages.includes(language) ? language : entry?.defaultLanguage;
-  const content = entry && withLanguageFallback(entry.translations, language, entry.defaultLanguage);
+  const resolvedLanguage = entry && languages.includes(language) ? language : languages[0];
+  const content = entry && resolvedLanguage ? entry.translations[resolvedLanguage] : undefined;
   const contactHref = `mailto:support@ultilog.app?subject=${encodeURIComponent(`Legal information request: ${countryCode}`)}`;
 
   return (

@@ -15,9 +15,13 @@ export function CompliancePage({ countryCode, language }: CompliancePageProps) {
       <div className="page-heading">
         <div>
           <h1>{t("nav.compliance")}</h1>
-          <p>{t("compliance.subtitle")}</p>
+          <p>{t("compliance.introduction")}</p>
         </div>
       </div>
+      <aside className="compliance-disclaimer" role="note">
+        <strong>{t("compliance.disclaimerTitle")}</strong>
+        <p>{t("compliance.disclaimer")}</p>
+      </aside>
       <LegalInformationSection key={`${countryCode}:${language}`} profileCountryCode={countryCode} requestedLanguage={language} />
       <LicenseSection />
     </section>
