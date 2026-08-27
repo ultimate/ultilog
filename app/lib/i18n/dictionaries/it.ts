@@ -296,6 +296,8 @@ export const it: Dictionary = {
   "compliance.licenseProgress": "Avanzamento della licenza",
   "compliance.legalCountry": "Paese giuridico",
   "compliance.selectCountry": "Seleziona un paese",
+  "compliance.countrySearch": "Cerca paesi",
+  "compliance.countryNoResults": "Nessun paese trovato",
   "compliance.legalLanguage": "Lingua delle informazioni legali",
   "compliance.chooseCountryPrompt": "Seleziona un paese per visualizzarne le informazioni legali.",
   "compliance.unsupportedCountry": "Le informazioni legali non sono ancora disponibili per questo paese.",

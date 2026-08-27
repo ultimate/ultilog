@@ -25,6 +25,8 @@ export function LegalInformationSection({ profileCountryCode, requestedLanguage 
           mode="iso-code"
           label={t("compliance.legalCountry")}
           emptyLabel={t("compliance.selectCountry")}
+          searchLabel={t("compliance.countrySearch")}
+          noResultsLabel={t("compliance.countryNoResults")}
           value={countryCode}
           onChange={setCountryCode}
         />

@@ -4,6 +4,9 @@ type CommonProps = {
   id: string;
   label: string;
   emptyLabel: string;
+  /** Labels used by searchable selector implementations. */
+  searchLabel?: string;
+  noResultsLabel?: string;
   className?: string;
 };
 

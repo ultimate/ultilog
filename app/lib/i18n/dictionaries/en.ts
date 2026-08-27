@@ -294,6 +294,8 @@ export const en = {
   "compliance.licenseProgress": "License progress",
   "compliance.legalCountry": "Legal country",
   "compliance.selectCountry": "Select a country",
+  "compliance.countrySearch": "Search countries",
+  "compliance.countryNoResults": "No countries found",
   "compliance.legalLanguage": "Legal language",
   "compliance.chooseCountryPrompt": "Select a country to view its legal information.",
   "compliance.unsupportedCountry": "Legal information is not yet available for this country.",

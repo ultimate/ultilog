@@ -296,6 +296,8 @@ export const de: Dictionary = {
   "compliance.licenseProgress": "Lizenzfortschritt",
   "compliance.legalCountry": "Land der Rechtsordnung",
   "compliance.selectCountry": "Land auswählen",
+  "compliance.countrySearch": "Länder suchen",
+  "compliance.countryNoResults": "Keine Länder gefunden",
   "compliance.legalLanguage": "Sprache der Rechtsinformation",
   "compliance.chooseCountryPrompt": "Wähle ein Land aus, um die rechtlichen Informationen anzuzeigen.",
   "compliance.unsupportedCountry": "Für dieses Land sind noch keine rechtlichen Informationen verfügbar.",
