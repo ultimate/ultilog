@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { CountryFlagSelector } from "../../CountryFlagSelector";
-import { findLegalRequirement } from "../../../domain/compliance/catalog";
+import { complianceCatalog, findLegalRequirement } from "../../../domain/compliance/catalog";
 import { localeLabels, useI18n, type Locale } from "../../../lib/i18n";
 
 type Props = { profileCountryCode: string; requestedLanguage: string };
+const legalCountryCodes = complianceCatalog.legalLogbookRequirements.map(({ countryCode }) => countryCode);
 
 export function LegalInformationSection({ profileCountryCode, requestedLanguage }: Props) {
   const { t } = useI18n();
@@ -27,6 +28,10 @@ export function LegalInformationSection({ profileCountryCode, requestedLanguage 
           emptyLabel={t("compliance.selectCountry")}
           searchLabel={t("compliance.countrySearch")}
           noResultsLabel={t("compliance.countryNoResults")}
+          availableCountryCodes={legalCountryCodes}
+          availableOnlyLabel={t("compliance.countryAvailableOnly")}
+          availableMarkerLabel={t("compliance.countryAvailable")}
+          unavailableMarkerLabel={t("compliance.countryUnavailable")}
           value={countryCode}
           onChange={setCountryCode}
         />

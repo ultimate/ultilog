@@ -1300,6 +1300,26 @@ td { color: #28384b; line-height: 1.45; }
 
 .flag-chooser-field {
   align-self: start;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.flag-chooser-search {
+  width: 100%;
+}
+
+.flag-chooser-filter {
+  align-items: center;
+  display: flex;
+  gap: 0.45rem;
+}
+
+.flag-chooser-filter input {
+  width: auto;
+}
+
+.flag-chooser-legend {
+  color: var(--muted);
 }
 
 .inline-edit-grid .flag-chooser {

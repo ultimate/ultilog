@@ -24,6 +24,17 @@ describe("CompliancePage", () => {
     expect(swiss).not.toContain("/api/profile");
   });
 
+  it("offers country search, availability hints, and an available-country filter", () => {
+    const markup = renderPage("CH", "en");
+    expect(markup).toContain('type="search"');
+    expect(markup).toContain('aria-label="Search countries"');
+    expect(markup).toContain("Only show countries with legal information");
+    expect(markup).toContain("✓ 🇨🇭 Switzerland");
+    expect(markup).toContain("○ 🇫🇷 France");
+    expect(markup).toContain("Legal information available");
+    expect(markup).toContain("Not yet available");
+  });
+
   it("renders supported content in the profile language and falls back to the first available translation", () => {
     expect(renderPage("CH", "fr")).toContain("Dispositions générales concernant les yachts suisses");
     expect(renderPage("DE", "fr")).toContain("Schiffssicherheitsverordnung");
