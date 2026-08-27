@@ -9,7 +9,7 @@ import { demoCapacityLimits } from "./demo-capacity";
 const DEFAULT_SANDBOX_TTL_HOURS = 6;
 const LOGIN_TOKEN_TTL_MINUTES = 5;
 
-type DemoTokenRow = { user_id: string; used_at?: string | null; sandbox_expires_at?: string };
+type DemoTokenRow = { user_id: string; used_at?: string | null; sandbox_expires_at?: string; template_version?: number | string };
 
 export type DemoSandboxLogin = {
   token: string;
@@ -84,7 +84,7 @@ export async function consumeDemoSandboxLogin(token: string): Promise<AppUser | 
   const claim = `${now}#${randomUUID()}`;
   const hash = tokenHash(normalizedToken);
   const row = (await db.query<DemoTokenRow>(`
-    select demo_login_tokens.user_id, demo_sandboxes.expires_at as sandbox_expires_at
+    select demo_login_tokens.user_id, demo_sandboxes.expires_at as sandbox_expires_at, demo_sandboxes.template_version
     from demo_login_tokens
     join demo_sandboxes on demo_sandboxes.user_id = demo_login_tokens.user_id
     where demo_login_tokens.token_hash = ${db.placeholder(1)}
@@ -105,6 +105,7 @@ export async function consumeDemoSandboxLogin(token: string): Promise<AppUser | 
   if (claimed?.used_at !== claim || claimed.user_id !== row.user_id) return null;
 
   await db.query(`update demo_sandboxes set last_accessed_at = ${db.placeholder(1)} where user_id = ${db.placeholder(2)}`, [now, row.user_id]);
+  if (Number(row.template_version) < DEMO_TEMPLATE_VERSION) await resetDemoSandbox(row.user_id);
   const user = await findUserById(row.user_id);
   return user ? { ...user, demoSandboxExpiresAt: row.sandbox_expires_at } : null;
 }
