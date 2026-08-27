@@ -28,4 +28,21 @@ describe("CountryFlagSelector", () => {
     expect(byContinent[0].continent).toBe("Africa");
     expect(byContinent[0].flags.length).toBeGreaterThan(1);
   });
+
+  it("combines the shared search behavior with an availability filter", () => {
+    const availableCodes = new Set(["CH", "DE"]);
+    const availableInEurope = filterFlagGroups(
+      countryFlagGroups,
+      "",
+      (flag) => availableCodes.has(flag.code),
+    );
+
+    expect(availableInEurope).toEqual([{
+      continent: "Europe",
+      flags: [
+        { code: "DE", name: "Germany" },
+        { code: "CH", name: "Switzerland" },
+      ],
+    }]);
+  });
 });
