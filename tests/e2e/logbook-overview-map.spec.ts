@@ -57,6 +57,7 @@ async function removeDemoLogsheets(page: Page) {
   // reference between individual deletes and replacement demo seeding.
   const clearResponse = await page.request.put("/api/logbook/import", { headers: { Origin: "http://127.0.0.1:3000", "X-Ultilog-Confirm-Replace": "replace-my-entire-logbook" }, data: { ...currentLogbook, sheets: [] } });
   expect(clearResponse.ok(), await clearResponse.text()).toBeTruthy();
+  await expect.poll(async () => (await (await page.request.get("/api/logbook")).json()).sheets.length).toBe(0);
 }
 
 function crewProfilesFromSheets(sheets: typeof sampleLogSheets) {
