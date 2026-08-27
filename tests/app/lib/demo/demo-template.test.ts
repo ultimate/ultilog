@@ -3,7 +3,7 @@ import { DEMO_LOGBOOK_TEMPLATE, DEMO_ROUTE_PROVENANCE, DEMO_TEMPLATE_VERSION, DE
 
 describe("immutable demo logbook template", () => {
   it("contains two boats, five reusable crew members, and two four-day cruises", () => {
-    expect(DEMO_TEMPLATE_VERSION).toBe(2);
+    expect(DEMO_TEMPLATE_VERSION).toBe(4);
     expect(DEMO_LOGBOOK_TEMPLATE.boats.map((boat) => boat.type).sort()).toEqual(["Motor", "Sail"]);
     expect(DEMO_LOGBOOK_TEMPLATE.crewMembers).toHaveLength(5);
     expect(DEMO_LOGBOOK_TEMPLATE.sheets).toHaveLength(8);
@@ -13,6 +13,24 @@ describe("immutable demo logbook template", () => {
       expect(sheets).toHaveLength(4);
       expect(sheets.every((sheet) => sheet.lines.length >= 5 && sheet.lines.length <= 10)).toBe(true);
       expect(sheets.every((sheet) => sheet.lines.slice(0, -1).every((line) => line.speedKn > 0) && sheet.lines.at(-1)?.speedKn === 0)).toBe(true);
+    }
+  });
+
+  it("uses stable UUIDs for demo entities so client-side legacy normalization is unnecessary", () => {
+    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-8[0-9a-f]{3}-[0-9a-f]{12}$/i;
+    expect(DEMO_LOGBOOK_TEMPLATE.boats.every((boat) => uuid.test(boat.id))).toBe(true);
+    expect(DEMO_LOGBOOK_TEMPLATE.crewMembers.every((member) => uuid.test(member.id))).toBe(true);
+    expect(DEMO_LOGBOOK_TEMPLATE.sheets.every((sheet) => uuid.test(sheet.id))).toBe(true);
+  });
+
+  it("records runtime separately for every engine", () => {
+    for (const sheet of DEMO_LOGBOOK_TEMPLATE.sheets) {
+      const boat = DEMO_LOGBOOK_TEMPLATE.boats.find((candidate) => candidate.id === sheet.boatId)!;
+      for (const line of sheet.lines) {
+        const hours = Object.values(line.engineHours ?? {});
+        expect(line.motorHours).toBe(hours.reduce((total, value) => total + value, 0));
+        if (line.motorHours > 0) expect(Object.keys(line.engineHours ?? {}).sort()).toEqual(boat.engines?.map((engine) => engine.id).sort());
+      }
     }
   });
 

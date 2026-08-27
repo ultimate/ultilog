@@ -27,7 +27,7 @@ export class LogSheetsRepository {
       sheet.scannerWarnings ? JSON.stringify(sheet.scannerWarnings) : null,
       scopedId(ownerId, sheet.boatId), JSON.stringify({}), JSON.stringify(sheet.route),
       JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan),
-      JSON.stringify(sheet.technicalChecks), sheet.imageId ?? sheet.image?.id ?? null,
+      JSON.stringify(sheet.technicalChecks), JSON.stringify(sheet.engineHourCounters ?? {}), sheet.imageId ?? sheet.image?.id ?? null,
       metrics.motorMiles, metrics.sailMiles, metrics.totalMiles, metrics.durationMinutes,
       metrics.motorHours, metrics.overallDurationMinutes, metrics.motionDurationMinutes,
       overallPrivacy(sheet.share), privacyFor(sheet.share?.masterData), privacyFor(sheet.share?.picture),
@@ -37,13 +37,13 @@ export class LogSheetsRepository {
     ];
     const columns = [
       "title", "status", "source", "verification_note", "scanner_warnings", "boat_id", "skipper", "route",
-      "weather_briefing", "day_summary", "remarks", "watch_plan", "technical_checks", "image_id",
+      "weather_briefing", "day_summary", "remarks", "watch_plan", "technical_checks", "engine_hour_counters", "image_id",
       "motor_miles", "sail_miles", "total_miles", "duration_minutes", "motor_hours", "overall_duration_minutes", "motion_duration_minutes",
       "share_privacy", "share_master_data", "share_picture", "share_loglines", "share_metrics", "share_technical_log", "share_skipper", "share_crew",
     ];
     const assignments = columns.map((column, index) => `${column} = ${this.db.placeholder(index + 1)}`).join(", ");
     const result = await this.db.query<{ revision: number }>(
-      `update log_sheets set ${assignments}, revision = revision + 1, updated_at = ${this.now()} where id = ${this.db.placeholder(30)} and owner_id = ${this.db.placeholder(31)} and revision = ${this.db.placeholder(32)} returning revision`,
+      `update log_sheets set ${assignments}, revision = revision + 1, updated_at = ${this.now()} where id = ${this.db.placeholder(31)} and owner_id = ${this.db.placeholder(32)} and revision = ${this.db.placeholder(33)} returning revision`,
       values,
     );
     if (!result.rows.length) throw Object.assign(new Error("The log sheet was changed by another request."), { code: "revision_conflict" });
@@ -70,8 +70,8 @@ export class LogSheetsRepository {
   async insert(sheet: LogSheet, ownerId: string, motionStationaryThresholdNm = 0.1) {
     const metrics = calculateLogSheetMetrics(sheet.lines, sheet.route, { stationaryDistanceThresholdNm: motionStationaryThresholdNm });
     await this.db.query(
-      `insert into log_sheets (id, title, status, source, verification_note, scanner_warnings, boat_id, skipper, route, weather_briefing, day_summary, remarks, watch_plan, technical_checks, image_id, owner_id, motor_miles, sail_miles, total_miles, duration_minutes, motor_hours, overall_duration_minutes, motion_duration_minutes, share_privacy, share_master_data, share_picture, share_loglines, share_metrics, share_technical_log, share_skipper, share_crew) values (${this.values(31)})`,
-      [scopedId(ownerId, sheet.id), sheet.title, sheet.status, sheet.source ?? null, sheet.verificationNote ?? null, sheet.scannerWarnings ? JSON.stringify(sheet.scannerWarnings) : null, scopedId(ownerId, sheet.boatId), JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), sheet.imageId ?? sheet.image?.id ?? null, ownerId, metrics.motorMiles, metrics.sailMiles, metrics.totalMiles, metrics.durationMinutes, metrics.motorHours, metrics.overallDurationMinutes, metrics.motionDurationMinutes, overallPrivacy(sheet.share), privacyFor(sheet.share?.masterData), privacyFor(sheet.share?.picture), privacyFor(sheet.share?.logLines), privacyFor(sheet.share?.metrics), privacyFor(sheet.share?.technicalLog), privacyFor(sheet.share?.skipper), privacyFor(sheet.share?.crew)],
+      `insert into log_sheets (id, title, status, source, verification_note, scanner_warnings, boat_id, skipper, route, weather_briefing, day_summary, remarks, watch_plan, technical_checks, engine_hour_counters, image_id, owner_id, motor_miles, sail_miles, total_miles, duration_minutes, motor_hours, overall_duration_minutes, motion_duration_minutes, share_privacy, share_master_data, share_picture, share_loglines, share_metrics, share_technical_log, share_skipper, share_crew) values (${this.values(32)})`,
+      [scopedId(ownerId, sheet.id), sheet.title, sheet.status, sheet.source ?? null, sheet.verificationNote ?? null, sheet.scannerWarnings ? JSON.stringify(sheet.scannerWarnings) : null, scopedId(ownerId, sheet.boatId), JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), JSON.stringify(sheet.engineHourCounters ?? {}), sheet.imageId ?? sheet.image?.id ?? null, ownerId, metrics.motorMiles, metrics.sailMiles, metrics.totalMiles, metrics.durationMinutes, metrics.motorHours, metrics.overallDurationMinutes, metrics.motionDurationMinutes, overallPrivacy(sheet.share), privacyFor(sheet.share?.masterData), privacyFor(sheet.share?.picture), privacyFor(sheet.share?.logLines), privacyFor(sheet.share?.metrics), privacyFor(sheet.share?.technicalLog), privacyFor(sheet.share?.skipper), privacyFor(sheet.share?.crew)],
     );
     return this.findById(sheet.id, ownerId);
   }
@@ -181,6 +181,7 @@ function mapStoredSheet(sheet: LogSheetRow): StoredLogSheet {
     route: parseJson<LogSheet["route"]>(sheet.route),
     watchPlan: parseJson<string[]>(sheet.watch_plan),
     technicalChecks: parseJson<unknown[]>(sheet.technical_checks).map(normalizeTechnicalCheck).filter((item): item is NonNullable<typeof item> => Boolean(item)),
+    engineHourCounters: normalizeEngineHourCounters(parseJson<unknown>(sheet.engine_hour_counters ?? {})),
     ...(sheet.image_id ? { imageId: sheet.image_id } : {}),
     ...(imageFromRow(sheet) ? { image: imageFromRow(sheet) } : {}),
     metrics: {
@@ -202,6 +203,17 @@ function mapStoredSheet(sheet: LogSheetRow): StoredLogSheet {
       crew: privacyFromRow(sheet.share_crew, sheet.share_privacy),
     },
   };
+}
+
+function normalizeEngineHourCounters(value: unknown): NonNullable<LogSheet["engineHourCounters"]> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return Object.fromEntries(Object.entries(value).flatMap(([engineId, reading]) => {
+    if (!reading || typeof reading !== "object" || Array.isArray(reading)) return [];
+    const candidate = reading as { start?: unknown; end?: unknown };
+    const start = Number(candidate.start), end = Number(candidate.end);
+    const normalized = { ...(Number.isFinite(start) && start >= 0 ? { start } : {}), ...(Number.isFinite(end) && end >= 0 ? { end } : {}) };
+    return Object.keys(normalized).length ? [[engineId, normalized]] : [];
+  }));
 }
 
 function privacyFor(value: NonNullable<LogSheet["share"]>[keyof NonNullable<LogSheet["share"]>] | undefined) {

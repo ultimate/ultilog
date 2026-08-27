@@ -46,6 +46,7 @@ import {
   routeFromPathname,
 } from "./logbook/persistence";
 import { mergeMutationResult } from "./logbook/mutation-merge";
+import { replaceEntireLogbook } from "./logbook/import";
 import { LineMutationQueue } from "./logbook/line-mutation-queue";
 import {
   dateTimeLocalFromParts,
@@ -179,6 +180,7 @@ function calculateSheetSummary(sheet: LogSheet, motionStationaryThresholdNm: num
     duration: formatLogSheetDuration(metrics.overallDurationMinutes ?? metrics.durationMinutes),
     motionDuration: formatLogSheetDuration(metrics.motionDurationMinutes),
     motorHours: metrics.motorHours,
+    engineHours: metrics.engineHours ?? {},
     motorHoursDuration: formatLogSheetDuration(metrics.motorHours * 60),
     propulsionDuration: formatLogSheetDuration(metrics.propulsionDurationMinutes ?? 0),
   };
@@ -414,13 +416,15 @@ export function LogbookApp({
           : mutation.kind === "crew"
             ? current.crewMembers.find(item => item.id === mutation.entity.id)
             : current.sheets.find(item => item.id === mutation.entity.id))
-        : undefined;
+        : mutation.kind === "sheet"
+          ? current.sheets.find(sheet => sheet.id === mutation.id)
+          : undefined;
       response = await (mutation.kind === "boat" ? persistBoat(entity as Boat, mutation.isNew)
         : mutation.kind === "crew" ? persistCrewMember(entity as CrewMember, mutation.isNew)
         : mutation.kind === "line-deletion" ? persistDeleteLogLine(mutation.sheetId, mutation.id, mutation.revision)
         : mutation.kind === "sheet" ? persistSheet(entity as LogSheet ?? current.sheets.find((sheet) => "id" in mutation && sheet.id === mutation.id)!, "isNew" in mutation && mutation.isNew)
         : deleteLogbookEntity(mutation.entityKind, mutation.id, mutation.revision)).catch(() => undefined);
-      if (response?.ok && "entity" in mutation) {
+      if (response?.ok && entity && (mutation.kind === "boat" || mutation.kind === "crew" || mutation.kind === "sheet")) {
         persistedEntity = await response.clone().json().catch(() => undefined) as typeof persistedEntity;
         if (persistedEntity) mergePersistedMutation(mutation.kind, id, entity as typeof persistedEntity, persistedEntity);
       }
@@ -470,11 +474,23 @@ export function LogbookApp({
       if (!response.ok) throw new Error("Unable to load logbook");
       const storedLogbook = (await response.json()) as PersistedLogbook;
       const {
-        logbook: normalizedLogbook,
+        logbook: initiallyNormalizedLogbook,
         changed,
         boatIds,
         sheetIds,
       } = normalizeLogbookIds(storedLogbook);
+      let normalizedLogbook = initiallyNormalizedLogbook;
+      if (changed) {
+        const normalizationResponse = await replaceEntireLogbook(initiallyNormalizedLogbook).catch(() => undefined);
+        if (!normalizationResponse?.ok) {
+          boatIds.clear();
+          sheetIds.clear();
+          normalizedLogbook = storedLogbook;
+          setSaveError(t("logbook.saveError"));
+        } else {
+          normalizedLogbook = await normalizationResponse.json() as PersistedLogbook;
+        }
+      }
       if (!isMounted) return;
       const route = routeFromPathname(window.location.pathname);
       const normalizedItemId =
@@ -547,13 +563,6 @@ export function LogbookApp({
       if (normalizedItemId) {
         window.history.replaceState(null, "", nextRoutePath);
         setRoutePath(nextRoutePath);
-      }
-      if (changed) {
-        void Promise.all([
-          ...normalizedLogbook.boats.map((boat) => persistBoat(boat)),
-          ...normalizedLogbook.crewMembers.map((crew) => persistCrewMember(crew)),
-          ...normalizedLogbook.sheets.map((sheet) => persistSheet(sheet)),
-        ]).catch(() => setSaveError(t("logbook.saveError")));
       }
       setIsBackendReady(true);
     }
@@ -1102,6 +1111,14 @@ export function LogbookApp({
       crew: existingSheet?.crew ?? initialCrew,
       watchPlan: existingSheet?.watchPlan ?? [],
       technicalChecks: existingSheet?.technicalChecks ?? createTechnicalChecks(preferences.language, preferences.technicalLogTemplate, preferences.enabledStandardTechnicalChecks),
+      engineHourCounters: existingSheet?.engineHourCounters ?? (() => {
+        const previousSheet = currentLogbook.sheets
+          .filter((candidate) => candidate.boatId === sheetForm.boatId && candidate.id !== editingSheetId && candidate.route.departed < route.departed)
+          .sort((left, right) => right.route.departed.localeCompare(left.route.departed))[0];
+        return Object.fromEntries(Object.entries(previousSheet?.engineHourCounters ?? {}).flatMap(([engineId, reading]) =>
+          reading.end === undefined ? [] : [[engineId, { start: reading.end }]],
+        ));
+      })(),
       lines: existingSheet?.lines ?? [],
       image: sheetForm.image,
     };
@@ -1259,8 +1276,12 @@ export function LogbookApp({
     if (activeSheet.status === "Locked") return;
     const draft = lineForms[draftId];
     if (!draft) return;
-    const line = lineFormToLogLine({ ...draft.form, time: isoDateTimeWithTimezone(dateTimeLocalFromStamp(draft.form.time), timezoneOffsetFromStamp(draft.form.time)) });
     const currentLogbook = logbookRef.current;
+    const previousLine = currentLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)?.lines.find((candidate) => candidate.id === draftId);
+    const line = {
+      ...lineFormToLogLine({ ...draft.form, time: isoDateTimeWithTimezone(dateTimeLocalFromStamp(draft.form.time), timezoneOffsetFromStamp(draft.form.time)) }),
+      ...(draft.isNew ? {} : concurrencyMetadata(previousLine)),
+    };
     const nextLogbook = {
       ...currentLogbook,
       sheets: currentLogbook.sheets.map((sheet) => {
@@ -1440,6 +1461,21 @@ export function LogbookApp({
           ? { ...sheet, technicalChecks: sheet.technicalChecks.filter((_, index) => index !== indexToDelete) }
           : sheet,
       ),
+    }, { kind: "sheet", id: activeSheet.id });
+  }
+
+  async function updateEngineHourCounter(engineId: string, boundary: "start" | "end", value?: number) {
+    if (activeSheet.status === "Locked") return;
+    const currentLogbook = logbookRef.current;
+    await saveLogbookNow({
+      ...currentLogbook,
+      sheets: currentLogbook.sheets.map((sheet) => {
+        if (sheet.id !== activeSheet.id) return sheet;
+        const reading = { ...(sheet.engineHourCounters?.[engineId] ?? {}) };
+        if (value === undefined) delete reading[boundary];
+        else reading[boundary] = Math.max(0, value);
+        return { ...sheet, engineHourCounters: { ...sheet.engineHourCounters, [engineId]: reading } };
+      }),
     }, { kind: "sheet", id: activeSheet.id });
   }
 
@@ -1888,7 +1924,7 @@ export function LogbookApp({
         onLogout={logout}
         isLoggingOut={isLoggingOut}
       />
-      <section className="app-content">
+      <section className="app-content" data-backend-ready={isBackendReady} aria-busy={!isBackendReady} inert={!isBackendReady}>
         {saveError && <p className="save-error">{saveError}</p>}
 
         {activeModule === "dashboard" && (
@@ -1993,6 +2029,7 @@ export function LogbookApp({
               addTechnicalCheck={addTechnicalCheck}
               updateTechnicalCheck={updateTechnicalCheck}
               deleteTechnicalCheck={deleteTechnicalCheck}
+              updateEngineHourCounter={updateEngineHourCounter}
               technicalCheckSuggestions={technicalCheckSuggestions}
               onPrintSheet={() => setPrintTarget({ mode: "filled", sheetId: activeSheet.id, showCourseColumns })}
             />

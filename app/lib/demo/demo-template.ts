@@ -7,7 +7,31 @@ import {
   type SheetCrewMember,
 } from "../../models/logbook";
 
-export const DEMO_TEMPLATE_VERSION = 2;
+export const DEMO_TEMPLATE_VERSION = 4;
+
+const demoIds = {
+  boats: {
+    boreas: "10000000-0000-4000-8000-000000000001",
+    aurora: "10000000-0000-4000-8000-000000000002",
+  },
+  crew: {
+    nina: "20000000-0000-4000-8000-000000000001",
+    luca: "20000000-0000-4000-8000-000000000002",
+    sofia: "20000000-0000-4000-8000-000000000003",
+    jonas: "20000000-0000-4000-8000-000000000004",
+    mara: "20000000-0000-4000-8000-000000000005",
+  },
+  sheets: {
+    "ionian-1": "30000000-0000-4000-8000-000000000001",
+    "ionian-2": "30000000-0000-4000-8000-000000000002",
+    "ionian-3": "30000000-0000-4000-8000-000000000003",
+    "ionian-4": "30000000-0000-4000-8000-000000000004",
+    "adriatic-1": "30000000-0000-4000-8000-000000000005",
+    "adriatic-2": "30000000-0000-4000-8000-000000000006",
+    "adriatic-3": "30000000-0000-4000-8000-000000000007",
+    "adriatic-4": "30000000-0000-4000-8000-000000000008",
+  },
+} as const;
 
 export const DEMO_WEATHER_PROVENANCE = deepFreeze({
   source: "Open-Meteo Historical Weather API",
@@ -73,7 +97,7 @@ function demoDeviationTable(phaseShiftDegrees: number): Boat["deviationTable"] {
 
 const boats: DemoBoat[] = [
   {
-    id: "demo-boat-boreas",
+    id: demoIds.boats.boreas,
     name: "SY Boreas",
     type: "Sail",
     registration: "CHE-7421",
@@ -99,7 +123,7 @@ const boats: DemoBoat[] = [
     },
   },
   {
-    id: "demo-boat-aurora",
+    id: demoIds.boats.aurora,
     name: "MY Aurora",
     type: "Motor",
     registration: "ST-19884",
@@ -130,11 +154,11 @@ const boats: DemoBoat[] = [
 ];
 
 const crewMembers: CrewMember[] = [
-  { id: "demo-crew-nina", name: "Nina Baumann", nationality: "Swiss", role: "Skipper", address: "Seestrasse 10, 8002 Zürich", certificate: "ICC Coastal Waters · SRC", isPrimary: true },
-  { id: "demo-crew-luca", name: "Luca Frei", nationality: "Swiss", role: "Co-skipper / navigation", certificate: "RYA Day Skipper · SRC" },
-  { id: "demo-crew-sofia", name: "Sofia Marin", nationality: "Italian", role: "Watch leader", certificate: "Patente nautica · VHF" },
-  { id: "demo-crew-jonas", name: "Jonas Meier", nationality: "German", role: "Deck crew / trainee" },
-  { id: "demo-crew-mara", name: "Mara Novak", nationality: "Croatian", role: "Engineer / local pilot", certificate: "Boat Leader B · GMDSS" },
+  { id: demoIds.crew.nina, name: "Nina Baumann", nationality: "Swiss", role: "Skipper", address: "Seestrasse 10, 8002 Zürich", certificate: "ICC Coastal Waters · SRC", isPrimary: true },
+  { id: demoIds.crew.luca, name: "Luca Frei", nationality: "Swiss", role: "Co-skipper / navigation", certificate: "RYA Day Skipper · SRC" },
+  { id: demoIds.crew.sofia, name: "Sofia Marin", nationality: "Italian", role: "Watch leader", certificate: "Patente nautica · VHF" },
+  { id: demoIds.crew.jonas, name: "Jonas Meier", nationality: "German", role: "Deck crew / trainee" },
+  { id: demoIds.crew.mara, name: "Mara Novak", nationality: "Croatian", role: "Engineer / local pilot", certificate: "Boat Leader B · GMDSS" },
 ];
 
 const ionianWeather: [Weather, Weather, Weather][] = [
@@ -234,6 +258,8 @@ function logLine(dayData: Day, waypoint: Waypoint, nextWaypoint: Waypoint | unde
   const deviation = Number(closestDeviation?.deviation ?? 0);
   const compassCourse = underway ? (magneticCourse - deviation + 360) % 360 : 0;
   const legDistance = index === 0 ? 0 : Math.round((dayData.distance / (count - 1)) * 10) / 10;
+  const runtimePerEngine = motorBoat ? index === 0 ? 0.2 : Math.round((legDistance / 9.2) * 10) / 10 : index === count - 1 ? 0.4 : 0;
+  const engineHours: Record<string, number> = Object.fromEntries((boat.engines ?? []).map((engine): [string, number] => [engine.id, runtimePerEngine]).filter(([, hours]) => hours > 0));
   return {
     id: `demo-line-${dayData.date}-${index}`,
     time,
@@ -267,7 +293,8 @@ function logLine(dayData: Day, waypoint: Waypoint, nextWaypoint: Waypoint | unde
     sailMiles: motorBoat || index === 0 ? 0 : index === count - 1 ? Math.min(2, legDistance) : legDistance,
     sailNote: motorBoat ? "n/a" : index === 0 ? "Main and genoa set after departure" : index === count - 1 ? "Sails stowed" : "Main and genoa",
     motorMiles: motorBoat && index > 0 ? legDistance : !motorBoat && index === count - 1 ? 2 : 0,
-    motorHours: motorBoat ? index === 0 ? 0.2 : Math.round((legDistance / 9.2) * 10) / 10 : index === count - 1 ? 0.4 : 0,
+    engineHours,
+    motorHours: Object.values(engineHours).reduce((total, hours) => total + hours, 0),
     motorNote: motorBoat ? (index === count - 1 ? "Engines stopped after mooring" : "Both engines, 1,900 rpm") : index === count - 1 ? "Harbor maneuver" : "Engine off",
     remarks: index === 0 ? `Departed after checks. ${dayData.summary}` : index === count - 1 ? "Moored safely; engine, shore power and passage records checked." : "Position fixed by GNSS and visual bearings; log and weather recorded.",
   };
@@ -283,7 +310,7 @@ function createSheet(dayData: Day, boat: Boat, memberIds: string[], index: numbe
   });
   const motorBoat = boat.type === "Motor";
   return {
-    id: `demo-sheet-${dayData.id}`,
+    id: demoIds.sheets[dayData.id as keyof typeof demoIds.sheets],
     title: dayData.title,
     status: index === 3 ? "Draft" : "Locked",
     source: "manual",
@@ -297,12 +324,12 @@ function createSheet(dayData: Day, boat: Boat, memberIds: string[], index: numbe
   };
 }
 
-const ionianCrew = ["demo-crew-nina", "demo-crew-luca", "demo-crew-sofia", "demo-crew-jonas"];
+const ionianCrew = [demoIds.crew.nina, demoIds.crew.luca, demoIds.crew.sofia, demoIds.crew.jonas];
 const adriaticCrewByDay = [
-  ["demo-crew-nina", "demo-crew-mara", "demo-crew-luca"],
-  ["demo-crew-nina", "demo-crew-mara", "demo-crew-jonas"],
-  ["demo-crew-nina", "demo-crew-mara", "demo-crew-sofia"],
-  ["demo-crew-nina", "demo-crew-mara", "demo-crew-luca", "demo-crew-jonas"],
+  [demoIds.crew.nina, demoIds.crew.mara, demoIds.crew.luca],
+  [demoIds.crew.nina, demoIds.crew.mara, demoIds.crew.jonas],
+  [demoIds.crew.nina, demoIds.crew.mara, demoIds.crew.sofia],
+  [demoIds.crew.nina, demoIds.crew.mara, demoIds.crew.luca, demoIds.crew.jonas],
 ];
 
 const template: PersistedLogbook = {

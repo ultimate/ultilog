@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import initSqlJs from "sql.js";
+import { readFile } from "node:fs/promises";
 import { removeLegacyLogSheetDateRange, runMigrations } from "../../../../app/lib/db/migrations";
 import type { QueryableDatabase, QueryResult } from "../../../../app/lib/db/logbook-database";
 
@@ -96,6 +98,19 @@ class RemoveDateRangeDatabase implements QueryableDatabase {
 }
 
 describe("runMigrations", () => {
+  it("backfills legacy motor hours to every known engine without overwriting explicit runtime", async () => {
+    const SQL = await initSqlJs();
+    const db = new SQL.Database();
+    db.run("create table log_sheets (id text primary key, boat_id text not null, motor_hours real not null default 0); create table log_lines (sheet_id text, sort_order integer, motor_hours real); create table engines (id text primary key, boat_id text); create table log_line_engine_hours (sheet_id text, line_sort_order integer, engine_id text, runtime_hours real, primary key (sheet_id, line_sort_order, engine_id));");
+    db.run("insert into log_sheets values ('sheet-1', 'boat-1', 1.5); insert into log_lines values ('sheet-1', 0, 1.5); insert into engines values ('port', 'boat-1'), ('starboard', 'boat-1'); insert into log_line_engine_hours values ('sheet-1', 0, 'port', 2.0);");
+
+    db.run(await readFile("app/lib/db/migrations/039_backfill_engine_hours.sql", "utf8"));
+
+    expect(db.exec("select engine_id, runtime_hours from log_line_engine_hours order by engine_id")[0].values).toEqual([["port", 2], ["starboard", 1.5]]);
+    expect(db.exec("select motor_hours from log_sheets")[0].values).toEqual([[3.5]]);
+    db.close();
+  });
+
   it("marks the log line column migration applied after duplicate columns from a partial prior run", async () => {
     const db = new DuplicateColumnDatabase();
 

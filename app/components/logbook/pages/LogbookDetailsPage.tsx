@@ -106,6 +106,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     addTechnicalCheck,
     updateTechnicalCheck,
     deleteTechnicalCheck,
+    updateEngineHourCounter,
     onPrintSheet,
   } = props;
   const activeBoat = props.activeBoat as Boat;
@@ -134,6 +135,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const technicalCheckDrafts = technicalCheckDraftState.sheetId === activeSheet.id ? technicalCheckDraftState.drafts : {};
   const scannerWarnings = activeSheet.scannerWarnings ?? [];
   const logLineEngines = (activeBoat.engines ?? []).filter((engine) => engine.role === "propulsion" && (!engine.archived || activeSheet.lines.some((line) => Number(line.engineHours?.[engine.id]) > 0)));
+  const counterEngines = (activeBoat.engines ?? []).filter((engine) => !engine.archived || activeSheet.engineHourCounters?.[engine.id]);
   const share = activeSheet.share ?? defaultLogSheetShareSettings;
   const shareDraft = shareDraftState.sheetId === activeSheet.id ? shareDraftState.share : share;
   const sharePath = sharingOwnerId ? `/share/${encodeURIComponent(sharingOwnerId)}/${encodeURIComponent(activeSheet.id)}` : `/share/${encodeURIComponent(activeSheet.id)}`;
@@ -1011,6 +1013,19 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                 </article>
                 <article className="info-card logbook-section">
                   <h3>{t("details.technicalLog")}</h3>
+                  {counterEngines.length ? (
+                    <section className="engine-hour-counter-section">
+                      <h4>{t("details.engineHourCounters")}</h4>
+                      <div className="table-scroll"><table className="engine-hour-counter-table">
+                        <thead><tr><th scope="col">{t("details.counterReading")}</th>{counterEngines.map((engine) => <th scope="col" key={engine.id}>{engine.label}</th>)}</tr></thead>
+                        <tbody>
+                          {(["start", "end"] as const).map((boundary) => <tr key={boundary}><th scope="row">{t(boundary === "start" ? "details.counterStart" : "details.counterEnd")}</th>{counterEngines.map((engine) => <td key={engine.id}><input aria-label={`${engine.name} ${t(boundary === "start" ? "details.counterStart" : "details.counterEnd")}`} type="number" min="0" step="0.1" disabled={isActiveSheetLocked} defaultValue={activeSheet.engineHourCounters?.[engine.id]?.[boundary] ?? ""} onBlur={(event) => { const value = event.currentTarget.value === "" ? undefined : Number(event.currentTarget.value); if (value === undefined || Number.isFinite(value)) updateEngineHourCounter(engine.id, boundary, value); }} /></td>)}</tr>)}
+                          <tr><th scope="row">{t("details.counterDifference")}</th>{counterEngines.map((engine) => { const reading = activeSheet.engineHourCounters?.[engine.id]; const difference = reading?.start === undefined || reading.end === undefined ? undefined : reading.end - reading.start; return <td key={engine.id} className={difference !== undefined && difference < 0 ? "counter-mismatch" : ""}>{difference === undefined ? "—" : `${difference.toFixed(1)} h`}</td>; })}</tr>
+                          <tr><th scope="row">{t("details.trackedOnSheet")}</th>{counterEngines.map((engine) => <td key={engine.id}>{(activeSheetSummary.engineHours?.[engine.id] ?? 0).toFixed(1)} h</td>)}</tr>
+                        </tbody>
+                      </table></div>
+                    </section>
+                  ) : null}
                   {activeSheet.technicalChecks.length ? (
                     <ul className="stack-list">
                       {activeSheet.technicalChecks.map((item, index) => {
