@@ -75,16 +75,18 @@ export function CountryFlagSelector(props: CountryFlagSelectorProps) {
   return (
     <div className="flag-chooser-field">
       <label htmlFor={props.id}>{props.label}</label>
-      <input
-        id={`${props.id}-search`}
-        className="flag-chooser-search"
-        type="search"
-        value={query}
-        onChange={(event) => setQuery(event.target.value)}
-        placeholder={props.searchLabel}
-        aria-label={props.searchLabel}
-        autoComplete="off"
-      />
+      <div className="flag-chooser-search-wrap">
+        <input
+          id={`${props.id}-search`}
+          className="flag-chooser-search"
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder={props.searchLabel}
+          aria-label={props.searchLabel}
+          autoComplete="off"
+        />
+      </div>
       {props.mode === "iso-code" && props.availableOnlyLabel && props.availableCountryCodes ? (
         <label className="flag-chooser-filter">
           <input
