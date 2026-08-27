@@ -50,6 +50,9 @@ describe("SqliteLogbookDatabase", () => {
 
     const linesBefore = await db.query("select * from log_lines order by sheet_id, sort_order");
     const engineHoursBefore = await db.query("select * from log_line_engine_hours order by sheet_id, line_sort_order, engine_id");
+    expect(engineHoursBefore.rows).toEqual([
+      { sheet_id: "metadata-user:affected", line_sort_order: 0, engine_id: "metadata-user:boat-1:main-engine", runtime_hours: 1.25 },
+    ]);
     const unrelatedBefore = await db.query("select * from log_sheets where id = ?", ["metadata-user:unrelated"]);
     const sheetBefore = (await db.query<{ revision: number; created_at: string; updated_at: string }>("select revision, created_at, updated_at from log_sheets where id = ?", ["metadata-user:affected"])).rows[0];
     const persisted = (await db.readLogbook()).sheets.find((sheet) => sheet.id === affected.id)!;
@@ -78,14 +81,14 @@ describe("SqliteLogbookDatabase", () => {
     await db.upsertLogSheet(unrelated);
     const untouchedBefore = await db.query("select * from log_lines where sheet_id = ? order by sort_order", ["focused-lines:unrelated"]);
 
-    const created = { ...source.lines[2], id: "created-line", motorMiles: 7, sailMiles: 3, motorHours: 2 };
+    const created = { ...source.lines[2], id: "created-line", motorMiles: 7, sailMiles: 3, engineHours: { "main-engine": 2 }, motorHours: 2 };
     await db.createLogLine(first.id, created);
     const createdWithRevision = (await db.readLogbook()).sheets.find(sheet => sheet.id === first.id)!.lines.find(line => line.id === created.id)!;
-    await db.updateLogLine(first.id, created.id, { ...created, revision: createdWithRevision!.revision, motorMiles: 9, remarks: "updated" });
+    await db.updateLogLine(first.id, created.id, { ...created, revision: createdWithRevision!.revision, motorMiles: 9, engineHours: { "main-engine": 3 }, motorHours: 3, remarks: "updated" });
     await db.reorderLogLines(first.id, [created.id, first.lines[1].id, first.lines[0].id]);
     const updatedLine = (await db.readLogbook()).sheets.find(sheet => sheet.id === first.id)!.lines.find(line => line.id === created.id)!;
     await expect(db.deleteLogLine(first.id, created.id, createdWithRevision.revision!)).rejects.toMatchObject({ code: "revision_conflict" });
-    expect((await db.readLogbook()).sheets.find(sheet => sheet.id === first.id)!.lines).toContainEqual(expect.objectContaining({ id: created.id, remarks: "updated" }));
+    expect((await db.readLogbook()).sheets.find(sheet => sheet.id === first.id)!.lines).toContainEqual(expect.objectContaining({ id: created.id, engineHours: { "main-engine": 3 }, motorHours: 3, remarks: "updated" }));
     await db.deleteLogLine(first.id, created.id, updatedLine.revision!);
 
     const persisted = await db.readLogbook();

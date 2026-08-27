@@ -505,12 +505,22 @@ td { color: #28384b; line-height: 1.45; }
 .inline-edit-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; }
 .technical-check-row { display: grid; grid-template-columns: 4.5rem minmax(0, 1fr) auto; gap: .5rem; align-items: center; }
 .technical-check-row select { font-size: 1.15rem; }
-.engine-hour-counter-section { margin-bottom: 1.25rem; }
-.engine-hour-counter-table { width: 100%; border-collapse: collapse; }
+.engine-hour-counter-section { min-width: 0; max-width: 100%; margin-bottom: 1.25rem; }
+.engine-hour-counter-section .table-scroll { max-width: 100%; overscroll-behavior-inline: contain; }
+.engine-hour-counter-table { width: 100%; min-width: 100%; border-collapse: collapse; }
 .engine-hour-counter-table th, .engine-hour-counter-table td { padding: .45rem; border: 1px solid var(--border); text-align: right; }
 .engine-hour-counter-table th:first-child { text-align: left; white-space: nowrap; }
+.engine-hour-counter-table th:not(:first-child) { min-width: 6.5rem; }
 .engine-hour-counter-table input { min-width: 6rem; width: 100%; }
 .engine-hour-counter-table .counter-mismatch { color: var(--danger, #b42318); font-weight: 700; }
+
+@media (max-width: 680px) {
+  .engine-hour-counter-section .table-scroll { border-radius: .75rem; }
+  .engine-hour-counter-table th, .engine-hour-counter-table td { padding: .35rem; font-size: .75rem; }
+  .engine-hour-counter-table th:first-child { width: 7.5rem; max-width: 7.5rem; white-space: normal; }
+  .engine-hour-counter-table th:not(:first-child) { min-width: 5.75rem; }
+  .engine-hour-counter-table input { min-width: 5rem; padding: .5rem .35rem; }
+}
 .inline-edit-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; width: 100%; }
 .inline-edit-grid .eyebrow, .inline-edit-grid .wide-field { grid-column: 1 / -1; }
 .inline-edit-grid label { display: grid; gap: 0.25rem; color: var(--primary-dark); font-size: 0.78rem; font-weight: 900; letter-spacing: 0.04em; text-transform: uppercase; }

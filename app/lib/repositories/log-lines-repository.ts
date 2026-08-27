@@ -110,8 +110,8 @@ export class LogLinesRepository {
         const hours = Math.max(0, Number(rawHours) || 0);
         if (!hours) continue;
         await this.db.query(
-          `insert into log_line_engine_hours (sheet_id, line_sort_order, engine_id, runtime_hours) select ${this.db.placeholder(1)}, ${this.db.placeholder(2)}, engines.id, ${this.db.placeholder(3)} from engines join log_sheets on log_sheets.boat_id = engines.boat_id where log_sheets.id = ${this.db.placeholder(1)} and engines.id = engines.boat_id || ':' || ${this.db.placeholder(4)}`,
-          [scopedId(ownerId, sheetId), sortOrder, hours, engineId],
+          `insert into log_line_engine_hours (sheet_id, line_sort_order, engine_id, runtime_hours) select ${this.db.placeholder(1)}, ${this.db.placeholder(2)}, engines.id, ${this.db.placeholder(3)} from engines join log_sheets on log_sheets.boat_id = engines.boat_id where log_sheets.id = ${this.db.placeholder(4)} and engines.id = engines.boat_id || ':' || ${this.db.placeholder(5)}`,
+          [scopedId(ownerId, sheetId), sortOrder, hours, scopedId(ownerId, sheetId), engineId],
         );
       }
   }
