@@ -47,6 +47,19 @@ describe("logbook persistence", () => {
     expect(normalized.sheets[0].crew[0]).toMatchObject({ id: "22222222-2222-4222-8222-222222222222", image });
   });
 
+  it("does not report changes for UUID entities with current crew assignments", () => {
+    const logbook: PersistedLogbook = {
+      boats: [{ id: "11111111-1111-4111-8111-111111111111", name: "Aurora", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [] }],
+      crewMembers: [{ id: "22222222-2222-4222-8222-222222222222", name: "Luca", nationality: "CH", role: "Skipper" }],
+      sheets: [{ id: "33333333-3333-4333-8333-333333333333", title: "Trip", status: "Draft", boatId: "11111111-1111-4111-8111-111111111111", route: { from: "A", to: "B", departed: "", arrived: "" }, crew: [{ id: "22222222-2222-4222-8222-222222222222", name: "Luca", nationality: "CH", role: "Skipper", embarkationDateTime: "", embarkationPosition: "", disembarkationDateTime: "", disembarkationPosition: "" }], watchPlan: [], technicalChecks: [], lines: [] }],
+    };
+
+    const normalized = normalizeLogbookIds(logbook);
+
+    expect(normalized.changed).toBe(false);
+    expect(normalized.logbook.sheets[0]).toBe(logbook.sheets[0]);
+  });
+
   it("serializes sheet metadata without any log lines", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);

@@ -32,7 +32,10 @@ function normalizeSheetCrewMember(crew: SheetCrewMember | (Omit<SheetCrewMember,
 }
 
 function normalizeSheetCrew(logbook: PersistedLogbook) {
-  return logbook.sheets.map((sheet) => ({ ...sheet, crew: sheet.crew.map(normalizeSheetCrewMember) }));
+  return logbook.sheets.map((sheet) => {
+    const crew = sheet.crew.map(normalizeSheetCrewMember);
+    return crew.some((member, index) => member !== sheet.crew[index]) ? { ...sheet, crew } : sheet;
+  });
 }
 
 export function normalizeLogbookIds(logbook: PersistedLogbook): { logbook: PersistedLogbook; changed: boolean; boatIds: Map<string, string>; crewIds: Map<string, string>; sheetIds: Map<string, string> } {

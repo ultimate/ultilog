@@ -1924,7 +1924,7 @@ export function LogbookApp({
         onLogout={logout}
         isLoggingOut={isLoggingOut}
       />
-      <section className="app-content">
+      <section className="app-content" data-backend-ready={isBackendReady} aria-busy={!isBackendReady} inert={!isBackendReady}>
         {saveError && <p className="save-error">{saveError}</p>}
 
         {activeModule === "dashboard" && (

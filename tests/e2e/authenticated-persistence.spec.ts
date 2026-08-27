@@ -1,4 +1,4 @@
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Page, type Response, test } from "@playwright/test";
 
 // Next's CI dev server can briefly restart a request after a client-side
 // navigation; leave enough time for the persistence and relogin assertions.
@@ -36,7 +36,7 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   await crewForm.getByLabel("Role").fill("Navigator");
   const crewSave = waitForFocusedLogbookSave(page, "crew");
   await clickButton(page, "Save crew");
-  await crewSave;
+  await expectSuccessfulSave(crewSave);
   await expect(page.getByText(crewName)).toBeVisible();
 
   await openModule(page, "Boat manager", "New boat");
@@ -49,7 +49,7 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   await boatForm.getByLabel("Owner").fill("E2E Owner");
   const boatSave = waitForFocusedLogbookSave(page, "boats");
   await clickButton(page, "Create boat");
-  await boatSave;
+  await expectSuccessfulSave(boatSave);
   await expect(boatForm).toBeHidden();
   await expect(page.getByText(boatName)).toBeVisible();
 
@@ -62,7 +62,7 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   await sheetForm.getByLabel("To position").fill("Port B");
   const sheetSave = waitForFocusedLogbookSave(page, "sheets");
   await clickButton(page, "Save");
-  await sheetSave;
+  await expectSuccessfulSave(sheetSave);
   await expect(page.getByRole("heading", { name: sheetTitle })).toBeVisible();
   await expect(page.getByText(`1. ⭐ Skipper · E2E Skipper ${unique}`)).toBeVisible();
 
@@ -72,7 +72,7 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   const deleteSave = waitForFocusedLogbookSave(page, "sheets");
   await addedCrewRow.getByRole("button", { name: `Delete ${crewName}` }).click();
   await expect(addedCrewRow).toBeHidden();
-  await deleteSave;
+  await expectSuccessfulSave(deleteSave);
 
   await page.reload();
   await expectLoggedIn(page);
@@ -109,9 +109,13 @@ function waitForFocusedLogbookSave(page: Page, collection: "boats" | "crew" | "s
   return page.waitForResponse((response) => {
     const path = new URL(response.url()).pathname;
     return (path === `/api/logbook/${collection}` || path.startsWith(`/api/logbook/${collection}/`))
-      && ["POST", "PUT", "DELETE"].includes(response.request().method())
-      && response.ok();
+      && ["POST", "PUT", "DELETE"].includes(response.request().method());
   });
+}
+
+async function expectSuccessfulSave(responsePromise: Promise<Response>) {
+  const response = await responsePromise;
+  expect(response.ok(), await response.text()).toBeTruthy();
 }
 
 async function clickButton(page: Page, name: string | RegExp) {
@@ -128,5 +132,6 @@ async function expectLoggedIn(page: Page) {
     const continueToApp = page.getByRole("button", { name: "Continue to app" });
     if (await continueToApp.isVisible({ timeout: 500 }).catch(() => false)) await continueToApp.click();
     await expect(page.getByRole("button", { name: "Logout" })).toBeVisible({ timeout: 2_000 });
+    await expect(page.locator('.app-content[data-backend-ready="true"]')).toBeVisible({ timeout: 2_000 });
   }).toPass({ timeout: 60_000 });
 }
