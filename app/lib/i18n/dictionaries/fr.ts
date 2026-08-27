@@ -419,6 +419,7 @@ export const fr: Dictionary = {
   "details.sheetSupport": "Sections d’assistance",
   "details.technicalLog": "Journal technique / contrôles quotidiens",
   "details.engineHourCounters": "Compteurs d’heures moteur",
+  "details.checks": "Contrôles",
   "details.counterReading": "Relevé du compteur",
   "details.counterStart": "Début de la feuille",
   "details.counterEnd": "Fin de la feuille",

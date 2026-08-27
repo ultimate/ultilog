@@ -1026,6 +1026,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                       </table></div>
                     </section>
                   ) : null}
+                  <h4>{t("details.checks")}</h4>
                   {activeSheet.technicalChecks.length ? (
                     <ul className="stack-list">
                       {activeSheet.technicalChecks.map((item, index) => {

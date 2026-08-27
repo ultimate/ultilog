@@ -22,6 +22,7 @@ test("edits technical log entries and suggests previous checks", async ({ page }
   await page.goto(`/details/${targetSheet.id}`);
 
   await expect(page.getByRole("heading", { name: targetSheet.title })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Checks", level: 4 })).toBeVisible();
   await expect(page.getByText("08-12: Luca / Jonas")).toHaveCount(0);
   await expect(page.getByRole("combobox", { name: "Technical log entry 1" })).toHaveValue("Engine oil checked");
   await expect(page.locator('datalist#technical-log-suggestions option[value="Fuel valves open"]')).toHaveCount(1);
