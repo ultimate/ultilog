@@ -1,0 +1,758 @@
+{
+  "_instructions": {
+    "purpose": "Fill this catalog with authoritative legal logbook information and license requirements. Keep every id stable after publication because ids will be used for saved user progress.",
+    "dates": "Use YYYY-MM-DD for checkedAt and effectiveFrom. Leave effectiveFrom empty if the official source does not state one.",
+    "translations": "Use the same section and requirement ids in every language. Text may differ, but the underlying rule, progress type, threshold, and filters must not.",
+    "legalText": "Set textKind to official-excerpt for verbatim official wording or editorial-summary for our own summary. Put the precise act/article/paragraph reference in citation.",
+    "requirementTypes": [
+      "manual",
+      "sail-miles",
+      "motor-miles",
+      "total-miles",
+      "days-sailing",
+      "days-underway",
+      "days-at-sea"
+    ],
+    "progress": "For tracked requirements, provide a numeric threshold and unit. Use the progress type to select the counter; use filters only for additional qualification rules. Manual requirements are checklist items and omit unit.",
+    "placeholders": "Replace all TODO values. Duplicate the example section or requirement objects as needed; do not reuse an id within the same document or license."
+  },
+  "legalLogbookRequirements": [
+    {
+      "countryCode": "CH",
+      "defaultLanguage": "de",
+      "translations": {
+        "de": {
+          "title": "Allgemeine Bestimmungen über die schweizerischen Jachten zur See",
+          "authority": "Schweizerisches Seeschifffahrtsamt SSA",
+          "sourceUrl": "https://www.schweizerischesseeschifffahrtsamt.eda.admin.ch/dam/de/sd-web/rAYQQ7qE-y3W/Allgemeine%20Bestimmungen%20ueber%20die%20schweizerischen%20Jachten%20zur%20See%20DE%202025.pdf",
+          "checkedAt": "2026-08-11",
+          "effectiveFrom": "2025-02-17",
+          "sections": [
+            {
+              "id": "9.",
+              "heading": "An Bord laufend mitzuführende Dokumente (Art. 20 Abs. 2 Jachtenverordnung)",
+              "citation": "<ul>\n<li>[...]</li>\n<li>das Schiffstagebuch (Logbuch), das bei Fahrten auf See durch den Schiffsführer täglich nachzuführen ist und mindestens folgende Angaben enthalten muss:\n<ul>\n<li>Name, Flaggenschein-Nummer und Heimathafen sowie ggf. weitere Daten des Schiffes</li>\n<li>Name, Adresse und Nationalität des jeweiligen Schiffsführers oder der jeweiligen Schiffsführerin</li>\n<li>Art, Nummer sowie Ausstellungsdatum, -ort und -instanz seines oder ihres Fähigkeitsausweises</li>\n<li>Personalien inkl. Nationalität der übrigen Anwesenden an Bord, die von ihnen allfällig ausgeübten Funktionen, die Häfen ihrer Ein- und Ausschiffung (Ort und Datum)</li>\n<li>Arbeitssprache an Bord</li>\n<li>Wacheinteilung</li>\n<li>Verproviantierung und Bunkerstände</li>\n<li>Fahrtbericht (Wind und Wetter, Kurse und Berichtigungen, Logstände, Segelführung, Maschinenbetrieb, laufend festgestellte Schiffspositionen, Einlaufen und Auslaufen in Häfen und auf</li>\nReeden, Ankerplätze usw.)</li>\n<li>Wichtige oder besondere Ereignisse und/oder Beobachtungen, wie Unfälle, Havarien und dergleichen.</li>\n</ul>\nJede Seite des Logbuchs muss die Unterschrift des Schiffsführers oder der Schiffsführerin tragen.</li>\n<li>[...]</li>\n</ul>"
+            }
+          ]
+        },
+        "fr": {
+          "title": "Dispositions générales concernant les yachts suisses naviguant en mer",
+          "authority": "Office suisse de la navigation maritime OSNM",
+          "sourceUrl": "https://www.schweizerischesseeschifffahrtsamt.eda.admin.ch/dam/fr/sd-web/rAYQQ7qE-y3W/Allgemeine%20Bestimmungen%20ueber%20die%20schweizerischen%20Jachten%20zur%20See%20FR%202025.pdf",
+          "checkedAt": "2026-08-11",
+          "effectiveFrom": "2025-02-17",
+          "sections": [
+            {
+              "id": "9.",
+              "heading": "Documents à conserver constamment à bord (art. 20, al. 2, de l’ordonnance sur les yachts)",
+              "citation": "<ul>\n<li>[...]</li>\n<li>le livre de bord (logbook) que doit tenir quotidiennement le conducteur du yacht lors de sorties en mer. Ce document doit contenir au moins les informations suivantes:\n<ul>\n<li>nom, numéro du certificat de pavillon et port d’enregistrement du bateau ainsi que d’autres indications éventuelles concernant le bateau</li>\n<li>nom, adresse et nationalité du conducteur</li>\n<li>type, numéro, date et lieu d’établissement du certificat de capacité du conducteur ainsi que l’instance qui l’a délivré</li>\n<li>nom et nationalité des autres personnes à bord, fonctions éventuelles qu’elles exercent à bord, ports d’embarquement et de débarquement (lieu et date)</li>\n<li>langue de travail à bord</li>\n<li>tableau des quarts</li>\n<li>ravitaillement et stands de soute</li>\n<li>rapport de navigation (vents et météo, caps et corrections, loch, voilure, heures au moteur, positions du bateau relevées régulièrement, entrées et sorties des ports et des rades / mouillages, etc.)</li>\n<li>événements et observations importants ou particuliers, tels qu’accidents, avaries, etc.</li>\n</ul>\nChaque page du livre de bord doit être signée par le conducteur.</li>\n<li>[...]</li>\n</ul>"
+            }
+          ]
+        },
+        "it": {
+          "title": "Disposizioni generali riguardanti yacht svizzeri in mare",
+          "authority": "Ufficio svizzero della navigazione marittima USNM ",
+          "sourceUrl": "https://www.schweizerischesseeschifffahrtsamt.eda.admin.ch/dam/it/sd-web/rAYQQ7qE-y3W/Allgemeine%20Bestimmungen%20ueber%20die%20schweizerischen%20Jachten%20zur%20See%20IT%202025.pdf",
+          "checkedAt": "2026-08-11",
+          "effectiveFrom": "2025-02-17",
+          "sections": [
+            {
+              "id": "9.",
+              "heading": "Documenti da conservare sempre a bordo (art. 20 cpv. 2 dell’ordinanza sugli yacht)",
+              "citation": "<ul>\n<li>[...]</li>\n<li>Giornale di bordo, che deve essere tenuto quotidianamente dalla o dal comandante durante i viaggi in mare e deve contenere almeno le seguenti informazioni:\n<ul>\n<li>nome, numero del certificato di bandiera e porto d’origine, nonché altri dati della nave, se del caso;</li>\n<li>nome, indirizzo e nazionalità della o del comandante dello yacht;</li>\n<li>tipo, numero nonché data, luogo e autorità di rilascio del certificato di capacità della o del comandante;</li>\n<li>generalità, compresa la nazionalità, delle altre persone a bordo, le eventuali funzioni svolte, i porti d’imbarco e di sbarco (luogo e data);</li>\n<li>lingua di lavoro a bordo;</li>\n<li>turni di guardia;</li>\n<li>approvvigionamento e stoccaggio;</li>\n<li>rapporto di navigazione (vento e condizioni meteorologiche, rotte e correzioni, dati del log, velatura, funzionamento del motore, rilevazioni continue della posizione dell’imbarcazione, entrate e uscite dai porti e dalle rade, posti di fonda ecc.);</li>\n<li>eventi e/o osservazioni importanti o particolari, come incidenti, avarie e simili.</li>\n</ul>\nOgni pagina del giornale di bordo deve essere firmata dalla o dal comandante.</li>\n<li>[...]</li>\n</ul>"
+            }
+          ]
+        },
+        "en": {
+          "title": "General provisions for Swiss seagoing yachts",
+          "authority": "Swiss Maritime Navigation Office SMNO",
+          "sourceUrl": "https://www.schweizerischesseeschifffahrtsamt.eda.admin.ch/dam/en/sd-web/rAYQQ7qE-y3W/Allgemeine%20Bestimmungen%20ueber%20die%20schweizerischen%20Jachten%20zur%20See%20EN%202025.pdf",
+          "checkedAt": "2026-08-11",
+          "effectiveFrom": "2025-02-17",
+          "sections": [
+            {
+              "id": "9.",
+              "heading": "Documentation to be permanently carried aboard (Art. 20 para. 2 YO)",
+              "citation": "<ul>\n<li>[...]</li>\n<li>The logbook, which must be duly filled in by and signed by the skipper on a daily basis and on each page whenever navigating, and which must contain at least the following information:\n<ul>\n<li>Name, number of the certificate of registry, port of registration and if applicable further information on the craft</li>\n<li>Name, address and nationality of the skipper</li>\n<li>Type, number, date and place of issuance, and issuing authority of the skipper’s certificate of competency</li>\n<li>Personal details including nationality of all other persons present aboard, their role and duties aboard, place and date of their embarkation and disembarkation</li>\n<li>Working language aboard</li>\n<li>Watchkeeping schedule</li>\n<li>Provisioning and bunkers</li>\n<li>Voyage report (meteorological information, sea state and current, courses, log and depth readings, use of sails and/or engine(s), positions, port entries and departures, anchorages etc.)</li>\n<li>Any particular events and/or observations, such as incidents, groundings etc.</li>\n</ul>\nEach page of the logbook must bear the signature of the skipper.</li>\n<li>[...]</li>\n</ul>"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "countryCode": "DE",
+      "defaultLanguage": "de",
+      "translations": {
+        "de": {
+          "title": "Schiffssicherheitsverordnung (SchSV)",
+          "authority": "Bundesministerium für Verkehr",
+          "sourceUrl": "https://www.gesetze-im-internet.de/schsv_1998/BJNR302300998.html",
+          "checkedAt": "2026-08-18",
+          "effectiveFrom": "2024-06-25",
+          "sections": [
+            {
+              "id": "§ 13",
+              "heading": "Verhaltenspflichten",
+              "citation": "(2) Der Schiffsführer eines Schiffes, das die Bundesflagge führt, hat dafür zu sorgen, daß\n<ol>\n<li value='11'>die Seetagebücher mitgeführt werden und im Schiffstagebuch über alle Vorkommnisse an Bord, die für die Sicherheit in der Seefahrt einschließlich des Umweltschutzes auf See und des Arbeitsschutzes von besonderer Bedeutung sind, unverzüglich durch geeignete Eintragungen berichtet wird unter Beachtung der nach Abschnitt B.II Nummer 7 der Anlage 1 veröffentlichten Liste der eintragungspflichtigen Vorgänge,</li>\n</ol>"
+            },
+            {
+              "id": "Anlage 1 (zu § 5) B.II.",
+              "heading": "Tagebücher",
+              "citation": "<ol>\n<li>Seetagebücher\n<ol>\n<li>Seetagebücher sind das Schiffstagebuch und das Maschinentagebuch, bei Binnenschiffen wahlweise das Bordbuch und das Fahrtenbuch.</li>\n<li>Als Nebenbücher können geführt werden\n<ol type='a'>\n<li>als Bestandteil des Schiffstagebuchs das Brückenbuch,</li>\n<li>als Bestandteil des Maschinentagebuchs das Peilbuch und das Manöverbuch.</li>\n</ol>\n</li>\n<li>Die Seetagebücher sind an Bord mitzuführen. Eine Eintragungspflicht wird, wenn nicht ausdrücklich etwas anderes bestimmt ist, durch Eintragung in das Schiffstagebuch erfüllt.</li>\n</ol>\n</li>\n<li>Maschinentagebuch\n<ol>\n<li>Für die Führung des Maschinentagebuchs ist neben dem Schiffsführer der Leiter der Maschinenanlage verantwortlich. Die Genannten können diese Aufgabe auf den wachhabenden nautischen oder technischen Offizier oder auf ein anderes geeignetes Besatzungsmitglied übertragen.</li>\n<li>Dem Maschinentagebuch ist eine Beschreibung der Maschinenanlage beizufügen. Sie ist nach jedem Umbau der Maschinenanlage, der Dampfkesselanlage oder wesentlicher Anlageteile zu berichtigen.</li>\n<li>Ein Maschinentagebuch braucht nicht geführt zu werden, wenn die Maschinenanlage des Schiffes nicht mit einem technischen Schiffsoffizier, der in dieser Eigenschaft angemustert worden ist, besetzt ist und keine Dampfkesselanlage im Sinne der Richtlinie für den Bau und die Ausrüstung von Schiffsdampfkesselanlagen unter deutscher Flagge vom 13. März 2002 (VkBl. 2002 S. 313, Anlagenband B 8129), in der jeweils geltenden Fassung, betrieben wird.</li>\n</ol>\n</li>\n<li>Form der Bücher\n<ol>\n<li>Seetagebücher sind auf ein Schiff auszustellen, dessen Name und Unterscheidungssignal in dem Buch bezeichnet werden.</li>\n<li>Das Schiffstagebuch und das Maschinentagebuch müssen für jeden Kalendertag in Spalten eingeteilte, mit fortlaufenden Seitenzahlen versehene Seiten und in ausreichender Anzahl Leerseiten enthalten. Die Spalten sollen mit einer Überschrift auch in englischer Sprache versehen sein.</li>\n<li>Maßnahmen und Tatsachen, die im Schiffsbetrieb, insbesondere bei Revierfahrten, häufig wiederkehren, können in Nebenbücher eingetragen werden. Im Schiffstagebuch und im Maschinentagebuch ist auf der ersten Seite einzutragen, welche Nebenbücher geführt werden.</li>\n<li>In Seetagebücher einzutragende Tatbestände können ganz oder teilweise mit anderen Datenträgern erfaßt werden. Die Datenträger bedürfen bei vorgeschriebenen Seetagebüchern zur Sicherstellung der Gleichwertigkeit mit Seetagebüchern der Zulassung durch das Bundesministerium für Digitales und Verkehr oder durch die von ihm bestimmte Stelle. Sie müssen die aufgezeichneten Daten, die für sich allein verständlich sein müssen, jederzeit lesbar wiedergeben können und ein nachträgliches Verändern oder Löschen der Aufzeichnungen erkennbar machen.</li>\n</ol>\n</li>\n<li>Eintragungen\n<ol>\n<li>Die Seetagebücher sind in deutsche Sprache oder in der an Bord verwendeten Arbeitssprache zu führen. Nicht allgemein gebräuchliche Abkürzungen oder Symbole sind zu erklären.</li>\n<li>Die Eintragungen in die Seetagebücher sind nach der Bordzeit vorzunehmen.</li>\n<li>Das Radieren und Unkenntlichmachen von Eintragungen in Seetagebüchern, das Entfernen von Seiten aus diesen Büchern sowie die Veränderung automatischer Aufzeichnungen sind nicht zulässig. Wird eine Eintragung gestrichen, muß das Gestrichene lesbar bleiben. Streichungen oder Zusätze sind mit Datum und Unterschrift zu bescheinigen.</li>\n<li>Eintragungen in die Seetagebücher sind von den für die Eintragung Verantwortlichen zu unterschreiben. Eintragungen von Dritten auf Grund besonderer Rechtsvorschriften sind von diesen unter Angabe ihrer Befugnis zu unterschreiben.</li>\n</ol>\n</li>\n<li>Auswertung der Tagebücher<br/>\nDer Schiffseigentümer hat durch Aufzeichnung nachzuweisen, daß und wann er in regelmäßigen Abständen, - hinsichtlich der Eintragungen, die keine frühzeitigen Maßnahmen erforderlich machen, sofern nicht anders bestimmt mindestens alle zwölf Monate -, den vollständigen aktuellen Inhalt der Tagebücher zur Kenntnis genommen hat.</li>\n<li>Aufbewahrung<br/>\nSeetagebücher sind, soweit nicht anders bestimmt, ab dem Tag der letzten Eintragung für die Dauer von drei Jahren aufzubewahren. Dies gilt auch bei einem Verkauf des Schiffes vor Ablauf dieser Frist.</li>\n<li>Veröffentlichung der eintragungspflichtigen Vorgänge<br/>\nDas Bundesministerium für Digitales und Verkehr oder in seinem Auftrag die Berufsgenossenschaft Verkehrswirtschaft Post-Logistik Telekommunikation veröffentlicht im Verkehrsblatt eine Liste der Einzelvorgänge, die nach den internationalen Regelungen oder sonstigen Rechtsvorschriften ausdrücklich im Seetagebuch eingetragen werden müssen.</li>\n<li>Sondervorschriften für nicht eintragungspflichtige Schiffe<br/>\nAuch auf Schiffen unter der Bundesflagge, die nicht im Schiffsregister eingetragen werden müssen, gelten für die Anwendung des § 6 Abs. 3 des Schiffssicherheitsgesetzes die Regeln guter Seemannschaft. Von den vorstehenden Bestimmungen dieses Abschnitts gelten nur die Nummern 3.1, 3.3 Satz 1 und Nummern 4 bis 6, und zwar mit folgenden Maßgaben:</li>\n<ol>\n<li>Ein auf den Namen des Schiffes ausgestellter Aufzeichnungsträger gilt als Schiffstagebuch, wenn der Schiffsführer ihn mit dem Wort \"Logbuch-Aufzeichnungen\" oder einer entsprechenden Benennung gekennzeichnet hat.</li>\n<li>Vorbehaltlich anderer besonderer Vorschriften genügt es, wenn Dritte den erforderlichen Inhalt zusammenhängend ohne weiteres dem an Bord mitgeführten Schiffstagebuch entnehmen können.</li>\n</ol>\n</li>\n</ol>"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "licenses": [
+    {
+      "id": "ch-hochseeausweis-sail",
+      "countryCode": "CH",
+      "variant": "sail",
+      "defaultLanguage": "de",
+      "content": {
+        "de": {
+          "licenseName": "Hochseeausweis für Segelschiffe mit und ohne Maschinenantrieb",
+          "title": "Verordnung des SSA über den schweizerischen Fähigkeitsausweis zum Führen von Jachten zur See",
+          "authority": "Schweizerisches Seeschifffahrtsamt SSA",
+          "sourceUrl": "https://www.fedlex.admin.ch/eli/cc/2007/130/de",
+          "checkedAt": "2026-08-11",
+          "effectiveFrom": "2018-01-01",
+          "sections": [
+            {
+              "id": "Art. 2",
+              "heading": "Voraussetzungen",
+              "citation": "Um den Hochseeausweis zu erhalten, muss die Kandidatin oder der Kandidat:Um den Hochseeausweis zu erhalten, muss die Kandidatin oder der Kandidat:\n<ol type='a'>\n<li>mindestens 16 Jahre alt sein;</li>\n<li>die Prüfung nach den Anforderungen von Anhang 1 mit Erfolg bestanden haben;</li>\n<li>eine nautische Grundausbildung nachweisen (Art. 3);</li>\n<li>eine Ausbildung in lebensrettenden Sofortmassnahmen nachweisen (Art. 4);</li>\n<li>eine Bestätigung über genügendes Seh- und Hörvermögen vorlegen (Art. 5);</li>\n<li>die geistige und die körperlichen Eignung bestätigen (Art. 5a);</li>\n<li>die erforderliche Praxis auf See nachweisen (Art. 6–9);</li>\n<li>die Gebühren bezahlt haben (Art. 2a).</li>\n</ol>"
+            },
+            {
+              "id": "Art. 7",
+              "heading": "Praxis für die Erstausstellung eines Hochseeausweises",
+              "citation": "Für die Erstausstellung eines Hochseeausweises ist ein Nachweis über folgende minimale Erfahrung zu erbringen:\n<ol type='a'>\n<li value='a'>für den Hochseeausweis für Segelschiffe mit und ohne Maschinenantrieb:\n<ol>\n<li>drei Wochen Seefahrt, davon mindestens 18 Tage auf See, und</li>\n<li>1000 gefahrene Seemeilen, davon mindestens 700 Seemeilen gemäss Fahrtennachweis nach Anhang 4 nach bestandener Theorieprüfung;</li>\n</ol>\n</li>\n</ol>\nDie Praxis kann bis vier Jahre vor und bis vier Jahre nach (volles Kalenderjahr) der bestandenen theoretischen Prüfung erworben werden."
+            }
+          ]
+        },
+        "fr": {
+          "licenseName": "certificat pour la conduite de yachts à voiles, avec ou sans propulsion mécanique",
+          "title": "Ordonnance de l’OSNM sur le certificat suisse de capacité pour la conduite de yachts en mer",
+          "authority": "Office suisse de la navigation maritime OSNM",
+          "sourceUrl": "https://www.fedlex.admin.ch/eli/cc/2007/130/fr",
+          "checkedAt": "2026-08-11",
+          "effectiveFrom": "2018-01-01",
+          "sections": [
+            {
+              "id": "Art. 2",
+              "heading": "Conditions",
+              "citation": "Pour obtenir le certificat de conduite en mer, le candidat doit:\n<ol type='a'>\n<li>être âgé de 16 ans au moins;</li>\n<li>avoir réussi l’examen répondant aux exigences détaillées à l’annexe 1;</li>\n<li>justifier d’une formation nautique de base (art. 3);</li>\n<li>produire une attestation certifiant qu’il a suivi un cours de premiers secours (art. 4);</li>\n<li>produire une attestation certifiant qu’il a une capacité visuelle et auditive suffisante (art. 5);</li>\n<li>produire une attestation qui confirme son aptitude mentale et physique (art. 5a);</li>\n<li>justifier d’une pratique de la navigation en mer qui réponde aux exigences définies aux art. 6 à 9;</li>\n<li>avoir payé les émoluments fixés (art. 2a).</li>\n</ol>"
+            },
+            {
+              "id": "Art. 7",
+              "heading": "Pratique exigée pour l’octroi du certificat de conduite en mer",
+              "citation": "Les candidats au certificat de conduite en mer doivent justifier au moins de l’expérience suivante:\n<ol type='a'>\n<li value='a'>pour la conduite de yachts à voiles, avec ou sans propulsion mécanique:\n<ol>\n<li>3 semaines de navigation comprenant au moins 18 jours en mer, et</li>\n<li>1000 milles marins parcourus, dont 700 au moins après avoir réussi l’examen théorique;</li>\n</ol>\n</li>\n</ol>\nEst prise en compte l’expérience acquise au maximum quatre années (civiles) complètes avant et quatre années (civiles) complètes après le succès à l’examen théorique."
+            }
+          ]
+        },
+        "it": {
+          "licenseName": "licenza di navigazione d’altura per natanti a vela con o senza motore",
+          "title": "Ordinanza dell’USNM sul certificato svizzero di capacità per condurre yacht marittimi",
+          "authority": "Disposizioni generali riguardanti yacht svizzeri in mare",
+          "sourceUrl": "https://www.fedlex.admin.ch/eli/cc/2007/130/it",
+          "checkedAt": "2026-08-11",
+          "effectiveFrom": "2018-01-01",
+          "sections": [
+            {
+              "id": "Art. 2",
+              "heading": "Condizioni",
+              "citation": "Per ottenere una licenza di navigazione d’altura, il candidato deve:\n<ol type='a'>\n<li>aver compiuto 16 anni;</li>\n<li>aver superato l’esame secondo i requisiti di cui all’allegato 1;</li>\n<li>attestare una formazione nautica di base (art. 3);</li>\n<li>attestare una formazione di pronto soccorso (art. 4);</li>\n<li>produrre un certificato di acuità visiva e uditiva (art. 5);</li>\n<li>confermare l’idoneità mentale e fisica (art. 5a);</li>\n<li>cartificare la pratica necessaria di navigazione in mare (art. 6–9);</li>\n<li>aver pagato le tasse (art. 2a).</li>\n</ol>"
+            },
+            {
+              "id": "Art. 7",
+              "heading": "Pratica per l’ottenimento della licenza di navigazione d’altura",
+              "citation": "Per ottenere una licenza di navigazione d’altura si devono certificare le esperienze minime seguenti:\n<ol type='a'>\n<li value='a'>per una licenza di navigazione d’altura per natanti a vela con o senza motore:\n<ol>\n<li>tre settimane di navigazione, di cui almeno 18 giorni in mare, e</li>\n<li>la percorrenza di 1000 miglia nautiche, di cui almeno 700 secondo l’attestato di navigazione conformemente all’allegato 4 dopo il superamento dell’esame teorico;</li>\n</ol>\n</li>\n</ol>\nLa pratica può essere acquisita in un periodo di tempo compreso tra i quattro anni precedenti e i quattro anni (anno civile completo) successivi al superamento dell’esame teorico."
+            }
+          ]
+        }
+      },
+      "requirements": [
+        {
+          "id": "ch-2-b",
+          "type": "manual",
+          "threshold": 1,
+          "filters": null,
+          "translationKey": "compliance.requirement.theoryExamPassed"
+        },
+        {
+          "id": "ch-2-c",
+          "type": "manual",
+          "threshold": 1,
+          "filters": null,
+          "translationKey": "compliance.requirement.nauticalBasicTraining"
+        },
+        {
+          "id": "ch-2-d",
+          "type": "manual",
+          "threshold": 1,
+          "filters": null,
+          "translationKey": "compliance.requirement.firstAidTraining"
+        },
+        {
+          "id": "ch-2-e",
+          "type": "manual",
+          "threshold": 1,
+          "filters": null,
+          "translationKey": "compliance.requirement.visionAndHearing"
+        },
+        {
+          "id": "ch-2-f",
+          "type": "manual",
+          "threshold": 1,
+          "filters": null,
+          "translationKey": "compliance.requirement.mentalAndPhysicalFitness"
+        },
+        {
+          "id": "ch-7-a-1-1",
+          "type": "days-sailing",
+          "threshold": 21,
+          "filters": {
+            "propulsion": "sail",
+            "withinYears": 4
+          },
+          "translationKey": "dashboard.sailingDays",
+          "unit": "days"
+        },
+        {
+          "id": "ch-7-a-1-2",
+          "type": "days-at-sea",
+          "threshold": 18,
+          "filters": {
+            "propulsion": "sail",
+            "withinYears": 4
+          },
+          "translationKey": "dashboard.daysAtSea",
+          "unit": "days"
+        },
+        {
+          "id": "ch-7-a-2-1",
+          "type": "sail-miles",
+          "threshold": 1000,
+          "filters": {
+            "propulsion": "sail",
+            "withinYears": 4
+          },
+          "translationKey": "dashboard.sailMiles",
+          "unit": "nautical-miles"
+        },
+        {
+          "id": "ch-7-a-2-2",
+          "type": "manual",
+          "threshold": 700,
+          "filters": {
+            "propulsion": "sail",
+            "withinYears": 4
+          },
+          "translationKey": "compliance.requirement.afterTheoryExam"
+        }
+      ]
+    },
+    {
+      "id": "ch-hochseeausweis-motor",
+      "countryCode": "CH",
+      "variant": "motor",
+      "defaultLanguage": "de",
+      "content": {
+        "de": {
+          "licenseName": "Hochseeausweis für Motorschiffe",
+          "title": "Verordnung des SSA über den schweizerischen Fähigkeitsausweis zum Führen von Jachten zur See",
+          "authority": "Schweizerisches Seeschifffahrtsamt SSA",
+          "sourceUrl": "https://www.fedlex.admin.ch/eli/cc/2007/130/de",
+          "checkedAt": "2026-08-11",
+          "effectiveFrom": "2018-01-01",
+          "sections": [
+            {
+              "id": "Art. 2",
+              "heading": "Voraussetzungen",
+              "citation": "Um den Hochseeausweis zu erhalten, muss die Kandidatin oder der Kandidat:Um den Hochseeausweis zu erhalten, muss die Kandidatin oder der Kandidat:\n<ol type='a'>\n<li>mindestens 16 Jahre alt sein;</li>\n<li>die Prüfung nach den Anforderungen von Anhang 1 mit Erfolg bestanden haben;</li>\n<li>eine nautische Grundausbildung nachweisen (Art. 3);</li>\n<li>eine Ausbildung in lebensrettenden Sofortmassnahmen nachweisen (Art. 4);</li>\n<li>eine Bestätigung über genügendes Seh- und Hörvermögen vorlegen (Art. 5);</li>\n<li>die geistige und die körperlichen Eignung bestätigen (Art. 5a);</li>\n<li>die erforderliche Praxis auf See nachweisen (Art. 6–9);</li>\n<li>die Gebühren bezahlt haben (Art. 2a).</li>\n</ol>"
+            },
+            {
+              "id": "Art. 7",
+              "heading": "Praxis für die Erstausstellung eines Hochseeausweises",
+              "citation": "Für die Erstausstellung eines Hochseeausweises ist ein Nachweis über folgende minimale Erfahrung zu erbringen:\n<ol type='a'>\n<li value='b'>für den Hochseeausweis für Motorschiffe:\n<ol>\n<li>zwei Wochen Seefahrt, davon mindestens zehn Tage auf See, und</li>\n<li>500 gefahrene Seemeilen, davon mindestens 400 Seemeilen gemäss Fahrtennachweis nach Anhang 4 nach bestandener Theorieprüfung.</li>\n</ol>\n</li>\n</ol>\nDie Praxis kann bis vier Jahre vor und bis vier Jahre nach (volles Kalenderjahr) der bestandenen theoretischen Prüfung erworben werden."
+            }
+          ]
+        },
+        "fr": {
+          "licenseName": "certificat pour la conduite de yachts à moteur",
+          "title": "Ordonnance de l’OSNM sur le certificat suisse de capacité pour la conduite de yachts en mer",
+          "authority": "Office suisse de la navigation maritime OSNM",
+          "sourceUrl": "https://www.fedlex.admin.ch/eli/cc/2007/130/fr",
+          "checkedAt": "2026-08-11",
+          "effectiveFrom": "2018-01-01",
+          "sections": [
+            {
+              "id": "Art. 2",
+              "heading": "Conditions",
+              "citation": "Pour obtenir le certificat de conduite en mer, le candidat doit:\n<ol type='a'>\n<li>être âgé de 16 ans au moins;</li>\n<li>avoir réussi l’examen répondant aux exigences détaillées à l’annexe 1;</li>\n<li>justifier d’une formation nautique de base (art. 3);</li>\n<li>produire une attestation certifiant qu’il a suivi un cours de premiers secours (art. 4);</li>\n<li>produire une attestation certifiant qu’il a une capacité visuelle et auditive suffisante (art. 5);</li>\n<li>produire une attestation qui confirme son aptitude mentale et physique (art. 5a);</li>\n<li>justifier d’une pratique de la navigation en mer qui réponde aux exigences définies aux art. 6 à 9;</li>\n<li>avoir payé les émoluments fixés (art. 2a).</li>\n</ol>"
+            },
+            {
+              "id": "Art. 7",
+              "heading": "Pratique exigée pour l’octroi du certificat de conduite en mer",
+              "citation": "Les candidats au certificat de conduite en mer doivent justifier au moins de l’expérience suivante:\n<ol type='a'>\n<li value='b'>pour la conduite de yachts à moteur:\n<ol>\n<li>2 semaines de navigation comprenant au moins 10 jours en mer, et</li>\n<li>500 milles marins parcourus, dont au moins 400 après avoir réussi l’examen théorique.</li>\n</ol>\n</li>\n</ol>\nEst prise en compte l’expérience acquise au maximum quatre années (civiles) complètes avant et quatre années (civiles) complètes après le succès à l’examen théorique."
+            }
+          ]
+        },
+        "it": {
+          "licenseName": "licenza di navigazione d’altura per natanti motorizzati",
+          "title": "Ordinanza dell’USNM sul certificato svizzero di capacità per condurre yacht marittimi",
+          "authority": "Disposizioni generali riguardanti yacht svizzeri in mare",
+          "sourceUrl": "https://www.fedlex.admin.ch/eli/cc/2007/130/it",
+          "checkedAt": "2026-08-11",
+          "effectiveFrom": "2018-01-01",
+          "sections": [
+            {
+              "id": "Art. 2",
+              "heading": "Condizioni",
+              "citation": "Per ottenere una licenza di navigazione d’altura, il candidato deve:\n<ol type='a'>\n<li>aver compiuto 16 anni;</li>\n<li>aver superato l’esame secondo i requisiti di cui all’allegato 1;</li>\n<li>attestare una formazione nautica di base (art. 3);</li>\n<li>attestare una formazione di pronto soccorso (art. 4);</li>\n<li>produrre un certificato di acuità visiva e uditiva (art. 5);</li>\n<li>confermare l’idoneità mentale e fisica (art. 5a);</li>\n<li>cartificare la pratica necessaria di navigazione in mare (art. 6–9);</li>\n<li>aver pagato le tasse (art. 2a).</li>\n</ol>"
+            },
+            {
+              "id": "Art. 7",
+              "heading": "Pratica per l’ottenimento della licenza di navigazione d’altura",
+              "citation": "Per ottenere una licenza di navigazione d’altura si devono certificare le esperienze minime seguenti:\n<ol type='a'>\n<li value='b'>per la licenza di navigazione d’altura per natanti motorizzati:\n<ol>\n<li>due settimane di navigazione, di cui almeno dieci giorni in mare, e</li>\n<li>la percorrenza di 500 miglia nautiche, di cui almeno 400 secondo l’attestato di navigazione conformemente all’allegato 4 dopo il superamento dell’esame teorico.</li>\n</ol>\n</li>\n</ol>\nLa pratica può essere acquisita in un periodo di tempo compreso tra i quattro anni precedenti e i quattro anni (anno civile completo) successivi al superamento dell’esame teorico."
+            }
+          ]
+        }
+      },
+      "requirements": [
+        {
+          "id": "ch-motor-2-b",
+          "type": "manual",
+          "threshold": 1,
+          "filters": null,
+          "translationKey": "compliance.requirement.theoryExamPassed"
+        },
+        {
+          "id": "ch-motor-2-c",
+          "type": "manual",
+          "threshold": 1,
+          "filters": null,
+          "translationKey": "compliance.requirement.nauticalBasicTraining"
+        },
+        {
+          "id": "ch-motor-2-d",
+          "type": "manual",
+          "threshold": 1,
+          "filters": null,
+          "translationKey": "compliance.requirement.firstAidTraining"
+        },
+        {
+          "id": "ch-motor-2-e",
+          "type": "manual",
+          "threshold": 1,
+          "filters": null,
+          "translationKey": "compliance.requirement.visionAndHearing"
+        },
+        {
+          "id": "ch-motor-2-f",
+          "type": "manual",
+          "threshold": 1,
+          "filters": null,
+          "translationKey": "compliance.requirement.mentalAndPhysicalFitness"
+        },
+        {
+          "id": "ch-7-b-1-1",
+          "type": "days-underway",
+          "threshold": 14,
+          "filters": {
+            "propulsion": "motor",
+            "withinYears": 4
+          },
+          "translationKey": "dashboard.sailingDays",
+          "unit": "days"
+        },
+        {
+          "id": "ch-7-b-1-2",
+          "type": "days-at-sea",
+          "threshold": 10,
+          "filters": {
+            "propulsion": "motor",
+            "withinYears": 4
+          },
+          "translationKey": "dashboard.daysAtSea",
+          "unit": "days"
+        },
+        {
+          "id": "ch-7-b-2-1",
+          "type": "motor-miles",
+          "threshold": 500,
+          "filters": {
+            "propulsion": "motor",
+            "withinYears": 4
+          },
+          "translationKey": "dashboard.motorMiles",
+          "unit": "nautical-miles"
+        },
+        {
+          "id": "ch-7-b-2-2",
+          "type": "manual",
+          "threshold": 400,
+          "filters": {
+            "propulsion": "motor",
+            "withinYears": 4
+          },
+          "translationKey": "compliance.requirement.afterTheoryExam"
+        }
+      ]
+    },
+    {
+      "id": "ch-hochseeausweis-sail-addon",
+      "countryCode": "CH",
+      "variant": "sail",
+      "defaultLanguage": "de",
+      "content": {
+        "de": {
+          "licenseName": "Hochseeausweis für Segelschiffe mit und ohne Maschinenantrieb",
+          "title": "Verordnung des SSA über den schweizerischen Fähigkeitsausweis zum Führen von Jachten zur See",
+          "authority": "Schweizerisches Seeschifffahrtsamt SSA",
+          "sourceUrl": "https://www.fedlex.admin.ch/eli/cc/2007/130/de",
+          "checkedAt": "2026-08-11",
+          "effectiveFrom": "2018-01-01",
+          "sections": [
+            {
+              "id": "Art. 8",
+              "heading": "Praxis für die Ergänzung eines bestehenden Hochseeausweises",
+              "citation": "Für die Ergänzung eines bestehenden Hochseeausweises für die jeweils andere Schiffskategorie ist ein Nachweis über folgende minimale Erfahrung zu erbringen:\n<ol type='a'>\n<li value='a'>für die Ergänzung des Hochseeausweises für Motorschiffe zusätzlich für Segelschiffe mit und ohne Maschinenantrieb:\n<ol>\n<li>zehn Tage auf See, und</li>\n<li>500 gefahrene Seemeilen gemäss Fahrtennachweis nach Anhang 4;</li>\n</ol>\n</li>\n</ol>\nDie Praxis muss innerhalb von vier Jahren vor der Einreichung des Ergänzungsantrages (volles Kalenderjahr) erworben werden."
+            }
+          ]
+        },
+        "fr": {
+          "licenseName": "certificat pour la conduite de yachts à voiles, avec ou sans propulsion mécanique",
+          "title": "Ordonnance de l’OSNM sur le certificat suisse de capacité pour la conduite de yachts en mer",
+          "authority": "Office suisse de la navigation maritime OSNM",
+          "sourceUrl": "https://www.fedlex.admin.ch/eli/cc/2007/130/fr",
+          "checkedAt": "2026-08-11",
+          "effectiveFrom": "2018-01-01",
+          "sections": [
+            {
+              "id": "Art. 8",
+              "heading": "Pratique exigée pour l’extension du certificat de conduite en mer à une autre catégorie de bateaux",
+              "citation": "Les titulaires d’un certificat de conduite en mer qui souhaitent obtenir l’extension de ce certificat à une autre catégorie de bateaux doivent justifier au moins de l’expérience suivante:\n<ol type='a'>\n<li value='a'>s’ils possèdent le certificat autorisant la conduite de yachts à moteur et qu’ils souhaitent l’étendre aux yachts à voiles, avec ou sans propulsion mécanique:\n<ol>\n<li>10 jours en mer, et</li>\n<li>500 milles marins parcourus selon l’attestation de parcours conformément à l’annexe 4;</li>\n</ol>\n</li>\n</ol>\nEst prise en compte l’expérience acquise durant les quatre ans (années civiles complètes) qui ont précédé le dépôt de la demande d’extension du certificat de conduite en mer."
+            }
+          ]
+        },
+        "it": {
+          "licenseName": "licenza di navigazione d’altura per natanti a vela con o senza motore",
+          "title": "Ordinanza dell’USNM sul certificato svizzero di capacità per condurre yacht marittimi",
+          "authority": "Disposizioni generali riguardanti yacht svizzeri in mare",
+          "sourceUrl": "https://www.fedlex.admin.ch/eli/cc/2007/130/it",
+          "checkedAt": "2026-08-11",
+          "effectiveFrom": "2018-01-01",
+          "sections": [
+            {
+              "id": "Art. 8",
+              "heading": "Pratica per l’estensione di una licenza di navigazione d’altura già rilasciata",
+              "citation": "Per estendere una licenza di navigazione d’altura già rilasciata per le altre categorie di natanti si devono certificare le esperienze minime seguenti:\n<ol type='a'>\n<li value='a'>per l’estensione della licenza di navigazione d’altura per natanti motorizzati a natanti a vela con o senza motore:\n<ol>\n<li>dieci giorni in mare, e</li>\n<li>la percorrenza di 500 miglia nautiche secondo l’attestato di navigazione conformemente all’allegato 4;</li>\n</ol>\n</li>\n</ol>\nLa pratica deve essere acquisita in un periodo di tempo limitato ai quattro anni (anno civile completo) precedenti la presentazione dell’istanza d’estensione."
+            }
+          ]
+        }
+      },
+      "requirements": [
+        {
+          "id": "ch-8-sail-prerequisite",
+          "type": "manual",
+          "threshold": 1,
+          "filters": null,
+          "translationKey": "compliance.requirement.holdsSwissMotorLicense"
+        },
+        {
+          "id": "ch-8-a-1",
+          "type": "days-at-sea",
+          "threshold": 10,
+          "filters": {
+            "propulsion": "sail",
+            "withinYears": 4
+          },
+          "translationKey": "dashboard.daysAtSea",
+          "unit": "days"
+        },
+        {
+          "id": "ch-8-a-2",
+          "type": "sail-miles",
+          "threshold": 500,
+          "filters": {
+            "propulsion": "sail",
+            "withinYears": 4
+          },
+          "translationKey": "dashboard.sailMiles",
+          "unit": "nautical-miles"
+        }
+      ]
+    },
+    {
+      "id": "ch-hochseeausweis-motor-addon",
+      "countryCode": "CH",
+      "variant": "motor",
+      "defaultLanguage": "de",
+      "content": {
+        "de": {
+          "licenseName": "Hochseeausweis für Segelschiffe mit und ohne Maschinenantrieb",
+          "title": "Verordnung des SSA über den schweizerischen Fähigkeitsausweis zum Führen von Jachten zur See",
+          "authority": "Schweizerisches Seeschifffahrtsamt SSA",
+          "sourceUrl": "https://www.fedlex.admin.ch/eli/cc/2007/130/de",
+          "checkedAt": "2026-08-11",
+          "effectiveFrom": "2018-01-01",
+          "sections": [
+            {
+              "id": "Art. 8",
+              "heading": "Praxis für die Ergänzung eines bestehenden Hochseeausweises",
+              "citation": "Für die Ergänzung eines bestehenden Hochseeausweises für die jeweils andere Schiffskategorie ist ein Nachweis über folgende minimale Erfahrung zu erbringen:\n<ol type='a'>\n<li value='b'>für die Ergänzung des Hochseeausweises für Segelschiffe mit und ohne Maschinenantrieb zusätzlich für Motorschiffe:\n<ol>\n<li>fünf Tage auf See, und</li>\n<li>100 gefahrene Seemeilen gemäss Fahrtennachweis nach Anhang 4.</li>\n</ol>\n</li>\n</ol>\nDie Praxis muss innerhalb von vier Jahren vor der Einreichung des Ergänzungsantrages (volles Kalenderjahr) erworben werden."
+            }
+          ]
+        },
+        "fr": {
+          "licenseName": "certificat pour la conduite de yachts à voiles, avec ou sans propulsion mécanique",
+          "title": "Ordonnance de l’OSNM sur le certificat suisse de capacité pour la conduite de yachts en mer",
+          "authority": "Office suisse de la navigation maritime OSNM",
+          "sourceUrl": "https://www.fedlex.admin.ch/eli/cc/2007/130/fr",
+          "checkedAt": "2026-08-11",
+          "effectiveFrom": "2018-01-01",
+          "sections": [
+            {
+              "id": "Art. 8",
+              "heading": "Pratique exigée pour l’extension du certificat de conduite en mer à une autre catégorie de bateaux",
+              "citation": "Les titulaires d’un certificat de conduite en mer qui souhaitent obtenir l’extension de ce certificat à une autre catégorie de bateaux doivent justifier au moins de l’expérience suivante:\n<ol type='a'>\n<li value='b'>s’ils possèdent le certificat autorisant la conduite de yachts à voiles, avec ou sans propulsion mécanique et qu’ils souhaitent l’étendre aux yachts à moteur:\n<ol>\n<li>5 jours en mer, et</li>\n<li>100 milles marins parcourus selon l’attestation de parcours conformément à l’annexe 4.</li>\n</ol>\n</li>\n</ol>\nEst prise en compte l’expérience acquise durant les quatre ans (années civiles complètes) qui ont précédé le dépôt de la demande d’extension du certificat de conduite en mer."
+            }
+          ]
+        },
+        "it": {
+          "licenseName": "licenza di navigazione d’altura per natanti a vela con o senza motore",
+          "title": "Ordinanza dell’USNM sul certificato svizzero di capacità per condurre yacht marittimi",
+          "authority": "Disposizioni generali riguardanti yacht svizzeri in mare",
+          "sourceUrl": "https://www.fedlex.admin.ch/eli/cc/2007/130/it",
+          "checkedAt": "2026-08-11",
+          "effectiveFrom": "2018-01-01",
+          "sections": [
+            {
+              "id": "Art. 8",
+              "heading": "Pratica per l’estensione di una licenza di navigazione d’altura già rilasciata",
+              "citation": "Per estendere una licenza di navigazione d’altura già rilasciata per le altre categorie di natanti si devono certificare le esperienze minime seguenti:\n<ol type='a'>\n<li value='b'>per l’estensione della licenza di navigazione d’altura per natanti a vela con o senza motore a natanti motorizzati:\n<ol>\n<li>cinque giorni in mare, e</li>\n<li>la percorrenza di 100 miglia nautiche secondo l’attestato di navigazione conformemente all’allegato 4.</li>\n</ol>\n</li>\n</ol>\nLa pratica deve essere acquisita in un periodo di tempo limitato ai quattro anni (anno civile completo) precedenti la presentazione dell’istanza d’estensione."
+            }
+          ]
+        }
+      },
+      "requirements": [
+        {
+          "id": "ch-8-motor-prerequisite",
+          "type": "manual",
+          "threshold": 1,
+          "filters": null,
+          "translationKey": "compliance.requirement.holdsSwissSailLicense"
+        },
+        {
+          "id": "ch-8-b-1",
+          "type": "days-at-sea",
+          "threshold": 5,
+          "filters": {
+            "propulsion": "motor",
+            "withinYears": 4
+          },
+          "translationKey": "dashboard.daysAtSea",
+          "unit": "days"
+        },
+        {
+          "id": "ch-8-b-2",
+          "type": "motor-miles",
+          "threshold": 100,
+          "filters": {
+            "propulsion": "motor",
+            "withinYears": 4
+          },
+          "translationKey": "dashboard.sailMiles",
+          "unit": "nautical-miles"
+        }
+      ]
+    },
+    {
+      "id": "de-sbf",
+      "countryCode": "DE",
+      "defaultLanguage": "de",
+      "variant": "any",
+      "content": {
+        "de": {
+          "licenseName": "Sportbootführerschein (SBF)",
+          "title": "Verordnung über das Führen von Sportbooten",
+          "authority": "Bundesministerium für Verkehr und digitale Infrastruktur",
+          "sourceUrl": "https://www.gesetze-im-internet.de/spfv",
+          "checkedAt": "2026-08-18",
+          "effectiveFrom": "2024-10-23",
+          "sections": [
+            {
+              "id": "§ 6",
+              "heading": "Voraussetzungen zum Erwerb des Sportküsten-, Sportsee- und Sporthochseeschifferscheins",
+              "citation": "(1) Der Bewerber muss für die Erteilung einer Fahrerlaubnis für das Führen eines Sportbootes\n<ol>\n<li>für das Führen\n<ol type='a'>\n<li>eines Sportbootes mit Antriebsmaschine mindestens 16 Jahre alt sein,</li>\n<li>eines Sportbootes unter Segel mindestens 14 Jahre alt sein,</li>\n</ol>\n</li>\n<li>zum Führen eines Sportbootes körperlich und psychisch (medizinisch) tauglich sein,</li>\n<li>zuverlässig sein,</li>\n<li>die erforderliche Befähigung in einer Prüfung nach § 8 nachgewiesen haben.</li>\n</ol>"
+            }
+          ]
+        }
+      },
+      "requirements": [
+        {
+          "id": "de-SpFV-8-1",
+          "type": "manual",
+          "threshold": 1,
+          "filters": {
+            "withinYears": 1
+          },
+          "translationKey": "compliance.requirement.theoryExamPassed"
+        },
+        {
+          "id": "de-SpFV-8-2",
+          "type": "manual",
+          "threshold": 1,
+          "filters": {
+            "withinYears": 1
+          },
+          "translationKey": "compliance.requirement.practicalExamPassed"
+        }
+      ]
+    },
+    {
+      "id": "de-sks",
+      "countryCode": "DE",
+      "variant": "any",
+      "defaultLanguage": "de",
+      "content": {
+        "de": {
+          "licenseName": "Sportküstenschifferschein (SKS)",
+          "title": "Verordnung über den Erwerb von Sportsee- und Sporthochseeschifferscheinen und die Besetzung von Traditionsschiffen (Sportseeschifferscheinverordnung)",
+          "authority": "Bundesministerium für Verkehr und digitale Infrastruktur",
+          "sourceUrl": "https://www.gesetze-im-internet.de/sportseeschv/",
+          "checkedAt": "2026-08-18",
+          "effectiveFrom": "2020-03-03",
+          "sections": [
+            {
+              "id": "§ 6",
+              "heading": "Voraussetzungen zum Erwerb des Sportküsten-, Sportsee- und Sporthochseeschifferscheins",
+              "citation": "(1) Ein Bewerber kann auf Antrag einen Sportküstenschifferschein für Yachten mit Antriebsmaschine oder mit Antriebsmaschine und unter Segel nach dem Muster der Anlage 1a erhalten, wenn er\n<ol>\n<li>im Besitz des Sportbootführerscheins für den Geltungsbereich Seeschifffahrtsstraßen nach § 1 der Sportbootführerscheinverordnung ist,</li>\n<li>den Nachweis erbringt, daß er mindestens 300 Seemeilen auf Yachten mit der jeweiligen Antriebsart im Küstenbereich zurückgelegt hat, und</li>\n<li>in einer theoretischen und praktischen Prüfung seine Befähigung zum Führen von Yachten in Küstengewässern nachgewiesen hat.</li>\n</ol>"
+            }
+          ]
+        }
+      },
+      "requirements": [
+        {
+          "id": "de-SportSeeSchV-6-1-1",
+          "type": "manual",
+          "threshold": 1,
+          "filters": null,
+          "translationKey": "compliance.requirement.holdsGermanSbf"
+        },
+        {
+          "id": "de-SportSeeSchV-6-1-2",
+          "type": "total-miles",
+          "threshold": 300,
+          "filters": null,
+          "translationKey": "dashboard.sailMiles",
+          "unit": "nautical-miles"
+        },
+        {
+          "id": "de-SportSeeSchV-6-1-3",
+          "type": "manual",
+          "threshold": 1,
+          "filters": null,
+          "translationKey": "compliance.requirement.coastalCompetencyExam"
+        }
+      ]
+    },
+    {
+      "id": "de-sss",
+      "countryCode": "DE",
+      "variant": "any",
+      "defaultLanguage": "de",
+      "content": {
+        "de": {
+          "licenseName": "Sportseeschifferschein (SSS)",
+          "title": "Verordnung über den Erwerb von Sportsee- und Sporthochseeschifferscheinen und die Besetzung von Traditionsschiffen (Sportseeschifferscheinverordnung)",
+          "authority": "Bundesministerium für Verkehr und digitale Infrastruktur",
+          "sourceUrl": "https://www.gesetze-im-internet.de/sportseeschv/",
+          "checkedAt": "2026-08-18",
+          "effectiveFrom": "2020-03-03",
+          "sections": [
+            {
+              "id": "§ 6",
+              "heading": "Voraussetzungen zum Erwerb des Sportküsten-, Sportsee- und Sporthochseeschifferscheins",
+              "citation": "(2) Ein Bewerber kann auf Antrag einen Sportseeschifferschein für Yachten mit Antriebsmaschine oder mit Antriebsmaschine und unter Segel nach dem Muster der Anlage 1 erhalten, wenn er\n<ol>\n<li>im Besitz des Sportbootführerscheins für den Geltungsbereich Seeschifffahrtsstraßen nach § 1 der Sportbootführerscheinverordnung ist,</li>\n<li>\n<ol type='a'>\n<li>im Besitz des Sportküstenschifferscheins ist und zusätzlich nachweist, daß er nach dem Erwerb des Sportküstenschifferscheins mindestens 700 Seemeilen auf Yachten mit der jeweiligen Antriebsart im Seebereich zurückgelegt hat,</li>\n<li>im Besitz eines vor dem 1. Oktober 1999 vom Deutschen Segler-Verband e.V. ausgestellten BR-Scheins ist und zusätzlich nachweist, daß er nach dem Erwerb des BR-Scheins mindestens 700 Seemeilen auf Yachten im Seebereich zurückgelegt hat, oder</li>\n<li>nachweist, daß er nach Erwerb des Sportbootführerscheins für den Geltungsbereich Seeschifffahrtsstraßen mindestens 1.000 Seemeilen auf Yachten mit der jeweiligen Antriebsart im Seebereich, davon mindestens 500 Seemeilen vor der theoretischen Prüfung als Wachtführer oder dessen Vertreter auf Yachten mit der jeweiligen Antriebsart, zurückgelegt hat, und</li>\n</ol>\n</li>\n<li>in einer theoretischen und praktischen Prüfung seine Befähigung zum Führen einer Yacht in küstennahen Seegewässern nachgewiesen hat.</li>\n</ol>"
+            }
+          ]
+        }
+      },
+      "requirements": [
+        {
+          "id": "de-SportSeeSchV-6-2-1",
+          "type": "manual",
+          "threshold": 1,
+          "filters": null,
+          "translationKey": "compliance.requirement.holdsGermanSks"
+        },
+        {
+          "id": "de-SportSeeSchV-6-2-2",
+          "type": "total-miles",
+          "threshold": 700,
+          "filters": null,
+          "translationKey": "dashboard.sailMiles",
+          "unit": "nautical-miles"
+        },
+        {
+          "id": "de-SportSeeSchV-6-2-3",
+          "type": "manual",
+          "threshold": 1,
+          "filters": null,
+          "translationKey": "compliance.requirement.offshoreCompetencyExam"
+        }
+      ]
+    },
+    {
+      "id": "de-shs",
+      "countryCode": "DE",
+      "variant": "any",
+      "defaultLanguage": "de",
+      "content": {
+        "de": {
+          "licenseName": "Sporthochseeschifferschein (SHS)",
+          "title": "Verordnung über den Erwerb von Sportsee- und Sporthochseeschifferscheinen und die Besetzung von Traditionsschiffen (Sportseeschifferscheinverordnung)",
+          "authority": "Bundesministerium für Verkehr und digitale Infrastruktur",
+          "sourceUrl": "https://www.gesetze-im-internet.de/sportseeschv/",
+          "checkedAt": "2026-08-18",
+          "effectiveFrom": "2020-03-03",
+          "sections": [
+            {
+              "id": "§ 6",
+              "heading": "Voraussetzungen zum Erwerb des Sportküsten-, Sportsee- und Sporthochseeschifferscheins",
+              "citation": "(3) Ein Bewerber kann auf Antrag einen Sporthochseeschifferschein für Yachten mit Antriebsmaschine oder einen Sporthochseeschifferschein für Yachten mit Antriebsmaschine und unter Segel nach dem Muster der Anlage 2 erhalten, wenn er\n<ol>\n<li>das 18. Lebensjahr vollendet hat,</li>\n<li>im Besitz eines Sportseeschifferscheins für Yachten mit der jeweiligen Antriebsart ist,</li>\n<li>den Nachweis erbringt, daß er nach Erwerb des Sportseeschifferscheins mindestens 1.000 Seemeilen auf Yachten mit der jeweiligen Antriebsart, davon mindestens 500 Seemeilen vor der theoretischen Prüfung, im Seebereich zurückgelegt hat und dabei als Wachführer eingesetzt war, und</li>\n<li>in einer theoretischen Prüfung seine Befähigung zum Führen einer Yacht mit der jeweiligen Antriebsart in der weltweiten Fahrt nachgewiesen hat.</li>\n</ol>"
+            }
+          ]
+        }
+      },
+      "requirements": [
+        {
+          "id": "de-SportSeeSchV-6-3-2",
+          "type": "manual",
+          "threshold": 1,
+          "filters": null,
+          "translationKey": "compliance.requirement.holdsGermanSss"
+        },
+        {
+          "id": "de-SportSeeSchV-6-3-3",
+          "type": "total-miles",
+          "threshold": 1000,
+          "filters": null,
+          "translationKey": "dashboard.sailMiles",
+          "unit": "nautical-miles"
+        },
+        {
+          "id": "de-SportSeeSchV-6-3-5",
+          "type": "manual",
+          "threshold": 1,
+          "filters": null,
+          "translationKey": "compliance.requirement.worldwideTheoryExam"
+        }
+      ]
+    }
+  ]
+}
