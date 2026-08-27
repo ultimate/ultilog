@@ -1276,8 +1276,12 @@ export function LogbookApp({
     if (activeSheet.status === "Locked") return;
     const draft = lineForms[draftId];
     if (!draft) return;
-    const line = lineFormToLogLine({ ...draft.form, time: isoDateTimeWithTimezone(dateTimeLocalFromStamp(draft.form.time), timezoneOffsetFromStamp(draft.form.time)) });
     const currentLogbook = logbookRef.current;
+    const previousLine = currentLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)?.lines.find((candidate) => candidate.id === draftId);
+    const line = {
+      ...lineFormToLogLine({ ...draft.form, time: isoDateTimeWithTimezone(dateTimeLocalFromStamp(draft.form.time), timezoneOffsetFromStamp(draft.form.time)) }),
+      ...(draft.isNew ? {} : concurrencyMetadata(previousLine)),
+    };
     const nextLogbook = {
       ...currentLogbook,
       sheets: currentLogbook.sheets.map((sheet) => {

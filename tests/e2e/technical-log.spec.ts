@@ -62,6 +62,19 @@ test("edits technical log entries and suggests previous checks", async ({ page }
   await expect(page.getByRole("combobox", { name: "Technical log entry 1" })).toBeDisabled();
   await expect(page.getByRole("combobox", { name: "New technical log entry" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Delete technical log entry 1" })).toBeDisabled();
+
+  const motorSheet = sampleLogSheets[1];
+  await page.goto(`/details/${motorSheet.id}`);
+  const firstLine = page.locator(".log-lines-table tbody tr").first();
+  await firstLine.getByRole("button", { name: "✏️" }).click();
+  await page.getByRole("spinbutton", { name: "Port engine Engine runtime increment" }).fill("0.5");
+  await page.getByRole("spinbutton", { name: "Starboard engine Engine runtime increment" }).fill("0.6");
+  await firstLine.getByRole("button", { name: "💾" }).click();
+  await expect.poll(async () => {
+    const stored = await (await page.request.get("/api/logbook")).json();
+    return stored.sheets.find((sheet: { id: string }) => sheet.id === motorSheet.id)?.lines[0]?.engineHours;
+  }).toEqual({ "port-engine": 0.5, "starboard-engine": 0.6 });
+  await expect(page.getByText("Unable to save the latest changes. Please try again.")).toHaveCount(0);
 });
 
 async function loginWithSeededDemoData(page: Page) {
@@ -89,6 +102,7 @@ async function removeDemoLogsheets(page: Page) {
   // deletes can race the client's queued normalization saves after login.
   const clearResponse = await page.request.put("/api/logbook/import", { headers: { Origin: "http://127.0.0.1:3000", "X-Ultilog-Confirm-Replace": "replace-my-entire-logbook" }, data: { ...currentLogbook, sheets: [] } });
   expect(clearResponse.ok(), await clearResponse.text()).toBeTruthy();
+  await expect.poll(async () => (await (await page.request.get("/api/logbook")).json()).sheets.length).toBe(0);
 }
 
 function crewProfilesFromSheets(sheets: typeof sampleLogSheets) {
