@@ -46,6 +46,7 @@ import {
   routeFromPathname,
 } from "./logbook/persistence";
 import { mergeMutationResult } from "./logbook/mutation-merge";
+import { replaceEntireLogbook } from "./logbook/import";
 import { LineMutationQueue } from "./logbook/line-mutation-queue";
 import {
   dateTimeLocalFromParts,
@@ -415,13 +416,15 @@ export function LogbookApp({
           : mutation.kind === "crew"
             ? current.crewMembers.find(item => item.id === mutation.entity.id)
             : current.sheets.find(item => item.id === mutation.entity.id))
-        : undefined;
+        : mutation.kind === "sheet"
+          ? current.sheets.find(sheet => sheet.id === mutation.id)
+          : undefined;
       response = await (mutation.kind === "boat" ? persistBoat(entity as Boat, mutation.isNew)
         : mutation.kind === "crew" ? persistCrewMember(entity as CrewMember, mutation.isNew)
         : mutation.kind === "line-deletion" ? persistDeleteLogLine(mutation.sheetId, mutation.id, mutation.revision)
         : mutation.kind === "sheet" ? persistSheet(entity as LogSheet ?? current.sheets.find((sheet) => "id" in mutation && sheet.id === mutation.id)!, "isNew" in mutation && mutation.isNew)
         : deleteLogbookEntity(mutation.entityKind, mutation.id, mutation.revision)).catch(() => undefined);
-      if (response?.ok && "entity" in mutation) {
+      if (response?.ok && entity && (mutation.kind === "boat" || mutation.kind === "crew" || mutation.kind === "sheet")) {
         persistedEntity = await response.clone().json().catch(() => undefined) as typeof persistedEntity;
         if (persistedEntity) mergePersistedMutation(mutation.kind, id, entity as typeof persistedEntity, persistedEntity);
       }
@@ -471,11 +474,23 @@ export function LogbookApp({
       if (!response.ok) throw new Error("Unable to load logbook");
       const storedLogbook = (await response.json()) as PersistedLogbook;
       const {
-        logbook: normalizedLogbook,
+        logbook: initiallyNormalizedLogbook,
         changed,
         boatIds,
         sheetIds,
       } = normalizeLogbookIds(storedLogbook);
+      let normalizedLogbook = initiallyNormalizedLogbook;
+      if (changed) {
+        const normalizationResponse = await replaceEntireLogbook(initiallyNormalizedLogbook).catch(() => undefined);
+        if (!normalizationResponse?.ok) {
+          boatIds.clear();
+          sheetIds.clear();
+          normalizedLogbook = storedLogbook;
+          setSaveError(t("logbook.saveError"));
+        } else {
+          normalizedLogbook = await normalizationResponse.json() as PersistedLogbook;
+        }
+      }
       if (!isMounted) return;
       const route = routeFromPathname(window.location.pathname);
       const normalizedItemId =
@@ -548,13 +563,6 @@ export function LogbookApp({
       if (normalizedItemId) {
         window.history.replaceState(null, "", nextRoutePath);
         setRoutePath(nextRoutePath);
-      }
-      if (changed) {
-        void Promise.all([
-          ...normalizedLogbook.boats.map((boat) => persistBoat(boat)),
-          ...normalizedLogbook.crewMembers.map((crew) => persistCrewMember(crew)),
-          ...normalizedLogbook.sheets.map((sheet) => persistSheet(sheet)),
-        ]).catch(() => setSaveError(t("logbook.saveError")));
       }
       setIsBackendReady(true);
     }
@@ -1268,8 +1276,12 @@ export function LogbookApp({
     if (activeSheet.status === "Locked") return;
     const draft = lineForms[draftId];
     if (!draft) return;
-    const line = lineFormToLogLine({ ...draft.form, time: isoDateTimeWithTimezone(dateTimeLocalFromStamp(draft.form.time), timezoneOffsetFromStamp(draft.form.time)) });
     const currentLogbook = logbookRef.current;
+    const previousLine = currentLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)?.lines.find((candidate) => candidate.id === draftId);
+    const line = {
+      ...lineFormToLogLine({ ...draft.form, time: isoDateTimeWithTimezone(dateTimeLocalFromStamp(draft.form.time), timezoneOffsetFromStamp(draft.form.time)) }),
+      ...(draft.isNew ? {} : concurrencyMetadata(previousLine)),
+    };
     const nextLogbook = {
       ...currentLogbook,
       sheets: currentLogbook.sheets.map((sheet) => {
@@ -1912,7 +1924,7 @@ export function LogbookApp({
         onLogout={logout}
         isLoggingOut={isLoggingOut}
       />
-      <section className="app-content">
+      <section className="app-content" data-backend-ready={isBackendReady} aria-busy={!isBackendReady} inert={!isBackendReady}>
         {saveError && <p className="save-error">{saveError}</p>}
 
         {activeModule === "dashboard" && (

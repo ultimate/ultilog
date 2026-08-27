@@ -163,6 +163,8 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                 mode="flag-emoji"
                 label={t("boats.flagState")}
                 emptyLabel={t("boats.flagPlaceholder")}
+                searchLabel={t("common.searchCountries")}
+                noResultsLabel={t("common.noCountriesFound")}
                 value={boatForm.flagState}
                 onChange={(flagState) =>
                   setBoatForm({ ...boatForm, flagState })

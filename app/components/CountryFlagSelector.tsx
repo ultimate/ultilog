@@ -29,6 +29,27 @@ type BoatFlagSelectorProps = CommonProps & {
 
 export type CountryFlagSelectorProps = IsoCountrySelectorProps | BoatFlagSelectorProps;
 
+export function filterFlagGroups(groups: typeof flagGroups, query: string) {
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  if (!normalizedQuery) return groups;
+  const hasExactCodeMatch = groups.some((group) =>
+    group.flags.some((flag) => flag.code.toLocaleLowerCase() === normalizedQuery),
+  );
+
+  return groups.flatMap((group) => {
+    const continentMatches = group.continent.toLocaleLowerCase().includes(normalizedQuery);
+    const flags = hasExactCodeMatch
+      ? group.flags.filter((flag) => flag.code.toLocaleLowerCase() === normalizedQuery)
+      : continentMatches
+      ? group.flags
+      : group.flags.filter((flag) =>
+          flag.name.toLocaleLowerCase().includes(normalizedQuery)
+          || flag.code.toLocaleLowerCase().includes(normalizedQuery),
+        );
+    return flags.length ? [{ ...group, flags }] : [];
+  });
+}
+
 /** A country selector with explicit storage semantics for profiles and boats. */
 export function CountryFlagSelector(props: CountryFlagSelectorProps) {
   const [query, setQuery] = useState("");
