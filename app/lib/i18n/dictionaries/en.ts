@@ -417,6 +417,7 @@ export const en = {
   "details.sheetSupport": "Sheet support sections",
   "details.technicalLog": "Technical log / daily checks",
   "details.engineHourCounters": "Engine hour counters",
+  "details.checks": "Checks",
   "details.counterReading": "Counter reading",
   "details.counterStart": "Beginning of sheet",
   "details.counterEnd": "End of sheet",
