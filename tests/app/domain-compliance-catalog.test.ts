@@ -69,6 +69,15 @@ describe("compliance catalog domain", () => {
     expect(catalog).not.toHaveProperty("_instructions");
   });
 
+  it("allows optional legal metadata to be absent", () => {
+    const input = fixture();
+    const translation = input.legalLogbookRequirements[0].translations.en as Partial<typeof content>;
+    delete translation.authority;
+    delete translation.checkedAt;
+    delete translation.effectiveFrom;
+    expect(createComplianceCatalog(input).legalLogbookRequirements[0].translations.en).not.toHaveProperty("authority");
+  });
+
   it("falls back when the preferred translation is missing", () => {
     expect(withLanguageFallback({ en: "English" }, "fr", "en")).toBe("English");
     expect(withLanguageFallback({ en: "English", fr: "Français" }, "fr", "en")).toBe("Français");
