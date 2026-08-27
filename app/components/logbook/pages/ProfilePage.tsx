@@ -400,6 +400,8 @@ export function ProfilePage(props: ProfilePageProps) {
                   mode="iso-code"
                   label={t("profile.countryCode")}
                   emptyLabel={t("profile.countryNotSelected")}
+                  searchLabel={t("common.searchCountries")}
+                  noResultsLabel={t("common.noCountriesFound")}
                   value={profilePreferences.countryCode}
                   onChange={(countryCode) => updateViewPreferences({ countryCode })}
                 />

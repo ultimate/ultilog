@@ -123,6 +123,8 @@ export const en = {
   "common.type": "Type",
   "common.registration": "Registration",
   "common.selectEntry": "Please select an entry",
+  "common.searchCountries": "Search countries",
+  "common.noCountriesFound": "No countries found",
   "list.searchPlaceholder": "Search all columns…",
   "list.search": "Search list",
   "list.sortBy": "Sort by",

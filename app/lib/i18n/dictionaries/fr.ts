@@ -125,6 +125,8 @@ export const fr: Dictionary = {
   "common.type": "Type",
   "common.registration": "Immatriculation",
   "common.selectEntry": "Veuillez sélectionner une entrée",
+  "common.searchCountries": "Rechercher un pays",
+  "common.noCountriesFound": "Aucun pays trouvé",
   "list.searchPlaceholder": "Rechercher dans toutes les colonnes…",
   "list.search": "Rechercher dans la liste",
   "list.sortBy": "Trier par",

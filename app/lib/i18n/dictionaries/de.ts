@@ -125,6 +125,8 @@ export const de: Dictionary = {
   "common.type": "Typ",
   "common.registration": "Registrierung",
   "common.selectEntry": "Bitte wähle einen Eintrag aus",
+  "common.searchCountries": "Länder suchen",
+  "common.noCountriesFound": "Keine Länder gefunden",
   "list.searchPlaceholder": "Alle Spalten durchsuchen…",
   "list.search": "Liste durchsuchen",
   "list.sortBy": "Sortieren nach",
