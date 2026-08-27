@@ -1300,6 +1300,12 @@ td { color: #28384b; line-height: 1.45; }
 
 .flag-chooser-field {
   align-self: start;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.flag-chooser-search {
+  width: 100%;
 }
 
 .inline-edit-grid .flag-chooser {
