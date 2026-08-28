@@ -1,6 +1,6 @@
 import type { PersistedLogbook } from "../../models/logbook";
 import { StoredImageValidationError, validateStoredImage } from "./stored-image";
-import { isSupportedCountryCode } from "../flags";
+import { countryCodeForFlagValue, isSupportedCountryCode } from "../flags";
 
 export const LOGBOOK_LIMITS = {
   requestBytes: 8 * 1024 * 1024,
@@ -61,7 +61,9 @@ export function validatePersistedLogbook(value: unknown): PersistedLogbook {
   count(value.boats, LOGBOOK_LIMITS.boats, "boats"); count(value.crewMembers, LOGBOOK_LIMITS.crewMembers, "crew members"); count(value.sheets, LOGBOOK_LIMITS.sheets, "sheets");
   value.boats.forEach((boat, i) => {
     assert(record(boat) && ["id", "name", "registration", "flagState", "homePort", "owner", "dimensions"].every(k => string(boat[k])) && ["Sail", "Motor"].includes(boat.type as string) && finite(boat.logfactor) && stringRecord(boat.yachtData) && Array.isArray(boat.deviationTable) && optional(boat.archived, boolean), `boats[${i}] is malformed.`);
-    assert(boat.flagState === "" || isSupportedCountryCode(boat.flagState as string), `boats[${i}].flagState must be an ISO alpha-2 country code.`);
+    const flagState = boat.flagState as string;
+    const countryCode = countryCodeForFlagValue(flagState);
+    assert(flagState === "" || isSupportedCountryCode(countryCode), `boats[${i}].flagState must identify a supported country.`);
     assert(boat.deviationTable.every(row => record(row) && finite(row.heading) && string(row.deviation)), `boats[${i}].deviationTable is malformed.`);
     count(boat.engines ?? [], LOGBOOK_LIMITS.enginesPerBoat, "engines");
     (boat.engines as unknown[] | undefined)?.forEach((engine, j) => assert(record(engine) && ["id", "name", "label"].every(k => string(engine[k])) && ["propulsion", "generator", "auxiliary"].includes(engine.role as string) && optional(engine.archived, boolean) && ["manufacturer", "model", "serialNumber"].every(k => optional(engine[k], string)), `boats[${i}].engines[${j}] is malformed.`));
@@ -90,5 +92,8 @@ export function validatePersistedLogbook(value: unknown): PersistedLogbook {
   const walk = (v: unknown): void => { if (typeof v === "string") { if (v.length > LOGBOOK_LIMITS.string) throw new LogbookValidationError("A string exceeds the length limit.", "limit"); aggregate += v.length; } else if (Array.isArray(v)) v.forEach(walk); else if (record(v)) Object.entries(v).forEach(([k, x]) => { walk(k); walk(x); }); };
   walk(value);
   if (aggregate > LOGBOOK_LIMITS.aggregateString) throw new LogbookValidationError("Aggregate string data exceeds the length limit.", "limit");
-  return value as PersistedLogbook;
+  return {
+    ...value,
+    boats: value.boats.map((boat) => ({ ...boat as PersistedLogbook["boats"][number], flagState: countryCodeForFlagValue((boat as Record<string, unknown>).flagState as string) })),
+  } as PersistedLogbook;
 }
