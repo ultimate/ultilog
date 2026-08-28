@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { flagEmoji, flagGroups, flagOptionEmoji } from "../../../app/lib/flags";
+import { countryCodeForFlagValue, flagEmoji, flagGroups, flagOptionEmoji } from "../../../app/lib/flags";
 
 describe("flag helpers", () => {
   it("groups supported flag options by continent", () => {
@@ -19,6 +19,14 @@ describe("flag helpers", () => {
   it("converts country codes to regional indicator emoji", () => {
     expect(flagEmoji("ch")).toBe("🇨🇭");
     expect(flagEmoji("US")).toBe("🇺🇸");
+  });
+
+  it("normalizes legacy boat flag representations to ISO codes", () => {
+    expect(countryCodeForFlagValue("CH")).toBe("CH");
+    expect(countryCodeForFlagValue("ch")).toBe("CH");
+    expect(countryCodeForFlagValue("Switzerland")).toBe("CH");
+    expect(countryCodeForFlagValue("🇨🇭")).toBe("CH");
+    expect(countryCodeForFlagValue("unknown")).toBe("");
   });
 
   it("prefers explicit emoji overrides for non-country flags", () => {

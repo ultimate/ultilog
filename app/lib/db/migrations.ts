@@ -1,11 +1,13 @@
 import type { QueryableDatabase } from "./logbook-database";
 import { normalizeIsoDate } from "../iso-date";
+import { countryCodeForFlagValue } from "../flags";
 
 type RouteRow = { id: string; route: unknown };
 type TimedRow = { sheet_id: string; sort_order: number; time: string };
 type CrewAssignmentRow = { sheet_id: string; crew_member_id: string; sort_order: number; embarkation_datetime: string; disembarkation_datetime: string };
 type LegacyLogSheetDateRow = { id: string; date_range: string; route: unknown };
 type LegacyBoatEngineRow = { boat_id: string; yacht_data: unknown; engine_id: string; model: string };
+type LegacyBoatFlagRow = { id: string; flag_state: string };
 import { readMigrations } from "./schema";
 
 export async function runMigrations(db: QueryableDatabase) {
@@ -27,6 +29,10 @@ export async function runMigrations(db: QueryableDatabase) {
 }
 
 async function applyMigration(db: QueryableDatabase, id: string, sql: string) {
+  if (id === "040_normalize_boat_flag_state") {
+    await normalizeBoatFlagStates(db);
+    return;
+  }
   if (id === "037_resource_concurrency") {
     await addResourceConcurrencyColumns(db);
     return;
@@ -57,6 +63,20 @@ async function applyMigration(db: QueryableDatabase, id: string, sql: string) {
     } catch (error) {
       if (!isDuplicateColumnError(error)) throw error;
     }
+  }
+}
+
+export async function normalizeBoatFlagStates(db: QueryableDatabase) {
+  const rows = await db.query<LegacyBoatFlagRow>("select id, flag_state from boats");
+  for (const row of rows.rows) {
+    const countryCode = countryCodeForFlagValue(row.flag_state);
+    if (countryCode === row.flag_state) continue;
+    await db.query(`update boats set flag_state = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [countryCode, row.id]);
+  }
+
+  if (db.placeholder(1) === "$1") {
+    await db.query("alter table boats alter column flag_state type varchar(2)");
+    await db.query("alter table boats add constraint boats_flag_state_iso_code check (flag_state = '' or (char_length(flag_state) = 2 and flag_state = upper(flag_state)))");
   }
 }
 

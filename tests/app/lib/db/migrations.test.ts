@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import initSqlJs from "sql.js";
 import { readFile } from "node:fs/promises";
-import { removeLegacyLogSheetDateRange, runMigrations } from "../../../../app/lib/db/migrations";
+import { normalizeBoatFlagStates, removeLegacyLogSheetDateRange, runMigrations } from "../../../../app/lib/db/migrations";
 import type { QueryableDatabase, QueryResult } from "../../../../app/lib/db/logbook-database";
 
 class DuplicateColumnDatabase implements QueryableDatabase {
@@ -98,6 +98,31 @@ class RemoveDateRangeDatabase implements QueryableDatabase {
 }
 
 describe("runMigrations", () => {
+  it("normalizes legacy boat country names and emoji to ISO codes", async () => {
+    const calls: Array<{ sql: string; params?: unknown[] }> = [];
+    const db: QueryableDatabase = {
+      placeholder: (index) => `?${index}`,
+      query: async <Row>(sql: string, params?: unknown[]) => {
+        calls.push({ sql, params });
+        if (sql === "select id, flag_state from boats") return { rows: [
+          { id: "name", flag_state: "Switzerland" },
+          { id: "emoji", flag_state: "🇭🇷" },
+          { id: "code", flag_state: "DE" },
+          { id: "unknown", flag_state: "Pirate" },
+        ] as Row[] };
+        return { rows: [] };
+      },
+    };
+
+    await normalizeBoatFlagStates(db);
+
+    expect(calls.filter(({ sql }) => sql.startsWith("update boats"))).toEqual([
+      { sql: "update boats set flag_state = ?1 where id = ?2", params: ["CH", "name"] },
+      { sql: "update boats set flag_state = ?1 where id = ?2", params: ["HR", "emoji"] },
+      { sql: "update boats set flag_state = ?1 where id = ?2", params: ["", "unknown"] },
+    ]);
+  });
+
   it("backfills legacy motor hours to every known engine without overwriting explicit runtime", async () => {
     const SQL = await initSqlJs();
     const db = new SQL.Database();

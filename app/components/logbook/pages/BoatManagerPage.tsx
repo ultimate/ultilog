@@ -160,7 +160,6 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
             <CountryFlagSelector
                 id="boat-flag-state"
                 className="flag-chooser"
-                mode="flag-emoji"
                 label={t("boats.flagState")}
                 emptyLabel={t("boats.flagPlaceholder")}
                 searchLabel={t("common.searchCountries")}

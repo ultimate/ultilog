@@ -23,7 +23,6 @@ export function LegalInformationSection({ profileCountryCode, requestedLanguage 
       <div className="compliance-selectors">
         <CountryFlagSelector
           id="legal-country"
-          mode="iso-code"
           label={t("compliance.legalCountry")}
           emptyLabel={t("compliance.selectCountry")}
           searchLabel={t("common.searchCountries")}
