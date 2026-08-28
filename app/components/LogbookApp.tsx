@@ -1014,6 +1014,7 @@ export function LogbookApp({
     const previousBoat = currentLogbook.boats.find((boat) => boat.id === id);
     const boat: Boat = {
       id,
+      ...concurrencyMetadata(previousBoat),
       archived: previousBoat?.archived ?? false,
       name: boatForm.name,
       type: boatForm.type,

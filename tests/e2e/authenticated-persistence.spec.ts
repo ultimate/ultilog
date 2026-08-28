@@ -53,6 +53,14 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   await expect(boatForm).toBeHidden();
   await expect(page.getByText(boatName)).toBeVisible();
 
+  await page.getByRole("button", { name: new RegExp(boatName) }).click();
+  const editBoatForm = page.locator("form").filter({ hasText: "Boat form" });
+  await editBoatForm.getByLabel("Owner").fill("Updated E2E Owner");
+  const boatUpdate = waitForFocusedLogbookSave(page, "boats");
+  await clickButton(page, "Save boat");
+  await expectSuccessfulSave(boatUpdate);
+  await expect(editBoatForm).toBeHidden();
+
   await openModule(page, "Logbook list", "+ New sheet");
   await clickButton(page, "+ New sheet");
   const sheetForm = page.locator("form").filter({ hasText: "New sheet" });
