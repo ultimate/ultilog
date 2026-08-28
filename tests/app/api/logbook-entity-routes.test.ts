@@ -32,6 +32,16 @@ describe("entity mutation routes", () => {
     expect(store.upsertBoat).toHaveBeenCalledWith(entity, "owner-1");
   });
 
+  it("returns the validation reason for an invalid boat payload", async () => {
+    const response = await boats.POST(new Request("https://example.test/api/logbook/boats", { method: "POST", body: JSON.stringify({ ...entity, flagState: "Atlantis" }) }));
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "boats[0].flagState must identify a supported country.",
+      code: "invalid_payload",
+    });
+  });
+
   it("rejects a body id that differs from the route id", async () => {
     const response = await boat.PUT(new Request("https://example.test/api/logbook/boats/other", { method: "PUT", body: JSON.stringify(entity) }), context("other"));
     expect(response.status).toBe(400);
