@@ -47,7 +47,7 @@ describe("BoatManagerPage archiving", () => {
   it("keeps legacy and custom boat flag values selectable", () => {
     const markup = renderManager({ boats: [boat], crewMembers: [], sheets: [] }, boat, "Switzerland");
 
-    expect(markup).toContain('<option value="Switzerland" selected="">Switzerland</option>');
+    expect(markup).toContain('<option value="Switzerland" selected="">🇨🇭 Switzerland</option>');
     expect(markup).toContain('<option value="🇨🇭">🇨🇭 Switzerland</option>');
   });
   it("offers archiving and a logsheet link instead of deletion for a referenced boat", () => {
