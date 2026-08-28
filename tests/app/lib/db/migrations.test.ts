@@ -3,6 +3,7 @@ import initSqlJs from "sql.js";
 import { readFile } from "node:fs/promises";
 import { normalizeBoatFlagStates, removeLegacyLogSheetDateRange, runMigrations } from "../../../../app/lib/db/migrations";
 import type { QueryableDatabase, QueryResult } from "../../../../app/lib/db/logbook-database";
+import { readMigrations, USER_COMPLIANCE_MIGRATION_ID } from "../../../../app/lib/db/schema";
 
 class DuplicateColumnDatabase implements QueryableDatabase {
   calls: string[] = [];
@@ -98,6 +99,11 @@ class RemoveDateRangeDatabase implements QueryableDatabase {
 }
 
 describe("runMigrations", () => {
+  it("discovers the user compliance state migration in order", async () => {
+    const migrations = await readMigrations();
+    expect(migrations.at(-1)?.id).toBe(USER_COMPLIANCE_MIGRATION_ID);
+    expect(migrations.find(({ id }) => id === USER_COMPLIANCE_MIGRATION_ID)?.sql).toContain("user_compliance_manual_requirements");
+  });
   it("normalizes legacy boat country names and emoji to ISO codes", async () => {
     const calls: Array<{ sql: string; params?: unknown[] }> = [];
     const db: QueryableDatabase = {
