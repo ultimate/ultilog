@@ -22,6 +22,8 @@ import type { TranslationKey } from "../../../lib/i18n";
 import { fileToStoredImage } from "../image-utils";
 import { defaultLogSheetShareSettings } from "../../../models/logbook";
 import { uploadStoredImage } from "../persistence";
+import { indexScannerWarnings } from "../../../lib/logbook-scanner/warning-fields";
+import type { LineFormField } from "../../../models/logbook-forms";
 
 type CourseColumn = {
   field: keyof Pick<
@@ -134,6 +136,11 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const coordinateFormat = coordinateFormatOverride?.sheetId === activeSheet.id ? coordinateFormatOverride.format : defaultCoordinateFormat;
   const technicalCheckDrafts = technicalCheckDraftState.sheetId === activeSheet.id ? technicalCheckDraftState.drafts : {};
   const scannerWarnings = activeSheet.scannerWarnings ?? [];
+  const indexedScannerWarnings = indexScannerWarnings(scannerWarnings);
+  const noticeScannerWarnings = [
+    ...indexedScannerWarnings.unmatched,
+    ...[...indexedScannerWarnings.lineWarnings.values()].flatMap((warnings) => warnings),
+  ];
   const logLineEngines = (activeBoat.engines ?? []).filter((engine) => engine.role === "propulsion" && (!engine.archived || activeSheet.lines.some((line) => Number(line.engineHours?.[engine.id]) > 0)));
   const counterEngines = (activeBoat.engines ?? []).filter((engine) => !engine.archived || activeSheet.engineHourCounters?.[engine.id]);
   const share = activeSheet.share ?? defaultLogSheetShareSettings;
@@ -368,6 +375,14 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
         </span>
       </span>
     );
+  };
+
+  const scannerWarningCellProps = (lineNumber: number, fields: LineFormField[], className?: string) => {
+    const fieldWarnings = indexedScannerWarnings.lineFields.get(lineNumber);
+    const warnings = [...new Set(fields.flatMap((field) => fieldWarnings?.get(field) ?? []))];
+    return warnings.length > 0
+      ? { className: [className, "scanner-warning-field"].filter(Boolean).join(" "), title: warnings.join("\n"), "aria-label": warnings.join(" ") }
+      : { className };
   };
 
 
@@ -753,9 +768,9 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                   </div>
                   <div>
                     <h3>Please verify scanned information before locking this sheet.</h3>
-                    {scannerWarnings.length > 0 && (
+                    {noticeScannerWarnings.length > 0 && (
                       <ul>
-                        {scannerWarnings.map((warning, index) => (
+                        {noticeScannerWarnings.map((warning, index) => (
                           <li key={`${warning}-${index}`}>{warning}</li>
                         ))}
                       </ul>
@@ -862,11 +877,11 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                     <tbody>
                       {activeSheet.lines.map((line, index) => lineForms[line.id] ? renderLineEditor(line.id, index + 1) : (
                         <tr key={line.id}>
-                          <td>{index + 1}</td><td>{formatTime(line.time)}</td><td>{coordinateToInput(line.latitude, "lat", coordinateFormat)}</td><td>{coordinateToInput(line.longitude, "lon", coordinateFormat)}</td><td>{line.weather}</td><td>{renderClampedLogText(t("details.weatherRemark"), line.weatherRemark)}</td><td>{line.temperature} {line.temperatureUnit}</td><td>{line.barometer}</td><td>{line.windDirection} {line.windStrength} {line.windUnit}</td><td>{line.waves} {line.seaUnit}</td><td>{line.tide} {line.tideUnit}</td><td>{line.moon}</td>
+                          <td>{index + 1}</td><td {...scannerWarningCellProps(index + 1, ["time"])}>{formatTime(line.time)}</td><td {...scannerWarningCellProps(index + 1, ["latitude", "position"])}>{coordinateToInput(line.latitude, "lat", coordinateFormat)}</td><td {...scannerWarningCellProps(index + 1, ["longitude", "position"])}>{coordinateToInput(line.longitude, "lon", coordinateFormat)}</td><td {...scannerWarningCellProps(index + 1, ["weather"])}>{line.weather}</td><td {...scannerWarningCellProps(index + 1, ["weatherRemark"])}>{renderClampedLogText(t("details.weatherRemark"), line.weatherRemark)}</td><td {...scannerWarningCellProps(index + 1, ["temperature", "temperatureUnit"])}>{line.temperature} {line.temperatureUnit}</td><td {...scannerWarningCellProps(index + 1, ["barometer"])}>{line.barometer}</td><td {...scannerWarningCellProps(index + 1, ["windDirection", "windStrength", "windUnit"])}>{line.windDirection} {line.windStrength} {line.windUnit}</td><td {...scannerWarningCellProps(index + 1, ["waves", "seaUnit"])}>{line.waves} {line.seaUnit}</td><td {...scannerWarningCellProps(index + 1, ["tide", "tideUnit"])}>{line.tide} {line.tideUnit}</td><td {...scannerWarningCellProps(index + 1, ["moon"])}>{line.moon}</td>
                           {courseConversionColumns.map((column) => (!column.isOptional || showCourseColumns) && (
-                            <td className={column.isOptional ? "optional-course-cell" : undefined} key={`${line.id}-${column.field}`}>{line[column.field]}</td>
+                            <td {...scannerWarningCellProps(index + 1, [column.field], column.isOptional ? "optional-course-cell" : undefined)} key={`${line.id}-${column.field}`}>{line[column.field]}</td>
                           ))}
-                          <td>{line.speedKn}</td><td>{line.logNm}</td><td><span className="log-line-distance-summary">{line.sailMiles} nm</span>{renderClampedLogText(t("details.sailNote"), line.sailNote)}</td><td><span className="log-line-distance-summary">{line.motorMiles} nm · {Object.entries(line.engineHours ?? {}).map(([id, hours]) => `${activeBoat.engines?.find((engine) => engine.id === id)?.label ?? id} ${hours} h`).join(" · ") || `${line.motorHours ?? 0} h`}</span>{renderClampedLogText(t("details.motorNote"), line.motorNote)}</td><td>{renderClampedLogText(t("details.remarksEvent"), line.remarks)}</td>
+                          <td {...scannerWarningCellProps(index + 1, ["speedKn"])}>{line.speedKn}</td><td {...scannerWarningCellProps(index + 1, ["logNm"])}>{line.logNm}</td><td {...scannerWarningCellProps(index + 1, ["sailMiles", "sailNote"])}><span className="log-line-distance-summary">{line.sailMiles} nm</span>{renderClampedLogText(t("details.sailNote"), line.sailNote)}</td><td {...scannerWarningCellProps(index + 1, ["motorMiles", "motorHours", "motorNote"])}><span className="log-line-distance-summary">{line.motorMiles} nm · {Object.entries(line.engineHours ?? {}).map(([id, hours]) => `${activeBoat.engines?.find((engine) => engine.id === id)?.label ?? id} ${hours} h`).join(" · ") || `${line.motorHours ?? 0} h`}</span>{renderClampedLogText(t("details.motorNote"), line.motorNote)}</td><td {...scannerWarningCellProps(index + 1, ["remarks"])}>{renderClampedLogText(t("details.remarksEvent"), line.remarks)}</td>
                           <td><button type="button" className="edit-chip" disabled={isActiveSheetLocked} onClick={() => startEditingLine(line)}>✏️</button></td>
                           <td><button type="button" className="edit-chip" disabled={isActiveSheetLocked} onClick={() => deleteLine(line.id)}>🗑️</button></td>
                         </tr>
