@@ -397,7 +397,6 @@ export function ProfilePage(props: ProfilePageProps) {
             <div className="preference-group-grid">
               <CountryFlagSelector
                   id="profile-country-code"
-                  mode="iso-code"
                   label={t("profile.countryCode")}
                   emptyLabel={t("profile.countryNotSelected")}
                   searchLabel={t("common.searchCountries")}

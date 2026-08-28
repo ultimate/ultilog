@@ -5,7 +5,7 @@ import { countryFlagGroups } from "../../app/lib/flags";
 
 describe("CountryFlagSelector", () => {
   it("uses ISO alpha-2 values and includes an accessible empty profile option", () => {
-    const markup = renderToStaticMarkup(<CountryFlagSelector id="country" mode="iso-code" label="Country code" emptyLabel="Not selected" searchLabel="Search countries" noResultsLabel="No countries found" value="CH" onChange={() => undefined} />);
+    const markup = renderToStaticMarkup(<CountryFlagSelector id="country" label="Country code" emptyLabel="Not selected" searchLabel="Search countries" noResultsLabel="No countries found" value="CH" onChange={() => undefined} />);
 
     expect(markup).toContain('<label for="country">Country code</label>');
     expect(markup).toContain('type="search"');
@@ -29,10 +29,11 @@ describe("CountryFlagSelector", () => {
     expect(byContinent[0].flags.length).toBeGreaterThan(1);
   });
 
-  it("shows the country flag for legacy boat values stored as a country name", () => {
-    const markup = renderToStaticMarkup(<CountryFlagSelector id="flag" mode="flag-emoji" label="Flag state" emptyLabel="Choose a flag" searchLabel="Search countries" noResultsLabel="No countries found" value="Switzerland" onChange={() => undefined} />);
+  it("uses ISO codes while displaying the country flag", () => {
+    const markup = renderToStaticMarkup(<CountryFlagSelector id="flag" label="Flag state" emptyLabel="Choose a flag" searchLabel="Search countries" noResultsLabel="No countries found" value="CH" onChange={() => undefined} />);
 
-    expect(markup).toContain('<option value="Switzerland" selected="">🇨🇭 Switzerland</option>');
+    expect(markup).toContain('<option value="CH" selected="">🇨🇭 Switzerland</option>');
+    expect(markup).not.toContain('value="🇨🇭"');
   });
 
   it("combines the shared search behavior with an availability filter", () => {

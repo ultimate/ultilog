@@ -38,3 +38,15 @@ export function flagEmoji(code: string) {
 export function flagOptionEmoji(flag: FlagOption) {
   return flag.emoji ?? flagEmoji(flag.code);
 }
+
+/** Resolve current and legacy country representations to an ISO alpha-2 code. */
+export function countryCodeForFlagValue(value: string): string {
+  const normalized = value.trim().toLocaleLowerCase();
+  if (!normalized) return "";
+  const flag = countryFlagGroups.flatMap((group) => group.flags).find((option) =>
+    option.code.toLocaleLowerCase() === normalized
+    || option.name.toLocaleLowerCase() === normalized
+    || flagOptionEmoji(option) === value.trim(),
+  );
+  return flag?.code ?? "";
+}

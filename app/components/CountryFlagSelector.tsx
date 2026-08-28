@@ -10,8 +10,7 @@ type CommonProps = {
   className?: string;
 };
 
-type IsoCountrySelectorProps = CommonProps & {
-  mode: "iso-code";
+export type CountryFlagSelectorProps = CommonProps & {
   value: string;
   onChange: (value: string) => void;
   availableCountryCodes?: readonly string[];
@@ -19,14 +18,6 @@ type IsoCountrySelectorProps = CommonProps & {
   availableMarkerLabel?: string;
   unavailableMarkerLabel?: string;
 };
-
-type BoatFlagSelectorProps = CommonProps & {
-  mode: "flag-emoji";
-  value: string;
-  onChange: (value: string) => void;
-};
-
-export type CountryFlagSelectorProps = IsoCountrySelectorProps | BoatFlagSelectorProps;
 
 export function filterFlagGroups(
   groups: typeof flagGroups,
@@ -55,24 +46,17 @@ export function filterFlagGroups(
   });
 }
 
-/** A country selector with explicit storage semantics for profiles and boats. */
+/** A searchable country selector that stores ISO alpha-2 codes. */
 export function CountryFlagSelector(props: CountryFlagSelectorProps) {
   const [query, setQuery] = useState("");
   const [availableOnly, setAvailableOnly] = useState(false);
-  const groups = props.mode === "iso-code" ? countryFlagGroups : flagGroups;
-  const availableCountryCodes = props.mode === "iso-code" ? props.availableCountryCodes : undefined;
+  const groups = countryFlagGroups;
+  const availableCountryCodes = props.availableCountryCodes;
   const availableCodes = useMemo(() => new Set(availableCountryCodes ?? []), [availableCountryCodes]);
   const visibleGroups = useMemo(
     () => filterFlagGroups(groups, query, (flag) => !availableOnly || availableCodes.has(flag.code)),
     [availableCodes, availableOnly, groups, query],
   );
-  const optionValue = (flag: (typeof flagGroups)[number]["flags"][number]) =>
-    props.mode === "iso-code" ? flag.code : flagOptionEmoji(flag);
-  const selectedFlag = groups.flatMap((group) => group.flags).find((flag) =>
-    optionValue(flag) === props.value
-    || (props.mode === "flag-emoji" && (flag.code === props.value || flag.name === props.value)),
-  );
-  const hasCatalogValue = selectedFlag && optionValue(selectedFlag) === props.value;
 
   return (
     <div className="flag-chooser-field">
@@ -89,7 +73,7 @@ export function CountryFlagSelector(props: CountryFlagSelectorProps) {
           autoComplete="off"
         />
       </div>
-      {props.mode === "iso-code" && props.availableOnlyLabel && props.availableCountryCodes ? (
+      {props.availableOnlyLabel && props.availableCountryCodes ? (
         <label className="flag-chooser-filter">
           <input
             type="checkbox"
@@ -97,13 +81,13 @@ export function CountryFlagSelector(props: CountryFlagSelectorProps) {
             onChange={(event) => {
               const checked = event.target.checked;
               setAvailableOnly(checked);
-              if (checked && props.mode === "iso-code" && props.value && !availableCodes.has(props.value)) props.onChange("");
+              if (checked && props.value && !availableCodes.has(props.value)) props.onChange("");
             }}
           />
           {props.availableOnlyLabel}
         </label>
       ) : null}
-      {props.mode === "iso-code" && props.availableCountryCodes && props.availableMarkerLabel && props.unavailableMarkerLabel ? (
+      {props.availableCountryCodes && props.availableMarkerLabel && props.unavailableMarkerLabel ? (
         <small className="flag-chooser-legend">✓ {props.availableMarkerLabel} · ○ {props.unavailableMarkerLabel}</small>
       ) : null}
       <select
@@ -113,18 +97,13 @@ export function CountryFlagSelector(props: CountryFlagSelectorProps) {
         onChange={(event) => props.onChange(event.target.value)}
       >
         <option value="">{props.emptyLabel}</option>
-        {props.mode === "flag-emoji" && props.value && !hasCatalogValue ? (
-          <option value={props.value}>
-            {selectedFlag ? `${flagOptionEmoji(selectedFlag)} ${selectedFlag.name}` : props.value}
-          </option>
-        ) : null}
         {visibleGroups.length === 0 ? <option disabled>{props.noResultsLabel}</option> : null}
         {visibleGroups.map((group) => (
           <optgroup key={group.continent} label={group.continent}>
             {group.flags.map((flag) => {
               const emoji = flagOptionEmoji(flag);
               return (
-                <option key={flag.code} value={optionValue(flag)}>
+                <option key={flag.code} value={flag.code}>
                   {availableCountryCodes ? `${availableCodes.has(flag.code) ? "✓" : "○"} ` : ""}{emoji} {flag.name}
                 </option>
               );

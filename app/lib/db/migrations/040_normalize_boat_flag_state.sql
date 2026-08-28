@@ -1,0 +1,2 @@
+-- Applied in migrations.ts so legacy country names and Unicode flags can be
+-- normalized consistently on both SQLite and PostgreSQL.

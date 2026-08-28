@@ -86,7 +86,7 @@ create table if not exists boats (
   name text not null,
   type text not null,
   registration text not null,
-  flag_state text not null,
+  flag_state varchar(2) not null check (flag_state = '' or (length(flag_state) = 2 and flag_state = upper(flag_state))),
   home_port text not null,
   owner text not null,
   dimensions text not null,

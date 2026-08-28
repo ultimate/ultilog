@@ -11,7 +11,7 @@ const boat: Boat = {
   name: "Aurora",
   type: "Sail",
   registration: "CH-1",
-  flagState: "🇨🇭",
+  flagState: "CH",
   homePort: "Basel",
   owner: "Owner",
   dimensions: "10m",
@@ -44,11 +44,11 @@ function renderManager(logbook: PersistedLogbook, selectedBoat: Boat, flagState 
 }
 
 describe("BoatManagerPage archiving", () => {
-  it("keeps legacy and custom boat flag values selectable", () => {
-    const markup = renderManager({ boats: [boat], crewMembers: [], sheets: [] }, boat, "Switzerland");
+  it("stores an ISO code while showing the selected country flag", () => {
+    const markup = renderManager({ boats: [boat], crewMembers: [], sheets: [] }, boat, "CH");
 
-    expect(markup).toContain('<option value="Switzerland" selected="">🇨🇭 Switzerland</option>');
-    expect(markup).toContain('<option value="🇨🇭">🇨🇭 Switzerland</option>');
+    expect(markup).toContain('<option value="CH" selected="">🇨🇭 Switzerland</option>');
+    expect(markup).not.toContain('value="🇨🇭"');
   });
   it("offers archiving and a logsheet link instead of deletion for a referenced boat", () => {
     const logbook: PersistedLogbook = {
