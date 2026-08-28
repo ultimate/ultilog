@@ -67,6 +67,28 @@ describe("SqliteLogbookDatabase", () => {
     expect(new Date(sheetAfter.updated_at).getTime()).toBeGreaterThan(new Date(sheetBefore.updated_at).getTime());
   });
 
+  it("updates a boat without deleting engines referenced by logged hours", async () => {
+    const db = new SqliteLogbookDatabase(await tempDatabasePath()).forUser("boat-update-user");
+    await db.migrate();
+    await db.query("insert into users (id, name, email, password_hash) values (?, ?, ?, ?)", ["boat-update-user", "Boat updater", "boat-update@example.test", ""]);
+    const createdBoat = await db.upsertBoat({ ...sampleBoats[0], id: "boat-1" });
+    const source = sampleLogSheets[0];
+    await db.upsertLogSheet({
+      ...source,
+      id: "engine-hours-sheet",
+      boatId: "boat-1",
+      crew: [],
+      lines: [{ ...source.lines[0], engineHours: { "main-engine": 1.25 }, motorHours: 1.25 }],
+    });
+
+    const updated = await db.upsertBoat({ ...createdBoat!, owner: "Updated owner" });
+
+    expect(updated?.owner).toBe("Updated owner");
+    await expect(db.query("select engine_id, runtime_hours from log_line_engine_hours")).resolves.toEqual({
+      rows: [{ engine_id: "boat-update-user:boat-1:main-engine", runtime_hours: 1.25 }],
+    });
+  });
+
   it("mutates only the addressed line and sheet while keeping cached metrics current", async () => {
     const db = new SqliteLogbookDatabase(await tempDatabasePath()).forUser("focused-lines");
     await db.migrate();
