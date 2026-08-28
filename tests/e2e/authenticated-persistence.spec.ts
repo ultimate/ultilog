@@ -56,14 +56,17 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   await page.getByRole("button", { name: new RegExp(boatName) }).click();
   const editBoatForm = page.locator("form").filter({ hasText: "Boat form" });
   await editBoatForm.getByLabel("Owner").fill("Updated E2E Owner");
+  await editBoatForm.getByRole("searchbox", { name: "Search countries" }).fill("Germany");
+  await editBoatForm.getByLabel("Flag state").selectOption("DE");
   const boatUpdate = waitForFocusedLogbookSave(page, "boats");
   await clickButton(page, "Save boat");
-  await expectSuccessfulSave(boatUpdate);
+  const boatUpdateResponse = await expectSuccessfulSave(boatUpdate);
+  expect((await boatUpdateResponse.request().postDataJSON()).flagState).toBe("DE");
   await expect.poll(async () => {
     const response = await page.request.get("/api/logbook");
-    const persisted = await response.json() as { boats: Array<{ name: string; owner: string }> };
-    return persisted.boats.find((boat) => boat.name === boatName)?.owner;
-  }).toBe("Updated E2E Owner");
+    const persisted = await response.json() as { boats: Array<{ name: string; owner: string; flagState: string }> };
+    return persisted.boats.find((boat) => boat.name === boatName);
+  }).toMatchObject({ owner: "Updated E2E Owner", flagState: "DE" });
 
   await openModule(page, "Logbook list", "+ New sheet");
   await clickButton(page, "+ New sheet");
@@ -128,6 +131,7 @@ function waitForFocusedLogbookSave(page: Page, collection: "boats" | "crew" | "s
 async function expectSuccessfulSave(responsePromise: Promise<Response>) {
   const response = await responsePromise;
   expect(response.ok(), await response.text()).toBeTruthy();
+  return response;
 }
 
 async function clickButton(page: Page, name: string | RegExp) {

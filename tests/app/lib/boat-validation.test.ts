@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { validateBoat, validateBoatUpdate } from "../../../app/lib/validation/boat";
+import { boatToForm } from "../../../app/components/logbook/forms";
 
 const boat = {
   id: "boat-1",
@@ -28,6 +29,10 @@ describe("boat validation", () => {
     const update = validateBoatUpdate({ ...boat, flagState: "🇨🇭", revision: 2, createdAt: "created", updatedAt: "updated" });
 
     expect(update).toMatchObject({ flagState: "CH", revision: 2, createdAt: "created", updatedAt: "updated" });
+  });
+
+  it("normalizes legacy values before populating the boat editor", () => {
+    expect(boatToForm({ ...boat, type: "Sail", flagState: "🇨🇭" }).flagState).toBe("CH");
   });
 
   it("rejects values that do not identify a supported country", () => {
