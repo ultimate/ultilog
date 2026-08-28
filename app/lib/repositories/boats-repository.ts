@@ -39,10 +39,7 @@ export class BoatsRepository {
       const updated = await this.db.query<{ revision: number }>(`update boats set ${assignments.join(", ")}, revision = revision + 1, updated_at = ${this.now()} where id = ${this.db.placeholder(14)} and owner_id = ${this.db.placeholder(15)} and revision = ${this.db.placeholder(16)} returning revision`, [...values, id, ownerId, expected]);
       if (!updated.rows.length) throw Object.assign(new Error("The boat was changed by another request."), { code: "revision_conflict" });
     } else await this.db.query(`insert into boats (id, archived, name, type, registration, flag_state, home_port, owner, dimensions, logfactor, yacht_data, deviation_table, wind_drift_table, image_id, owner_id) values (${this.values(15)})`, [id, ...values, ownerId]);
-    await this.db.query(`delete from engines where boat_id = ${this.db.placeholder(1)}`, [id]);
-    for (const [sortOrder, engine] of (boat.engines?.length ? boat.engines : [defaultMainEngine()]).entries()) {
-      await this.db.query(`insert into engines (id, boat_id, sort_order, name, short_label, role, archived, manufacturer, model, serial_number) values (${this.values(10)})`, [`${id}:${engine.id}`, id, sortOrder, engine.name, engine.label, engine.role, engine.archived ? 1 : 0, engine.manufacturer ?? "", engine.model ?? "", engine.serialNumber ?? ""]);
-    }
+    await this.syncEngines(id, boat.engines);
     return this.findById(boat.id, ownerId);
   }
 
@@ -71,6 +68,31 @@ export class BoatsRepository {
       );
     }
     return this.findById(boat.id, ownerId);
+  }
+
+  private async syncEngines(boatId: string, configuredEngines?: BoatEngine[]) {
+    const engines = configuredEngines?.length ? configuredEngines : [defaultMainEngine()];
+    const stored = await this.db.query<{ id: string }>(`select id from engines where boat_id = ${this.db.placeholder(1)}`, [boatId]);
+    const storedIds = new Set(stored.rows.map(({ id }) => id));
+    const desiredIds = new Set<string>();
+
+    for (const [sortOrder, engine] of engines.entries()) {
+      const id = `${boatId}:${engine.id}`;
+      desiredIds.add(id);
+      const values = [sortOrder, engine.name, engine.label, engine.role, engine.archived ? 1 : 0, engine.manufacturer ?? "", engine.model ?? "", engine.serialNumber ?? ""];
+      if (storedIds.has(id)) {
+        const columns = ["sort_order", "name", "short_label", "role", "archived", "manufacturer", "model", "serial_number"];
+        await this.db.query(`update engines set ${columns.map((column, index) => `${column} = ${this.db.placeholder(index + 1)}`).join(", ")} where id = ${this.db.placeholder(9)} and boat_id = ${this.db.placeholder(10)}`, [...values, id, boatId]);
+      } else {
+        await this.db.query(`insert into engines (id, boat_id, sort_order, name, short_label, role, archived, manufacturer, model, serial_number) values (${this.values(10)})`, [id, boatId, ...values]);
+      }
+    }
+
+    for (const id of [...storedIds].filter((candidate) => !desiredIds.has(candidate))) {
+      const referenced = await this.db.query<{ engine_id: string }>(`select engine_id from log_line_engine_hours where engine_id = ${this.db.placeholder(1)} limit 1`, [id]);
+      if (referenced.rows.length) await this.db.query(`update engines set archived = 1 where id = ${this.db.placeholder(1)}`, [id]);
+      else await this.db.query(`delete from engines where id = ${this.db.placeholder(1)}`, [id]);
+    }
   }
 
   private values(count: number) {
