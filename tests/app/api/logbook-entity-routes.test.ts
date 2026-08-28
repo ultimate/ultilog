@@ -42,6 +42,20 @@ describe("entity mutation routes", () => {
     });
   });
 
+  it("returns a diagnosable reference for unexpected database errors", async () => {
+    vi.mocked(store.upsertBoat).mockRejectedValueOnce(Object.assign(new Error("value too long"), { code: "22001" }));
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    const response = await boats.POST(new Request("https://example.test/api/logbook/boats", { method: "POST", body: JSON.stringify(entity) }));
+    const payload = await response.json() as { error: string; code: string; reference: string };
+
+    expect(response.status).toBe(500);
+    expect(payload).toMatchObject({ error: "A value is too long for its database column.", code: "database_22001" });
+    expect(payload.reference).toMatch(/^[0-9a-f-]{36}$/);
+    expect(consoleError).toHaveBeenCalledWith(`[logbook-mutation:${payload.reference}]`, expect.objectContaining({ code: "22001" }));
+    consoleError.mockRestore();
+  });
+
   it("rejects a body id that differs from the route id", async () => {
     const response = await boat.PUT(new Request("https://example.test/api/logbook/boats/other", { method: "PUT", body: JSON.stringify(entity) }), context("other"));
     expect(response.status).toBe(400);

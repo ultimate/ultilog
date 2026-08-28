@@ -95,10 +95,11 @@ export async function mutationErrorDetail(response?: Response, requestError?: un
     const message = requestError instanceof Error ? requestError.message : "The request did not reach the server.";
     return `Network error: ${message}`;
   }
-  const payload = await response.clone().json().catch(() => undefined) as { error?: unknown; code?: unknown } | undefined;
+  const payload = await response.clone().json().catch(() => undefined) as { error?: unknown; code?: unknown; reference?: unknown } | undefined;
   const error = typeof payload?.error === "string" ? payload.error : response.statusText || "Request rejected";
   const code = typeof payload?.code === "string" ? `, ${payload.code}` : "";
-  return `HTTP ${response.status}${code}: ${error}`;
+  const reference = typeof payload?.reference === "string" ? ` Reference: ${payload.reference}.` : "";
+  return `HTTP ${response.status}${code}: ${error}${reference}`;
 }
 
 function entityRequest(path: string, method: "POST" | "PUT" | "DELETE", entity?: Boat | CrewMember | LogSheet | LogLine, options?: RequestOptions) {
