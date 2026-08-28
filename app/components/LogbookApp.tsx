@@ -63,6 +63,7 @@ import { courseConversionColumns } from "../domain/nautical/course-conversion";
 import { calculateLogSheetMetrics, formatLogSheetDuration } from "../domain/logbook/sheet-metrics";
 import { calculateLogbookDayStatistics } from "../domain/logbook/logbook-statistics";
 import { activeBoats } from "../domain/boats/boat-policy";
+import { countryCodeForFlagValue } from "../lib/flags";
 import { lineFormToLogLine } from "../domain/log-lines/log-line-form";
 import { sortLogLinesByTime } from "../domain/log-lines/log-line-order";
 import { calculateSmartNavigationFields, calculateTrackedMotionFields, previousSheetLogMiles, type TimedCoordinate } from "../domain/log-lines/smart-line";
@@ -1019,7 +1020,7 @@ export function LogbookApp({
       name: boatForm.name,
       type: boatForm.type,
       registration: boatForm.registration,
-      flagState: boatForm.flagState,
+      flagState: countryCodeForFlagValue(boatForm.flagState),
       homePort: boatForm.homePort,
       owner: boatForm.owner,
       dimensions: boatForm.dimensions,
