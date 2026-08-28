@@ -18,7 +18,7 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
     status: "Draft",
     source: "scanner",
     verificationNote: "Please verify scanned information before locking this sheet.",
-    scannerWarnings: ["Verify the scanned engine hours."],
+    scannerWarnings: ["Row 1 is missing or unclear: latitude."],
     boatId: currentLogbook.boats[0].id,
     route: {
       from: "Sample Harbor",
@@ -29,7 +29,7 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
     crew: [],
     watchPlan: [],
     technicalChecks: [],
-    lines: [],
+    lines: sampleLogSheets[0].lines.slice(0, 1),
   };
 
   await page.route("**/api/logbook/scanner", async (route) => {
@@ -76,7 +76,8 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
   await expect(page.getByRole("heading", { name: scannedSheet.title })).toBeVisible();
   await expect(page.getByLabel("Scanned draft verification notice")).toBeVisible();
   await expect(page.getByLabel("Scanned draft verification notice")).toContainText("Please verify scanned information before locking this sheet.");
-  await expect(page.getByLabel("Scanned draft verification notice")).toContainText("Verify the scanned engine hours.");
+  const highlightedLatitude = page.locator("td.scanner-warning-field").filter({ hasText: String(scannedSheet.lines[0].latitude) });
+  await expect(highlightedLatitude).toHaveAttribute("title", "Row 1 is missing or unclear: latitude.");
   expect(scannerRequestReceived).toBeTruthy();
 });
 
