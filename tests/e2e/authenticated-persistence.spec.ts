@@ -59,7 +59,11 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   const boatUpdate = waitForFocusedLogbookSave(page, "boats");
   await clickButton(page, "Save boat");
   await expectSuccessfulSave(boatUpdate);
-  await expect(editBoatForm).toBeHidden();
+  await expect.poll(async () => {
+    const response = await page.request.get("/api/logbook");
+    const persisted = await response.json() as { boats: Array<{ name: string; owner: string }> };
+    return persisted.boats.find((boat) => boat.name === boatName)?.owner;
+  }).toBe("Updated E2E Owner");
 
   await openModule(page, "Logbook list", "+ New sheet");
   await clickButton(page, "+ New sheet");
