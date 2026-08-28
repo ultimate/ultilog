@@ -8,6 +8,7 @@ create table if not exists users (
   theme text not null default 'light',
   nav_slim integer not null default 0,
   has_read_compliance integer not null default 0,
+  selected_compliance_license_id text,
   country_code text not null default '',
   language text not null default 'en',
   date_format text not null default 'dd/MM/yyyy',
@@ -27,6 +28,17 @@ create table if not exists users (
 );
 
 create unique index if not exists users_name_unique_idx on users (lower(name));
+
+create table if not exists user_compliance_manual_requirements (
+  user_id text not null references users(id) on delete cascade,
+  license_id text not null,
+  requirement_id text not null,
+  completed_at text not null default current_timestamp,
+  primary key (user_id, license_id, requirement_id)
+);
+
+create index if not exists user_compliance_manual_requirements_user_idx
+  on user_compliance_manual_requirements (user_id);
 
 create table if not exists user_groups (
   user_id text not null references users(id) on delete cascade,
