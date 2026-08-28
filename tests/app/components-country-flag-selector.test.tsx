@@ -29,6 +29,12 @@ describe("CountryFlagSelector", () => {
     expect(byContinent[0].flags.length).toBeGreaterThan(1);
   });
 
+  it("shows the country flag for legacy boat values stored as a country name", () => {
+    const markup = renderToStaticMarkup(<CountryFlagSelector id="flag" mode="flag-emoji" label="Flag state" emptyLabel="Choose a flag" searchLabel="Search countries" noResultsLabel="No countries found" value="Switzerland" onChange={() => undefined} />);
+
+    expect(markup).toContain('<option value="Switzerland" selected="">🇨🇭 Switzerland</option>');
+  });
+
   it("combines the shared search behavior with an availability filter", () => {
     const availableCodes = new Set(["CH", "DE"]);
     const availableInEurope = filterFlagGroups(

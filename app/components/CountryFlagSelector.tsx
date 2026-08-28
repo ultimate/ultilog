@@ -68,9 +68,11 @@ export function CountryFlagSelector(props: CountryFlagSelectorProps) {
   );
   const optionValue = (flag: (typeof flagGroups)[number]["flags"][number]) =>
     props.mode === "iso-code" ? flag.code : flagOptionEmoji(flag);
-  const hasCatalogValue = groups.some((group) =>
-    group.flags.some((flag) => optionValue(flag) === props.value),
+  const selectedFlag = groups.flatMap((group) => group.flags).find((flag) =>
+    optionValue(flag) === props.value
+    || (props.mode === "flag-emoji" && (flag.code === props.value || flag.name === props.value)),
   );
+  const hasCatalogValue = selectedFlag && optionValue(selectedFlag) === props.value;
 
   return (
     <div className="flag-chooser-field">
@@ -112,7 +114,9 @@ export function CountryFlagSelector(props: CountryFlagSelectorProps) {
       >
         <option value="">{props.emptyLabel}</option>
         {props.mode === "flag-emoji" && props.value && !hasCatalogValue ? (
-          <option value={props.value}>{props.value}</option>
+          <option value={props.value}>
+            {selectedFlag ? `${flagOptionEmoji(selectedFlag)} ${selectedFlag.name}` : props.value}
+          </option>
         ) : null}
         {visibleGroups.length === 0 ? <option disabled>{props.noResultsLabel}</option> : null}
         {visibleGroups.map((group) => (
