@@ -13,6 +13,8 @@ describe("logbook persistence", () => {
     const response = Response.json({ error: "boats[0].flagState must identify a supported country.", code: "invalid_payload" }, { status: 400 });
 
     await expect(mutationErrorDetail(response)).resolves.toBe("HTTP 400, invalid_payload: boats[0].flagState must identify a supported country.");
+    const internal = Response.json({ error: "A value does not satisfy a database constraint.", code: "database_23514", reference: "error-reference" }, { status: 500 });
+    await expect(mutationErrorDetail(internal)).resolves.toBe("HTTP 500, database_23514: A value does not satisfy a database constraint. Reference: error-reference.");
     await expect(mutationErrorDetail(undefined, new Error("fetch failed"))).resolves.toBe("Network error: fetch failed");
   });
 
