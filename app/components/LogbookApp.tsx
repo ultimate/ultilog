@@ -44,6 +44,7 @@ import {
   deleteLogLine as persistDeleteLogLine,
   reorderLogLines,
   routeFromPathname,
+  mutationErrorDetail,
 } from "./logbook/persistence";
 import { mergeMutationResult } from "./logbook/mutation-merge";
 import { replaceEntireLogbook } from "./logbook/import";
@@ -408,6 +409,7 @@ export function LogbookApp({
     }
     const previousRequest = mutationQueuesRef.current.get(key) ?? Promise.resolve();
     let response: Response | undefined;
+    let requestError: unknown;
     let persistedEntity: Boat | CrewMember | LogSheet | LogLine | undefined;
     const request = previousRequest.catch(() => undefined).then(async () => {
       const current = logbookRef.current;
@@ -424,7 +426,10 @@ export function LogbookApp({
         : mutation.kind === "crew" ? persistCrewMember(entity as CrewMember, mutation.isNew)
         : mutation.kind === "line-deletion" ? persistDeleteLogLine(mutation.sheetId, mutation.id, mutation.revision)
         : mutation.kind === "sheet" ? persistSheet(entity as LogSheet ?? current.sheets.find((sheet) => "id" in mutation && sheet.id === mutation.id)!, "isNew" in mutation && mutation.isNew)
-        : deleteLogbookEntity(mutation.entityKind, mutation.id, mutation.revision)).catch(() => undefined);
+        : deleteLogbookEntity(mutation.entityKind, mutation.id, mutation.revision)).catch((error) => {
+          requestError = error;
+          return undefined;
+        });
       if (response?.ok && entity && (mutation.kind === "boat" || mutation.kind === "crew" || mutation.kind === "sheet")) {
         persistedEntity = await response.clone().json().catch(() => undefined) as typeof persistedEntity;
         if (persistedEntity) mergePersistedMutation(mutation.kind, id, entity as typeof persistedEntity, persistedEntity);
@@ -435,7 +440,7 @@ export function LogbookApp({
     if (mutationQueuesRef.current.get(key) === request) mutationQueuesRef.current.delete(key);
     if (!response?.ok) {
       failedMutationsRef.current.set(key, sequence);
-      setSaveError(t("logbook.saveError"));
+      setSaveError(`${t("logbook.saveError")} ${await mutationErrorDetail(response, requestError)}`);
     }
     // An older response must never clear or mark a later edit of the same entity.
     if (pendingMutationsRef.current.get(key) !== sequence) return response?.ok ?? false;

@@ -90,6 +90,17 @@ export function normalizeLogbookIds(logbook: PersistedLogbook): { logbook: Persi
 
 type RequestOptions = { signal?: AbortSignal; keepalive?: boolean };
 
+export async function mutationErrorDetail(response?: Response, requestError?: unknown) {
+  if (!response) {
+    const message = requestError instanceof Error ? requestError.message : "The request did not reach the server.";
+    return `Network error: ${message}`;
+  }
+  const payload = await response.clone().json().catch(() => undefined) as { error?: unknown; code?: unknown } | undefined;
+  const error = typeof payload?.error === "string" ? payload.error : response.statusText || "Request rejected";
+  const code = typeof payload?.code === "string" ? `, ${payload.code}` : "";
+  return `HTTP ${response.status}${code}: ${error}`;
+}
+
 function entityRequest(path: string, method: "POST" | "PUT" | "DELETE", entity?: Boat | CrewMember | LogSheet | LogLine, options?: RequestOptions) {
   const withoutImageBytes = entity && "image" in entity
     ? { ...entity, image: undefined, imageId: entity.imageId ?? entity.image?.id,

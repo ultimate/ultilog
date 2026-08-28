@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { deleteLogbookEntity, normalizeLogbookIds, persistBoat, persistCrewMember, persistLogLine, persistSheet, uploadStoredImage } from "../../app/components/logbook/persistence";
+import { deleteLogbookEntity, mutationErrorDetail, normalizeLogbookIds, persistBoat, persistCrewMember, persistLogLine, persistSheet, uploadStoredImage } from "../../app/components/logbook/persistence";
 import * as importOperations from "../../app/components/logbook/import";
 import type { PersistedLogbook } from "../../app/models/logbook";
 import { sampleLogSheets } from "../fixtures/logbook";
@@ -9,6 +9,13 @@ const image = { data: "base64-image", mimeType: "image/png", width: 64, height: 
 vi.stubGlobal("crypto", { randomUUID: vi.fn() });
 
 describe("logbook persistence", () => {
+  it("formats actionable mutation errors returned by the API", async () => {
+    const response = Response.json({ error: "boats[0].flagState must identify a supported country.", code: "invalid_payload" }, { status: 400 });
+
+    await expect(mutationErrorDetail(response)).resolves.toBe("HTTP 400, invalid_payload: boats[0].flagState must identify a supported country.");
+    await expect(mutationErrorDetail(undefined, new Error("fetch failed"))).resolves.toBe("Network error: fetch failed");
+  });
+
   it("never invokes full replacement for routine boat, crew, sheet, assignment, image, or line mutations", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: "image-1" }), { status: 200, headers: { "Content-Type": "application/json" } }));
     vi.stubGlobal("fetch", fetchMock);
