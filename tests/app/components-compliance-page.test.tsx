@@ -53,4 +53,20 @@ describe("CompliancePage", () => {
     expect(unsupported).toContain("Legal information is not yet available");
     expect(unsupported).toContain("Legal%20information%20request%3A%20FR");
   });
+
+  it("offers catalog licenses from every issuing country without demo progress values", () => {
+    const markup = renderPage("CH", "it");
+    expect(markup).toContain('<optgroup label="Svizzera">');
+    expect(markup).toContain('<option value="de-sks">Sportküstenschifferschein (SKS)</option>');
+    expect(markup).not.toContain("2,173");
+    expect(markup).not.toContain("72%");
+    expect(markup).not.toContain("Download report");
+  });
+
+  it("keeps the independently sourced legal and license language controls", () => {
+    const markup = renderPage("CH", "it");
+    expect(markup).toContain('id="legal-language"');
+    expect(markup).toContain('id="compliance-license"');
+    expect(markup).not.toContain('id="license-language"');
+  });
 });
