@@ -65,6 +65,7 @@ import { calculateLogSheetMetrics, formatLogSheetDuration } from "../domain/logb
 import { calculateLogbookDayStatistics } from "../domain/logbook/logbook-statistics";
 import { activeBoats } from "../domain/boats/boat-policy";
 import { countryCodeForFlagValue } from "../lib/flags";
+import { readScannerUploadResponse } from "../lib/logbook-scanner/upload-response";
 import { lineFormToLogLine } from "../domain/log-lines/log-line-form";
 import { sortLogLinesByTime } from "../domain/log-lines/log-line-order";
 import { calculateSmartNavigationFields, calculateTrackedMotionFields, previousSheetLogMiles, type TimedCoordinate } from "../domain/log-lines/smart-line";
@@ -755,13 +756,7 @@ export function LogbookApp({
         method: "POST",
         body: upload,
       });
-      const payload = (await response.json().catch(() => ({}))) as {
-        sheetId?: string;
-        error?: string;
-      };
-      if (!response.ok || !payload.sheetId) {
-        throw new Error(payload.error ?? t("logbooks.scanUploadError"));
-      }
+      const payload = await readScannerUploadResponse(response, t("logbooks.scanUploadError"));
       await refreshLogbookAfterScan(payload.sheetId);
       setSelectedScannerFiles([]);
     } catch (error) {
