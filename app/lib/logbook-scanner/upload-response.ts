@@ -2,6 +2,7 @@ export type ScannerUploadPayload = {
   sheetId?: string;
   code?: string;
   error?: string;
+  reference?: string;
 };
 
 /** Reads API and hosting-platform errors without hiding useful HTTP diagnostics. */
@@ -14,7 +15,10 @@ export async function readScannerUploadResponse(response: Response, fallback: st
   }
 
   if (response.ok && payload.sheetId) return payload as ScannerUploadPayload & { sheetId: string };
-  if (payload.error) throw new Error(payload.error);
+  if (payload.error) {
+    const reference = payload.reference && !payload.error.includes(payload.reference) ? ` Reference: ${payload.reference}.` : "";
+    throw new Error(`${payload.error}${reference}`);
+  }
   if (response.status === 413) {
     throw new Error("The scanner upload was rejected because it is too large. Try a smaller image or fewer images.");
   }

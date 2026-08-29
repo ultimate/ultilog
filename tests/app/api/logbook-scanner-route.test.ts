@@ -299,6 +299,27 @@ describe("logbook scanner endpoint", () => {
     expect(mockedWriteLogbook).not.toHaveBeenCalled();
   });
 
+  it("returns a diagnostic reference when saving a scanned draft fails unexpectedly", async () => {
+    mockedAuth.mockResolvedValueOnce(session);
+    mockedReadLogbook.mockResolvedValueOnce(logbook);
+    mockedScanner.mockResolvedValueOnce(partialScannerResult);
+    mockedCreateLogSheetAggregate.mockRejectedValueOnce(new Error("database offline"));
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const formData = new FormData();
+    formData.set("boatId", boat.id);
+    formData.append("files", imageFile());
+
+    const response = await POST(scannerRequest(formData));
+    const payload = await response.json() as { code: string; error: string; reference: string };
+
+    expect(response.status).toBe(500);
+    expect(payload.code).toBe("internal_scanner_error");
+    expect(payload.reference).toMatch(/^[0-9a-f-]{36}$/);
+    expect(payload.error).toContain(payload.reference);
+    expect(consoleError).toHaveBeenCalledWith(`[logbook-scanner:${payload.reference}]`, expect.any(Error));
+    consoleError.mockRestore();
+  });
+
   it("defaults missing scanner units from user preferences", async () => {
     mockedAuth.mockResolvedValueOnce(session);
     mockedReadLogbook.mockResolvedValueOnce(logbook);

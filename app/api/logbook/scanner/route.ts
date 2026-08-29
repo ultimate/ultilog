@@ -30,10 +30,18 @@ type ScannerErrorCode =
 type ScannerErrorResponse = {
   code: ScannerErrorCode;
   error: string;
+  reference?: string;
 };
 
-
 export async function POST(request: Request) {
+  try {
+    return await scanLogbook(request);
+  } catch (error) {
+    return unexpectedScannerError(error);
+  }
+}
+
+async function scanLogbook(request: Request) {
   const originError = guardMutationOrigin(request);
   if (originError) return originError;
   const session = await auth();
@@ -95,6 +103,16 @@ export async function POST(request: Request) {
   await createLogSheetAggregate(focusedSheet, lines, session.user.id);
 
   return NextResponse.json({ sheetId: sheet.id });
+}
+
+function unexpectedScannerError(error: unknown) {
+  const reference = crypto.randomUUID();
+  console.error(`[logbook-scanner:${reference}]`, error);
+  return NextResponse.json({
+    code: "internal_scanner_error",
+    error: `An unexpected server error occurred while processing the scan. Check the server log using reference ${reference}.`,
+    reference,
+  }, { status: 500 });
 }
 
 function validateFiles(files: File[]) {
