@@ -12,6 +12,11 @@ describe("scanner upload responses", () => {
     await expect(readScannerUploadResponse(response, "Upload failed.")).rejects.toThrow("Scanner provider is unavailable.");
   });
 
+  it("adds a diagnostic reference when it is separate from the API message", async () => {
+    const response = Response.json({ error: "Unexpected scanner error.", reference: "scan-ref" }, { status: 500 });
+    await expect(readScannerUploadResponse(response, "Upload failed.")).rejects.toThrow("Unexpected scanner error. Reference: scan-ref.");
+  });
+
   it("explains a platform-level oversized request instead of returning a generic error", async () => {
     const response = new Response("Request Entity Too Large", { status: 413, headers: { "content-type": "text/html" } });
     await expect(readScannerUploadResponse(response, "Upload failed.")).rejects.toThrow("too large");
