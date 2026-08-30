@@ -14,6 +14,18 @@ export type RequirementProgress = {
   verification: "automatic" | "manual" | "not-automatically-verifiable";
 };
 
+export type RequirementStatusSummary = { fulfilled: number; inProgress: number; open: number; total: number };
+
+export function summarizeRequirementProgress(progressItems: readonly RequirementProgress[]): RequirementStatusSummary {
+  return progressItems.reduce((summary, item) => {
+    if (item.completed) summary.fulfilled += 1;
+    else if (item.requirement.type !== "manual" && item.achievedValue > 0 && item.achievedValue < item.targetValue) summary.inProgress += 1;
+    else summary.open += 1;
+    summary.total += 1;
+    return summary;
+  }, { fulfilled: 0, inProgress: 0, open: 0, total: 0 });
+}
+
 type AutomaticProgressType = "sail-miles" | "motor-miles" | "total-miles" | "days-sailing" | "days-underway" | "days-at-sea";
 
 /**
