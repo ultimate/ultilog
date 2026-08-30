@@ -69,10 +69,18 @@ Create `.env.local` from `.env.example` for development. The app uses these envi
 | `OPENAI_API_KEY` | Required when the scanner feature calls the OpenAI cloud provider. | Authenticates logbook photo extraction requests. The scanner endpoint returns a provider-configuration error if scans are attempted without it. |
 | `LOGBOOK_SCANNER_MODEL` | Optional. | Selects the OpenAI model used by the scanner provider. Defaults to `gpt-4.1-mini`. |
 | `AUTH_SECRET` / platform-provided NextAuth secret | Required for secure production authentication. | Used by NextAuth to sign/encrypt authentication state. Development may rely on framework defaults, but production should set a stable secret. |
+| `CREW_ENCRYPTION_MASTER_KEY` | Required whenever crew data is stored. | Encrypts crew PII at rest. Set one stable 32-byte key (64 hexadecimal characters, base64, or base64url) and preserve it across every deployment and environment connected to the same database. Compatibility aliases are listed in `.env.example`. |
 | `DEMO_SANDBOX_TTL_HOURS` | Optional. | Sets how long an isolated demo identity remains valid. Defaults to 6 hours; the included Vercel Cron removes expired sandboxes daily at 03:17 UTC. |
 | `CRON_SECRET` or `DEMO_CLEANUP_SECRET` | Required for demo cleanup. | Protects `GET`/`POST /api/demo-cleanup`. Vercel Cron sends `CRON_SECRET` automatically; other schedulers can use either variable as a Bearer token. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM` | Required for password reset emails in production. | Configures the SMTP server used to send password reset links. `SMTP_FROM` is the sender address. `SMTP_USER` and `SMTP_PASSWORD` are optional for SMTP relays that do not require authentication. |
 | `NEXT_PUBLIC_APP_URL` / `VERCEL_BRANCH_URL` / `AUTH_URL` / `NEXTAUTH_URL` | Required for deployed password reset links. | Sets the public base URL used in password reset emails. `NEXT_PUBLIC_APP_URL` takes precedence; Vercel deployments fall back to `VERCEL_BRANCH_URL`; local development falls back to `http://localhost:3000`. |
+
+Do not generate a new `CREW_ENCRYPTION_MASTER_KEY` for an existing database. An
+AES-GCM authentication error while reading crew rows means that the configured
+key does not match the key used to encrypt those rows (or that the ciphertext
+was altered). Restore the exact former secret before attempting to rewrite or
+delete affected data; encrypted crew data cannot be recovered if that key has
+been lost.
 
 The public demo has no static account or reusable credentials. Each demo login creates a separate, expiring sandbox identity; the former shared demo identity is removed by the database migrations.
 New sandboxes are abuse-limited to 2 per browser installation, 3 per source IP,

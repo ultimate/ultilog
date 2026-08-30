@@ -26,6 +26,13 @@ export type CrewEncryptionEnvelope = {
   tag: string;
 };
 
+export class CrewDataDecryptionError extends Error {
+  constructor(options?: { cause?: unknown }) {
+    super("Crew data could not be decrypted with the configured encryption key.", options);
+    this.name = "CrewDataDecryptionError";
+  }
+}
+
 export function encryptCrewField(ownerId: string, crewMemberId: string, fieldName: string, plaintext: string): string {
   const key = deriveCrewKey(ownerId);
   const aad = crewFieldAad(ownerId, crewMemberId, fieldName);
@@ -46,7 +53,15 @@ export function encryptCrewField(ownerId: string, crewMemberId: string, fieldNam
 }
 
 export function decryptCrewField(ownerId: string, crewMemberId: string, fieldName: string, value: string): string {
-  return decryptCrewFieldValue(ownerId, crewMemberId, fieldName, value, 0);
+  try {
+    return decryptCrewFieldValue(ownerId, crewMemberId, fieldName, value, 0);
+  } catch (error) {
+    if (error instanceof CrewDataDecryptionError) throw error;
+    if (error instanceof Error && /unable to authenticate data/i.test(error.message)) {
+      throw new CrewDataDecryptionError({ cause: error });
+    }
+    throw error;
+  }
 }
 
 function decryptCrewFieldValue(ownerId: string, crewMemberId: string, fieldName: string, value: string, depth: number): string {

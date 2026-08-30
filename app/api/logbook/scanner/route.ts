@@ -7,6 +7,7 @@ import { createLogSheetAggregate, readLogbook } from "../../../lib/logbook-store
 import { findUserById } from "../../../lib/users";
 import { isActiveDemoSandbox } from "../../../lib/demo/demo-policy";
 import { consumeRateLimit, rateLimitResponse } from "../../../lib/security/rate-limiter";
+import { CrewDataDecryptionError } from "../../../lib/crypto/crew-encryption";
 
 const MAX_FILE_COUNT = 5;
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
@@ -108,6 +109,13 @@ async function scanLogbook(request: Request) {
 function unexpectedScannerError(error: unknown) {
   const reference = crypto.randomUUID();
   console.error(`[logbook-scanner:${reference}]`, error);
+  if (error instanceof CrewDataDecryptionError) {
+    return NextResponse.json({
+      code: "crew_data_decryption_failed",
+      error: `Stored crew data cannot be decrypted. Restore the encryption master key that was used when the crew data was saved, then retry. Check the server log using reference ${reference}.`,
+      reference,
+    }, { status: 500 });
+  }
   return NextResponse.json({
     code: "internal_scanner_error",
     error: `An unexpected server error occurred while processing the scan. Check the server log using reference ${reference}.`,

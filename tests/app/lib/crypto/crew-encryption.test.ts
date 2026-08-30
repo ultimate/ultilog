@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { decryptCrewField, deriveCrewKey, encryptCrewField, parseCrewEncryptionEnvelope } from "../../../../app/lib/crypto/crew-encryption";
+import { CrewDataDecryptionError, decryptCrewField, deriveCrewKey, encryptCrewField, parseCrewEncryptionEnvelope } from "../../../../app/lib/crypto/crew-encryption";
 
 const testMasterKey = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
@@ -29,7 +29,14 @@ describe("crew encryption", () => {
   it("does not decrypt one owner's ciphertext with another owner's key", () => {
     const encrypted = encryptCrewField("owner-a", "crew-1", "name", "private crew data");
 
-    expect(() => decryptCrewField("owner-b", "crew-1", "name", encrypted)).toThrow();
+    expect(() => decryptCrewField("owner-b", "crew-1", "name", encrypted)).toThrow(CrewDataDecryptionError);
+  });
+
+  it("reports a stable domain error when the configured master key changed", () => {
+    const encrypted = encryptCrewField("owner-a", "crew-1", "name", "private crew data");
+    process.env.CREW_ENCRYPTION_MASTER_KEY = "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789";
+
+    expect(() => decryptCrewField("owner-a", "crew-1", "name", encrypted)).toThrow("Crew data could not be decrypted with the configured encryption key.");
   });
 
   it("authenticates owner id, crew member id, and field name as associated data", () => {
