@@ -7,6 +7,10 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
 
   await loginWithSeededRegisteredData(page);
   await openModule(page, "Logbook list", "+ New sheet");
+  // Reproduce a stale manual-create state before starting the background scan.
+  await page.getByRole("button", { name: "+ New sheet" }).click();
+  await expect(page.getByRole("button", { name: "Save" })).toBeVisible();
+  await openModule(page, "Logbook list", "+ New sheet");
 
   const currentLogbookResponse = await page.request.get("/api/logbook");
   expect(currentLogbookResponse.ok()).toBeTruthy();
@@ -74,10 +78,12 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
 
   await expect(page).toHaveURL(new RegExp(`/details/${createdSheetId}$`));
   await expect(page.getByRole("heading", { name: scannedSheet.title })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Save" })).not.toBeVisible();
   await expect(page.getByLabel("Scanned draft verification notice")).toBeVisible();
   await expect(page.getByLabel("Scanned draft verification notice")).toContainText("Please verify scanned information before locking this sheet.");
   const highlightedLatitude = page.locator("td.scanner-warning-field").filter({ hasText: String(scannedSheet.lines[0].latitude) });
   await expect(highlightedLatitude).toHaveAttribute("title", "Row 1 is missing or unclear: latitude.");
+  await expect(page.locator(".log-lines-table tbody tr")).toHaveCount(scannedSheet.lines.length);
   expect(scannerRequestReceived).toBeTruthy();
 });
 
