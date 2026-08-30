@@ -102,7 +102,7 @@ describe("runMigrations", () => {
   it("discovers the user compliance state migration in order", async () => {
     const migrations = await readMigrations();
     expect(migrations.at(-1)?.id).toBe(USER_COMPLIANCE_MIGRATION_ID);
-    expect(migrations.find(({ id }) => id === USER_COMPLIANCE_MIGRATION_ID)?.sql).toContain("user_compliance_manual_requirements");
+    expect(migrations.find(({ id }) => id === USER_COMPLIANCE_MIGRATION_ID)?.sql).toContain("user_compliance_licenses");
   });
   it("normalizes legacy boat country names and emoji to ISO codes", async () => {
     const calls: Array<{ sql: string; params?: unknown[] }> = [];

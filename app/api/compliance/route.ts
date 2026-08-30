@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "../../../auth";
-import { getUserComplianceState, selectUserComplianceLicense, setManualRequirementCompleted } from "../../lib/compliance";
+import { getUserComplianceState, selectUserComplianceLicense, setManualRequirementCompleted, setUserComplianceLicenseStartDate } from "../../lib/compliance";
 import { guardMutationOrigin } from "../../lib/security/request-origin";
 
 export async function GET() {
@@ -19,8 +19,11 @@ export async function PATCH(request: Request) {
     if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error("A JSON object is required.");
     const input = body as Record<string, unknown>;
     if (input.action === "select-license") {
-      if (!("licenseId" in input) || (input.licenseId !== null && typeof input.licenseId !== "string")) throw new Error("License ID must be a string or null.");
-      return NextResponse.json(await selectUserComplianceLicense(session.user.id, input.licenseId));
+      if (typeof input.selected !== "boolean") throw new Error("Selected must be a boolean.");
+      return NextResponse.json(await selectUserComplianceLicense(session.user.id, input.licenseId, input.selected));
+    }
+    if (input.action === "license-start-date") {
+      return NextResponse.json(await setUserComplianceLicenseStartDate(session.user.id, input.licenseId, input.startDate));
     }
     if (input.action === "manual-requirement") {
       return NextResponse.json(await setManualRequirementCompleted(session.user.id, input.licenseId, input.requirementId, input.completed));

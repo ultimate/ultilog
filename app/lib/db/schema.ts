@@ -6,8 +6,8 @@ export type SqlMigration = {
   sql: string;
 };
 
-/** Migration that introduces per-license, user-owned manual completion state. */
-export const USER_COMPLIANCE_MIGRATION_ID = "041_user_compliance_state";
+/** Latest migration for persistent, concurrently tracked compliance licenses. */
+export const USER_COMPLIANCE_MIGRATION_ID = "042_user_compliance_licenses";
 
 let migrations: SqlMigration[] | undefined;
 let schemaSql: string | undefined;

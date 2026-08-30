@@ -42,8 +42,9 @@ export function calculateLicenseProgress(
   requirements: readonly Requirement[],
   sheets: readonly LogSheet[],
   completedManualRequirementIds: readonly string[] = [],
+  startDate?: string | null,
+  asOf = new Date(),
 ): RequirementProgress[] {
-  const statistics = collectStatistics(sheets);
   const manuallyCompleted = new Set(completedManualRequirementIds);
 
   return requirements.map((requirement) => {
@@ -54,13 +55,12 @@ export function calculateLicenseProgress(
     }
 
     const statistic = statisticForProgressType[requirement.type as AutomaticProgressType];
-    // A filter denotes a qualification beyond the raw counter. Current sheets
-    // cannot prove propulsion for an entire day, recency eligibility, skipper
-    // role, sea area, or voyage-length rules, so these must not be claimed.
-    if (!statistic || hasQualifiers(requirement.filters)) {
+    if (!statistic || hasUnsupportedQualifiers(requirement)) {
       return progress(requirement, 0, targetValue, false, false, "not-automatically-verifiable");
     }
 
+    const cutoff = effectiveCutoff(startDate, requirement.filters?.withinYears, asOf);
+    const statistics = collectStatistics(sheetsAfter(sheets, cutoff));
     const achievedValue = statistics[statistic];
     return progress(requirement, achievedValue, targetValue, achievedValue >= targetValue, true, "automatic");
   });
@@ -82,8 +82,31 @@ function positiveTarget(value: number | undefined) {
   return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : 1;
 }
 
-function hasQualifiers(filters: Requirement["filters"]) {
-  return filters != null && Object.keys(filters).length > 0;
+function hasUnsupportedQualifiers(requirement: Requirement) {
+  const propulsion = requirement.filters?.propulsion;
+  if (!propulsion) return false;
+  if (propulsion === "sail") return requirement.type !== "sail-miles" && requirement.type !== "days-sailing" && requirement.type !== "days-at-sea";
+  if (propulsion === "motor") return requirement.type !== "motor-miles" && requirement.type !== "days-underway" && requirement.type !== "days-at-sea";
+  return true;
+}
+
+function effectiveCutoff(startDate: string | null | undefined, withinYears: number | undefined, asOf: Date) {
+  const cutoffs: string[] = [];
+  if (startDate) cutoffs.push(startDate);
+  if (withinYears) {
+    const date = new Date(asOf);
+    date.setUTCFullYear(date.getUTCFullYear() - withinYears);
+    cutoffs.push(date.toISOString().slice(0, 10));
+  }
+  return cutoffs.sort().at(-1);
+}
+
+function sheetsAfter(sheets: readonly LogSheet[], cutoff: string | undefined) {
+  if (!cutoff) return sheets;
+  return sheets.filter((sheet) => {
+    const dates = [sheet.route.departed, sheet.route.arrived, ...sheet.lines.map(({ time }) => time)].filter(Boolean).sort();
+    return dates[0]?.slice(0, 10) >= cutoff;
+  });
 }
 
 function progress(

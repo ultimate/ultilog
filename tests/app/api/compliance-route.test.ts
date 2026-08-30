@@ -5,12 +5,13 @@ vi.mock("../../../app/lib/compliance", () => ({
   getUserComplianceState: vi.fn(),
   selectUserComplianceLicense: vi.fn(),
   setManualRequirementCompleted: vi.fn(),
+  setUserComplianceLicenseStartDate: vi.fn(),
 }));
 
 const { auth } = await import("../../../auth");
 const compliance = await import("../../../app/lib/compliance");
 const { GET, PATCH } = await import("../../../app/api/compliance/route");
-const state = { selectedLicenseId: "de-sks", completedManualRequirementIds: ["de-SportSeeSchV-6-1-1"] };
+const state = { licenses: [{ licenseId: "de-sks", startDate: null, completedManualRequirementIds: ["de-SportSeeSchV-6-1-1"] }] };
 const mockedAuth = auth as unknown as Mock;
 
 describe("compliance API", () => {
@@ -34,9 +35,9 @@ describe("compliance API", () => {
     mockedAuth.mockResolvedValue({ user: { id: "user-1" }, expires: "2099-01-01" });
     vi.mocked(compliance.selectUserComplianceLicense).mockResolvedValue(state);
     vi.mocked(compliance.setManualRequirementCompleted).mockResolvedValue(state);
-    const select = await PATCH(new Request("https://ultilog.test/api/compliance", { method: "PATCH", body: JSON.stringify({ action: "select-license", licenseId: "de-sks", requirements: ["forged"] }) }));
+    const select = await PATCH(new Request("https://ultilog.test/api/compliance", { method: "PATCH", body: JSON.stringify({ action: "select-license", licenseId: "de-sks", selected: true, requirements: ["forged"] }) }));
     expect(select.status).toBe(200);
-    expect(compliance.selectUserComplianceLicense).toHaveBeenCalledWith("user-1", "de-sks");
+    expect(compliance.selectUserComplianceLicense).toHaveBeenCalledWith("user-1", "de-sks", true);
     const toggle = await PATCH(new Request("https://ultilog.test/api/compliance", { method: "PATCH", body: JSON.stringify({ action: "manual-requirement", licenseId: "de-sks", requirementId: "de-SportSeeSchV-6-1-1", completed: true, type: "manual" }) }));
     expect(toggle.status).toBe(200);
     expect(compliance.setManualRequirementCompleted).toHaveBeenCalledWith("user-1", "de-sks", "de-SportSeeSchV-6-1-1", true);
@@ -45,9 +46,9 @@ describe("compliance API", () => {
   it("rejects malformed and invalid updates", async () => {
     mockedAuth.mockResolvedValue({ user: { id: "user-1" }, expires: "2099-01-01" });
     vi.mocked(compliance.selectUserComplianceLicense).mockRejectedValue(new Error("License ID is not recognized."));
-    const malformed = await PATCH(new Request("https://ultilog.test/api/compliance", { method: "PATCH", body: JSON.stringify({ action: "select-license", licenseId: 123 }) }));
+    const malformed = await PATCH(new Request("https://ultilog.test/api/compliance", { method: "PATCH", body: JSON.stringify({ action: "select-license", licenseId: 123, selected: true }) }));
     expect(malformed.status).toBe(400);
-    const invalid = await PATCH(new Request("https://ultilog.test/api/compliance", { method: "PATCH", body: JSON.stringify({ action: "select-license", licenseId: "unknown" }) }));
+    const invalid = await PATCH(new Request("https://ultilog.test/api/compliance", { method: "PATCH", body: JSON.stringify({ action: "select-license", licenseId: "unknown", selected: true }) }));
     expect(invalid.status).toBe(400);
   });
 });
