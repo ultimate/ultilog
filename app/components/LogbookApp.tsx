@@ -702,13 +702,14 @@ export function LogbookApp({
     const scannedSheet = normalizedLogbook.sheets.find(
       (sheet) => sheet.id === sheetId,
     );
+    if (!scannedSheet) throw new Error("The scanned log sheet was saved but could not be loaded.");
     logbookRef.current = normalizedLogbook;
     setLogbook(normalizedLogbook);
-    if (scannedSheet) {
-      setActiveSheetId(scannedSheet.id);
-      setSheetForm(sheetToForm(scannedSheet));
-      navigate("details", scannedSheet.id);
-    }
+    setShowNewSheet(false);
+    setEditingSheetId(null);
+    setActiveSheetId(scannedSheet.id);
+    setSheetForm(sheetToForm(scannedSheet));
+    navigate("details", scannedSheet.id);
   }
 
   function selectScannerFiles(files: FileList | File[] | null, boatId: string) {

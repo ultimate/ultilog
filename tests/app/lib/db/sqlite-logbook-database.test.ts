@@ -67,6 +67,23 @@ describe("SqliteLogbookDatabase", () => {
     expect(new Date(sheetAfter.updated_at).getTime()).toBeGreaterThan(new Date(sheetBefore.updated_at).getTime());
   });
 
+  it("creates a scanned-style sheet and all of its lines as one aggregate", async () => {
+    const db = new SqliteLogbookDatabase(await tempDatabasePath()).forUser("scanner-aggregate-user");
+    await db.migrate();
+    await db.query("insert into users (id, name, email, password_hash) values (?, ?, ?, ?)", ["scanner-aggregate-user", "Scanner", "scanner@example.test", ""]);
+    const boat = { ...sampleBoats[0], id: "scanner-boat" };
+    await db.upsertBoat(boat);
+    const source = sampleLogSheets[0];
+    const lines = source.lines.slice(0, 2).map((line) => ({ ...line, engineHours: {}, motorHours: 0 }));
+    const { lines: _sourceLines, ...sheet } = { ...source, id: "scanned-sheet", boatId: boat.id, crew: [] };
+
+    await db.createLogSheetAggregate(sheet, lines);
+
+    const persisted = (await db.readLogbook()).sheets.find((candidate) => candidate.id === sheet.id);
+    expect(persisted).toMatchObject({ id: sheet.id, title: sheet.title });
+    expect(persisted?.lines.map((line) => line.id)).toEqual(lines.map((line) => line.id));
+  });
+
   it("updates a boat without deleting engines referenced by logged hours", async () => {
     const db = new SqliteLogbookDatabase(await tempDatabasePath()).forUser("boat-update-user");
     await db.migrate();
