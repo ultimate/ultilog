@@ -67,8 +67,21 @@ describe("calculateLicenseProgress", () => {
   it("does not claim unsupported types or qualified counters", () => {
     const unsupported = requirement("unknown", "voyages" as Requirement["type"], 3);
     const qualified = requirement("recent", "total-miles", 3, { withinYears: 4 });
-    for (const result of calculateLicenseProgress([unsupported, qualified], [sheet("2026-01-01", 10)])) {
-      expect(result).toMatchObject({ achievedValue: 0, completed: false, automatic: false, verification: "not-automatically-verifiable" });
-    }
+    const [unsupportedResult, qualifiedResult] = calculateLicenseProgress([unsupported, qualified], [sheet("2026-01-01", 10)]);
+    expect(unsupportedResult).toMatchObject({ achievedValue: 0, completed: false, automatic: false, verification: "not-automatically-verifiable" });
+    expect(qualifiedResult).toMatchObject({ achievedValue: 10, completed: true, automatic: true, verification: "automatic" });
+  });
+
+  it("counts only sheets on or after the selected license start date", () => {
+    const result = calculateLicenseProgress([requirement("miles", "total-miles", 20)], [
+      sheet("2026-01-31", 8), sheet("2026-02-01", 6), sheet("2026-02-02", 4),
+    ], [], "2026-02-01")[0];
+    expect(result).toMatchObject({ achievedValue: 10, remainingValue: 10, percentage: 50 });
+  });
+
+  it("tracks compatible propulsion and recency filters instead of hiding existing statistics", () => {
+    const filtered = requirement("recent-sail", "sail-miles", 10, { propulsion: "sail", withinYears: 4 });
+    const result = calculateLicenseProgress([filtered], [sheet("2025-01-01", 7)], [], null, new Date("2026-08-29T00:00:00Z"))[0];
+    expect(result).toMatchObject({ achievedValue: 7, verification: "automatic" });
   });
 });

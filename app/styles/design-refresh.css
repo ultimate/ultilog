@@ -84,6 +84,8 @@ h1 { margin:0 0 .45rem; font-size:1.8rem; line-height:1.1; letter-spacing:-.04em
 .compliance-selectors { display:grid; grid-template-columns:repeat(2,minmax(0,22rem)); gap:.75rem; align-items:end; }
 .compliance-selectors label { display:grid; gap:.35rem; min-width:0; color:var(--subtle); font-size:.82rem; font-weight:800; }
 .compliance-selectors select { width:100%; min-height:2.65rem; border:1px solid var(--line); border-radius:10px; padding:.55rem .7rem; background:var(--surface); color:var(--text); }
+.compliance-selectors input[type="date"] { width:100%; min-height:2.65rem; border:1px solid var(--line); border-radius:10px; padding:.55rem .7rem; background:var(--surface); color:var(--text); }
+.tracked-license-list { display:grid; gap:1.25rem; }.tracked-license { display:grid; gap:1rem; border:1px solid var(--line); border-radius:20px; padding:1rem; background:color-mix(in srgb,var(--surface) 94%,var(--blue)); box-shadow:var(--design-shadow); }.tracked-license-heading { display:flex; justify-content:space-between; gap:1rem; align-items:start; }.tracked-license-heading h3 { margin:.15rem 0 0; }.tracked-license-heading small { color:var(--subtle); font-weight:800; }
 .legal-document,.license-document,.requirement-panel,.mileage-breakdown article { border:1px solid var(--line); border-radius:18px; background:var(--surface); box-shadow:var(--design-shadow); padding:1.25rem; }
 .legal-document,.license-document { display:grid; gap:.75rem; }.legal-document h3,.license-document h3,.legal-document p,.license-document p { margin:0; }
 .legal-text { max-width:78ch; overflow-wrap:anywhere; color:var(--text); line-height:1.65; }.legal-text p { margin:.4rem 0; }

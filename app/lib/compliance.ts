@@ -24,27 +24,37 @@ function manualRequirement(licenseId: unknown, requirementId: unknown) {
 
 export async function getUserComplianceState(userId: string, database?: QueryableDatabase): Promise<UserComplianceState> {
   const repo = await repository(database);
-  let selectedLicenseId = await repo.selectedLicense(userId);
-  if (selectedLicenseId && !findLicense(selectedLicenseId)) {
-    await repo.selectLicense(userId, null);
-    selectedLicenseId = null;
-  }
-
+  const tracked = await repo.trackedLicenses(userId);
+  const staleLicenses = tracked.filter(({ license_id }) => !findLicense(license_id)).map(({ license_id }) => license_id);
+  if (staleLicenses.length) await repo.deleteTrackedLicenses(userId, staleLicenses);
   const rows = await repo.completedRequirements(userId);
   const stale = rows.filter((row) => !findLicense(row.license_id)?.requirements.some((requirement) => requirement.id === row.requirement_id && requirement.type === "manual"));
   if (stale.length) await repo.deleteRequirements(userId, stale);
   return {
-    selectedLicenseId,
-    completedManualRequirementIds: selectedLicenseId
-      ? rows.filter((row) => row.license_id === selectedLicenseId && !stale.includes(row)).map((row) => row.requirement_id)
-      : [],
+    licenses: tracked.filter(({ license_id }) => !staleLicenses.includes(license_id)).map((entry) => ({
+      licenseId: entry.license_id,
+      startDate: entry.start_date,
+      completedManualRequirementIds: rows.filter((row) => row.license_id === entry.license_id && !stale.includes(row)).map((row) => row.requirement_id),
+    })),
   };
 }
 
-export async function selectUserComplianceLicense(userId: string, licenseId: unknown, database?: QueryableDatabase) {
-  if (licenseId !== null) knownLicense(licenseId);
+export async function selectUserComplianceLicense(userId: string, licenseId: unknown, selected = true, database?: QueryableDatabase) {
+  const license = knownLicense(licenseId);
+  if (typeof selected !== "boolean") throw new Error("Selected must be a boolean.");
   const repo = await repository(database);
-  await repo.selectLicense(userId, licenseId as string | null);
+  if (selected) await repo.trackLicense(userId, license.id);
+  else await repo.untrackLicense(userId, license.id);
+  return getUserComplianceState(userId, database);
+}
+
+export async function setUserComplianceLicenseStartDate(userId: string, licenseId: unknown, startDate: unknown, database?: QueryableDatabase) {
+  const license = knownLicense(licenseId);
+  const parsed = typeof startDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(startDate) ? new Date(`${startDate}T00:00:00Z`) : undefined;
+  if (startDate !== null && (!parsed || !Number.isFinite(parsed.valueOf()) || parsed.toISOString().slice(0, 10) !== startDate)) throw new Error("Start date must be a valid calendar date or null.");
+  const repo = await repository(database);
+  if (!(await repo.trackedLicenses(userId)).some(({ license_id }) => license_id === license.id)) throw new Error("License must be tracked before setting its start date.");
+  await repo.setStartDate(userId, license.id, startDate as string | null);
   return getUserComplianceState(userId, database);
 }
 

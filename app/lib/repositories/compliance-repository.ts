@@ -1,28 +1,37 @@
 import type { QueryableDatabase } from "../db/logbook-database";
 
-type SelectedLicenseRow = { selected_compliance_license_id: string | null };
 type RequirementRow = { license_id: string; requirement_id: string };
+type TrackedLicenseRow = { license_id: string; start_date: string | null };
 
 export type UserComplianceState = {
-  selectedLicenseId: string | null;
-  completedManualRequirementIds: string[];
+  licenses: Array<{ licenseId: string; startDate: string | null; completedManualRequirementIds: string[] }>;
 };
 
 export class ComplianceRepository {
   constructor(private readonly db: QueryableDatabase) {}
 
-  async selectedLicense(userId: string) {
-    return (await this.db.query<SelectedLicenseRow>(
-      `select selected_compliance_license_id from users where id = ${this.db.placeholder(1)}`,
-      [userId],
-    )).rows[0]?.selected_compliance_license_id ?? null;
+  async trackedLicenses(userId: string) {
+    return (await this.db.query<TrackedLicenseRow>(
+      `select license_id, start_date from user_compliance_licenses where user_id = ${this.db.placeholder(1)} order by selected_at, license_id`, [userId],
+    )).rows;
   }
 
-  async selectLicense(userId: string, licenseId: string | null) {
+  async trackLicense(userId: string, licenseId: string) {
     await this.db.query(
-      `update users set selected_compliance_license_id = ${this.db.placeholder(1)} where id = ${this.db.placeholder(2)}`,
-      [licenseId, userId],
+      `insert into user_compliance_licenses (user_id, license_id) values (${this.db.placeholder(1)}, ${this.db.placeholder(2)}) on conflict (user_id, license_id) do nothing`, [userId, licenseId],
     );
+  }
+
+  async untrackLicense(userId: string, licenseId: string) {
+    await this.db.query(`delete from user_compliance_licenses where user_id = ${this.db.placeholder(1)} and license_id = ${this.db.placeholder(2)}`, [userId, licenseId]);
+  }
+
+  async setStartDate(userId: string, licenseId: string, startDate: string | null) {
+    await this.db.query(`update user_compliance_licenses set start_date = ${this.db.placeholder(1)} where user_id = ${this.db.placeholder(2)} and license_id = ${this.db.placeholder(3)}`, [startDate, userId, licenseId]);
+  }
+
+  async deleteTrackedLicenses(userId: string, licenseIds: string[]) {
+    for (const licenseId of licenseIds) await this.untrackLicense(userId, licenseId);
   }
 
   async completedRequirements(userId: string, licenseId?: string) {
