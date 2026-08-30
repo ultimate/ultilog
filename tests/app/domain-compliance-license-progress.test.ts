@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calculateLicenseProgress } from "../../app/domain/compliance/license-progress";
+import { calculateLicenseProgress, summarizeRequirementProgress } from "../../app/domain/compliance/license-progress";
 import type { Requirement } from "../../app/domain/compliance/catalog";
 import type { LogSheet } from "../../app/models/logbook";
 
@@ -83,5 +83,17 @@ describe("calculateLicenseProgress", () => {
     const filtered = requirement("recent-sail", "sail-miles", 10, { propulsion: "sail", withinYears: 4 });
     const result = calculateLicenseProgress([filtered], [sheet("2025-01-01", 7)], [], null, new Date("2026-08-29T00:00:00Z"))[0];
     expect(result).toMatchObject({ achievedValue: 7, verification: "automatic" });
+  });
+
+  it("summarizes requirements as fulfilled, in progress, or open", () => {
+    const progress = calculateLicenseProgress([
+      requirement("fulfilled", "total-miles", 5),
+      requirement("partial", "total-miles", 20),
+      requirement("open", "total-miles", 10),
+      requirement("manual", "manual", 1),
+    ], [sheet("2026-01-01", 8)], ["manual"]);
+    // Give the open counter no data independently of the shared test sheet.
+    progress[2] = calculateLicenseProgress([requirement("open", "total-miles", 10)], [])[0];
+    expect(summarizeRequirementProgress(progress)).toEqual({ fulfilled: 2, inProgress: 1, open: 1, total: 4 });
   });
 });

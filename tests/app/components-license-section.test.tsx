@@ -57,6 +57,8 @@ describe("LicenseSection", () => {
     let root!: ReturnType<typeof create>;
     await act(async () => { root = create(<I18nProvider><LicenseSection requestedLanguage="de" sheets={[]} /></I18nProvider>); });
     expect(root.root.findAllByProps({ className: "tracked-license" })).toHaveLength(2);
+    expect(root.root.findAllByType("details")).toHaveLength(2);
+    expect(root.root.findAllByProps({ className: "license-status-pie" })).toHaveLength(2);
     const startDates = root.root.findAllByProps({ type: "date" });
     expect(startDates[1].props.value).toBe("2026-03-01");
     await act(async () => { startDates[0].props.onChange({ target: { value: "2026-04-02" } }); });

@@ -1937,6 +1937,9 @@ export function LogbookApp({
         {activeModule === "dashboard" && (
           <DashboardPage
             stats={stats}
+            sheets={logbook.sheets}
+            language={preferences.language}
+            onOpenCompliance={() => navigate("compliance")}
             onboardingChecklist={!isOnboardingComplete ? (
               <OnboardingChecklist
                 completion={onboardingCompletion}
