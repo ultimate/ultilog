@@ -30,6 +30,7 @@ const { findUserById } = await import("../../../app/lib/users");
 const { isActiveDemoSandbox } = await import("../../../app/lib/demo/demo-policy");
 const { consumeRateLimit } = await import("../../../app/lib/security/rate-limiter");
 const { POST } = await import("../../../app/api/logbook/scanner/route");
+const { CrewDataDecryptionError } = await import("../../../app/lib/crypto/crew-encryption");
 
 const mockedAuth = auth as unknown as Mock;
 const mockedReadLogbook = vi.mocked(store.readLogbook);
@@ -317,6 +318,25 @@ describe("logbook scanner endpoint", () => {
     expect(payload.reference).toMatch(/^[0-9a-f-]{36}$/);
     expect(payload.error).toContain(payload.reference);
     expect(consoleError).toHaveBeenCalledWith(`[logbook-scanner:${payload.reference}]`, expect.any(Error));
+    consoleError.mockRestore();
+  });
+
+  it("identifies a mismatched crew encryption key before calling the scanner provider", async () => {
+    mockedAuth.mockResolvedValueOnce(session);
+    mockedReadLogbook.mockRejectedValueOnce(new CrewDataDecryptionError());
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const formData = new FormData();
+    formData.set("boatId", boat.id);
+    formData.append("files", imageFile());
+
+    const response = await POST(scannerRequest(formData));
+    const payload = await response.json() as { code: string; error: string; reference: string };
+
+    expect(response.status).toBe(500);
+    expect(payload.code).toBe("crew_data_decryption_failed");
+    expect(payload.error).toContain("Restore the encryption master key");
+    expect(payload.reference).toMatch(/^[0-9a-f-]{36}$/);
+    expect(mockedScanner).not.toHaveBeenCalled();
     consoleError.mockRestore();
   });
 
