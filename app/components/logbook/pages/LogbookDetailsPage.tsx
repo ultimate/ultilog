@@ -821,8 +821,11 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                     {noticeScannerWarnings.length > 0 && (
                       <ul>
                         {noticeScannerWarnings.map((warning) => (
-                          <li key={warning.id} className={warning.acknowledgedAt ? "acknowledged" : undefined}>
-                            <span className="sr-only">{warning.acknowledgedAt ? "Acknowledged warning: " : "Active warning: "}</span>
+                          <li
+                            key={warning.id}
+                            className={warning.acknowledgedAt ? "acknowledged" : undefined}
+                            aria-label={`${warning.acknowledgedAt ? "Acknowledged warning" : "Active warning"}: ${warning.message}`}
+                          >
                             {warning.message}
                           </li>
                         ))}
@@ -954,8 +957,11 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                     } as CSSProperties}
                   >
                     {openScannerWarning.warnings.map((warning) => (
-                      <span key={warning.id} className={warning.acknowledgedAt ? "acknowledged" : undefined}>
-                        <span className="sr-only">{warning.acknowledgedAt ? "Acknowledged warning: " : "Active warning: "}</span>
+                      <span
+                        key={warning.id}
+                        className={warning.acknowledgedAt ? "acknowledged" : undefined}
+                        aria-label={`${warning.acknowledgedAt ? "Acknowledged warning" : "Active warning"}: ${warning.message}`}
+                      >
                         {warning.message}
                       </span>
                     ))}
