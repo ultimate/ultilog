@@ -51,19 +51,16 @@ export function normalizeLogbookIds(logbook: PersistedLogbook): { logbook: Persi
     }
   }
   const sourceCrew = logbook.crewMembers ?? [];
-  for (const crew of sourceCrew) {
-    if (!isOpaqueId(crew.id)) {
-      crewIds.set(crew.id, createId());
-      changed = true;
-    }
-  }
+  // Crew ids are persisted references, including the stable `me` id used by
+  // primary profiles. Unlike boat and sheet ids they are not route segments,
+  // so rewriting them client-side provides no benefit and can race with a
+  // focused assignment save during initial normalization.
   for (const sheet of logbook.sheets) {
     if (!isOpaqueId(sheet.id)) {
       sheetIds.set(sheet.id, createId());
       changed = true;
     }
     if (boatIds.has(sheet.boatId)) changed = true;
-    if (sheet.crew.some((crew) => crewIds.has(crew.id))) changed = true;
   }
 
   const normalizedSheets = normalizeSheetCrew(logbook);
@@ -77,12 +74,12 @@ export function normalizeLogbookIds(logbook: PersistedLogbook): { logbook: Persi
     sheetIds,
     logbook: {
       boats: logbook.boats.map((boat) => ({ ...boat, id: boatIds.get(boat.id) ?? boat.id })),
-      crewMembers: sourceCrew.map((crew) => ({ ...crew, id: crewIds.get(crew.id) ?? crew.id })),
+      crewMembers: sourceCrew,
       sheets: normalizedSheets.map((sheet) => ({
         ...sheet,
         id: sheetIds.get(sheet.id) ?? sheet.id,
         boatId: boatIds.get(sheet.boatId) ?? sheet.boatId,
-        crew: sheet.crew.map((crew) => ({ ...crew, id: crewIds.get(crew.id) ?? crew.id })),
+        crew: sheet.crew,
       })),
     },
   };
