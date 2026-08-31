@@ -13,6 +13,7 @@ import type {
   LogSheet,
   LogSheetShareSettings,
   PersistedLogbook,
+  ScannerWarning,
 } from "../../../models/logbook";
 import { coordinateToInput, decimalToDdmParts, decimalToDmsParts, ddmPartsToDecimal, dmsPartsToDecimal, nextCoordinateFormat, parseCoordinate, type CoordinateFormat, type DmsParts } from "../../../domain/nautical/coordinates";
 import { boatToForm, sheetToForm } from "../forms";
@@ -133,12 +134,19 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const [technicalCheckDraftState, setTechnicalCheckDraftState] = useState<{ sheetId: string; drafts: Record<number, string> }>({ sheetId: "", drafts: {} });
   const [openCourseTooltip, setOpenCourseTooltip] = useState<TranslationKey | null>(null);
   const [courseTooltipPosition, setCourseTooltipPosition] = useState({ left: 0, top: 0 });
-  const [openScannerWarning, setOpenScannerWarning] = useState<{ key: string; message: string; left: number; top: number; above: boolean } | null>(null);
+  const [openScannerWarning, setOpenScannerWarning] = useState<{ key: string; warnings: ScannerWarning[]; left: number; top: number; above: boolean } | null>(null);
+  const [acknowledgedWarningVisibility, setAcknowledgedWarningVisibility] = useState({ sheetId: "", show: false });
   const [coordinateFormatOverride, setCoordinateFormatOverride] = useState<{ sheetId: string; format: CoordinateFormat } | null>(null);
   const coordinateFormat = coordinateFormatOverride?.sheetId === activeSheet.id ? coordinateFormatOverride.format : defaultCoordinateFormat;
   const technicalCheckDrafts = technicalCheckDraftState.sheetId === activeSheet.id ? technicalCheckDraftState.drafts : {};
   const scannerWarnings = activeSheet.scannerWarnings ?? [];
-  const indexedScannerWarnings = indexScannerWarnings(scannerWarnings.map((warning) => warning.message));
+  const showAcknowledgedWarnings = acknowledgedWarningVisibility.sheetId === activeSheet.id
+    ? acknowledgedWarningVisibility.show
+    : false;
+  const visibleScannerWarnings = showAcknowledgedWarnings
+    ? scannerWarnings
+    : scannerWarnings.filter((warning) => !warning.acknowledgedAt);
+  const indexedScannerWarnings = indexScannerWarnings(visibleScannerWarnings);
   const noticeScannerWarnings = [
     ...indexedScannerWarnings.unmatched,
     ...[...indexedScannerWarnings.lineWarnings.values()].flatMap((warnings) => warnings),
@@ -381,10 +389,12 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
 
   const scannerWarningCellProps = (lineNumber: number, fields: LineFormField[], className?: string) => {
     const fieldWarnings = indexedScannerWarnings.lineFields.get(lineNumber);
-    const warnings = [...new Set(fields.flatMap((field) => fieldWarnings?.get(field) ?? []))];
+    const warnings = [...new Map(fields.flatMap((field) => fieldWarnings?.get(field) ?? []).map((warning) => [warning.id, warning])).values()];
     if (warnings.length === 0) return { className };
-    const message = warnings.join("\n");
-    const key = `${lineNumber}:${fields.join(",")}`;
+    const warningIds = warnings.map((warning) => warning.id);
+    const title = warnings.map((warning) => warning.message).join("\n");
+    const key = warningIds.join(":");
+    const hasActiveWarning = warnings.some((warning) => !warning.acknowledgedAt);
     const openTooltip = (cell: HTMLTableCellElement) => {
       if (openScannerWarning?.key === key) {
         setOpenScannerWarning(null);
@@ -392,11 +402,11 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
       }
       const rect = cell.getBoundingClientRect();
       const above = rect.bottom > window.innerHeight - 130;
-      setOpenScannerWarning({ key, message, left: rect.left + rect.width / 2, top: above ? rect.top - 8 : rect.bottom + 8, above });
+      setOpenScannerWarning({ key, warnings, left: rect.left + rect.width / 2, top: above ? rect.top - 8 : rect.bottom + 8, above });
     };
     return {
-      className: [className, "scanner-warning-field"].filter(Boolean).join(" "),
-      title: message,
+      className: [className, "scanner-warning-field", hasActiveWarning ? null : "acknowledged"].filter(Boolean).join(" "),
+      title,
       tabIndex: 0,
       "aria-describedby": openScannerWarning?.key === key ? "scanner-warning-tooltip" : undefined,
       onClick: (event: MouseEvent<HTMLTableCellElement>) => {
@@ -798,10 +808,23 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                   </div>
                   <div>
                     <h3>Please verify scanned information before locking this sheet.</h3>
+                    {scannerWarnings.some((warning) => warning.acknowledgedAt) && (
+                      <label className="scanner-warning-visibility">
+                        <input
+                          type="checkbox"
+                          checked={showAcknowledgedWarnings}
+                          onChange={(event) => setAcknowledgedWarningVisibility({ sheetId: activeSheet.id, show: event.target.checked })}
+                        />
+                        Show acknowledged warnings
+                      </label>
+                    )}
                     {noticeScannerWarnings.length > 0 && (
                       <ul>
-                        {noticeScannerWarnings.map((warning, index) => (
-                          <li key={`${warning}-${index}`}>{warning}</li>
+                        {noticeScannerWarnings.map((warning) => (
+                          <li key={warning.id} className={warning.acknowledgedAt ? "acknowledged" : undefined}>
+                            <span className="sr-only">{warning.acknowledgedAt ? "Acknowledged warning: " : "Active warning: "}</span>
+                            {warning.message}
+                          </li>
                         ))}
                       </ul>
                     )}
@@ -930,7 +953,12 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                       "--scanner-warning-top": `${openScannerWarning.top}px`,
                     } as CSSProperties}
                   >
-                    {openScannerWarning.message}
+                    {openScannerWarning.warnings.map((warning) => (
+                      <span key={warning.id} className={warning.acknowledgedAt ? "acknowledged" : undefined}>
+                        <span className="sr-only">{warning.acknowledgedAt ? "Acknowledged warning: " : "Active warning: "}</span>
+                        {warning.message}
+                      </span>
+                    ))}
                   </span>,
                   document.body,
                 )}
