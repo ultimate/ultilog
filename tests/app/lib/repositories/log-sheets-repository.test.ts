@@ -79,7 +79,7 @@ describe("LogSheetsRepository", () => {
   });
 
   it("persists and maps optional scanner metadata", async () => {
-    const scannerSheet = { ...sheet, source: "scanner" as const, verificationNote: "Reviewed OCR fields", scannerWarnings: ["Missing signature"] };
+    const scannerSheet = { ...sheet, source: "scanner" as const, verificationNote: "Reviewed OCR fields", scannerWarnings: [{ id: "warning-1", message: "Missing signature" }] };
     const db = new MockDatabase();
 
     await new LogSheetsRepository(db).insert(scannerSheet, "repository-user");
@@ -94,6 +94,16 @@ describe("LogSheetsRepository", () => {
       verificationNote: scannerSheet.verificationNote,
       scannerWarnings: scannerSheet.scannerWarnings,
     });
+  });
+
+  it("normalizes legacy scanner warning strings with deterministic IDs", () => {
+    const row = logSheetRow({ scanner_warnings: JSON.stringify(["Missing signature"]) });
+
+    const first = LogSheetsRepository.toLogbook([], [row], [], []).sheets[0].scannerWarnings;
+    const second = LogSheetsRepository.toLogbook([], [row], [], []).sheets[0].scannerWarnings;
+
+    expect(first).toEqual([{ id: expect.stringMatching(/^legacy-/), message: "Missing signature" }]);
+    expect(second).toEqual(first);
   });
 
   it("persists and maps stored images", async () => {

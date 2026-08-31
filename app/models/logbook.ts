@@ -12,7 +12,7 @@ export type { Boat, BoatEngine, BoatEngineRole, BoatType, DeviationTableRow, Win
 export type { StoredImage } from "./stored-image";
 export type { CrewMember, SheetCrewMember } from "./crew-member";
 export type { LogLine, TemperatureUnit, WindUnit } from "./log-line";
-export type { LogSheet, LogSheetSharePrivacy, LogSheetShareSettings } from "./log-sheet";
+export type { LogSheet, LogSheetSharePrivacy, LogSheetShareSettings, ScannerWarning } from "./log-sheet";
 export { defaultLogSheetShareSettings } from "./log-sheet";
 
 export type { BoatForm, CrewForm, LineForm, LineFormField, SheetForm } from "./logbook-forms";

@@ -27,6 +27,7 @@ export const defaultLogSheetShareSettings: LogSheetShareSettings = {
 
 export type TechnicalCheck = { status: string; text: string };
 export type EngineHourCounter = { start?: number; end?: number };
+export type ScannerWarning = { id: string; message: string; acknowledgedAt?: string };
 
 export type LogSheet = {
   revision?: number;
@@ -37,7 +38,7 @@ export type LogSheet = {
   status: "Draft" | "Locked";
   source?: "manual" | "scanner";
   verificationNote?: string;
-  scannerWarnings?: string[];
+  scannerWarnings?: ScannerWarning[];
   boatId: string;
   route: {
     from: string;

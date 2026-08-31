@@ -1,4 +1,4 @@
-import type { Boat, CrewMember, LogLine, LogSheet, LogSheetSharePrivacy, SheetCrewMember } from "./logbook";
+import type { Boat, CrewMember, LogLine, LogSheet, LogSheetSharePrivacy, ScannerWarning, SheetCrewMember } from "./logbook";
 
 export type StoredLogSheet = Omit<LogSheet, "crew" | "lines">;
 
@@ -28,7 +28,7 @@ export type LogSheetRow = ImageRowFields & {
   status: LogSheet["status"];
   source?: LogSheet["source"] | null;
   verification_note?: string | null;
-  scanner_warnings?: unknown;
+  scanner_warnings?: string | ScannerWarning[] | string[] | null;
   boat_id: string;
   skipper: unknown;
   route: unknown;

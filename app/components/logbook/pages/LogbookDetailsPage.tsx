@@ -138,7 +138,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const coordinateFormat = coordinateFormatOverride?.sheetId === activeSheet.id ? coordinateFormatOverride.format : defaultCoordinateFormat;
   const technicalCheckDrafts = technicalCheckDraftState.sheetId === activeSheet.id ? technicalCheckDraftState.drafts : {};
   const scannerWarnings = activeSheet.scannerWarnings ?? [];
-  const indexedScannerWarnings = indexScannerWarnings(scannerWarnings);
+  const indexedScannerWarnings = indexScannerWarnings(scannerWarnings.map((warning) => warning.message));
   const noticeScannerWarnings = [
     ...indexedScannerWarnings.unmatched,
     ...[...indexedScannerWarnings.lineWarnings.values()].flatMap((warnings) => warnings),

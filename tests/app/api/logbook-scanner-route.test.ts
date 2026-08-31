@@ -289,7 +289,7 @@ describe("logbook scanner endpoint", () => {
         status: "Draft",
         source: "scanner",
         title: "Scanned log sheet",
-        scannerWarnings: partialScannerResult.warnings,
+        scannerWarnings: partialScannerResult.warnings.map((message) => expect.objectContaining({ id: expect.any(String), message })),
     }), [expect.objectContaining({ time: "2026-07-03T10:30", latitude: 47.5, remarks: "Smudged row" })], "user-1");
 
     const mutationPayload = mockedCreateLogSheetAggregate.mock.calls[0].slice(0, 2);
