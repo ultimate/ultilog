@@ -1,6 +1,8 @@
 import type { QueryableDatabase } from "./logbook-database";
 import { normalizeIsoDate } from "../iso-date";
 import { countryCodeForFlagValue } from "../flags";
+import { randomUUID } from "node:crypto";
+import type { ScannerWarning } from "../../models/logbook";
 
 type RouteRow = { id: string; route: unknown };
 type TimedRow = { sheet_id: string; sort_order: number; time: string };
@@ -8,6 +10,7 @@ type CrewAssignmentRow = { sheet_id: string; crew_member_id: string; sort_order:
 type LegacyLogSheetDateRow = { id: string; date_range: string; route: unknown };
 type LegacyBoatEngineRow = { boat_id: string; yacht_data: unknown; engine_id: string; model: string };
 type LegacyBoatFlagRow = { id: string; flag_state: string };
+type ScannerWarningsRow = { id: string; scanner_warnings: unknown };
 import { readMigrations } from "./schema";
 
 export async function runMigrations(db: QueryableDatabase) {
@@ -29,6 +32,10 @@ export async function runMigrations(db: QueryableDatabase) {
 }
 
 async function applyMigration(db: QueryableDatabase, id: string, sql: string) {
+  if (id === "043_structure_scanner_warnings") {
+    await structureScannerWarnings(db);
+    return;
+  }
   if (id === "040_normalize_boat_flag_state") {
     await normalizeBoatFlagStates(db);
     return;
@@ -64,6 +71,38 @@ async function applyMigration(db: QueryableDatabase, id: string, sql: string) {
       if (!isDuplicateColumnError(error)) throw error;
     }
   }
+}
+
+export async function structureScannerWarnings(db: QueryableDatabase) {
+  const rows = await db.query<ScannerWarningsRow>("select id, scanner_warnings from log_sheets where scanner_warnings is not null");
+  for (const row of rows.rows) {
+    const warnings = parseScannerWarnings(row.scanner_warnings, row.id);
+    if (!warnings.changed) continue;
+    await db.query(`update log_sheets set scanner_warnings = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [JSON.stringify(warnings.value), row.id]);
+  }
+}
+
+function parseScannerWarnings(value: unknown, sheetId: string): { value: ScannerWarning[]; changed: boolean } {
+  let parsed: unknown = value;
+  if (typeof value === "string") {
+    try { parsed = JSON.parse(value); } catch { throw new Error(`Log sheet ${sheetId} has malformed scanner warnings.`); }
+  }
+  if (!Array.isArray(parsed)) throw new Error(`Log sheet ${sheetId} has malformed scanner warnings.`);
+
+  let changed = false;
+  const warnings = parsed.map((warning): ScannerWarning => {
+    if (typeof warning === "string") {
+      changed = true;
+      return { id: randomUUID(), message: warning };
+    }
+    if (!warning || typeof warning !== "object" || Array.isArray(warning)) throw new Error(`Log sheet ${sheetId} has malformed scanner warnings.`);
+    const candidate = warning as { id?: unknown; message?: unknown; acknowledgedAt?: unknown };
+    if (typeof candidate.id !== "string" || typeof candidate.message !== "string" || (candidate.acknowledgedAt !== undefined && typeof candidate.acknowledgedAt !== "string")) {
+      throw new Error(`Log sheet ${sheetId} has malformed scanner warnings.`);
+    }
+    return { id: candidate.id, message: candidate.message, ...(candidate.acknowledgedAt === undefined ? {} : { acknowledgedAt: candidate.acknowledgedAt }) };
+  });
+  return { value: warnings, changed };
 }
 
 export async function normalizeBoatFlagStates(db: QueryableDatabase) {

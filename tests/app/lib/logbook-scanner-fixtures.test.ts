@@ -87,7 +87,7 @@ describe("logbook scanner image fixtures", () => {
       source: "scanner",
       boatId: "fixture-boat",
       route: expect.objectContaining({ from: expected.route?.from, to: expected.route?.to }),
-      scannerWarnings: scannerResult.warnings,
+      scannerWarnings: scannerResult.warnings.map((message) => expect.objectContaining({ id: expect.any(String), message })),
     }));
     expect(sheet.route.departed).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$/);
     expect(sheet.route.arrived).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$/);

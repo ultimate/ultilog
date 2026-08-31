@@ -1,6 +1,6 @@
 import { normalizeTechnicalCheck } from "../../domain/logbook/technical-log";
 import { calculateLogSheetMetrics } from "../../domain/logbook/sheet-metrics";
-import { defaultLogSheetShareSettings, normalizeDeviationTable, normalizeWindDriftTable, type Boat, type BoatRow, type CrewMemberRow, type LogLine, type LogLineRow, type LogSheet, type LogSheetRow, type PersistedLogbook, type StoredLogSheet } from "../../models/logbook";
+import { defaultLogSheetShareSettings, normalizeDeviationTable, normalizeWindDriftTable, type Boat, type BoatRow, type CrewMemberRow, type LogLine, type LogLineRow, type LogSheet, type LogSheetRow, type PersistedLogbook, type ScannerWarning, type StoredLogSheet } from "../../models/logbook";
 import type { QueryableDatabase } from "../db/logbook-database";
 import { expectedRevision, imageFromRow, imageValues, scopedId, unscopedId } from "./boats-repository";
 
@@ -176,7 +176,7 @@ function mapStoredSheet(sheet: LogSheetRow): StoredLogSheet {
     status: sheet.status,
     ...(sheet.source ? { source: sheet.source } : {}),
     ...(sheet.verification_note ? { verificationNote: sheet.verification_note } : {}),
-    ...(sheet.scanner_warnings ? { scannerWarnings: parseJson<string[]>(sheet.scanner_warnings) } : {}),
+    ...(sheet.scanner_warnings ? { scannerWarnings: parseJson<ScannerWarning[]>(sheet.scanner_warnings) } : {}),
     boatId: unscopedId(sheet.boat_id),
     route: parseJson<LogSheet["route"]>(sheet.route),
     watchPlan: parseJson<string[]>(sheet.watch_plan),

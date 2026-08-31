@@ -79,7 +79,7 @@ describe("LogSheetsRepository", () => {
   });
 
   it("persists and maps optional scanner metadata", async () => {
-    const scannerSheet = { ...sheet, source: "scanner" as const, verificationNote: "Reviewed OCR fields", scannerWarnings: ["Missing signature"] };
+    const scannerSheet = { ...sheet, source: "scanner" as const, verificationNote: "Reviewed OCR fields", scannerWarnings: [{ id: "warning-1", message: "Missing signature" }] };
     const db = new MockDatabase();
 
     await new LogSheetsRepository(db).insert(scannerSheet, "repository-user");

@@ -24,7 +24,7 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
     status: "Draft",
     source: "scanner",
     verificationNote: "Please verify scanned information before locking this sheet.",
-    scannerWarnings: ["Row 1 is missing or unclear: latitude."],
+    scannerWarnings: [{ id: "warning-1", message: "Row 1 is missing or unclear: latitude." }],
     boatId: currentLogbook.boats[0].id,
     route: {
       from: "Sample Harbor",

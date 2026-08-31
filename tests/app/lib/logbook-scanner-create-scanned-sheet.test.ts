@@ -49,7 +49,10 @@ describe("scanned log-line dates", () => {
       "2026-07-02T23:30",
       "2026-07-02T00:30",
     ]);
-    expect(sheet.scannerWarnings).toContain("A log-line date rollover would exceed the sheet end date; the inferred date was capped at the end date.");
+    expect(sheet.scannerWarnings).toEqual([expect.objectContaining({
+      id: expect.any(String),
+      message: "A log-line date rollover would exceed the sheet end date; the inferred date was capped at the end date.",
+    })]);
   });
 
   it("preserves already dated values and time-only values without an extracted master date", () => {

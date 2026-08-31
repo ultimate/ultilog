@@ -92,8 +92,9 @@ export function createScannedSheet({
     arrived: normalizeScannerRouteStamp(extractedRoute.arrived, endDate || fallbackDate),
   };
   const normalizedLines = scannedLinesToLogLines(draft.lines, userPreferences, startDate, endDate);
-  const scannerWarnings = [...scannerResult.warnings];
-  if (normalizedLines.rolloverExceededEndDate && !scannerWarnings.includes(rolloverEndDateWarning)) scannerWarnings.push(rolloverEndDateWarning);
+  const warningMessages = [...scannerResult.warnings];
+  if (normalizedLines.rolloverExceededEndDate && !warningMessages.includes(rolloverEndDateWarning)) warningMessages.push(rolloverEndDateWarning);
+  const scannerWarnings = warningMessages.map((message) => ({ id: createId(), message }));
 
   return {
     id: createId(),
