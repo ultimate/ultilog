@@ -1,4 +1,4 @@
-import { defaultLogSheetShareSettings, type Boat, type CrewMember, type LogLine, type LogSheet, type PersistedLogbook } from "../../models/logbook";
+import { defaultLogSheetShareSettings, type Boat, type CrewMember, type FocusedLogSheet, type LogLine, type LogSheet, type PersistedLogbook } from "../../models/logbook";
 import { BoatsRepository } from "../repositories/boats-repository";
 import { CrewRepository } from "../repositories/crew-repository";
 import { LogLinesRepository } from "../repositories/log-lines-repository";
@@ -156,7 +156,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
     });
   }
 
-  async upsertLogSheet(sheet: LogSheet) {
+  async upsertLogSheet(sheet: LogSheet | FocusedLogSheet) {
     await this.ensureSchemaAndBackfill();
     return this.withTransaction(async (database) => {
       const ownerId = database.requireOwnerId();
@@ -165,21 +165,21 @@ export abstract class LogbookDatabase implements QueryableDatabase {
       const previousImageId = prior?.image_id ?? undefined;
       const nextImageId = sheet.imageId ?? sheet.image?.id;
       await database.images.assertOwned(nextImageId, ownerId);
-      for (const member of sheet.crew) await database.images.assertOwned(member.imageId ?? member.image?.id, ownerId);
       const policyError = sheetBoatMutationError(boatRow ? { name: boatRow.name, archived: Boolean(boatRow.archived) } : undefined, Boolean(prior && prior.boat_id === scopedId(ownerId, sheet.boatId)));
       if (policyError) throw Object.assign(new Error(policyError.message), { code: policyError.code });
       if (!boatRow) throw new Error("Boat policy failed to reject a missing boat.");
       const threshold = await database.motionStationaryThresholdNm();
+      const submittedLines = "lines" in sheet ? sheet.lines : [];
       const persistedLineRows = prior ? await database.lines.findForSheet(prior.id) : [];
       const persistedLines = prior ? LogSheetsRepository.toLogbook([], [prior], [], persistedLineRows).sheets[0].lines : [];
-      await database.sheets.upsert({ ...sheet, lines: persistedLines }, ownerId, threshold);
+      await database.sheets.upsert({ ...sheet, crew: [], lines: persistedLines }, ownerId, threshold);
       await database.crew.replaceAssignments(sheet.id, sheet.crew, ownerId);
       // Focused sheet writes own metadata and assignments only. Log lines are
       // independently versioned resources and are never collection-replaced.
       // Internal imports may still seed a brand-new aggregate in one operation;
       // focused HTTP creates always pass an empty collection.
-      if (!prior && sheet.lines.length) await database.lines.insertMany(sheet.lines.map((line, sortOrder) => ({ sheetId: sheet.id, sortOrder, line })), ownerId);
-      if (!prior && sheet.lines.length) {
+      if (!prior && submittedLines.length) await database.lines.insertMany(submittedLines.map((line, sortOrder) => ({ sheetId: sheet.id, sortOrder, line })), ownerId);
+      if (!prior && submittedLines.length) {
         const createdRow = (await database.sheets.findById(sheet.id, ownerId))!;
         const createdLineRows = await database.lines.findForSheet(createdRow.id);
         const createdLines = LogSheetsRepository.toLogbook([], [createdRow], [], createdLineRows).sheets[0].lines;

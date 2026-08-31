@@ -1,4 +1,4 @@
-import type { SheetCrewMember } from "./crew-member";
+import type { SheetCrewAssignment, SheetCrewMember } from "./crew-member";
 import type { StoredImage } from "./stored-image";
 import type { LogLine } from "./log-line";
 import type { LogSheetMetrics } from "../domain/logbook/sheet-metrics";
@@ -55,4 +55,9 @@ export type LogSheet = {
   lines: LogLine[];
   metrics?: LogSheetMetrics;
   share?: LogSheetShareSettings;
+};
+
+/** Write model for the focused sheet endpoints. */
+export type FocusedLogSheet = Omit<LogSheet, "crew" | "lines"> & {
+  crew: SheetCrewAssignment[];
 };
