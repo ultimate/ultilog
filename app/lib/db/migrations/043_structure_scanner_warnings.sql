@@ -1,0 +1,2 @@
+-- Applied programmatically by migrations.ts so scanner warning JSON is
+-- converted consistently on both SQLite and PostgreSQL.

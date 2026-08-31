@@ -176,7 +176,7 @@ function mapStoredSheet(sheet: LogSheetRow): StoredLogSheet {
     status: sheet.status,
     ...(sheet.source ? { source: sheet.source } : {}),
     ...(sheet.verification_note ? { verificationNote: sheet.verification_note } : {}),
-    ...(sheet.scanner_warnings ? { scannerWarnings: normalizeScannerWarnings(parseJson<unknown>(sheet.scanner_warnings), unscopedId(sheet.id)) } : {}),
+    ...(sheet.scanner_warnings ? { scannerWarnings: parseJson<ScannerWarning[]>(sheet.scanner_warnings) } : {}),
     boatId: unscopedId(sheet.boat_id),
     route: parseJson<LogSheet["route"]>(sheet.route),
     watchPlan: parseJson<string[]>(sheet.watch_plan),
@@ -203,29 +203,6 @@ function mapStoredSheet(sheet: LogSheetRow): StoredLogSheet {
       crew: privacyFromRow(sheet.share_crew, sheet.share_privacy),
     },
   };
-}
-
-/** Normalizes persisted scanner warnings while retaining stable IDs for legacy string arrays. */
-export function normalizeScannerWarnings(value: unknown, sheetId: string): ScannerWarning[] {
-  if (!Array.isArray(value)) return [];
-  return value.flatMap((warning, index) => {
-    if (typeof warning === "string") {
-      return [{ id: `legacy-${index}-${stableWarningHash(`${sheetId}\u0000${index}\u0000${warning}`)}`, message: warning }];
-    }
-    if (!warning || typeof warning !== "object" || Array.isArray(warning)) return [];
-    const candidate = warning as { id?: unknown; message?: unknown; acknowledgedAt?: unknown };
-    if (typeof candidate.id !== "string" || typeof candidate.message !== "string") return [];
-    return [{ id: candidate.id, message: candidate.message, ...(typeof candidate.acknowledgedAt === "string" ? { acknowledgedAt: candidate.acknowledgedAt } : {}) }];
-  });
-}
-
-function stableWarningHash(value: string) {
-  let hash = 2166136261;
-  for (let index = 0; index < value.length; index += 1) {
-    hash ^= value.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return (hash >>> 0).toString(36);
 }
 
 function normalizeEngineHourCounters(value: unknown): NonNullable<LogSheet["engineHourCounters"]> {

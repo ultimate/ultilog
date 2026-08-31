@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import initSqlJs from "sql.js";
 import { readFile } from "node:fs/promises";
-import { normalizeBoatFlagStates, removeLegacyLogSheetDateRange, runMigrations } from "../../../../app/lib/db/migrations";
+import { normalizeBoatFlagStates, removeLegacyLogSheetDateRange, runMigrations, structureScannerWarnings } from "../../../../app/lib/db/migrations";
 import type { QueryableDatabase, QueryResult } from "../../../../app/lib/db/logbook-database";
-import { readMigrations, USER_COMPLIANCE_MIGRATION_ID } from "../../../../app/lib/db/schema";
+import { readMigrations, STRUCTURED_SCANNER_WARNINGS_MIGRATION_ID, USER_COMPLIANCE_MIGRATION_ID } from "../../../../app/lib/db/schema";
 
 class DuplicateColumnDatabase implements QueryableDatabase {
   calls: string[] = [];
@@ -99,10 +99,11 @@ class RemoveDateRangeDatabase implements QueryableDatabase {
 }
 
 describe("runMigrations", () => {
-  it("discovers the user compliance state migration in order", async () => {
+  it("discovers migrations in order", async () => {
     const migrations = await readMigrations();
-    expect(migrations.at(-1)?.id).toBe(USER_COMPLIANCE_MIGRATION_ID);
+    expect(migrations.at(-1)?.id).toBe(STRUCTURED_SCANNER_WARNINGS_MIGRATION_ID);
     expect(migrations.find(({ id }) => id === USER_COMPLIANCE_MIGRATION_ID)?.sql).toContain("user_compliance_licenses");
+    expect(migrations.find(({ id }) => id === STRUCTURED_SCANNER_WARNINGS_MIGRATION_ID)?.sql).toContain("scanner warning JSON");
   });
   it("normalizes legacy boat country names and emoji to ISO codes", async () => {
     const calls: Array<{ sql: string; params?: unknown[] }> = [];
@@ -127,6 +128,31 @@ describe("runMigrations", () => {
       { sql: "update boats set flag_state = ?1 where id = ?2", params: ["HR", "emoji"] },
       { sql: "update boats set flag_state = ?1 where id = ?2", params: ["", "unknown"] },
     ]);
+  });
+
+  it("permanently converts legacy scanner warning arrays to structured records", async () => {
+    const calls: Array<{ sql: string; params?: unknown[] }> = [];
+    const db: QueryableDatabase = {
+      placeholder: (index) => `$${index}`,
+      query: async <Row>(sql: string, params?: unknown[]) => {
+        calls.push({ sql, params });
+        if (sql.startsWith("select id, scanner_warnings")) return { rows: [
+          { id: "sheet-1", scanner_warnings: JSON.stringify(["Missing signature", "Check route"]) },
+          { id: "sheet-2", scanner_warnings: JSON.stringify([{ id: "existing", message: "Already converted" }]) },
+        ] as Row[] };
+        return { rows: [] };
+      },
+    };
+
+    await structureScannerWarnings(db);
+
+    const update = calls.find(({ sql }) => sql.startsWith("update log_sheets"));
+    expect(update?.params?.[1]).toBe("sheet-1");
+    expect(JSON.parse(update?.params?.[0] as string)).toEqual([
+      { id: expect.any(String), message: "Missing signature" },
+      { id: expect.any(String), message: "Check route" },
+    ]);
+    expect(calls.filter(({ sql }) => sql.startsWith("update log_sheets"))).toHaveLength(1);
   });
 
   it("backfills legacy motor hours to every known engine without overwriting explicit runtime", async () => {

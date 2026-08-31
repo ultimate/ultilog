@@ -96,16 +96,6 @@ describe("LogSheetsRepository", () => {
     });
   });
 
-  it("normalizes legacy scanner warning strings with deterministic IDs", () => {
-    const row = logSheetRow({ scanner_warnings: JSON.stringify(["Missing signature"]) });
-
-    const first = LogSheetsRepository.toLogbook([], [row], [], []).sheets[0].scannerWarnings;
-    const second = LogSheetsRepository.toLogbook([], [row], [], []).sheets[0].scannerWarnings;
-
-    expect(first).toEqual([{ id: expect.stringMatching(/^legacy-/), message: "Missing signature" }]);
-    expect(second).toEqual(first);
-  });
-
   it("persists and maps stored images", async () => {
     const image = { id: "sheet-image", data: "base64-sheet", mimeType: "image/webp", width: 1024, height: 768 };
     const db = new MockDatabase();
