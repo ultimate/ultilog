@@ -1302,6 +1302,37 @@ td { color: #28384b; line-height: 1.45; }
   background: #fde68a;
 }
 
+.log-lines-table td.scanner-warning-field:focus-visible {
+  outline: 3px solid #b45309;
+  outline-offset: -3px;
+}
+
+.scanner-warning-tooltip {
+  position: fixed;
+  z-index: 1100;
+  top: var(--scanner-warning-top);
+  left: clamp(8rem, var(--scanner-warning-left), calc(100vw - 8rem));
+  width: max-content;
+  max-width: min(18rem, calc(100vw - 2rem));
+  transform: translateX(-50%);
+  border: 1px solid #f59e0b;
+  border-radius: 0.7rem;
+  padding: 0.6rem 0.7rem;
+  background: #78350f;
+  box-shadow: var(--shadow);
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 800;
+  line-height: 1.3;
+  text-align: left;
+  white-space: pre-line;
+  pointer-events: none;
+}
+
+.scanner-warning-tooltip.above {
+  transform: translate(-50%, -100%);
+}
+
 .onboarding-card { display: grid; gap: 1rem; }
 .onboarding-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
 .onboarding-heading h3 { margin: 0.1rem 0 0.35rem; }
