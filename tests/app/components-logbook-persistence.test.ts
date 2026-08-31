@@ -37,10 +37,9 @@ describe("logbook persistence", () => {
     expect(fetchMock.mock.calls.some(([url]) => url === "/api/logbook")).toBe(false);
   });
 
-  it("preserves images while normalizing boat, crew, and sheet identifiers", () => {
+  it("preserves images and stable crew references while normalizing routed identifiers", () => {
     vi.mocked(crypto.randomUUID)
       .mockReturnValueOnce("11111111-1111-4111-8111-111111111111")
-      .mockReturnValueOnce("22222222-2222-4222-8222-222222222222")
       .mockReturnValueOnce("33333333-3333-4333-8333-333333333333");
     const logbook: PersistedLogbook = {
       boats: [{ id: "boat-1", name: "Aurora", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [], image }],
@@ -51,9 +50,9 @@ describe("logbook persistence", () => {
     const { logbook: normalized } = normalizeLogbookIds(logbook);
 
     expect(normalized.boats[0]).toMatchObject({ id: "11111111-1111-4111-8111-111111111111", image });
-    expect(normalized.crewMembers[0]).toMatchObject({ id: "22222222-2222-4222-8222-222222222222", image });
+    expect(normalized.crewMembers[0]).toMatchObject({ id: "crew-1", image });
     expect(normalized.sheets[0]).toMatchObject({ id: "33333333-3333-4333-8333-333333333333", boatId: "11111111-1111-4111-8111-111111111111", image });
-    expect(normalized.sheets[0].crew[0]).toMatchObject({ id: "22222222-2222-4222-8222-222222222222", image });
+    expect(normalized.sheets[0].crew[0]).toMatchObject({ id: "crew-1", image });
   });
 
   it("does not report changes for UUID entities with current crew assignments", () => {
