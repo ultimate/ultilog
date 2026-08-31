@@ -409,7 +409,7 @@
       "defaultLanguage": "de",
       "content": {
         "de": {
-          "licenseName": "Hochseeausweis für Segelschiffe mit und ohne Maschinenantrieb",
+          "licenseName": "Ergänzung des Hochseeausweises für Motorschiffe zusätzlich für Segelschiffe mit und ohne Maschinenantrieb",
           "title": "Verordnung des SSA über den schweizerischen Fähigkeitsausweis zum Führen von Jachten zur See",
           "authority": "Schweizerisches Seeschifffahrtsamt SSA",
           "sourceUrl": "https://www.fedlex.admin.ch/eli/cc/2007/130/de",
@@ -424,7 +424,7 @@
           ]
         },
         "fr": {
-          "licenseName": "certificat pour la conduite de yachts à voiles, avec ou sans propulsion mécanique",
+          "licenseName": "extension du certificat pour la conduite de yachts à moteur aux yachts à voiles, avec ou sans propulsion mécanique",
           "title": "Ordonnance de l’OSNM sur le certificat suisse de capacité pour la conduite de yachts en mer",
           "authority": "Office suisse de la navigation maritime OSNM",
           "sourceUrl": "https://www.fedlex.admin.ch/eli/cc/2007/130/fr",
@@ -439,7 +439,7 @@
           ]
         },
         "it": {
-          "licenseName": "licenza di navigazione d’altura per natanti a vela con o senza motore",
+          "licenseName": "estensione della licenza di navigazione d’altura per natanti motorizzati a natanti a vela con o senza motore",
           "title": "Ordinanza dell’USNM sul certificato svizzero di capacità per condurre yacht marittimi",
           "authority": "Disposizioni generali riguardanti yacht svizzeri in mare",
           "sourceUrl": "https://www.fedlex.admin.ch/eli/cc/2007/130/it",
@@ -493,7 +493,7 @@
       "defaultLanguage": "de",
       "content": {
         "de": {
-          "licenseName": "Hochseeausweis für Segelschiffe mit und ohne Maschinenantrieb",
+          "licenseName": "Ergänzung des Hochseeausweises für Segelschiffe mit und ohne Maschinenantrieb zusätzlich für Motorschiffe",
           "title": "Verordnung des SSA über den schweizerischen Fähigkeitsausweis zum Führen von Jachten zur See",
           "authority": "Schweizerisches Seeschifffahrtsamt SSA",
           "sourceUrl": "https://www.fedlex.admin.ch/eli/cc/2007/130/de",
@@ -508,7 +508,7 @@
           ]
         },
         "fr": {
-          "licenseName": "certificat pour la conduite de yachts à voiles, avec ou sans propulsion mécanique",
+          "licenseName": "extension du certificat pour la conduite de yachts à voiles, avec ou sans propulsion mécanique aux yachts à moteur",
           "title": "Ordonnance de l’OSNM sur le certificat suisse de capacité pour la conduite de yachts en mer",
           "authority": "Office suisse de la navigation maritime OSNM",
           "sourceUrl": "https://www.fedlex.admin.ch/eli/cc/2007/130/fr",
@@ -523,7 +523,7 @@
           ]
         },
         "it": {
-          "licenseName": "licenza di navigazione d’altura per natanti a vela con o senza motore",
+          "licenseName": "estensione della licenza di navigazione d’altura per natanti a vela con o senza motore a natanti motorizzati",
           "title": "Ordinanza dell’USNM sul certificato svizzero di capacità per condurre yacht marittimi",
           "authority": "Disposizioni generali riguardanti yacht svizzeri in mare",
           "sourceUrl": "https://www.fedlex.admin.ch/eli/cc/2007/130/it",
