@@ -1,6 +1,8 @@
 import { expect, type Page, test } from "@playwright/test";
 import { sampleBoats, sampleLogSheets } from "../fixtures/logbook";
 
+test.use({ hasTouch: true });
+
 test("imports a scanned logbook image and opens the created draft sheet", async ({ page }) => {
   const createdSheetId = "11111111-2222-4333-8444-555555555555";
   let scannerRequestReceived = false;
@@ -83,6 +85,9 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
   await expect(page.getByLabel("Scanned draft verification notice")).toContainText("Please verify scanned information before locking this sheet.");
   const highlightedLatitude = page.locator("td.scanner-warning-field").filter({ hasText: String(scannedSheet.lines[0].latitude) });
   await expect(highlightedLatitude).toHaveAttribute("title", "Row 1 is missing or unclear: latitude.");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await highlightedLatitude.tap();
+  await expect(page.getByRole("tooltip")).toHaveText("Row 1 is missing or unclear: latitude.");
   await expect(page.locator(".log-lines-table tbody tr")).toHaveCount(scannedSheet.lines.length);
   expect(scannerRequestReceived).toBeTruthy();
 });

@@ -3,7 +3,8 @@ import { EntityImage } from "../EntityImage";
 import { useI18n } from "../../../lib/i18n";
 import { useDateTimeFormat } from "../../../lib/DateTimeFormatProvider";
 import { formatMiles } from "../../../lib/format-number";
-import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type MouseEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent, type MouseEvent } from "react";
+import { createPortal } from "react-dom";
 import type {
   Boat,
   LineForm,
@@ -132,6 +133,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const [technicalCheckDraftState, setTechnicalCheckDraftState] = useState<{ sheetId: string; drafts: Record<number, string> }>({ sheetId: "", drafts: {} });
   const [openCourseTooltip, setOpenCourseTooltip] = useState<TranslationKey | null>(null);
   const [courseTooltipPosition, setCourseTooltipPosition] = useState({ left: 0, top: 0 });
+  const [openScannerWarning, setOpenScannerWarning] = useState<{ key: string; message: string; left: number; top: number; above: boolean } | null>(null);
   const [coordinateFormatOverride, setCoordinateFormatOverride] = useState<{ sheetId: string; format: CoordinateFormat } | null>(null);
   const coordinateFormat = coordinateFormatOverride?.sheetId === activeSheet.id ? coordinateFormatOverride.format : defaultCoordinateFormat;
   const technicalCheckDrafts = technicalCheckDraftState.sheetId === activeSheet.id ? technicalCheckDraftState.drafts : {};
@@ -380,9 +382,37 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const scannerWarningCellProps = (lineNumber: number, fields: LineFormField[], className?: string) => {
     const fieldWarnings = indexedScannerWarnings.lineFields.get(lineNumber);
     const warnings = [...new Set(fields.flatMap((field) => fieldWarnings?.get(field) ?? []))];
-    return warnings.length > 0
-      ? { className: [className, "scanner-warning-field"].filter(Boolean).join(" "), title: warnings.join("\n"), "aria-label": warnings.join(" ") }
-      : { className };
+    if (warnings.length === 0) return { className };
+    const message = warnings.join("\n");
+    const key = `${lineNumber}:${fields.join(",")}`;
+    const openTooltip = (cell: HTMLTableCellElement) => {
+      if (openScannerWarning?.key === key) {
+        setOpenScannerWarning(null);
+        return;
+      }
+      const rect = cell.getBoundingClientRect();
+      const above = rect.bottom > window.innerHeight - 130;
+      setOpenScannerWarning({ key, message, left: rect.left + rect.width / 2, top: above ? rect.top - 8 : rect.bottom + 8, above });
+    };
+    return {
+      className: [className, "scanner-warning-field"].filter(Boolean).join(" "),
+      title: message,
+      tabIndex: 0,
+      "aria-describedby": openScannerWarning?.key === key ? "scanner-warning-tooltip" : undefined,
+      onClick: (event: MouseEvent<HTMLTableCellElement>) => {
+        if (event.target instanceof Element && event.target.closest(".log-line-text-tooltip")) return;
+        openTooltip(event.currentTarget);
+      },
+      onKeyDown: (event: KeyboardEvent<HTMLTableCellElement>) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          openTooltip(event.currentTarget);
+        } else if (event.key === "Escape") {
+          setOpenScannerWarning(null);
+        }
+      },
+      onBlur: () => setOpenScannerWarning(null),
+    };
   };
 
 
@@ -890,6 +920,20 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                     </tbody>
                   </table>
                 </div>
+                {openScannerWarning && typeof document !== "undefined" && createPortal(
+                  <span
+                    id="scanner-warning-tooltip"
+                    role="tooltip"
+                    className={`scanner-warning-tooltip${openScannerWarning.above ? " above" : ""}`}
+                    style={{
+                      "--scanner-warning-left": `${openScannerWarning.left}px`,
+                      "--scanner-warning-top": `${openScannerWarning.top}px`,
+                    } as CSSProperties}
+                  >
+                    {openScannerWarning.message}
+                  </span>,
+                  document.body,
+                )}
               </article>
 
               <section
