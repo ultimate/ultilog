@@ -87,7 +87,16 @@ describe("logbook persistence", () => {
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe("/api/logbook/sheets/sheet-1");
     expect(init.method).toBe("PUT");
-    expect(JSON.parse(init.body)).toEqual(Object.fromEntries(Object.entries(sheet).filter(([key]) => key !== "lines")));
+    expect(JSON.parse(init.body)).toEqual({
+      ...Object.fromEntries(Object.entries(sheet).filter(([key]) => !["lines", "crew"].includes(key))),
+      crew: sheet.crew.map(({ id, embarkationDateTime, embarkationPosition, disembarkationDateTime, disembarkationPosition }) =>
+        ({ id, embarkationDateTime, embarkationPosition, disembarkationDateTime, disembarkationPosition })),
+    });
+    expect(init.body).not.toContain('"name"');
+    expect(init.body).not.toContain('"nationality"');
+    expect(init.body).not.toContain('"role"');
+    expect(init.body).not.toContain('"address"');
+    expect(init.body).not.toContain('"certificate"');
     expect(init.body).not.toContain('"lines"');
     expect(init.body).not.toContain("unrelated-sheet");
     expect(init.body).not.toContain("base64-image");

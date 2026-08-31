@@ -1,4 +1,4 @@
-import type { CrewMember, CrewMemberRow, SheetCrewMember } from "../../models/logbook";
+import type { CrewMember, CrewMemberRow, SheetCrewAssignment, SheetCrewMember } from "../../models/logbook";
 import type { QueryableDatabase } from "../db/logbook-database";
 import { decryptCrewField, encryptCrewField, isEncryptedCrewFieldValue } from "../crypto/crew-encryption";
 import { expectedRevision, imageValues, scopedId } from "./boats-repository";
@@ -180,7 +180,7 @@ export class CrewRepository {
     await this.insertAssignments([{ sheetId, sortOrder, crew }], ownerId);
   }
 
-  async insertAssignments(entries: { sheetId: string; sortOrder: number; crew: SheetCrewMember }[], ownerId: string) {
+  async insertAssignments(entries: { sheetId: string; sortOrder: number; crew: SheetCrewAssignment }[], ownerId: string) {
     if (!entries.length) return;
     const values = entries.flatMap(({ sheetId, sortOrder, crew }) => [scopedId(ownerId, sheetId), scopedId(ownerId, crew.id), sortOrder, crew.embarkationPosition, crew.disembarkationPosition, crew.embarkationDateTime, crew.embarkationPosition, crew.disembarkationDateTime, crew.disembarkationPosition]);
     const columnCount = 9;
@@ -191,10 +191,9 @@ export class CrewRepository {
     );
   }
 
-  async replaceAssignments(sheetId: string, crew: SheetCrewMember[], ownerId: string) {
+  async replaceAssignments(sheetId: string, crew: SheetCrewAssignment[], ownerId: string) {
     const id = scopedId(ownerId, sheetId);
     await this.db.query(`delete from sheet_crew_members where sheet_id = ${this.db.placeholder(1)} and exists (select 1 from log_sheets where id = ${this.db.placeholder(1)} and owner_id = ${this.db.placeholder(2)})`, [id, ownerId]);
-    for (const member of crew) await this.insertProfile(member, ownerId);
     await this.insertAssignments(crew.map((member, sortOrder) => ({ sheetId, sortOrder, crew: member })), ownerId);
   }
 

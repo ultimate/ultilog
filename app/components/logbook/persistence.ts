@@ -110,7 +110,11 @@ function entityRequest(path: string, method: "POST" | "PUT" | "DELETE", entity?:
   // Sheet metadata/assignment writes are deliberately independent from line
   // writes. Lines have stable-id endpoints and must never hitch a ride here.
   const focusedEntity = withoutImageBytes && "lines" in withoutImageBytes
-    ? Object.fromEntries(Object.entries(withoutImageBytes).filter(([key]) => key !== "lines"))
+    ? {
+        ...Object.fromEntries(Object.entries(withoutImageBytes).filter(([key]) => key !== "lines")),
+        crew: withoutImageBytes.crew.map(({ id, embarkationDateTime, embarkationPosition, disembarkationDateTime, disembarkationPosition }) =>
+          ({ id, embarkationDateTime, embarkationPosition, disembarkationDateTime, disembarkationPosition })),
+      }
     : withoutImageBytes;
   return fetch(path, {
     method,

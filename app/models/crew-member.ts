@@ -28,3 +28,8 @@ export type SheetCrewMember = CrewMember & {
   disembarkationDateTime: string;
   disembarkationPosition: string;
 };
+
+/** The only crew data owned by a log-sheet mutation. Profile data is persisted separately. */
+export type SheetCrewAssignment = Pick<SheetCrewMember,
+  "id" | "embarkationDateTime" | "embarkationPosition" | "disembarkationDateTime" | "disembarkationPosition"
+>;
