@@ -140,6 +140,25 @@ describe("CrewRepository", () => {
     expect(db.calls[0].values?.[10]).toBe("repository-user:second-crew");
   });
 
+  it("replaces sheet assignments without writing crew profiles", async () => {
+    const db = new MockDatabase();
+    const assignment = {
+      id: crew.id,
+      embarkationDateTime: crew.embarkationDateTime,
+      embarkationPosition: crew.embarkationPosition,
+      disembarkationDateTime: crew.disembarkationDateTime,
+      disembarkationPosition: crew.disembarkationPosition,
+    };
+
+    await new CrewRepository(db).replaceAssignments(sheet.id, [assignment], "repository-user");
+
+    expect(db.calls).toHaveLength(2);
+    expect(db.calls[0].sql).toContain("delete from sheet_crew_members");
+    expect(db.calls[1].sql).toContain("insert into sheet_crew_members");
+    expect(db.calls.every(call => !call.sql.includes("insert into crew_members"))).toBe(true);
+    expect(db.calls.every(call => !call.sql.includes("update crew_members"))).toBe(true);
+  });
+
   it("persists only the stable image reference for a crew profile", async () => {
     const db = new MockDatabase();
     const image = { id: "crew-image", data: "base64-crew-private-face", mimeType: "image/jpeg", width: 320, height: 240 };
