@@ -90,6 +90,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     isActiveSheetLocked,
     updateActiveSheetStatus,
     updateActiveSheetShare,
+    updateScannerWarningAcknowledgment,
     renderInlineBoatField,
     renderInlineDateField,
     activeSheetSummary,
@@ -119,6 +120,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const isDemo = Boolean(props.isDemo);
   const onDemoFeatureBlocked = props.onDemoFeatureBlocked as (feature: "sharing" | "images") => void;
   const updateShare = updateActiveSheetShare as (share: LogSheetShareSettings) => Promise<void>;
+  const updateWarningAcknowledgment = updateScannerWarningAcknowledgment as (warningId: string, acknowledged: boolean) => Promise<void>;
   const activeSheet = props.activeSheet as LogSheet;
   const lineForms = props.lineForms as Record<string, { form: LineForm; isNew: boolean }>;
   const setDraftLineForm = props.setLineForm as (draftId: string, update: LineForm | ((current: LineForm) => LineForm)) => void;
@@ -140,6 +142,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const coordinateFormat = coordinateFormatOverride?.sheetId === activeSheet.id ? coordinateFormatOverride.format : defaultCoordinateFormat;
   const technicalCheckDrafts = technicalCheckDraftState.sheetId === activeSheet.id ? technicalCheckDraftState.drafts : {};
   const scannerWarnings = activeSheet.scannerWarnings ?? [];
+  const activeScannerWarningCount = scannerWarnings.filter((warning) => !warning.acknowledgedAt).length;
   const showAcknowledgedWarnings = acknowledgedWarningVisibility.sheetId === activeSheet.id
     ? acknowledgedWarningVisibility.show
     : false;
@@ -151,6 +154,20 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     ...indexedScannerWarnings.unmatched,
     ...[...indexedScannerWarnings.lineWarnings.values()].flatMap((warnings) => warnings),
   ];
+
+  const renderScannerWarningAction = (warning: ScannerWarning) => (
+    <button
+      type="button"
+      className="scanner-warning-action"
+      onMouseDown={(event) => event.preventDefault()}
+      onClick={() => {
+        setOpenScannerWarning(null);
+        void updateWarningAcknowledgment(warning.id, !warning.acknowledgedAt);
+      }}
+    >
+      {warning.acknowledgedAt ? "Mark as unacknowledged" : "Acknowledge"}
+    </button>
+  );
   const logLineEngines = (activeBoat.engines ?? []).filter((engine) => engine.role === "propulsion" && (!engine.archived || activeSheet.lines.some((line) => Number(line.engineHours?.[engine.id]) > 0)));
   const counterEngines = (activeBoat.engines ?? []).filter((engine) => !engine.archived || activeSheet.engineHourCounters?.[engine.id]);
   const share = activeSheet.share ?? defaultLogSheetShareSettings;
@@ -172,8 +189,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     ["skipper", "Skipper"],
     ["crew", "Crew information"],
   ] as const;
-  const showScannerDraftNotice =
-    activeSheet.source === "scanner" && activeSheet.status === "Draft";
+  const showScannerDraftNotice = activeSheet.source === "scanner";
   const courseConversionSequences = useRef<Record<string, number>>({});
   const sheetImageInputRef = useRef<HTMLInputElement>(null);
 
@@ -807,8 +823,11 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                     ⚠️
                   </div>
                   <div>
-                    <h3>Please verify scanned information before locking this sheet.</h3>
-                    {scannerWarnings.some((warning) => warning.acknowledgedAt) && (
+                    <h3>{activeSheet.status === "Draft" ? "Please verify scanned information before locking this sheet." : "Review scanned information."}</h3>
+                    <p className="scanner-warning-progress">
+                      {activeScannerWarningCount} active of {scannerWarnings.length} total warnings
+                    </p>
+                    {scannerWarnings.length > 0 && (
                       <label className="scanner-warning-visibility">
                         <input
                           type="checkbox"
@@ -827,6 +846,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                             aria-label={`${warning.acknowledgedAt ? "Acknowledged warning" : "Active warning"}: ${warning.message}`}
                           >
                             {warning.message}
+                            {renderScannerWarningAction(warning)}
                           </li>
                         ))}
                       </ul>
@@ -963,6 +983,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                         aria-label={`${warning.acknowledgedAt ? "Acknowledged warning" : "Active warning"}: ${warning.message}`}
                       >
                         {warning.message}
+                        {renderScannerWarningAction(warning)}
                       </span>
                     ))}
                   </span>,
