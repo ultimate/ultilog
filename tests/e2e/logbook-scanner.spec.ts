@@ -87,7 +87,8 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
   await expect(highlightedLatitude).toHaveAttribute("title", "Row 1 is missing or unclear: latitude.");
   await page.setViewportSize({ width: 390, height: 844 });
   await highlightedLatitude.tap();
-  await expect(page.getByRole("tooltip")).toHaveText("Row 1 is missing or unclear: latitude.");
+  await expect(page.getByRole("tooltip")).toContainText("Row 1 is missing or unclear: latitude.");
+  await expect(page.getByRole("tooltip").getByRole("button", { name: "Acknowledge" })).toBeVisible();
   await expect(page.locator(".log-lines-table tbody tr")).toHaveCount(scannedSheet.lines.length);
   expect(scannerRequestReceived).toBeTruthy();
 });

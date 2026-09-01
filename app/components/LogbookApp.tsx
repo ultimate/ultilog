@@ -1203,6 +1203,30 @@ export function LogbookApp({
     await saveLogbookNow(nextLogbook, { kind: "sheet", entity: nextLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)! });
   }
 
+  async function updateScannerWarningAcknowledgment(warningId: string, acknowledged: boolean) {
+    // Warning review is metadata-only, so it remains available on Locked sheets.
+    // Editing the values extracted by the scanner still uses the Draft-only paths.
+    const acknowledgedAt = acknowledged ? new Date().toISOString() : undefined;
+    const nextLogbook = {
+      ...logbookRef.current,
+      sheets: logbookRef.current.sheets.map((sheet) => {
+        if (sheet.id !== activeSheet.id) return sheet;
+        return {
+          ...sheet,
+          scannerWarnings: (sheet.scannerWarnings ?? []).map((warning) => {
+            if (warning.id !== warningId) return warning;
+            if (acknowledgedAt) return { ...warning, acknowledgedAt };
+            const { acknowledgedAt: _acknowledgedAt, ...restoredWarning } = warning;
+            return restoredWarning;
+          }),
+        };
+      }),
+    };
+    const nextSheet = nextLogbook.sheets.find((sheet) => sheet.id === activeSheet.id);
+    if (!nextSheet) return;
+    await saveLogbookNow(nextLogbook, { kind: "sheet", entity: nextSheet });
+  }
+
   async function updateActiveSheetStatus(status: LogSheet["status"]) {
     if (status === "Locked") cancelSheetInlineEdit();
     const nextLogbook = {
@@ -2010,6 +2034,7 @@ export function LogbookApp({
               isActiveSheetLocked={isActiveSheetLocked}
               updateActiveSheetStatus={updateActiveSheetStatus}
               updateActiveSheetShare={updateActiveSheetShare}
+              updateScannerWarningAcknowledgment={updateScannerWarningAcknowledgment}
               renderInlineBoatField={renderInlineBoatField}
               activeBoat={activeBoat}
               renderInlineDateField={renderInlineDateField}
