@@ -3,7 +3,7 @@ import { EntityImage } from "../EntityImage";
 import { useI18n } from "../../../lib/i18n";
 import { useDateTimeFormat } from "../../../lib/DateTimeFormatProvider";
 import { formatMiles } from "../../../lib/format-number";
-import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent, type MouseEvent } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type FocusEvent, type FormEvent, type KeyboardEvent, type MouseEvent } from "react";
 import { createPortal } from "react-dom";
 import type {
   Boat,
@@ -159,7 +159,6 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     <button
       type="button"
       className="scanner-warning-action"
-      onMouseDown={(event) => event.preventDefault()}
       onClick={() => {
         setOpenScannerWarning(null);
         void updateWarningAcknowledgment(warning.id, !warning.acknowledgedAt);
@@ -437,7 +436,13 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
           setOpenScannerWarning(null);
         }
       },
-      onBlur: () => setOpenScannerWarning(null),
+      onBlur: (event: FocusEvent<HTMLTableCellElement>) => {
+        // The tooltip is rendered in a portal, so its action is outside the cell's
+        // DOM subtree. Keep it mounted while focus moves to that action so the
+        // ensuing click can acknowledge or restore the warning.
+        if (event.relatedTarget instanceof Element && event.relatedTarget.closest(".scanner-warning-tooltip")) return;
+        setOpenScannerWarning(null);
+      },
     };
   };
 

@@ -63,6 +63,20 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
     }
     await route.continue();
   });
+  await page.route(`**/api/logbook/sheets/${createdSheetId}`, async (route) => {
+    expect(route.request().method()).toBe("PUT");
+    const submittedSheet = route.request().postDataJSON();
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        ...submittedSheet,
+        revision: (submittedSheet.revision ?? 0) + 1,
+        createdAt: submittedSheet.createdAt ?? "2026-07-04T09:00:00.000Z",
+        updatedAt: "2026-07-04T12:00:00.000Z",
+      }),
+    });
+  });
 
   const fileChooserPromise = page.waitForEvent("filechooser");
   await page.getByRole("button", { name: "Import photos" }).click();
@@ -88,7 +102,14 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
   await page.setViewportSize({ width: 390, height: 844 });
   await highlightedLatitude.tap();
   await expect(page.getByRole("tooltip")).toContainText("Row 1 is missing or unclear: latitude.");
-  await expect(page.getByRole("tooltip").getByRole("button", { name: "Acknowledge" })).toBeVisible();
+  await page.getByRole("tooltip").getByRole("button", { name: "Acknowledge" }).click();
+  await expect(page.getByLabel("Scanned draft verification notice")).toContainText("0 active of 1 total warnings");
+  await expect(highlightedLatitude).toHaveCount(0);
+
+  await page.getByLabel("Show acknowledged warnings").check();
+  const acknowledgedLatitude = page.locator("td.scanner-warning-field.acknowledged").filter({ hasText: String(scannedSheet.lines[0].latitude) });
+  await acknowledgedLatitude.tap();
+  await expect(page.getByRole("tooltip").getByRole("button", { name: "Mark as unacknowledged" })).toBeVisible();
   await expect(page.locator(".log-lines-table tbody tr")).toHaveCount(scannedSheet.lines.length);
   expect(scannerRequestReceived).toBeTruthy();
 });
