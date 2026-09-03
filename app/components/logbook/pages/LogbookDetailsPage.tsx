@@ -159,12 +159,13 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     <button
       type="button"
       className="scanner-warning-action"
-      onClick={() => {
+      onClick={(event) => {
+        event.stopPropagation();
         setOpenScannerWarning(null);
         void updateWarningAcknowledgment(warning.id, !warning.acknowledgedAt);
       }}
     >
-      {warning.acknowledgedAt ? "Mark as unacknowledged" : "Acknowledge"}
+      {warning.acknowledgedAt ? t("details.scanner.restoreWarning") : t("details.scanner.acknowledge")}
     </button>
   );
   const logLineEngines = (activeBoat.engines ?? []).filter((engine) => engine.role === "propulsion" && (!engine.archived || activeSheet.lines.some((line) => Number(line.engineHours?.[engine.id]) > 0)));
@@ -425,10 +426,11 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
       tabIndex: 0,
       "aria-describedby": openScannerWarning?.key === key ? "scanner-warning-tooltip" : undefined,
       onClick: (event: MouseEvent<HTMLTableCellElement>) => {
-        if (event.target instanceof Element && event.target.closest(".log-line-text-tooltip")) return;
+        if (event.target instanceof Element && event.target.closest("button, input, select, textarea, a, [role=button], .log-line-text-tooltip")) return;
         openTooltip(event.currentTarget);
       },
       onKeyDown: (event: KeyboardEvent<HTMLTableCellElement>) => {
+        if (event.target !== event.currentTarget) return;
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
           openTooltip(event.currentTarget);
@@ -822,15 +824,15 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
               {showScannerDraftNotice && (
                 <aside
                   className="scanner-draft-notice logbook-section"
-                  aria-label="Scanned draft verification notice"
+                  aria-label={t("details.scanner.verificationNotice")}
                 >
                   <div className="scanner-draft-notice-icon" aria-hidden="true">
                     ⚠️
                   </div>
                   <div>
-                    <h3>{activeSheet.status === "Draft" ? "Please verify scanned information before locking this sheet." : "Review scanned information."}</h3>
+                    <h3>{activeSheet.status === "Draft" ? t("details.scanner.verificationDraftHeading") : t("details.scanner.verificationHeading")}</h3>
                     <p className="scanner-warning-progress">
-                      {activeScannerWarningCount} active of {scannerWarnings.length} total warnings
+                      {activeScannerWarningCount} {t("details.scanner.activeWarnings")} {t("details.scanner.ofWarnings")} {scannerWarnings.length} {t("details.scanner.totalWarnings")}
                     </p>
                     {scannerWarnings.length > 0 && (
                       <label className="scanner-warning-visibility">
@@ -839,7 +841,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                           checked={showAcknowledgedWarnings}
                           onChange={(event) => setAcknowledgedWarningVisibility({ sheetId: activeSheet.id, show: event.target.checked })}
                         />
-                        Show acknowledged warnings
+                        {t("details.scanner.showAcknowledgedWarnings")}
                       </label>
                     )}
                     {noticeScannerWarnings.length > 0 && (
@@ -848,7 +850,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                           <li
                             key={warning.id}
                             className={warning.acknowledgedAt ? "acknowledged" : undefined}
-                            aria-label={`${warning.acknowledgedAt ? "Acknowledged warning" : "Active warning"}: ${warning.message}`}
+                            aria-label={`${warning.acknowledgedAt ? t("details.scanner.acknowledgedWarning") : t("details.scanner.activeWarning")}: ${warning.message}`}
                           >
                             {warning.message}
                             {renderScannerWarningAction(warning)}
@@ -857,7 +859,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                       </ul>
                     )}
                     <p>
-                      All fields and lines can be corrected using the normal editing controls.
+                      {t("details.scanner.correctionHelp")}
                     </p>
                   </div>
                 </aside>
@@ -985,7 +987,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                       <span
                         key={warning.id}
                         className={warning.acknowledgedAt ? "acknowledged" : undefined}
-                        aria-label={`${warning.acknowledgedAt ? "Acknowledged warning" : "Active warning"}: ${warning.message}`}
+                        aria-label={`${warning.acknowledgedAt ? t("details.scanner.acknowledgedWarning") : t("details.scanner.activeWarning")}: ${warning.message}`}
                       >
                         {warning.message}
                         {renderScannerWarningAction(warning)}
