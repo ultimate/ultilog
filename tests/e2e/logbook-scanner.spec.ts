@@ -17,7 +17,7 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
   const currentLogbookResponse = await page.request.get("/api/logbook");
   expect(currentLogbookResponse.ok()).toBeTruthy();
   const currentLogbook = await currentLogbookResponse.json();
-  const scannedSheet = {
+  let scannedSheet = {
     id: createdSheetId,
     title: "Scanned marina departure",
     dateText: "04 Jul 2026",
@@ -66,16 +66,13 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
   await page.route(`**/api/logbook/sheets/${createdSheetId}`, async (route) => {
     expect(route.request().method()).toBe("PUT");
     const submittedSheet = route.request().postDataJSON();
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        ...submittedSheet,
-        revision: (submittedSheet.revision ?? 0) + 1,
-        createdAt: submittedSheet.createdAt ?? "2026-07-04T09:00:00.000Z",
-        updatedAt: "2026-07-04T12:00:00.000Z",
-      }),
-    });
+    scannedSheet = {
+      ...submittedSheet,
+      revision: (submittedSheet.revision ?? 0) + 1,
+      createdAt: submittedSheet.createdAt ?? "2026-07-04T09:00:00.000Z",
+      updatedAt: "2026-07-04T12:00:00.000Z",
+    };
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(scannedSheet) });
   });
 
   const fileChooserPromise = page.waitForEvent("filechooser");
@@ -106,10 +103,22 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
   await expect(page.getByLabel("Scanned draft verification notice")).toContainText("0 active of 1 total warnings");
   await expect(highlightedLatitude).toHaveCount(0);
 
+  await page.reload();
+  await expect(page.getByLabel("Scanned draft verification notice")).toContainText("0 active of 1 total warnings");
+  await expect(page.locator("td.scanner-warning-field").filter({ hasText: String(scannedSheet.lines[0].latitude) })).toHaveCount(0);
+
   await page.getByLabel("Show acknowledged warnings").check();
   const acknowledgedLatitude = page.locator("td.scanner-warning-field.acknowledged").filter({ hasText: String(scannedSheet.lines[0].latitude) });
   await acknowledgedLatitude.tap();
-  await expect(page.getByRole("tooltip").getByRole("button", { name: "Mark as unacknowledged" })).toBeVisible();
+  await expect(page.getByRole("tooltip").getByRole("button", { name: "Restore warning" })).toBeVisible();
+
+  // Warning review is metadata and remains available after the sheet is locked.
+  await page.getByRole("button", { name: "Lock", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Unlock", exact: true })).toBeVisible();
+  await acknowledgedLatitude.tap();
+  await page.getByRole("tooltip").getByRole("button", { name: "Restore warning" }).click();
+  await expect(page.getByLabel("Scanned draft verification notice")).toContainText("1 active of 1 total warnings");
+  await expect(page.locator("td.scanner-warning-field").filter({ hasText: String(scannedSheet.lines[0].latitude) })).toBeVisible();
   await expect(page.locator(".log-lines-table tbody tr")).toHaveCount(scannedSheet.lines.length);
   expect(scannerRequestReceived).toBeTruthy();
 });

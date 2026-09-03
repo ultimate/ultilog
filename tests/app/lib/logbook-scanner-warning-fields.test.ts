@@ -15,6 +15,24 @@ describe("scanner warning field indexing", () => {
     expect(indexed.unmatched).toEqual([]);
   });
 
+  it("preserves warning identity while filtering acknowledged records", () => {
+    const active = { id: "active", message: "Row 1 is missing or unclear: latitude." };
+    const acknowledged = { id: "done", message: "Row 1 is missing or unclear: longitude.", acknowledgedAt: "2026-01-01T00:00:00.000Z" };
+    const indexed = indexScannerWarnings([active, acknowledged].filter((warning) => !("acknowledgedAt" in warning)));
+
+    expect(indexed.lineFields.get(1)?.get("latitude")).toEqual([active]);
+    expect(indexed.lineFields.get(1)?.has("longitude")).toBe(false);
+    expect(indexed.lineFields.get(1)?.get("latitude")?.[0]).toBe(active);
+  });
+
+  it("keeps duplicate messages with distinct IDs as distinct warnings", () => {
+    const warnings = [
+      { id: "first", message: "Row 1 is missing or unclear: latitude." },
+      { id: "second", message: "Row 1 is missing or unclear: latitude." },
+    ];
+    expect(indexScannerWarnings(warnings).lineFields.get(1)?.get("latitude")).toEqual(warnings);
+  });
+
   it("keeps sheet-level and unassignable row warnings available for the notice", () => {
     const sheetWarning = { id: "sheet", message: "Missing or unclear sheet title." };
     const rowWarning = { id: "row", message: "Row 3 needs manual review." };

@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { normalizeTechnicalCheck } from "../../domain/logbook/technical-log";
 import { calculateLogSheetMetrics } from "../../domain/logbook/sheet-metrics";
 import { defaultLogSheetShareSettings, normalizeDeviationTable, normalizeWindDriftTable, type Boat, type BoatRow, type CrewMemberRow, type LogLine, type LogLineRow, type LogSheet, type LogSheetRow, type PersistedLogbook, type ScannerWarning, type StoredLogSheet } from "../../models/logbook";
@@ -160,6 +161,17 @@ function parseJson<T>(value: unknown): T {
   return typeof value === "string" ? JSON.parse(value) as T : value as T;
 }
 
+function normalizeScannerWarnings(value: unknown): ScannerWarning[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((warning) => {
+    if (typeof warning === "string") return [{ id: randomUUID(), message: warning }];
+    if (!warning || typeof warning !== "object" || Array.isArray(warning)) return [];
+    const candidate = warning as Partial<ScannerWarning>;
+    if (typeof candidate.id !== "string" || typeof candidate.message !== "string") return [];
+    return [{ id: candidate.id, message: candidate.message, ...(typeof candidate.acknowledgedAt === "string" ? { acknowledgedAt: candidate.acknowledgedAt } : {}) }];
+  });
+}
+
 function groupBy<T>(items: T[], keyFor: (item: T) => string) {
   return items.reduce((groups, item) => {
     const key = keyFor(item);
@@ -176,7 +188,7 @@ function mapStoredSheet(sheet: LogSheetRow): StoredLogSheet {
     status: sheet.status,
     ...(sheet.source ? { source: sheet.source } : {}),
     ...(sheet.verification_note ? { verificationNote: sheet.verification_note } : {}),
-    ...(sheet.scanner_warnings ? { scannerWarnings: parseJson<ScannerWarning[]>(sheet.scanner_warnings) } : {}),
+    ...(sheet.scanner_warnings ? { scannerWarnings: normalizeScannerWarnings(parseJson<unknown>(sheet.scanner_warnings)) } : {}),
     boatId: unscopedId(sheet.boat_id),
     route: parseJson<LogSheet["route"]>(sheet.route),
     watchPlan: parseJson<string[]>(sheet.watch_plan),
