@@ -66,13 +66,16 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
   await page.route(`**/api/logbook/sheets/${createdSheetId}`, async (route) => {
     expect(route.request().method()).toBe("PUT");
     const submittedSheet = route.request().postDataJSON();
-    scannedSheet = {
+    const persistedSheet = {
       ...submittedSheet,
       revision: (submittedSheet.revision ?? 0) + 1,
       createdAt: submittedSheet.createdAt ?? "2026-07-04T09:00:00.000Z",
       updatedAt: "2026-07-04T12:00:00.000Z",
     };
-    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(scannedSheet) });
+    // Focused sheet updates deliberately omit lines. Merge the returned metadata
+    // into the full GET fixture instead of replacing it with the focused payload.
+    scannedSheet = { ...scannedSheet, ...persistedSheet, lines: scannedSheet.lines };
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(persistedSheet) });
   });
 
   const fileChooserPromise = page.waitForEvent("filechooser");
@@ -113,6 +116,8 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
   await expect(page.getByRole("tooltip").getByRole("button", { name: "Restore warning" })).toBeVisible();
 
   // Warning review is metadata and remains available after the sheet is locked.
+  await page.keyboard.press("Escape");
+  await page.setViewportSize({ width: 1280, height: 900 });
   await page.getByRole("button", { name: "Lock", exact: true }).click();
   await expect(page.getByRole("button", { name: "Unlock", exact: true })).toBeVisible();
   await acknowledgedLatitude.tap();
