@@ -99,10 +99,11 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
   await expect(page.getByLabel("Scanned draft verification notice")).toContainText("Please verify scanned information before locking this sheet.");
   const highlightedLatitude = page.locator("td.scanner-warning-field").filter({ hasText: String(scannedSheet.lines[0].latitude) });
   await expect(highlightedLatitude).toHaveAttribute("title", "Row 1 is missing or unclear: Lat.");
-  const language = page.getByLabel("Language").first();
-  await language.selectOption("fr");
+  await page.getByLabel("Language").first().selectOption("fr");
   await expect(highlightedLatitude).toHaveAttribute("title", "Ligne 1 manquante ou peu claire : Lat.");
-  await language.selectOption("en");
+  // The locale switch also translates the select's accessible name, so query it
+  // again with its current label instead of reusing an English-label locator.
+  await page.getByLabel("Langue").first().selectOption("en");
   await page.setViewportSize({ width: 390, height: 844 });
   await highlightedLatitude.tap();
   await expect(page.getByRole("tooltip")).toContainText("Row 1 is missing or unclear: Lat.");
