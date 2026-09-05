@@ -35,7 +35,7 @@ const strings = (v: unknown) => Array.isArray(v) && v.every(string);
 const isoTimestamp = (v: unknown) => string(v) && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})$/.test(v) && !Number.isNaN(Date.parse(v));
 const scannerWarningFields = new Set(Object.keys(scannerFieldAliases));
 const scannerWarnings = (v: unknown) => Array.isArray(v) && v.every(warning => {
-  if (!record(warning) || !string(warning.id) || !scannerWarningCodes.includes(warning.code as typeof scannerWarningCodes[number]) || !optional(warning.acknowledgedAt, isoTimestamp)) return false;
+  if (!record(warning) || !string(warning.id) || warning.id.trim().length === 0 || !scannerWarningCodes.includes(warning.code as typeof scannerWarningCodes[number]) || !optional(warning.acknowledgedAt, isoTimestamp)) return false;
   if (!optional(warning.row, value => Number.isSafeInteger(value) && Number(value) > 0)) return false;
   if (!optional(warning.fields, value => Array.isArray(value) && value.every(field => string(field) && scannerWarningFields.has(field)))) return false;
   if (!optional(warning.fallbackMessage, string)) return false;
@@ -96,6 +96,10 @@ export function validatePersistedLogbook(value: unknown): PersistedLogbook {
     if (sheet.share !== undefined) assert(record(sheet.share) && ["masterData", "picture", "logLines", "metrics", "technicalLog", "skipper", "crew"].every(k => ["private", "registered", "public"].includes((sheet.share as Record<string, unknown>)[k] as string)), `sheets[${i}].share is malformed.`);
     if (sheet.metrics !== undefined) assert(record(sheet.metrics) && Object.entries(sheet.metrics).every(([, x]) => x === null || finite(x) || numberRecord(x)), `sheets[${i}].metrics is malformed.`);
     assert(optional(sheet.source, x => x === "manual" || x === "scanner") && optional(sheet.verificationNote, string) && optional(sheet.scannerWarnings, scannerWarnings), `sheets[${i}] optional values are malformed.`);
+    if (sheet.scannerWarnings !== undefined) {
+      const warningIds = (sheet.scannerWarnings as Array<{ id: string }>).map(warning => warning.id);
+      assert(new Set(warningIds).size === warningIds.length, `sheets[${i}].scannerWarnings IDs must be unique.`);
+    }
     image(sheet.image, `sheets[${i}].image`);
     assert(optional(sheet.imageId, string), `sheets[${i}].imageId must be a string.`);
   });
