@@ -79,7 +79,7 @@ describe("LogSheetsRepository", () => {
   });
 
   it("persists and maps optional scanner metadata", async () => {
-    const scannerSheet = { ...sheet, source: "scanner" as const, verificationNote: "Reviewed OCR fields", scannerWarnings: [{ id: "warning-1", message: "Missing signature", acknowledgedAt: "2026-07-04T12:00:00.000Z" }] };
+    const scannerSheet = { ...sheet, source: "scanner" as const, verificationNote: "Reviewed OCR fields", scannerWarnings: [{ id: "warning-1", code: "scannerGenerated" as const, fallbackMessage: "Missing signature", acknowledgedAt: "2026-07-04T12:00:00.000Z" }] };
     const db = new MockDatabase();
 
     await new LogSheetsRepository(db).insert(scannerSheet, "repository-user");
@@ -100,8 +100,8 @@ describe("LogSheetsRepository", () => {
     const mapped = LogSheetsRepository.toLogbook([], [logSheetRow({ scanner_warnings: JSON.stringify(["Missing signature", "Verify arrival time"]) })], [], []);
 
     expect(mapped.sheets[0].scannerWarnings).toEqual([
-      { id: expect.any(String), message: "Missing signature" },
-      { id: expect.any(String), message: "Verify arrival time" },
+      { id: expect.any(String), code: "scannerGenerated", fallbackMessage: "Missing signature" },
+      { id: expect.any(String), code: "scannerGenerated", fallbackMessage: "Verify arrival time" },
     ]);
     expect(mapped.sheets[0].scannerWarnings?.[0].id).not.toBe(mapped.sheets[0].scannerWarnings?.[1].id);
   });

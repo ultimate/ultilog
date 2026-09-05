@@ -87,7 +87,7 @@ describe("logbook scanner image fixtures", () => {
       source: "scanner",
       boatId: "fixture-boat",
       route: expect.objectContaining({ from: expected.route?.from, to: expected.route?.to }),
-      scannerWarnings: scannerResult.warnings.map((message) => expect.objectContaining({ id: expect.any(String), message })),
+      scannerWarnings: scannerResult.warnings.map((warning) => expect.objectContaining({ id: expect.any(String), ...warning })),
     }));
     expect(sheet.route.departed).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$/);
     expect(sheet.route.arrived).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$/);
@@ -155,7 +155,7 @@ function expectedToScannerResult(expected: ExpectedFixture): ScannerResult {
       },
       lines: (expected.lines ?? []).map((line) => stringifyLineValues(line)),
     },
-    warnings: ["Fixture data intentionally omits unverified handwritten notes."],
+    warnings: [{ code: "scannerGenerated", fallbackMessage: "Fixture data intentionally omits unverified handwritten notes." }],
   };
 }
 

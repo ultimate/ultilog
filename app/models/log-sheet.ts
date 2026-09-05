@@ -2,6 +2,7 @@ import type { SheetCrewAssignment, SheetCrewMember } from "./crew-member";
 import type { StoredImage } from "./stored-image";
 import type { LogLine } from "./log-line";
 import type { LogSheetMetrics } from "../domain/logbook/sheet-metrics";
+import type { ScannerWarningDiagnostic } from "../lib/logbook-scanner/warning-codes";
 
 export type LogSheetSharePrivacy = "private" | "registered" | "public";
 
@@ -27,7 +28,7 @@ export const defaultLogSheetShareSettings: LogSheetShareSettings = {
 
 export type TechnicalCheck = { status: string; text: string };
 export type EngineHourCounter = { start?: number; end?: number };
-export type ScannerWarning = { id: string; message: string; acknowledgedAt?: string };
+export type ScannerWarning = ScannerWarningDiagnostic & { id: string; acknowledgedAt?: string };
 
 export type LogSheet = {
   revision?: number;

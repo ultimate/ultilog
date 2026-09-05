@@ -3,6 +3,7 @@ import { normalizeIsoDate } from "../iso-date";
 import { countryCodeForFlagValue } from "../flags";
 import { randomUUID } from "node:crypto";
 import type { ScannerWarning } from "../../models/logbook";
+import { normalizeScannerWarning } from "../logbook-scanner/normalize-warning";
 
 type RouteRow = { id: string; route: unknown };
 type TimedRow = { sheet_id: string; sort_order: number; time: string };
@@ -32,7 +33,7 @@ export async function runMigrations(db: QueryableDatabase) {
 }
 
 async function applyMigration(db: QueryableDatabase, id: string, sql: string) {
-  if (id === "043_structure_scanner_warnings") {
+  if (id === "043_structure_scanner_warnings" || id === "044_localize_scanner_warnings") {
     await structureScannerWarnings(db);
     return;
   }
@@ -89,20 +90,12 @@ function parseScannerWarnings(value: unknown, sheetId: string): { value: Scanner
   }
   if (!Array.isArray(parsed)) throw new Error(`Log sheet ${sheetId} has malformed scanner warnings.`);
 
-  let changed = false;
   const warnings = parsed.map((warning): ScannerWarning => {
-    if (typeof warning === "string") {
-      changed = true;
-      return { id: randomUUID(), message: warning };
-    }
-    if (!warning || typeof warning !== "object" || Array.isArray(warning)) throw new Error(`Log sheet ${sheetId} has malformed scanner warnings.`);
-    const candidate = warning as { id?: unknown; message?: unknown; acknowledgedAt?: unknown };
-    if (typeof candidate.id !== "string" || typeof candidate.message !== "string" || (candidate.acknowledgedAt !== undefined && typeof candidate.acknowledgedAt !== "string")) {
-      throw new Error(`Log sheet ${sheetId} has malformed scanner warnings.`);
-    }
-    return { id: candidate.id, message: candidate.message, ...(candidate.acknowledgedAt === undefined ? {} : { acknowledgedAt: candidate.acknowledgedAt }) };
+    const normalized = normalizeScannerWarning(warning);
+    if (!normalized) throw new Error(`Log sheet ${sheetId} has malformed scanner warnings.`);
+    return normalized;
   });
-  return { value: warnings, changed };
+  return { value: warnings, changed: JSON.stringify(warnings) !== JSON.stringify(parsed) };
 }
 
 export async function normalizeBoatFlagStates(db: QueryableDatabase) {

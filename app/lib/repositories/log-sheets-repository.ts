@@ -1,7 +1,7 @@
-import { randomUUID } from "node:crypto";
 import { normalizeTechnicalCheck } from "../../domain/logbook/technical-log";
 import { calculateLogSheetMetrics } from "../../domain/logbook/sheet-metrics";
 import { defaultLogSheetShareSettings, normalizeDeviationTable, normalizeWindDriftTable, type Boat, type BoatRow, type CrewMemberRow, type LogLine, type LogLineRow, type LogSheet, type LogSheetRow, type PersistedLogbook, type ScannerWarning, type StoredLogSheet } from "../../models/logbook";
+import { normalizeScannerWarning } from "../logbook-scanner/normalize-warning";
 import type { QueryableDatabase } from "../db/logbook-database";
 import { expectedRevision, imageFromRow, imageValues, scopedId, unscopedId } from "./boats-repository";
 
@@ -162,14 +162,7 @@ function parseJson<T>(value: unknown): T {
 }
 
 function normalizeScannerWarnings(value: unknown): ScannerWarning[] {
-  if (!Array.isArray(value)) return [];
-  return value.flatMap((warning) => {
-    if (typeof warning === "string") return [{ id: randomUUID(), message: warning }];
-    if (!warning || typeof warning !== "object" || Array.isArray(warning)) return [];
-    const candidate = warning as Partial<ScannerWarning>;
-    if (typeof candidate.id !== "string" || typeof candidate.message !== "string") return [];
-    return [{ id: candidate.id, message: candidate.message, ...(typeof candidate.acknowledgedAt === "string" ? { acknowledgedAt: candidate.acknowledgedAt } : {}) }];
-  });
+  return Array.isArray(value) ? value.map(normalizeScannerWarning).filter((warning): warning is ScannerWarning => Boolean(warning)) : [];
 }
 
 function groupBy<T>(items: T[], keyFor: (item: T) => string) {

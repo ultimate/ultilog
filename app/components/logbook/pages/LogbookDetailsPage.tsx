@@ -25,6 +25,7 @@ import { fileToStoredImage } from "../image-utils";
 import { defaultLogSheetShareSettings } from "../../../models/logbook";
 import { uploadStoredImage } from "../persistence";
 import { indexScannerWarnings } from "../../../lib/logbook-scanner/warning-fields";
+import { formatScannerWarning } from "../../../lib/logbook-scanner/format-warning";
 import type { LineFormField } from "../../../models/logbook-forms";
 
 type CourseColumn = {
@@ -142,6 +143,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const coordinateFormat = coordinateFormatOverride?.sheetId === activeSheet.id ? coordinateFormatOverride.format : defaultCoordinateFormat;
   const technicalCheckDrafts = technicalCheckDraftState.sheetId === activeSheet.id ? technicalCheckDraftState.drafts : {};
   const scannerWarnings = activeSheet.scannerWarnings ?? [];
+  const scannerWarningText = (warning: ScannerWarning) => formatScannerWarning(warning, t);
   const activeScannerWarningCount = scannerWarnings.filter((warning) => !warning.acknowledgedAt).length;
   const showAcknowledgedWarnings = acknowledgedWarningVisibility.sheetId === activeSheet.id
     ? acknowledgedWarningVisibility.show
@@ -408,7 +410,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     const warnings = [...new Map(fields.flatMap((field) => fieldWarnings?.get(field) ?? []).map((warning) => [warning.id, warning])).values()];
     if (warnings.length === 0) return { className };
     const warningIds = warnings.map((warning) => warning.id);
-    const title = warnings.map((warning) => warning.message).join("\n");
+    const title = warnings.map(scannerWarningText).join("\n");
     const key = warningIds.join(":");
     const hasActiveWarning = warnings.some((warning) => !warning.acknowledgedAt);
     const openTooltip = (cell: HTMLTableCellElement) => {
@@ -850,9 +852,9 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                           <li
                             key={warning.id}
                             className={warning.acknowledgedAt ? "acknowledged" : undefined}
-                            aria-label={`${warning.acknowledgedAt ? t("details.scanner.acknowledgedWarning") : t("details.scanner.activeWarning")}: ${warning.message}`}
+                            aria-label={`${warning.acknowledgedAt ? t("details.scanner.acknowledgedWarning") : t("details.scanner.activeWarning")}: ${scannerWarningText(warning)}`}
                           >
-                            {warning.message}
+                            {scannerWarningText(warning)}
                             {renderScannerWarningAction(warning)}
                           </li>
                         ))}
@@ -987,9 +989,9 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                       <span
                         key={warning.id}
                         className={warning.acknowledgedAt ? "acknowledged" : undefined}
-                        aria-label={`${warning.acknowledgedAt ? t("details.scanner.acknowledgedWarning") : t("details.scanner.activeWarning")}: ${warning.message}`}
+                        aria-label={`${warning.acknowledgedAt ? t("details.scanner.acknowledgedWarning") : t("details.scanner.activeWarning")}: ${scannerWarningText(warning)}`}
                       >
-                        {warning.message}
+                        {scannerWarningText(warning)}
                         {renderScannerWarningAction(warning)}
                       </span>
                     ))}
