@@ -13,6 +13,8 @@ describe("structured scanner warning validation", () => {
   });
 
   it.each([
+    [{ id: "", code: "noRows" }],
+    [{ id: "   ", code: "noRows" }],
     [{ id: "warning", code: "not-a-code" }],
     [{ id: "warning", code: "missingFields", row: 0, fields: ["latitude"] }],
     [{ id: "warning", code: "missingFields", row: 1, fields: ["unknownField"] }],
@@ -20,5 +22,15 @@ describe("structured scanner warning validation", () => {
     [{ id: "warning", code: "noRows", acknowledgedAt: "yesterday" }],
   ])("rejects malformed warning records", scannerWarnings => {
     expect(() => validatePersistedLogbook(warningLogbook(scannerWarnings))).toThrow("optional values are malformed");
+  });
+
+  it("rejects duplicate warning IDs within a sheet", () => {
+    const scannerWarnings = [
+      { id: "duplicate", code: "missingFields", row: 1, fields: ["latitude"] },
+      { id: "duplicate", code: "noRows" },
+    ];
+
+    expect(() => validatePersistedLogbook(warningLogbook(scannerWarnings)))
+      .toThrow("sheets[0].scannerWarnings IDs must be unique.");
   });
 });
