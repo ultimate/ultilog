@@ -75,6 +75,7 @@ export const it: Dictionary = {
   "demoLimits.close": "Chiudi",
   "auth.passwordMismatch": "Le password non corrispondono.",
   "auth.registerError": "Impossibile registrarsi.",
+  "auth.automaticLoginError": "Il tuo account è stato creato, ma l'accesso automatico non è riuscito. Accedi per continuare.",
   "auth.invalidCredentials": "E-mail o password non validi.",
   "auth.forgotPassword": "Password dimenticata?",
   "auth.forgotPasswordTitle": "Reimposta la password",

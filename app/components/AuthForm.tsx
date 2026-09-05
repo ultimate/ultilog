@@ -10,7 +10,14 @@ import { demoDeviceId } from "./demo-device";
 
 type Props = { mode: "login" | "register"; footer: ReactNode };
 
+type CredentialsSignIn = typeof signIn;
+
 const featureIcons = ["∞", "◇", "♟", "▧", "✦"];
+
+export async function signInAfterRegistration(email: string, password: string, authenticate: CredentialsSignIn = signIn) {
+  const result = await authenticate("credentials", { email, password, redirect: false });
+  return !result?.error;
+}
 
 export function AuthForm({ mode, footer }: Props) {
   const { t } = useI18n();
@@ -73,7 +80,12 @@ export function AuthForm({ mode, footer }: Props) {
         setIsSubmitting(false);
         return;
       }
-      setIsSubmitting(false);
+      const isSignedIn = await signInAfterRegistration(email, password).catch(() => false);
+      if (!isSignedIn) {
+        setError(t("auth.automaticLoginError"));
+        setIsSubmitting(false);
+        return;
+      }
       window.location.assign(`/check-email?email=${encodeURIComponent(email)}`);
       return;
     }

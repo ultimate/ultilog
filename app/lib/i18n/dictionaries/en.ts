@@ -73,6 +73,7 @@ export const en = {
   "demoLimits.close": "Close",
   "auth.passwordMismatch": "Passwords do not match.",
   "auth.registerError": "Unable to register.",
+  "auth.automaticLoginError": "Your account was created, but automatic sign-in failed. Please log in to continue.",
   "auth.invalidCredentials": "Invalid email or password.",
   "auth.forgotPassword": "Forgot password?",
   "auth.forgotPasswordTitle": "Reset your password",
