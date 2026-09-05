@@ -11,6 +11,8 @@ export type ScannedLogSheetDraft = {
     departed?: string;
     arrived?: string;
   };
+  technicalChecks?: { status: string; text: string }[];
+  engineHourCounters?: { engineId: string; start: string; end: string }[];
   lines: ScannedLogLine[];
 };
 

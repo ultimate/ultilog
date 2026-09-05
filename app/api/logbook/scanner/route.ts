@@ -8,6 +8,7 @@ import { findUserById } from "../../../lib/users";
 import { isActiveDemoSandbox } from "../../../lib/demo/demo-policy";
 import { consumeRateLimit, rateLimitResponse } from "../../../lib/security/rate-limiter";
 import { CrewDataDecryptionError } from "../../../lib/crypto/crew-encryption";
+import { createTechnicalChecks } from "../../../domain/logbook/technical-log";
 
 const MAX_FILE_COUNT = 5;
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
@@ -64,7 +65,8 @@ async function scanLogbook(request: Request) {
   }
 
   const [logbook, user] = await Promise.all([readLogbook(session.user.id), findUserById(session.user.id)]);
-  if (!logbook.boats.some((boat) => boat.id === boatId && !boat.archived)) {
+  const boat = logbook.boats.find((boat) => boat.id === boatId && !boat.archived);
+  if (!boat) {
     return scannerError("invalid_boat", "The selected boat is not available in your logbook.", 404);
   }
 
@@ -82,6 +84,10 @@ async function scanLogbook(request: Request) {
   try {
     scannerResult = await openAiScannerProvider.extractLogbookDraft({
       languageHint: user?.language,
+      template: {
+        technicalChecks: user ? createTechnicalChecks(user.language, user.technicalLogTemplate, user.enabledStandardTechnicalChecks).map((check) => check.text) : [],
+        engines: (boat.engines ?? []).filter((engine) => !engine.archived).map(({ id, name, label, role }) => ({ id, name, label, role })),
+      },
       files: await Promise.all(uploadedFiles.map(fileToScannerInput)),
     });
   } catch (error) {
@@ -98,6 +104,8 @@ async function scanLogbook(request: Request) {
     currentUser: session.user.name ? { name: session.user.name } : undefined,
     logbook,
     userPreferences: user ? { windUnit: user.windUnit, waterHeightUnit: user.waterHeightUnit, temperatureUnit: user.temperatureUnit } : undefined,
+    technicalLogTemplate: user ? createTechnicalChecks(user.language, user.technicalLogTemplate, user.enabledStandardTechnicalChecks) : [],
+    engineIds: (boat.engines ?? []).filter((engine) => !engine.archived).map((engine) => engine.id),
   });
 
   const { lines, ...focusedSheet } = sheet;
@@ -168,8 +176,10 @@ function hasReadableLogbookData(scannerResult: Awaited<ReturnType<typeof openAiS
   const routeValues = Object.values(draft.route ?? {});
   const sheetValues = [draft.title, draft.dateText, ...routeValues];
   const lineValues = draft.lines.flatMap((line) => Object.values(line));
+  const technicalValues = (draft.technicalChecks ?? []).flatMap((check) => [check.status, check.text]);
+  const counterValues = (draft.engineHourCounters ?? []).flatMap((counter) => [counter.start, counter.end]);
 
-  return [...sheetValues, ...lineValues].some((value) => typeof value === "string" && value.trim().length > 0);
+  return [...sheetValues, ...lineValues, ...technicalValues, ...counterValues].some((value) => typeof value === "string" && value.trim().length > 0);
 }
 
 async function fileToScannerInput(file: File) {

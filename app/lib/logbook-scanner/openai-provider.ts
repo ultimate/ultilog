@@ -8,6 +8,7 @@ import {
 import { localeLabels, locales, t, type Locale } from "../i18n/translations";
 import { criticalCourseScannerFields, scannerFieldAliases } from "./field-aliases";
 import type { ScannerProviderInput } from "./provider";
+import type { ScannerTemplate } from "./provider";
 
 const DEFAULT_MODEL = "gpt-4.1-mini";
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
@@ -113,7 +114,7 @@ const scannerResultJsonSchema = {
     draft: {
       type: "object",
       additionalProperties: false,
-      required: ["title", "dateText", "route", "lines"],
+      required: ["title", "dateText", "route", "technicalChecks", "engineHourCounters", "lines"],
       properties: {
         title: { type: "string" },
         dateText: { type: "string" },
@@ -126,6 +127,27 @@ const scannerResultJsonSchema = {
             to: { type: "string" },
             departed: { type: "string" },
             arrived: { type: "string" },
+          },
+        },
+        technicalChecks: {
+          type: "array",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            required: ["status", "text"],
+            properties: {
+              status: { type: "string", enum: ["⌛", "✅", "❎", "⚠️", "❌", "❗", "❓", "ℹ️", "🆗", "🆖", "0️⃣", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟", "○", "◔", "◑", "◕", "●"] },
+              text: { type: "string" },
+            },
+          },
+        },
+        engineHourCounters: {
+          type: "array",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            required: ["engineId", "start", "end"],
+            properties: { engineId: { type: "string" }, start: { type: "string" }, end: { type: "string" } },
           },
         },
         lines: {
@@ -156,6 +178,8 @@ const extractionInstructions = `Extract a logbook draft from these image(s). The
 - draft.title: sheet title if visible. If there is no dedicated title, use the value of a Tagesziel/Daily goal field as the title; otherwise use an empty string.
 - draft.dateText: visible date or date range, otherwise empty string.
 - draft.route.from/to/departed/arrived: visible route information, otherwise empty strings. Treat Standort morgens/Location morning as route.from and Standort abends/Location evening as route.to.
+- draft.technicalChecks: technical-log or daily-check entries, with the visible mark converted to the closest allowed status symbol and its label in text. Use ⌛ when no mark is visible.
+- draft.engineHourCounters: cumulative engine hour-meter readings at the start and end of the sheet. Use only a supplied engineId and preserve decimal readings as text.
 - draft.lines: one object per logbook row using only the schema's log line fields.
 - Use the renamed log line fields waves, compassCourse, magneticCourse, windDrift, weatherRemark, and temperature.
 - Do not output deprecated course or wind fields; split wind into windDirection, windStrength, and windUnit.
@@ -178,12 +202,24 @@ const documentInterpretationInstructions = `Interpret the document before transc
 - Use the course sequence only to map columns. Never calculate, copy, or invent a missing course value to make the sequence complete or arithmetically consistent.
 - Preserve signed correction values, including explicit + and - signs.`;
 
-export function buildScannerUserPrompt(languageHint?: Locale) {
+export function buildScannerUserPrompt(languageHint?: Locale, template?: ScannerTemplate) {
   const hint = languageHint
     ? `User interface language hint: ${localeLabels[languageHint]} (${languageHint}). This is a preference only; detect the sheet's actual language independently.`
     : "User interface language hint: none. Detect the sheet language from the document.";
 
-  return `${extractionInstructions}\n\n${documentInterpretationInstructions}\n\n${formatTemplateRecognitionInstructions()}\n\n${hint}\n\nMultilingual field terminology:\n${formatScannerFieldAliases()}`;
+  return `${extractionInstructions}\n\n${documentInterpretationInstructions}\n\n${formatTemplateRecognitionInstructions()}\n\n${formatUserScannerTemplate(template)}\n\n${hint}\n\nMultilingual field terminology:\n${formatScannerFieldAliases()}`;
+}
+
+export function formatUserScannerTemplate(template?: ScannerTemplate) {
+  const checks = template?.technicalChecks ?? [];
+  const engines = template?.engines ?? [];
+  return `User-configured recognition template:
+- Expected technical checks (exact application labels): ${checks.length ? checks.map((check) => JSON.stringify(check)).join(", ") : "none supplied"}.
+- Match visible daily-check rows to these labels by meaning, even if the sheet uses an abbreviation, handwriting, or another supported language. Return each matched label exactly as supplied. Do not treat an unchecked row as absent; preserve its visible status mark.
+- Return additional clearly visible technical checks after the configured checks. Do not invent a completed status or value.
+- Engines (stable id | visible label | name | role): ${engines.length ? engines.map((engine) => `${engine.id} | ${engine.label} | ${engine.name} | ${engine.role}`).join("; ") : "none supplied"}.
+- Map each visible cumulative motor/engine-hours counter to the corresponding stable engine id using its heading, label, name, role, and column position. Distinguish start/from and end/to readings from per-row operating hours. Never put a cumulative counter in draft.lines[].motorHours.
+- If a configured check or engine counter is absent or unreadable, omit that check/counter and add a concise warning; never invent a reading.`;
 }
 
 export function formatScannerFieldAliases() {
@@ -226,7 +262,7 @@ export function isOpenAiScannerProviderConfigured() {
 
 export async function extractLogbookDraft(input: ScannerProviderInput): Promise<ScannerResult> {
   if (input.files.length === 0) {
-    return { draft: { title: "", dateText: "", route: { from: "", to: "", departed: "", arrived: "" }, lines: [] }, warnings: ["No images were provided for scanning."] };
+    return { draft: { title: "", dateText: "", route: { from: "", to: "", departed: "", arrived: "" }, technicalChecks: [], engineHourCounters: [], lines: [] }, warnings: ["No images were provided for scanning."] };
   }
 
   if (!isOpenAiScannerProviderConfigured()) {
@@ -248,7 +284,7 @@ export async function extractLogbookDraft(input: ScannerProviderInput): Promise<
         {
           role: "user",
           content: [
-            { type: "input_text", text: buildScannerUserPrompt(input.languageHint) },
+            { type: "input_text", text: buildScannerUserPrompt(input.languageHint, input.template) },
             ...input.files.map((file) => ({
               type: "input_image",
               image_url: `data:${file.type || "image/jpeg"};base64,${file.buffer.toString("base64")}`,
