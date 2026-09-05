@@ -138,6 +138,10 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const [openCourseTooltip, setOpenCourseTooltip] = useState<TranslationKey | null>(null);
   const [courseTooltipPosition, setCourseTooltipPosition] = useState({ left: 0, top: 0 });
   const [openScannerWarning, setOpenScannerWarning] = useState<{ key: string; warnings: ScannerWarning[]; left: number; top: number; above: boolean } | null>(null);
+  const scannerWarningTriggerRef = useRef<HTMLTableCellElement>(null);
+  const scannerWarningDialogRef = useRef<HTMLDivElement>(null);
+  const scannerWarningFirstActionRef = useRef<HTMLButtonElement>(null);
+  const focusScannerWarningActionOnOpenRef = useRef(false);
   const [acknowledgedWarningVisibility, setAcknowledgedWarningVisibility] = useState({ sheetId: "", show: false });
   const [coordinateFormatOverride, setCoordinateFormatOverride] = useState<{ sheetId: string; format: CoordinateFormat } | null>(null);
   const coordinateFormat = coordinateFormatOverride?.sheetId === activeSheet.id ? coordinateFormatOverride.format : defaultCoordinateFormat;
@@ -157,8 +161,9 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     ...[...indexedScannerWarnings.lineWarnings.values()].flatMap((warnings) => warnings),
   ];
 
-  const renderScannerWarningAction = (warning: ScannerWarning) => (
+  const renderScannerWarningAction = (warning: ScannerWarning, isFirstAction = false) => (
     <button
+      ref={isFirstAction ? scannerWarningFirstActionRef : undefined}
       type="button"
       className="scanner-warning-action"
       onClick={(event) => {
@@ -248,6 +253,12 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
       window.removeEventListener("scroll", closeTooltip, true);
     };
   }, [openCourseTooltip]);
+
+  useEffect(() => {
+    if (!openScannerWarning || !focusScannerWarningActionOnOpenRef.current) return;
+    focusScannerWarningActionOnOpenRef.current = false;
+    scannerWarningFirstActionRef.current?.focus();
+  }, [openScannerWarning]);
 
   const renderNumberInput = (draftId: string, field: Exclude<keyof LineForm, "engineHours" | "id">, options?: { min?: number; max?: number; step?: string }) => {
     const lineForm = lineForms[draftId].form;
@@ -413,11 +424,18 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     const title = warnings.map(scannerWarningText).join("\n");
     const key = warningIds.join(":");
     const hasActiveWarning = warnings.some((warning) => !warning.acknowledgedAt);
-    const openTooltip = (cell: HTMLTableCellElement) => {
+    const closeDialogAndRestoreFocus = () => {
+      setOpenScannerWarning(null);
+      scannerWarningTriggerRef.current?.focus();
+    };
+    const openDialog = (cell: HTMLTableCellElement, openedByKeyboard = false) => {
       if (openScannerWarning?.key === key) {
-        setOpenScannerWarning(null);
+        if (openedByKeyboard) closeDialogAndRestoreFocus();
+        else setOpenScannerWarning(null);
         return;
       }
+      scannerWarningTriggerRef.current = cell;
+      focusScannerWarningActionOnOpenRef.current = openedByKeyboard;
       const rect = cell.getBoundingClientRect();
       const above = rect.bottom > window.innerHeight - 130;
       setOpenScannerWarning({ key, warnings, left: rect.left + rect.width / 2, top: above ? rect.top - 8 : rect.bottom + 8, above });
@@ -426,25 +444,24 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
       className: [className, "scanner-warning-field", hasActiveWarning ? null : "acknowledged"].filter(Boolean).join(" "),
       title,
       tabIndex: 0,
-      "aria-describedby": openScannerWarning?.key === key ? "scanner-warning-tooltip" : undefined,
+      "aria-expanded": openScannerWarning?.key === key,
+      "aria-controls": "scanner-warning-dialog",
+      "aria-haspopup": "dialog" as const,
       onClick: (event: MouseEvent<HTMLTableCellElement>) => {
         if (event.target instanceof Element && event.target.closest("button, input, select, textarea, a, [role=button], .log-line-text-tooltip")) return;
-        openTooltip(event.currentTarget);
+        openDialog(event.currentTarget);
       },
       onKeyDown: (event: KeyboardEvent<HTMLTableCellElement>) => {
         if (event.target !== event.currentTarget) return;
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
-          openTooltip(event.currentTarget);
+          openDialog(event.currentTarget, true);
         } else if (event.key === "Escape") {
-          setOpenScannerWarning(null);
+          closeDialogAndRestoreFocus();
         }
       },
       onBlur: (event: FocusEvent<HTMLTableCellElement>) => {
-        // The tooltip is rendered in a portal, so its action is outside the cell's
-        // DOM subtree. Keep it mounted while focus moves to that action so the
-        // ensuing click can acknowledge or restore the warning.
-        if (event.relatedTarget instanceof Element && event.relatedTarget.closest(".scanner-warning-tooltip")) return;
+        if (event.relatedTarget instanceof Node && scannerWarningDialogRef.current?.contains(event.relatedTarget)) return;
         setOpenScannerWarning(null);
       },
     };
@@ -976,26 +993,42 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                   </table>
                 </div>
                 {openScannerWarning && typeof document !== "undefined" && createPortal(
-                  <span
-                    id="scanner-warning-tooltip"
-                    role="tooltip"
+                  <div
+                    ref={scannerWarningDialogRef}
+                    id="scanner-warning-dialog"
+                    role="dialog"
+                    aria-label={openScannerWarning.warnings.map(scannerWarningText).join("; ")}
                     className={`scanner-warning-tooltip${openScannerWarning.above ? " above" : ""}`}
+                    onKeyDown={(event) => {
+                      if (event.key !== "Escape") return;
+                      event.preventDefault();
+                      event.stopPropagation();
+                      setOpenScannerWarning(null);
+                      scannerWarningTriggerRef.current?.focus();
+                    }}
+                    onBlur={(event) => {
+                      if (event.relatedTarget instanceof Node && (
+                        event.currentTarget.contains(event.relatedTarget)
+                        || scannerWarningTriggerRef.current?.contains(event.relatedTarget)
+                      )) return;
+                      setOpenScannerWarning(null);
+                    }}
                     style={{
                       "--scanner-warning-left": `${openScannerWarning.left}px`,
                       "--scanner-warning-top": `${openScannerWarning.top}px`,
                     } as CSSProperties}
                   >
-                    {openScannerWarning.warnings.map((warning) => (
+                    {openScannerWarning.warnings.map((warning, index) => (
                       <span
                         key={warning.id}
                         className={warning.acknowledgedAt ? "acknowledged" : undefined}
                         aria-label={`${warning.acknowledgedAt ? t("details.scanner.acknowledgedWarning") : t("details.scanner.activeWarning")}: ${scannerWarningText(warning)}`}
                       >
                         {scannerWarningText(warning)}
-                        {renderScannerWarningAction(warning)}
+                        {renderScannerWarningAction(warning, index === 0)}
                       </span>
                     ))}
-                  </span>,
+                  </div>,
                   document.body,
                 )}
               </article>
