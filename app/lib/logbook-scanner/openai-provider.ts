@@ -8,6 +8,7 @@ import {
 import { localeLabels, locales, t, type Locale } from "../i18n/translations";
 import { criticalCourseScannerFields, scannerFieldAliases } from "./field-aliases";
 import type { ScannerProviderInput } from "./provider";
+import { scannerWarningCodes, type ScannerWarningDiagnostic } from "./warning-codes";
 
 const DEFAULT_MODEL = "gpt-4.1-mini";
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
@@ -141,7 +142,15 @@ const scannerResultJsonSchema = {
     },
     warnings: {
       type: "array",
-      items: { type: "string" },
+      items: {
+        type: "object", additionalProperties: false, required: ["code", "row", "fields", "fallbackMessage"],
+        properties: {
+          code: { type: "string", enum: [...scannerWarningCodes] },
+          row: { type: ["integer", "null"] },
+          fields: { type: "array", items: { type: "string", enum: [...LOG_LINE_FIELDS] } },
+          fallbackMessage: { type: ["string", "null"] },
+        },
+      },
     },
   },
 } as const;
@@ -164,7 +173,7 @@ const extractionInstructions = `Extract a logbook draft from these image(s). The
 - Expected row data types are strings in the JSON schema. Transcribe numeric values as strings for numeric fields such as temperature, barometer, waves, compassCourse, magneticCourse, windDrift, speedKn, and logNm.
 - Include explicit units when visible for windUnit, seaUnit, tideUnit, and temperatureUnit; leave them empty only when no unit is shown.
 - Convert written weather conditions in any language to the closest canonical weather emoji. Interpret meteorological cloud-cover circles by their filled fraction (oktas): 0/8=☀️, 1–2/8=🌤️, 3–4/8=⛅, 5–7/8=🌥️, and 8/8=☁️. Use precipitation, thunderstorm, snow, fog, and other specific weather emojis when those marks or words are visible.
-- warnings: concise human-readable warnings for missing or ambiguous fields.`;
+- warnings: structured diagnostics using the allowed code, canonical row/field metadata, and fallbackMessage only for scannerGenerated diagnostics.`;
 
 const documentInterpretationInstructions = `Interpret the document before transcribing its rows:
 - Detect the language from the printed sheet headings. The sheet may use English, German, French, Italian, international abbreviations, or a mixture of languages.
@@ -226,7 +235,7 @@ export function isOpenAiScannerProviderConfigured() {
 
 export async function extractLogbookDraft(input: ScannerProviderInput): Promise<ScannerResult> {
   if (input.files.length === 0) {
-    return { draft: { title: "", dateText: "", route: { from: "", to: "", departed: "", arrived: "" }, lines: [] }, warnings: ["No images were provided for scanning."] };
+    return { draft: { title: "", dateText: "", route: { from: "", to: "", departed: "", arrived: "" }, lines: [] }, warnings: [{ code: "noImages" }] };
   }
 
   if (!isOpenAiScannerProviderConfigured()) {
@@ -282,7 +291,7 @@ export async function extractLogbookDraft(input: ScannerProviderInput): Promise<
 
 export const openAiScannerProvider = { extractLogbookDraft, isConfigured: isOpenAiScannerProviderConfigured };
 
-const shiftedCourseRepairWarning = "Detected a missing magnetic-course column and remapped the following variation and true-course columns.";
+const shiftedCourseRepairWarning: ScannerWarningDiagnostic = { code: "shiftedMissingMagneticCourse" };
 
 /**
  * Repairs a recurring vision-model error on sheets whose printed course chain
@@ -320,7 +329,7 @@ export function repairShiftedMissingMagneticCourse(result: ScannerResult) {
     line.variation = line.magneticCourse;
     line.magneticCourse = "";
   }
-  if (!result.warnings.includes(shiftedCourseRepairWarning)) result.warnings.push(shiftedCourseRepairWarning);
+  if (!result.warnings.some((warning) => warning.code === shiftedCourseRepairWarning.code)) result.warnings.push(shiftedCourseRepairWarning);
   return true;
 }
 
@@ -361,31 +370,37 @@ function parseScannerResult(payload: OpenAIResponsePayload): ScannerResult {
     throw new Error("OpenAI logbook scanner response did not include structured output text.");
   }
 
-  return JSON.parse(outputText) as ScannerResult;
+  const parsed = JSON.parse(outputText) as ScannerResult;
+  parsed.warnings = parsed.warnings.map(warning => ({
+    code: warning.code,
+    ...(typeof warning.row === "number" ? { row: warning.row } : {}),
+    ...(warning.fields?.length ? { fields: warning.fields } : {}),
+    ...(typeof warning.fallbackMessage === "string" ? { fallbackMessage: warning.fallbackMessage } : {}),
+  }));
+  return parsed;
 }
 
-export function findLocalWarnings(result: ScannerResult): string[] {
-  const warnings = new Set<string>();
+export function findLocalWarnings(result: ScannerResult): ScannerWarningDiagnostic[] {
+  const warnings: ScannerWarningDiagnostic[] = [];
   const route = result.draft.route;
+  const add = (warning: ScannerWarningDiagnostic) => {
+    if (!result.warnings.some(existing => existing.code === warning.code && existing.row === warning.row && JSON.stringify(existing.fields ?? []) === JSON.stringify(warning.fields ?? []))) warnings.push(warning);
+  };
 
-  if (!result.draft.title) warnings.add("Missing or unclear sheet title.");
-  if (!result.draft.dateText) warnings.add("Missing or unclear sheet date range.");
-  if (!route?.from) warnings.add("Missing or unclear route origin.");
-  if (!route?.to) warnings.add("Missing or unclear route destination.");
-  if (!route?.departed) warnings.add("Missing or unclear departure time.");
-  if (!route?.arrived) warnings.add("Missing or unclear arrival time.");
-  if (result.draft.lines.length === 0) warnings.add("No logbook rows were detected.");
+  if (!result.draft.title) add({ code: "missingSheetTitle" });
+  if (!result.draft.dateText) add({ code: "missingSheetDate" });
+  if (!route?.from) add({ code: "missingRouteOrigin" });
+  if (!route?.to) add({ code: "missingRouteDestination" });
+  if (!route?.departed) add({ code: "missingDepartureTime" });
+  if (!route?.arrived) add({ code: "missingArrivalTime" });
+  if (result.draft.lines.length === 0) add({ code: "noRows" });
 
   result.draft.lines.forEach((line, index) => {
-    const missingFields = ["time", "position", "courseOverGround", "speedKn", "logNm"].filter((field) => !line[field as keyof typeof line]);
-    if (missingFields.length > 0) {
-      warnings.add(`Row ${index + 1} is missing or unclear: ${missingFields.join(", ")}.`);
-    }
-
-    for (const warning of findCourseWarnings(line, index + 1)) warnings.add(warning);
+    const fields = ["time", "position", "courseOverGround", "speedKn", "logNm"].filter((field) => !line[field as keyof typeof line]) as (keyof typeof line)[];
+    if (fields.length > 0) add({ code: "missingFields", row: index + 1, fields });
+    for (const warning of findCourseWarnings(line, index + 1)) add(warning);
   });
-
-  return [...warnings].filter((warning) => !result.warnings.includes(warning));
+  return warnings;
 }
 
 const courseRelations = [
@@ -395,8 +410,8 @@ const courseRelations = [
   ["courseThroughWater", "currentDrift", "courseOverGround"],
 ] as const;
 
-function findCourseWarnings(line: ScannerResult["draft"]["lines"][number], rowNumber: number) {
-  const warnings: string[] = [];
+function findCourseWarnings(line: ScannerResult["draft"]["lines"][number], rowNumber: number): ScannerWarningDiagnostic[] {
+  const warnings: ScannerWarningDiagnostic[] = [];
   const populatedIndexes = criticalCourseScannerFields
     .map((field, index) => line[field]?.trim() ? index : -1)
     .filter((index) => index >= 0);
@@ -411,7 +426,7 @@ function findCourseWarnings(line: ScannerResult["draft"]["lines"][number], rowNu
       .slice(first + 1, last)
       .filter((field) => !line[field]?.trim());
     if (missingInteriorFields.length > 0) {
-      warnings.push(`Row ${rowNumber} has an incomplete course chain: ${missingInteriorFields.join(", ")} is missing or unclear.`);
+      warnings.push({ code: "incompleteCourseChain", row: rowNumber, fields: [...missingInteriorFields] });
     }
   }
 
@@ -423,7 +438,7 @@ function findCourseWarnings(line: ScannerResult["draft"]["lines"][number], rowNu
 
     const expected = normalizeCourse(from + correction);
     if (angularDifference(expected, normalizeCourse(actual)) > 1.5) {
-      warnings.push(`Row ${rowNumber} has inconsistent course conversion: ${fromField} + ${correctionField} does not match ${resultField}.`);
+      warnings.push({ code: "inconsistentCourseConversion", row: rowNumber, fields: [fromField, correctionField, resultField] });
     }
   }
 

@@ -51,7 +51,7 @@ describe("scanned log-line dates", () => {
     ]);
     expect(sheet.scannerWarnings).toEqual([expect.objectContaining({
       id: expect.any(String),
-      message: "A log-line date rollover would exceed the sheet end date; the inferred date was capped at the end date.",
+      code: "rolloverExceededEndDate",
     })]);
   });
 

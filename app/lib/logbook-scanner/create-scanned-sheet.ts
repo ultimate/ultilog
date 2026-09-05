@@ -28,7 +28,7 @@ export type CreateScannedSheetInput = {
 type ScannerUnitPreferences = Pick<UserPreferences, "windUnit" | "waterHeightUnit" | "temperatureUnit">;
 
 const verificationNote = "Please verify scanned information before locking this sheet.";
-const rolloverEndDateWarning = "A log-line date rollover would exceed the sheet end date; the inferred date was capped at the end date.";
+const rolloverEndDateWarning = { code: "rolloverExceededEndDate" } as const;
 
 const defaultLineForm: LineForm = {
   id: "",
@@ -92,9 +92,9 @@ export function createScannedSheet({
     arrived: normalizeScannerRouteStamp(extractedRoute.arrived, endDate || fallbackDate),
   };
   const normalizedLines = scannedLinesToLogLines(draft.lines, userPreferences, startDate, endDate);
-  const warningMessages = [...scannerResult.warnings];
-  if (normalizedLines.rolloverExceededEndDate && !warningMessages.includes(rolloverEndDateWarning)) warningMessages.push(rolloverEndDateWarning);
-  const scannerWarnings = warningMessages.map((message) => ({ id: createId(), message }));
+  const warningDiagnostics = [...scannerResult.warnings];
+  if (normalizedLines.rolloverExceededEndDate && !warningDiagnostics.some(warning => warning.code === rolloverEndDateWarning.code)) warningDiagnostics.push(rolloverEndDateWarning);
+  const scannerWarnings = warningDiagnostics.map((warning) => ({ id: createId(), ...warning }));
 
   return {
     id: createId(),

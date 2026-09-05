@@ -1,3 +1,4 @@
+import type { ScannerWarningDiagnostic } from "../lib/logbook-scanner/warning-codes";
 import type { LineFormField } from "./logbook-forms";
 
 export type ScannedLogLine = Partial<Record<LineFormField, string>>;
@@ -16,5 +17,5 @@ export type ScannedLogSheetDraft = {
 
 export type ScannerResult = {
   draft: ScannedLogSheetDraft;
-  warnings: string[];
+  warnings: ScannerWarningDiagnostic[];
 };
