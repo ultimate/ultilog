@@ -1292,6 +1292,21 @@ td { color: #28384b; line-height: 1.45; }
   font-weight: 600;
 }
 
+.scanner-warning-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.55rem 0;
+}
+
+.scanner-warning-navigation span {
+  min-width: 7rem;
+  color: #78350f;
+  font-weight: 700;
+  text-align: center;
+}
+
 .scanner-warning-action {
   margin-left: 0.5rem;
   border: 0;
