@@ -24,7 +24,11 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
     status: "Draft",
     source: "scanner",
     verificationNote: "Please verify scanned information before locking this sheet.",
-    scannerWarnings: [{ id: "warning-1", code: "missingFields", row: 1, fields: ["latitude"] }],
+    scannerWarnings: [
+      { id: "warning-sheet", code: "missingSheetTitle" },
+      { id: "warning-latitude", code: "missingFields", row: 1, fields: ["latitude"] },
+      { id: "warning-longitude", code: "missingFields", row: 1, fields: ["longitude"] },
+    ],
     boatId: currentLogbook.boats[0].id,
     route: {
       from: "Sample Harbor",
@@ -105,14 +109,42 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
   // again with its current label instead of reusing an English-label locator.
   await page.getByLabel("Langue").first().selectOption("en");
   await page.setViewportSize({ width: 390, height: 844 });
-  await test.step("reviews scanner warnings with the keyboard", async () => {
+  await test.step("navigates and acknowledges scanner warnings sequentially", async () => {
+    await expect(page.getByText("Warning 0 of 3", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Next warning" }).click();
+    const sheetWarning = page.getByLabel("Active warning: Missing or unclear sheet title.");
+    await expect(sheetWarning).toBeFocused();
+    await expect(page.getByText("Warning 1 of 3", { exact: true })).toBeVisible();
+
+    await page.getByRole("button", { name: "Next warning" }).click();
+    await expect(highlightedLatitude).toBeFocused();
+    await expect(page.getByRole("dialog", { name: "Row 1 is missing or unclear: Lat." })).toBeVisible();
+    await expect(page.getByText("Warning 2 of 3", { exact: true })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await page.getByRole("button", { name: "Previous warning" }).click();
+    await expect(sheetWarning).toBeFocused();
+    await page.getByRole("button", { name: "Next warning" }).click();
+    await expect(highlightedLatitude).toBeFocused();
+    await page.keyboard.press("Escape");
     await highlightedLatitude.focus();
     await page.keyboard.press("Enter");
     const warningDialog = page.getByRole("dialog", { name: "Row 1 is missing or unclear: Lat." });
     const acknowledgeButton = warningDialog.getByRole("button", { name: "Acknowledge" });
     await expect(acknowledgeButton).toBeFocused();
     await page.keyboard.press("Enter");
-    await expect(page.getByLabel("Scanned draft verification notice")).toContainText("0 active of 1 total warnings");
+    const highlightedLongitude = page.locator("td.scanner-warning-field").filter({ hasText: String(scannedSheet.lines[0].longitude) });
+    await expect(highlightedLongitude).toBeFocused();
+    await expect(page.getByRole("dialog", { name: "Row 1 is missing or unclear: Lon." })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("dialog").getByRole("button", { name: "Acknowledge" })).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(sheetWarning).toBeFocused();
+    await sheetWarning.getByRole("button", { name: "Acknowledge" }).click();
+    await expect(page.getByLabel("Scanned draft verification notice")).toContainText("0 active of 3 total warnings");
+    await expect(page.getByText("Warning 0 of 0", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Previous warning" })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Next warning" })).toBeDisabled();
     await expect(highlightedLatitude).toHaveCount(0);
 
     await page.getByLabel("Show acknowledged warnings").check();
@@ -126,7 +158,7 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
   });
 
   await page.reload();
-  await expect(page.getByLabel("Scanned draft verification notice")).toContainText("0 active of 1 total warnings");
+  await expect(page.getByLabel("Scanned draft verification notice")).toContainText("0 active of 3 total warnings");
   await expect(page.locator("td.scanner-warning-field").filter({ hasText: String(scannedSheet.lines[0].latitude) })).toHaveCount(0);
 
   await page.getByLabel("Show acknowledged warnings").check();
@@ -141,7 +173,7 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
   await expect(page.getByRole("button", { name: "Unlock", exact: true })).toBeVisible();
   await acknowledgedLatitude.tap();
   await page.getByRole("dialog").getByRole("button", { name: "Restore warning" }).click();
-  await expect(page.getByLabel("Scanned draft verification notice")).toContainText("1 active of 1 total warnings");
+  await expect(page.getByLabel("Scanned draft verification notice")).toContainText("1 active of 3 total warnings");
   await expect(page.locator("td.scanner-warning-field").filter({ hasText: String(scannedSheet.lines[0].latitude) })).toBeVisible();
   await expect(page.locator(".log-lines-table tbody tr")).toHaveCount(scannedSheet.lines.length);
   expect(scannerRequestReceived).toBeTruthy();

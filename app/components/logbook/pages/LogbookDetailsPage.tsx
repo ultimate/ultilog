@@ -68,6 +68,13 @@ const courseConversionColumns = [
   { field: "courseOverGround", labelKey: "details.course.overGround", descriptionKey: "details.course.overGround.description", ...unsignedCourseInput, isOptional: false },
 ] as const satisfies readonly CourseColumn[];
 
+const scannerWarningFieldOrder: LineFormField[] = [
+  "time", "position", "latitude", "longitude", "weather", "weatherRemark", "temperature", "temperatureUnit", "barometer",
+  "windDirection", "windStrength", "windUnit", "waves", "seaUnit", "tide", "tideUnit", "moon",
+  ...courseConversionColumns.map(column => column.field),
+  "speedKn", "logNm", "sailMiles", "sailNote", "motorMiles", "motorHours", "motorNote", "remarks",
+];
+
 type LogbookDetailsPageProps = Record<string, any>;
 
 export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
@@ -142,6 +149,9 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const scannerWarningDialogRef = useRef<HTMLDivElement>(null);
   const scannerWarningFirstActionRef = useRef<HTMLButtonElement>(null);
   const focusScannerWarningActionOnOpenRef = useRef(false);
+  const scannerWarningTargetsRef = useRef(new Map<string, HTMLElement>());
+  const pendingScannerWarningIndexRef = useRef<number | null>(null);
+  const [reviewedScannerWarningId, setReviewedScannerWarningId] = useState<string | null>(null);
   const [acknowledgedWarningVisibility, setAcknowledgedWarningVisibility] = useState({ sheetId: "", show: false });
   const [coordinateFormatOverride, setCoordinateFormatOverride] = useState<{ sheetId: string; format: CoordinateFormat } | null>(null);
   const coordinateFormat = coordinateFormatOverride?.sheetId === activeSheet.id ? coordinateFormatOverride.format : defaultCoordinateFormat;
@@ -149,6 +159,22 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const scannerWarnings = activeSheet.scannerWarnings ?? [];
   const scannerWarningText = (warning: ScannerWarning) => formatScannerWarning(warning, t);
   const activeScannerWarningCount = scannerWarnings.filter((warning) => !warning.acknowledgedAt).length;
+  const orderedActiveScannerWarnings = scannerWarnings
+    .map((warning, sourceIndex) => ({ warning, sourceIndex }))
+    .filter(({ warning }) => !warning.acknowledgedAt)
+    .sort((left, right) => {
+      const leftSheetLevel = !left.warning.row;
+      const rightSheetLevel = !right.warning.row;
+      if (leftSheetLevel !== rightSheetLevel) return leftSheetLevel ? -1 : 1;
+      if ((left.warning.row ?? 0) !== (right.warning.row ?? 0)) return (left.warning.row ?? 0) - (right.warning.row ?? 0);
+      const fieldIndex = (warning: ScannerWarning) => warning.fields?.length
+        ? Math.min(...warning.fields.map(field => scannerWarningFieldOrder.indexOf(field)).filter(index => index >= 0))
+        : -1;
+      return fieldIndex(left.warning) - fieldIndex(right.warning) || left.sourceIndex - right.sourceIndex;
+    })
+    .map(({ warning }) => warning);
+  const activeScannerWarningIds = orderedActiveScannerWarnings.map(warning => warning.id).join("\u0000");
+  const reviewedScannerWarningIndex = orderedActiveScannerWarnings.findIndex(warning => warning.id === reviewedScannerWarningId);
   const showAcknowledgedWarnings = acknowledgedWarningVisibility.sheetId === activeSheet.id
     ? acknowledgedWarningVisibility.show
     : false;
@@ -161,6 +187,22 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     ...[...indexedScannerWarnings.lineWarnings.values()].flatMap((warnings) => warnings),
   ];
 
+  const focusScannerWarning = (warning: ScannerWarning) => {
+    const target = scannerWarningTargetsRef.current.get(warning.id);
+    if (!target) return;
+    setReviewedScannerWarningId(warning.id);
+    target.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
+    target.focus({ preventScroll: true });
+    if (target instanceof HTMLTableCellElement) target.click();
+  };
+  const navigateScannerWarning = (direction: -1 | 1) => {
+    const nextIndex = reviewedScannerWarningIndex < 0
+      ? (direction === 1 ? 0 : orderedActiveScannerWarnings.length - 1)
+      : reviewedScannerWarningIndex + direction;
+    const warning = orderedActiveScannerWarnings[nextIndex];
+    if (warning) focusScannerWarning(warning);
+  };
+
   const renderScannerWarningAction = (warning: ScannerWarning, isFirstAction = false) => (
     <button
       ref={isFirstAction ? scannerWarningFirstActionRef : undefined}
@@ -169,6 +211,10 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
       onClick={(event) => {
         event.stopPropagation();
         setOpenScannerWarning(null);
+        if (!warning.acknowledgedAt) {
+          const warningIndex = orderedActiveScannerWarnings.findIndex(candidate => candidate.id === warning.id);
+          pendingScannerWarningIndexRef.current = Math.max(0, warningIndex);
+        }
         void updateWarningAcknowledgment(warning.id, !warning.acknowledgedAt);
       }}
     >
@@ -259,6 +305,17 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     focusScannerWarningActionOnOpenRef.current = false;
     scannerWarningFirstActionRef.current?.focus();
   }, [openScannerWarning]);
+
+  useEffect(() => {
+    const pendingIndex = pendingScannerWarningIndexRef.current;
+    if (pendingIndex === null) return;
+    pendingScannerWarningIndexRef.current = null;
+    const nextWarning = orderedActiveScannerWarnings[Math.min(pendingIndex, orderedActiveScannerWarnings.length - 1)];
+    if (nextWarning) focusScannerWarning(nextWarning);
+    else setReviewedScannerWarningId(null);
+  // The ID signature changes only after acknowledgment updates the active list.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeScannerWarningIds]);
 
   const renderNumberInput = (draftId: string, field: Exclude<keyof LineForm, "engineHours" | "id">, options?: { min?: number; max?: number; step?: string }) => {
     const lineForm = lineForms[draftId].form;
@@ -441,6 +498,13 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
       setOpenScannerWarning({ key, warnings, left: rect.left + rect.width / 2, top: above ? rect.top - 8 : rect.bottom + 8, above });
     };
     return {
+      id: `scanner-warning-row-${lineNumber}-${fields.join("-")}`,
+      ref: (cell: HTMLTableCellElement | null) => {
+        if (!cell) return;
+        warnings.forEach(warning => {
+          scannerWarningTargetsRef.current.set(warning.id, cell);
+        });
+      },
       className: [className, "scanner-warning-field", hasActiveWarning ? null : "acknowledged"].filter(Boolean).join(" "),
       title,
       tabIndex: 0,
@@ -853,6 +917,25 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                     <p className="scanner-warning-progress">
                       {activeScannerWarningCount} {t("details.scanner.activeWarnings")} {t("details.scanner.ofWarnings")} {scannerWarnings.length} {t("details.scanner.totalWarnings")}
                     </p>
+                    <div className="scanner-warning-navigation">
+                      <button
+                        type="button"
+                        disabled={orderedActiveScannerWarnings.length === 0 || reviewedScannerWarningIndex <= 0}
+                        onClick={() => navigateScannerWarning(-1)}
+                      >
+                        {t("details.scanner.previousWarning")}
+                      </button>
+                      <span aria-live="polite">
+                        {t("details.scanner.warningPosition")} {reviewedScannerWarningIndex + 1} {t("details.scanner.ofWarnings")} {orderedActiveScannerWarnings.length}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={orderedActiveScannerWarnings.length === 0 || reviewedScannerWarningIndex === orderedActiveScannerWarnings.length - 1}
+                        onClick={() => navigateScannerWarning(1)}
+                      >
+                        {t("details.scanner.nextWarning")}
+                      </button>
+                    </div>
                     {scannerWarnings.length > 0 && (
                       <label className="scanner-warning-visibility">
                         <input
@@ -868,6 +951,11 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                         {noticeScannerWarnings.map((warning) => (
                           <li
                             key={warning.id}
+                            id={`scanner-warning-notice-${warning.id}`}
+                            ref={(item) => {
+                              if (item) scannerWarningTargetsRef.current.set(warning.id, item);
+                            }}
+                            tabIndex={-1}
                             className={warning.acknowledgedAt ? "acknowledged" : undefined}
                             aria-label={`${warning.acknowledgedAt ? t("details.scanner.acknowledgedWarning") : t("details.scanner.activeWarning")}: ${scannerWarningText(warning)}`}
                           >
