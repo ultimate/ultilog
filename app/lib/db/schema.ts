@@ -9,6 +9,7 @@ export type SqlMigration = {
 /** Latest migration for persistent, concurrently tracked compliance licenses. */
 export const USER_COMPLIANCE_MIGRATION_ID = "042_user_compliance_licenses";
 export const STRUCTURED_SCANNER_WARNINGS_MIGRATION_ID = "043_structure_scanner_warnings";
+export const LOCALIZED_SCANNER_WARNINGS_MIGRATION_ID = "044_localize_scanner_warnings";
 
 let migrations: SqlMigration[] | undefined;
 let schemaSql: string | undefined;

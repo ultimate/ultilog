@@ -3,7 +3,7 @@ import initSqlJs from "sql.js";
 import { readFile } from "node:fs/promises";
 import { normalizeBoatFlagStates, removeLegacyLogSheetDateRange, runMigrations, structureScannerWarnings } from "../../../../app/lib/db/migrations";
 import type { QueryableDatabase, QueryResult } from "../../../../app/lib/db/logbook-database";
-import { readMigrations, STRUCTURED_SCANNER_WARNINGS_MIGRATION_ID, USER_COMPLIANCE_MIGRATION_ID } from "../../../../app/lib/db/schema";
+import { readMigrations, LOCALIZED_SCANNER_WARNINGS_MIGRATION_ID, STRUCTURED_SCANNER_WARNINGS_MIGRATION_ID, USER_COMPLIANCE_MIGRATION_ID } from "../../../../app/lib/db/schema";
 
 class DuplicateColumnDatabase implements QueryableDatabase {
   calls: string[] = [];
@@ -101,7 +101,7 @@ class RemoveDateRangeDatabase implements QueryableDatabase {
 describe("runMigrations", () => {
   it("discovers migrations in order", async () => {
     const migrations = await readMigrations();
-    expect(migrations.at(-1)?.id).toBe(STRUCTURED_SCANNER_WARNINGS_MIGRATION_ID);
+    expect(migrations.at(-1)?.id).toBe(LOCALIZED_SCANNER_WARNINGS_MIGRATION_ID);
     expect(migrations.find(({ id }) => id === USER_COMPLIANCE_MIGRATION_ID)?.sql).toContain("user_compliance_licenses");
     expect(migrations.find(({ id }) => id === STRUCTURED_SCANNER_WARNINGS_MIGRATION_ID)?.sql).toContain("scanner warning JSON");
   });
@@ -139,6 +139,7 @@ describe("runMigrations", () => {
         if (sql.startsWith("select id, scanner_warnings")) return { rows: [
           { id: "sheet-1", scanner_warnings: JSON.stringify(["Missing signature", "Check route"]) },
           { id: "sheet-2", scanner_warnings: JSON.stringify([{ id: "existing", message: "Already converted" }]) },
+          { id: "sheet-3", scanner_warnings: JSON.stringify([{ id: "duplicate", code: "noRows" }, { id: "duplicate", code: "missingSheetTitle" }]) },
         ] as Row[] };
         return { rows: [] };
       },
@@ -146,13 +147,20 @@ describe("runMigrations", () => {
 
     await structureScannerWarnings(db);
 
-    const update = calls.find(({ sql }) => sql.startsWith("update log_sheets"));
-    expect(update?.params?.[1]).toBe("sheet-1");
-    expect(JSON.parse(update?.params?.[0] as string)).toEqual([
-      { id: expect.any(String), message: "Missing signature" },
-      { id: expect.any(String), message: "Check route" },
+    const updates = calls.filter(({ sql }) => sql.startsWith("update log_sheets"));
+    expect(updates[0]?.params?.[1]).toBe("sheet-1");
+    expect(JSON.parse(updates[0]?.params?.[0] as string)).toEqual([
+      { id: expect.any(String), code: "scannerGenerated", fallbackMessage: "Missing signature" },
+      { id: expect.any(String), code: "scannerGenerated", fallbackMessage: "Check route" },
     ]);
-    expect(calls.filter(({ sql }) => sql.startsWith("update log_sheets"))).toHaveLength(1);
+    expect(JSON.parse(updates[1]?.params?.[0] as string)).toEqual([
+      { id: "existing", code: "scannerGenerated", fallbackMessage: "Already converted" },
+    ]);
+    expect(JSON.parse(updates[2]?.params?.[0] as string)).toEqual([
+      { id: "duplicate", code: "noRows" },
+      { id: expect.not.stringMatching(/^duplicate$/), code: "missingSheetTitle" },
+    ]);
+    expect(updates).toHaveLength(3);
   });
 
   it("backfills legacy motor hours to every known engine without overwriting explicit runtime", async () => {

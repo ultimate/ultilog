@@ -1,6 +1,7 @@
 import { normalizeTechnicalCheck } from "../../domain/logbook/technical-log";
 import { calculateLogSheetMetrics } from "../../domain/logbook/sheet-metrics";
 import { defaultLogSheetShareSettings, normalizeDeviationTable, normalizeWindDriftTable, type Boat, type BoatRow, type CrewMemberRow, type LogLine, type LogLineRow, type LogSheet, type LogSheetRow, type PersistedLogbook, type ScannerWarning, type StoredLogSheet } from "../../models/logbook";
+import { normalizeScannerWarning } from "../logbook-scanner/normalize-warning";
 import type { QueryableDatabase } from "../db/logbook-database";
 import { expectedRevision, imageFromRow, imageValues, scopedId, unscopedId } from "./boats-repository";
 
@@ -160,6 +161,10 @@ function parseJson<T>(value: unknown): T {
   return typeof value === "string" ? JSON.parse(value) as T : value as T;
 }
 
+function normalizeScannerWarnings(value: unknown): ScannerWarning[] {
+  return Array.isArray(value) ? value.map(normalizeScannerWarning).filter((warning): warning is ScannerWarning => Boolean(warning)) : [];
+}
+
 function groupBy<T>(items: T[], keyFor: (item: T) => string) {
   return items.reduce((groups, item) => {
     const key = keyFor(item);
@@ -176,7 +181,7 @@ function mapStoredSheet(sheet: LogSheetRow): StoredLogSheet {
     status: sheet.status,
     ...(sheet.source ? { source: sheet.source } : {}),
     ...(sheet.verification_note ? { verificationNote: sheet.verification_note } : {}),
-    ...(sheet.scanner_warnings ? { scannerWarnings: parseJson<ScannerWarning[]>(sheet.scanner_warnings) } : {}),
+    ...(sheet.scanner_warnings ? { scannerWarnings: normalizeScannerWarnings(parseJson<unknown>(sheet.scanner_warnings)) } : {}),
     boatId: unscopedId(sheet.boat_id),
     route: parseJson<LogSheet["route"]>(sheet.route),
     watchPlan: parseJson<string[]>(sheet.watch_plan),

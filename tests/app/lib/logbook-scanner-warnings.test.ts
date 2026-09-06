@@ -20,7 +20,7 @@ describe("logbook scanner course diagnostics", () => {
   it("warns about missing interior course fields without filling them", () => {
     const line = { compassCourse: "100", magneticCourse: "102", trueCourse: "105" };
 
-    expect(courseWarnings(line)).toContain("Row 1 has an incomplete course chain: deviation, variation is missing or unclear.");
+    expect(courseWarnings(line)).toContainEqual({ code: "incompleteCourseChain", row: 1, fields: ["deviation", "variation"] });
     expect(line).toEqual({ compassCourse: "100", magneticCourse: "102", trueCourse: "105" });
   });
 
@@ -30,8 +30,8 @@ describe("logbook scanner course diagnostics", () => {
       variation: "+3", trueCourse: "113",
     });
 
-    expect(warnings).toContain("Row 1 has inconsistent course conversion: compassCourse + deviation does not match magneticCourse.");
-    expect(warnings).not.toContain("Row 1 has inconsistent course conversion: magneticCourse + variation does not match trueCourse.");
+    expect(warnings).toContainEqual({ code: "inconsistentCourseConversion", row: 1, fields: ["compassCourse", "deviation", "magneticCourse"] });
+    expect(warnings).not.toContainEqual({ code: "inconsistentCourseConversion", row: 1, fields: ["magneticCourse", "variation", "trueCourse"] });
   });
 
   it("accepts decimal commas and small transcription rounding differences", () => {
@@ -55,7 +55,7 @@ describe("missing magnetic-course column repair", () => {
       expect.objectContaining({ magneticCourse: "", variation: "1", trueCourse: "90" }),
       expect.objectContaining({ magneticCourse: "", variation: "1", trueCourse: "40" }),
     ]);
-    expect(result.warnings).toContain("Detected a missing magnetic-course column and remapped the following variation and true-course columns.");
+    expect(result.warnings).toContainEqual({ code: "shiftedMissingMagneticCourse" });
   });
 
   it("does not alter a complete course chain", () => {
@@ -81,7 +81,7 @@ describe("missing magnetic-course column repair", () => {
 function courseWarnings(line: ScannerResult["draft"]["lines"][number]) {
   const result = scannerResult([line]);
 
-  return findLocalWarnings(result).filter((warning) => warning.includes("course chain") || warning.includes("course conversion"));
+  return findLocalWarnings(result).filter((warning) => warning.code === "incompleteCourseChain" || warning.code === "inconsistentCourseConversion");
 }
 
 function scannerResult(lines: ScannerResult["draft"]["lines"]): ScannerResult {

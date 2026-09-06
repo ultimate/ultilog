@@ -44,14 +44,14 @@ const mockedConsumeRateLimit = vi.mocked(consumeRateLimit);
 const session = { user: { id: "user-1", name: "User", email: "user@example.test", groups: [] }, expires: "2099-01-01T00:00:00.000Z" };
 const boat = { id: "boat-1", name: "Aurora", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [] };
 const logbook = { boats: [boat], crewMembers: [], sheets: [] };
-const partialScannerResult = {
+const partialScannerResult: import("../../../app/models/logbook").ScannerResult = {
   draft: {
     title: "",
     dateText: "2026-07-03",
     route: { from: "A", to: "", departed: "2026-07-03, 10:00", arrived: "" },
     lines: [{ time: "2026-07-03T10:30", latitude: "47° 30.000' N", remarks: "Smudged row" }],
   },
-  warnings: ["Arrival port was unreadable.", "Verify line 1."],
+  warnings: [{ code: "scannerGenerated", fallbackMessage: "Arrival port was unreadable." }, { code: "scannerGenerated", fallbackMessage: "Verify line 1." }],
 };
 
 function scannerRequest(formData: FormData) {
@@ -242,7 +242,7 @@ describe("logbook scanner endpoint", () => {
     mockedReadLogbook.mockResolvedValueOnce(logbook);
     mockedScanner.mockResolvedValueOnce({
       draft: { title: "", dateText: "", route: { from: "", to: "", departed: "", arrived: "" }, lines: [] },
-      warnings: ["No logbook rows were detected."],
+      warnings: [{ code: "noRows" }],
     });
     const formData = new FormData();
     formData.set("boatId", "boat-1");
@@ -290,7 +290,7 @@ describe("logbook scanner endpoint", () => {
         status: "Draft",
         source: "scanner",
         title: "Scanned log sheet",
-        scannerWarnings: partialScannerResult.warnings.map((message) => expect.objectContaining({ id: expect.any(String), message })),
+        scannerWarnings: partialScannerResult.warnings.map((warning) => expect.objectContaining({ id: expect.any(String), ...warning })),
     }), [expect.objectContaining({ time: "2026-07-03T10:30", latitude: 47.5, remarks: "Smudged row" })], "user-1");
 
     const mutationPayload = mockedCreateLogSheetAggregate.mock.calls[0].slice(0, 2);
