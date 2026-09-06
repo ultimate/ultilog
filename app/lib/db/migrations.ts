@@ -90,9 +90,14 @@ function parseScannerWarnings(value: unknown, sheetId: string): { value: Scanner
   }
   if (!Array.isArray(parsed)) throw new Error(`Log sheet ${sheetId} has malformed scanner warnings.`);
 
+  const seenIds = new Set<string>();
   const warnings = parsed.map((warning): ScannerWarning => {
     const normalized = normalizeScannerWarning(warning);
     if (!normalized) throw new Error(`Log sheet ${sheetId} has malformed scanner warnings.`);
+    if (normalized.id.trim().length === 0 || seenIds.has(normalized.id)) {
+      do normalized.id = randomUUID(); while (seenIds.has(normalized.id));
+    }
+    seenIds.add(normalized.id);
     return normalized;
   });
   return { value: warnings, changed: JSON.stringify(warnings) !== JSON.stringify(parsed) };

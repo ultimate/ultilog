@@ -139,6 +139,7 @@ describe("runMigrations", () => {
         if (sql.startsWith("select id, scanner_warnings")) return { rows: [
           { id: "sheet-1", scanner_warnings: JSON.stringify(["Missing signature", "Check route"]) },
           { id: "sheet-2", scanner_warnings: JSON.stringify([{ id: "existing", message: "Already converted" }]) },
+          { id: "sheet-3", scanner_warnings: JSON.stringify([{ id: "duplicate", code: "noRows" }, { id: "duplicate", code: "missingSheetTitle" }]) },
         ] as Row[] };
         return { rows: [] };
       },
@@ -155,7 +156,11 @@ describe("runMigrations", () => {
     expect(JSON.parse(updates[1]?.params?.[0] as string)).toEqual([
       { id: "existing", code: "scannerGenerated", fallbackMessage: "Already converted" },
     ]);
-    expect(updates).toHaveLength(2);
+    expect(JSON.parse(updates[2]?.params?.[0] as string)).toEqual([
+      { id: "duplicate", code: "noRows" },
+      { id: expect.not.stringMatching(/^duplicate$/), code: "missingSheetTitle" },
+    ]);
+    expect(updates).toHaveLength(3);
   });
 
   it("backfills legacy motor hours to every known engine without overwriting explicit runtime", async () => {
