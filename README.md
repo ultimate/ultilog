@@ -1,5 +1,7 @@
 # Ultilog
 
+TEST
+
 Ultilog is a responsive personal skipper logbook for tracking ICC / Swiss Hochseeausweis nautical miles across multiple boats, trips, crew lists, and log sheets.
 
 ## Authorization
