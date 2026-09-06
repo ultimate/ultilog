@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildScannerUserPrompt,
+  extractLogbookDraft,
   formatTemplateRecognitionInstructions,
   formatScannerFieldAliases,
   formatUserScannerTemplate,
@@ -8,6 +9,20 @@ import {
 import { criticalCourseScannerFields } from "../../../app/lib/logbook-scanner/field-aliases";
 
 describe("logbook scanner prompt", () => {
+  it("keeps the structured no-image diagnostic alongside the extended draft shape", async () => {
+    await expect(extractLogbookDraft({ files: [] })).resolves.toEqual({
+      draft: {
+        title: "",
+        dateText: "",
+        route: { from: "", to: "", departed: "", arrived: "" },
+        technicalChecks: [],
+        engineHourCounters: [],
+        lines: [],
+      },
+      warnings: [{ code: "noImages" }],
+    });
+  });
+
   it("includes canonical fields and terminology from every supported language", () => {
     const glossary = formatScannerFieldAliases();
 
