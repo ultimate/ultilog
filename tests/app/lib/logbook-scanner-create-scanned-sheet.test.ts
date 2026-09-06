@@ -64,6 +64,38 @@ describe("scanned log-line dates", () => {
   });
 });
 
+describe("scanned technical log", () => {
+  it("keeps configured checks present while applying recognized statuses and extra rows", () => {
+    const result = scannerResult({ dateText: "2026-07-01", times: [] });
+    result.draft.technicalChecks = [
+      { status: "✅", text: "Engine-oil" },
+      { status: "⚠️", text: "Bilge alarm" },
+    ];
+
+    const sheet = createSheet(result, {
+      technicalLogTemplate: [{ status: "⌛", text: "Engine oil" }, { status: "⌛", text: "Cooling water" }],
+    });
+
+    expect(sheet.technicalChecks).toEqual([
+      { status: "✅", text: "Engine-oil" },
+      { status: "⌛", text: "Cooling water" },
+      { status: "⚠️", text: "Bilge alarm" },
+    ]);
+  });
+
+  it("maps decimal counter readings only to configured engine ids", () => {
+    const result = scannerResult({ dateText: "2026-07-01", times: [] });
+    result.draft.engineHourCounters = [
+      { engineId: "port", start: "123,4", end: "125.1" },
+      { engineId: "invented", start: "1", end: "2" },
+    ];
+
+    const sheet = createSheet(result, { engineIds: ["port"] });
+
+    expect(sheet.engineHourCounters).toEqual({ port: { start: 123.4, end: 125.1 } });
+  });
+});
+
 function scannerResult({ dateText, times }: { dateText: string; times: string[] }): ScannerResult {
   return {
     draft: {
@@ -76,10 +108,11 @@ function scannerResult({ dateText, times }: { dateText: string; times: string[] 
   };
 }
 
-function createSheet(scannerResult: ScannerResult) {
+function createSheet(scannerResult: ScannerResult, options: Partial<Parameters<typeof createScannedSheet>[0]> = {}) {
   return createScannedSheet({
     scannerResult,
     boatId: "boat-1",
     logbook: { boats: [], crewMembers: [], sheets: [] },
+    ...options,
   });
 }

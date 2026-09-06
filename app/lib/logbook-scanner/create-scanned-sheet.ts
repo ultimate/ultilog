@@ -13,6 +13,7 @@ import type {
 import type { UserPreferences } from "../users";
 import { normalizeIsoDate } from "../iso-date";
 import { normalizeScannedWeather } from "./weather";
+import { normalizeTechnicalCheck } from "../../domain/logbook/technical-log";
 
 type CurrentUserCrew = Partial<CrewMember> & Pick<CrewMember, "name">;
 
@@ -23,6 +24,8 @@ export type CreateScannedSheetInput = {
   primaryCrew?: CrewMember;
   logbook: PersistedLogbook;
   userPreferences?: ScannerUnitPreferences;
+  technicalLogTemplate?: LogSheet["technicalChecks"];
+  engineIds?: string[];
 };
 
 type ScannerUnitPreferences = Pick<UserPreferences, "windUnit" | "waterHeightUnit" | "temperatureUnit">;
@@ -76,6 +79,8 @@ export function createScannedSheet({
   primaryCrew,
   logbook,
   userPreferences,
+  technicalLogTemplate = [],
+  engineIds = [],
 }: CreateScannedSheetInput): LogSheet {
   const draft = scannerResult.draft;
   const extractedRoute = {
@@ -107,9 +112,39 @@ export function createScannedSheet({
     route,
     crew: createInitialCrew({ logbook, primaryCrew, currentUser, route }),
     watchPlan: [],
-    technicalChecks: [],
+    technicalChecks: mergeTechnicalChecks(technicalLogTemplate, draft.technicalChecks ?? []),
+    engineHourCounters: scannedEngineHourCounters(draft.engineHourCounters ?? [], engineIds),
     lines: normalizedLines.lines,
   };
+}
+
+function mergeTechnicalChecks(template: LogSheet["technicalChecks"], scanned: LogSheet["technicalChecks"]) {
+  const validScanned = scanned.map(normalizeTechnicalCheck).filter((check): check is NonNullable<typeof check> => Boolean(check));
+  const byText = new Map(validScanned.map((check) => [normalizeLabel(check.text), check]));
+  const configured = template.map((check) => byText.get(normalizeLabel(check.text)) ?? check);
+  const configuredLabels = new Set(template.map((check) => normalizeLabel(check.text)));
+  return [...configured, ...validScanned.filter((check) => !configuredLabels.has(normalizeLabel(check.text)))];
+}
+
+function normalizeLabel(value: string) {
+  return value.toLocaleLowerCase().normalize("NFKD").replace(/[^\p{L}\p{N}]+/gu, "").trim();
+}
+
+function scannedEngineHourCounters(scanned: NonNullable<ScannerResult["draft"]["engineHourCounters"]>, engineIds: string[]) {
+  const allowed = new Set(engineIds);
+  return Object.fromEntries(scanned.flatMap(({ engineId, start, end }) => {
+    if (!allowed.has(engineId)) return [];
+    const values = { start: parseCounter(start), end: parseCounter(end) };
+    const counter = Object.fromEntries(Object.entries(values).filter((entry): entry is [string, number] => entry[1] !== undefined));
+    return Object.keys(counter).length ? [[engineId, counter]] : [];
+  }));
+}
+
+function parseCounter(value: string) {
+  const normalized = value.trim().replace(",", ".");
+  if (!normalized) return undefined;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
 }
 
 function scannedLinesToLogLines(
