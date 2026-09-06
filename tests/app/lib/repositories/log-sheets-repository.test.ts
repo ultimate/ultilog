@@ -51,7 +51,7 @@ describe("LogSheetsRepository", () => {
     await new LogSheetsRepository(db).insert(sheet, "repository-user");
 
     expect(db.calls[0].sql).toContain("insert into log_sheets");
-    expect(db.calls[0].values).toEqual([`repository-user:${sheet.id}`, sheet.title, sheet.status, null, null, null, `repository-user:${sheet.boatId}`, JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), JSON.stringify({}), null, "repository-user", 9, 54, 63, 635, 1, 635, 635, "private", 0, 0, 0, 0, 0, 0, 0]);
+    expect(db.calls[0].values).toEqual([`repository-user:${sheet.id}`, sheet.title, sheet.status, null, null, null, `repository-user:${sheet.boatId}`, JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), JSON.stringify({}), null, "repository-user", 9, 54, 63, 635, 1, 635, 635, "private", "private", "private", "private", "private", "private", "private", "private"]);
   });
 
   it("maps relational rows back to a persisted logbook", () => {
@@ -96,14 +96,10 @@ describe("LogSheetsRepository", () => {
     });
   });
 
-  it("normalizes legacy scanner warning strings when mapping stored rows", () => {
-    const mapped = LogSheetsRepository.toLogbook([], [logSheetRow({ scanner_warnings: JSON.stringify(["Missing signature", "Verify arrival time"]) })], [], []);
-
-    expect(mapped.sheets[0].scannerWarnings).toEqual([
-      { id: expect.any(String), code: "scannerGenerated", fallbackMessage: "Missing signature" },
-      { id: expect.any(String), code: "scannerGenerated", fallbackMessage: "Verify arrival time" },
-    ]);
-    expect(mapped.sheets[0].scannerWarnings?.[0].id).not.toBe(mapped.sheets[0].scannerWarnings?.[1].id);
+  it("maps the single structured scanner warning format without compatibility conversion", () => {
+    const warnings = [{ id: "warning-1", code: "scannerGenerated" as const, fallbackMessage: "Missing signature" }];
+    const mapped = LogSheetsRepository.toLogbook([], [logSheetRow({ scanner_warnings: JSON.stringify(warnings) })], [], []);
+    expect(mapped.sheets[0].scannerWarnings).toEqual(warnings);
   });
 
   it("persists and maps stored images", async () => {
@@ -141,6 +137,14 @@ function logSheetRow(overrides: Partial<LogSheetRow> = {}): LogSheetRow {
     remarks: JSON.stringify([]),
     watch_plan: JSON.stringify(sheet.watchPlan),
     technical_checks: JSON.stringify(sheet.technicalChecks),
+    share_privacy: "private",
+    share_master_data: "private",
+    share_picture: "private",
+    share_loglines: "private",
+    share_metrics: "private",
+    share_technical_log: "private",
+    share_skipper: "private",
+    share_crew: "private",
     ...overrides,
   };
 }

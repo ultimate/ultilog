@@ -153,13 +153,13 @@ create table if not exists log_sheets (
   overall_duration_minutes integer,
   motion_duration_minutes integer not null default 0,
   share_privacy text not null default 'private',
-  share_master_data integer not null default 0,
-  share_picture integer not null default 0,
-  share_loglines integer not null default 0,
-  share_metrics integer not null default 0,
-  share_technical_log integer not null default 0,
-  share_skipper integer not null default 0,
-  share_crew integer not null default 0
+  share_master_data text not null default 'private' check (share_master_data in ('private', 'registered', 'public')),
+  share_picture text not null default 'private' check (share_picture in ('private', 'registered', 'public')),
+  share_loglines text not null default 'private' check (share_loglines in ('private', 'registered', 'public')),
+  share_metrics text not null default 'private' check (share_metrics in ('private', 'registered', 'public')),
+  share_technical_log text not null default 'private' check (share_technical_log in ('private', 'registered', 'public')),
+  share_skipper text not null default 'private' check (share_skipper in ('private', 'registered', 'public')),
+  share_crew text not null default 'private' check (share_crew in ('private', 'registered', 'public'))
 );
 
 create table if not exists engines (

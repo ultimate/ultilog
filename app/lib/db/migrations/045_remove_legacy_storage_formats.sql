@@ -1,0 +1,3 @@
+-- Applied programmatically by migrations.ts. It converts the remaining
+-- polymorphic JSON and sharing values before repositories start reading them
+-- as one strict shape.

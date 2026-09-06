@@ -10,6 +10,7 @@ export type SqlMigration = {
 export const USER_COMPLIANCE_MIGRATION_ID = "042_user_compliance_licenses";
 export const STRUCTURED_SCANNER_WARNINGS_MIGRATION_ID = "043_structure_scanner_warnings";
 export const LOCALIZED_SCANNER_WARNINGS_MIGRATION_ID = "044_localize_scanner_warnings";
+export const STRICT_STORAGE_FORMATS_MIGRATION_ID = "045_remove_legacy_storage_formats";
 
 let migrations: SqlMigration[] | undefined;
 let schemaSql: string | undefined;
