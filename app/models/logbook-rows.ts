@@ -46,13 +46,13 @@ export type LogSheetRow = ImageRowFields & {
   overall_duration_minutes?: number | null;
   motion_duration_minutes?: number | null;
   share_privacy?: LogSheetSharePrivacy | null;
-  share_master_data?: LogSheetSharePrivacy | number | boolean | null;
-  share_picture?: LogSheetSharePrivacy | number | boolean | null;
-  share_loglines?: LogSheetSharePrivacy | number | boolean | null;
-  share_metrics?: LogSheetSharePrivacy | number | boolean | null;
-  share_technical_log?: LogSheetSharePrivacy | number | boolean | null;
-  share_skipper?: LogSheetSharePrivacy | number | boolean | null;
-  share_crew?: LogSheetSharePrivacy | number | boolean | null;
+  share_master_data: LogSheetSharePrivacy;
+  share_picture: LogSheetSharePrivacy;
+  share_loglines: LogSheetSharePrivacy;
+  share_metrics: LogSheetSharePrivacy;
+  share_technical_log: LogSheetSharePrivacy;
+  share_skipper: LogSheetSharePrivacy;
+  share_crew: LogSheetSharePrivacy;
   owner_id?: string;
 };
 

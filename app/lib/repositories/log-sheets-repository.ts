@@ -1,7 +1,5 @@
-import { normalizeTechnicalCheck } from "../../domain/logbook/technical-log";
 import { calculateLogSheetMetrics } from "../../domain/logbook/sheet-metrics";
-import { defaultLogSheetShareSettings, normalizeDeviationTable, normalizeWindDriftTable, type Boat, type BoatRow, type CrewMemberRow, type LogLine, type LogLineRow, type LogSheet, type LogSheetRow, type PersistedLogbook, type ScannerWarning, type StoredLogSheet } from "../../models/logbook";
-import { normalizeScannerWarning } from "../logbook-scanner/normalize-warning";
+import { defaultLogSheetShareSettings, normalizeDeviationTable, type Boat, type BoatRow, type CrewMemberRow, type LogLine, type LogLineRow, type LogSheet, type LogSheetRow, type PersistedLogbook, type ScannerWarning, type StoredLogSheet } from "../../models/logbook";
 import type { QueryableDatabase } from "../db/logbook-database";
 import { expectedRevision, imageFromRow, imageValues, scopedId, unscopedId } from "./boats-repository";
 
@@ -104,7 +102,7 @@ export class LogSheetsRepository {
       yachtData: parseJson<Record<string, string>>(boat.yacht_data),
       deviationTable: normalizeDeviationTable(parseJson<Boat["deviationTable"]>(boat.deviation_table ?? [])),
       ...(boat.engines?.length ? { engines: boat.engines } : {}),
-      ...(boat.wind_drift_table == null ? {} : { windDriftTable: normalizeWindDriftTable(parseJson<NonNullable<Boat["windDriftTable"]>>(boat.wind_drift_table)) }),
+      ...(boat.wind_drift_table == null ? {} : { windDriftTable: parseJson<NonNullable<Boat["windDriftTable"]>>(boat.wind_drift_table) }),
       ...(boat.image_id ? { imageId: boat.image_id } : {}),
       ...(imageFromRow(boat) ? { image: imageFromRow(boat) } : {}),
     }));
@@ -161,10 +159,6 @@ function parseJson<T>(value: unknown): T {
   return typeof value === "string" ? JSON.parse(value) as T : value as T;
 }
 
-function normalizeScannerWarnings(value: unknown): ScannerWarning[] {
-  return Array.isArray(value) ? value.map(normalizeScannerWarning).filter((warning): warning is ScannerWarning => Boolean(warning)) : [];
-}
-
 function groupBy<T>(items: T[], keyFor: (item: T) => string) {
   return items.reduce((groups, item) => {
     const key = keyFor(item);
@@ -181,11 +175,11 @@ function mapStoredSheet(sheet: LogSheetRow): StoredLogSheet {
     status: sheet.status,
     ...(sheet.source ? { source: sheet.source } : {}),
     ...(sheet.verification_note ? { verificationNote: sheet.verification_note } : {}),
-    ...(sheet.scanner_warnings ? { scannerWarnings: normalizeScannerWarnings(parseJson<unknown>(sheet.scanner_warnings)) } : {}),
+    ...(sheet.scanner_warnings ? { scannerWarnings: parseJson<ScannerWarning[]>(sheet.scanner_warnings) } : {}),
     boatId: unscopedId(sheet.boat_id),
     route: parseJson<LogSheet["route"]>(sheet.route),
     watchPlan: parseJson<string[]>(sheet.watch_plan),
-    technicalChecks: parseJson<unknown[]>(sheet.technical_checks).map(normalizeTechnicalCheck).filter((item): item is NonNullable<typeof item> => Boolean(item)),
+    technicalChecks: parseJson<LogSheet["technicalChecks"]>(sheet.technical_checks),
     engineHourCounters: normalizeEngineHourCounters(parseJson<unknown>(sheet.engine_hour_counters ?? {})),
     ...(sheet.image_id ? { imageId: sheet.image_id } : {}),
     ...(imageFromRow(sheet) ? { image: imageFromRow(sheet) } : {}),
@@ -199,13 +193,13 @@ function mapStoredSheet(sheet: LogSheetRow): StoredLogSheet {
       motionDurationMinutes: Number(sheet.motion_duration_minutes) || 0,
     },
     share: {
-      masterData: privacyFromRow(sheet.share_master_data, sheet.share_privacy),
-      picture: privacyFromRow(sheet.share_picture, sheet.share_privacy),
-      logLines: privacyFromRow(sheet.share_loglines, sheet.share_privacy),
-      metrics: privacyFromRow(sheet.share_metrics, sheet.share_privacy),
-      technicalLog: privacyFromRow(sheet.share_technical_log, sheet.share_privacy),
-      skipper: privacyFromRow(sheet.share_skipper, sheet.share_privacy),
-      crew: privacyFromRow(sheet.share_crew, sheet.share_privacy),
+      masterData: privacyFromRow(sheet.share_master_data),
+      picture: privacyFromRow(sheet.share_picture),
+      logLines: privacyFromRow(sheet.share_loglines),
+      metrics: privacyFromRow(sheet.share_metrics),
+      technicalLog: privacyFromRow(sheet.share_technical_log),
+      skipper: privacyFromRow(sheet.share_skipper),
+      crew: privacyFromRow(sheet.share_crew),
     },
   };
 }
@@ -222,9 +216,7 @@ function normalizeEngineHourCounters(value: unknown): NonNullable<LogSheet["engi
 }
 
 function privacyFor(value: NonNullable<LogSheet["share"]>[keyof NonNullable<LogSheet["share"]>] | undefined) {
-  if (value === "public") return 1;
-  if (value === "registered") return 2;
-  return 0;
+  return value ?? "private";
 }
 
 function overallPrivacy(share: LogSheet["share"]) {
@@ -234,11 +226,8 @@ function overallPrivacy(share: LogSheet["share"]) {
   return "private";
 }
 
-function privacyFromRow(value: unknown, legacyPrivacy: NonNullable<LogSheet["share"]>[keyof NonNullable<LogSheet["share"]>] | null | undefined) {
-  if (value === "public" || value === "registered" || value === "private") return value;
-  if (value === 2 || value === "2") return "registered";
-  if (value === 1 || value === "1" || value === true) return legacyPrivacy === "registered" ? "registered" : "public";
-  return "private";
+function privacyFromRow(value: NonNullable<LogSheet["share"]>[keyof NonNullable<LogSheet["share"]>]) {
+  return value;
 }
 
 function concurrencyMetadata(row: { revision?: number; created_at?: string | Date; updated_at?: string | Date }) {

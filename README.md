@@ -128,6 +128,19 @@ Scanned sheets are always created with `Draft` status. Users must review and ver
 
 ## Project structure guidelines
 
+### Database evolution
+
+Database changes must use a versioned migration that converts all existing rows
+to the new representation before application code relies on it. Prefer explicit
+relational columns, constrained enums, and one documented JSON shape over
+polymorphic values (for example, a column that may contain either booleans,
+numbers, or strings). Once a migration has shipped, repositories and API
+validators must remain strict and type-safe; do not add permanent compatibility
+mappers that translate old and new formats on every read or write. If a rolling
+deployment temporarily requires dual-format handling, keep it isolated, add a
+follow-up migration/removal task, and remove it as soon as every database has
+advanced.
+
 Keep the app organized by responsibility so feature work does not collect in a single component:
 
 - `app/models/` contains one TypeScript data model per file plus reusable form and database row shapes. Re-export shared domain types from `app/models/logbook.ts` when a caller needs the aggregate logbook shape.
