@@ -3,7 +3,7 @@ import initSqlJs from "sql.js";
 import { readFile } from "node:fs/promises";
 import { normalizeBoatFlagStates, removeLegacyLogSheetDateRange, runMigrations, structureScannerWarnings } from "../../../../app/lib/db/migrations";
 import type { QueryableDatabase, QueryResult } from "../../../../app/lib/db/logbook-database";
-import { readMigrations, LOCALIZED_SCANNER_WARNINGS_MIGRATION_ID, STRUCTURED_SCANNER_WARNINGS_MIGRATION_ID, USER_COMPLIANCE_MIGRATION_ID } from "../../../../app/lib/db/schema";
+import { readMigrations, STRICT_STORAGE_FORMATS_MIGRATION_ID, STRUCTURED_SCANNER_WARNINGS_MIGRATION_ID, USER_COMPLIANCE_MIGRATION_ID } from "../../../../app/lib/db/schema";
 
 class DuplicateColumnDatabase implements QueryableDatabase {
   calls: string[] = [];
@@ -101,7 +101,7 @@ class RemoveDateRangeDatabase implements QueryableDatabase {
 describe("runMigrations", () => {
   it("discovers migrations in order", async () => {
     const migrations = await readMigrations();
-    expect(migrations.at(-1)?.id).toBe(LOCALIZED_SCANNER_WARNINGS_MIGRATION_ID);
+    expect(migrations.at(-1)?.id).toBe(STRICT_STORAGE_FORMATS_MIGRATION_ID);
     expect(migrations.find(({ id }) => id === USER_COMPLIANCE_MIGRATION_ID)?.sql).toContain("user_compliance_licenses");
     expect(migrations.find(({ id }) => id === STRUCTURED_SCANNER_WARNINGS_MIGRATION_ID)?.sql).toContain("scanner warning JSON");
   });

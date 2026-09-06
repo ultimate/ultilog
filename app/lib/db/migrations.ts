@@ -4,6 +4,8 @@ import { countryCodeForFlagValue } from "../flags";
 import { randomUUID } from "node:crypto";
 import type { ScannerWarning } from "../../models/logbook";
 import { normalizeScannerWarning } from "../logbook-scanner/normalize-warning";
+import { DEFAULT_TECHNICAL_CHECK_STATUS, TECHNICAL_CHECK_STATUSES } from "../../domain/logbook/technical-log";
+import { defaultWindDriftTable, type WindDriftTable } from "../../models/boat";
 
 type RouteRow = { id: string; route: unknown };
 type TimedRow = { sheet_id: string; sort_order: number; time: string };
@@ -35,6 +37,10 @@ export async function runMigrations(db: QueryableDatabase) {
 async function applyMigration(db: QueryableDatabase, id: string, sql: string) {
   if (id === "043_structure_scanner_warnings" || id === "044_localize_scanner_warnings") {
     await structureScannerWarnings(db);
+    return;
+  }
+  if (id === "045_remove_legacy_storage_formats") {
+    await normalizeLegacyStorageFormats(db);
     return;
   }
   if (id === "040_normalize_boat_flag_state") {
@@ -72,6 +78,77 @@ async function applyMigration(db: QueryableDatabase, id: string, sql: string) {
       if (!isDuplicateColumnError(error)) throw error;
     }
   }
+}
+
+type LegacyStorageBoatRow = { id: string; wind_drift_table: unknown };
+type LegacyStorageSheetRow = { id: string; technical_checks: unknown; share_privacy: string; share_master_data: unknown; share_picture: unknown; share_loglines: unknown; share_metrics: unknown; share_technical_log: unknown; share_skipper: unknown; share_crew: unknown };
+
+/** Permanently resolves the last columns that admitted more than one storage shape. */
+export async function normalizeLegacyStorageFormats(db: QueryableDatabase) {
+  const postgres = db.placeholder(1) === "$1";
+  const boats = await db.query<LegacyStorageBoatRow>("select id, wind_drift_table from boats");
+  for (const boat of boats.rows) {
+    const parsed = parseStoredJson(boat.wind_drift_table, `Boat ${boat.id} has malformed wind drift data.`);
+    const normalized = strictWindDriftTable(parsed, boat.id);
+    if (JSON.stringify(parsed) !== JSON.stringify(normalized)) {
+      await db.query(`update boats set wind_drift_table = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [JSON.stringify(normalized), boat.id]);
+    }
+  }
+
+  const shareColumns = ["share_master_data", "share_picture", "share_loglines", "share_metrics", "share_technical_log", "share_skipper", "share_crew"] as const;
+  const sheets = await db.query<LegacyStorageSheetRow>(`select id, technical_checks, share_privacy, ${shareColumns.join(", ")} from log_sheets`);
+  for (const sheet of sheets.rows) {
+    const checks = parseStoredJson(sheet.technical_checks, `Log sheet ${sheet.id} has malformed technical checks.`);
+    if (!Array.isArray(checks)) throw new Error(`Log sheet ${sheet.id} has malformed technical checks.`);
+    const normalizedChecks = checks.map((check) => {
+      if (typeof check === "string" && check.trim()) return { status: DEFAULT_TECHNICAL_CHECK_STATUS, text: check.trim() };
+      if (check && typeof check === "object" && !Array.isArray(check) && typeof (check as { status?: unknown }).status === "string" && (TECHNICAL_CHECK_STATUSES as readonly string[]).includes((check as { status: string }).status) && typeof (check as { text?: unknown }).text === "string" && (check as { text: string }).text.trim()) return check;
+      throw new Error(`Log sheet ${sheet.id} has malformed technical checks.`);
+    });
+    const assignments: string[] = [];
+    const values: unknown[] = [];
+    if (JSON.stringify(checks) !== JSON.stringify(normalizedChecks)) {
+      values.push(JSON.stringify(normalizedChecks)); assignments.push(`technical_checks = ${db.placeholder(values.length)}`);
+    }
+    for (const column of shareColumns) {
+      if (!postgres) {
+        const privacy = strictPrivacy(sheet[column], sheet.share_privacy);
+        if (sheet[column] !== privacy) { values.push(privacy); assignments.push(`${column} = ${db.placeholder(values.length)}`); }
+      }
+    }
+    if (assignments.length) { values.push(sheet.id); await db.query(`update log_sheets set ${assignments.join(", ")} where id = ${db.placeholder(values.length)}`, values); }
+  }
+
+  if (postgres) {
+    for (const column of shareColumns) {
+      await db.query(`alter table log_sheets alter column ${column} drop default`);
+      await db.query(`alter table log_sheets alter column ${column} type text using (case when ${column}::text = '2' then 'registered' when ${column}::text = '1' then case when share_privacy = 'registered' then 'registered' else 'public' end when ${column}::text in ('public', 'registered', 'private') then ${column}::text else 'private' end)`);
+      await db.query(`alter table log_sheets alter column ${column} set default 'private'`);
+      await db.query(`alter table log_sheets add constraint log_sheets_${column}_privacy check (${column} in ('private', 'registered', 'public'))`);
+    }
+  }
+}
+
+function parseStoredJson(value: unknown, message: string): unknown {
+  if (typeof value !== "string") return value;
+  try { return JSON.parse(value); } catch { throw new Error(message); }
+}
+
+function strictPrivacy(value: unknown, formerOverallPrivacy: string) {
+  if (value === "private" || value === "registered" || value === "public") return value;
+  if (value === 2 || value === "2") return "registered";
+  if (value === 1 || value === "1" || value === true) return formerOverallPrivacy === "registered" ? "registered" : "public";
+  if (value === 0 || value === "0" || value === false) return "private";
+  throw new Error(`Unsupported log-sheet sharing value: ${String(value)}.`);
+}
+
+function strictWindDriftTable(value: unknown, boatId: string): WindDriftTable {
+  const fallback = defaultWindDriftTable();
+  const candidate = Array.isArray(value) ? { windSpeedLimits: fallback.windSpeedLimits, rows: value } : value;
+  if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) throw new Error(`Boat ${boatId} has malformed wind drift data.`);
+  const table = candidate as Partial<WindDriftTable>;
+  if (!table.windSpeedLimits || !Array.isArray(table.rows)) throw new Error(`Boat ${boatId} has malformed wind drift data.`);
+  return table as WindDriftTable;
 }
 
 export async function structureScannerWarnings(db: QueryableDatabase) {
