@@ -7,7 +7,8 @@ import {
 } from "../../domain/logbook/print-template";
 import { localeLabels, locales, t, type Locale } from "../i18n/translations";
 import { criticalCourseScannerFields, scannerFieldAliases } from "./field-aliases";
-import type { ScannerProviderInput } from "./provider";
+import type { ScannerProviderInput, ScannerTemplate } from "./provider";
+import { scannerWarningCodes, type ScannerWarningDiagnostic } from "./warning-codes";
 
 const DEFAULT_MODEL = "gpt-4.1-mini";
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
@@ -113,7 +114,7 @@ const scannerResultJsonSchema = {
     draft: {
       type: "object",
       additionalProperties: false,
-      required: ["title", "dateText", "route", "lines"],
+      required: ["title", "dateText", "route", "technicalChecks", "engineHourCounters", "lines"],
       properties: {
         title: { type: "string" },
         dateText: { type: "string" },
@@ -126,6 +127,27 @@ const scannerResultJsonSchema = {
             to: { type: "string" },
             departed: { type: "string" },
             arrived: { type: "string" },
+          },
+        },
+        technicalChecks: {
+          type: "array",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            required: ["status", "text"],
+            properties: {
+              status: { type: "string", enum: ["⌛", "✅", "❎", "⚠️", "❌", "❗", "❓", "ℹ️", "🆗", "🆖", "0️⃣", "1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟", "○", "◔", "◑", "◕", "●"] },
+              text: { type: "string" },
+            },
+          },
+        },
+        engineHourCounters: {
+          type: "array",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            required: ["engineId", "start", "end"],
+            properties: { engineId: { type: "string" }, start: { type: "string" }, end: { type: "string" } },
           },
         },
         lines: {
@@ -141,7 +163,15 @@ const scannerResultJsonSchema = {
     },
     warnings: {
       type: "array",
-      items: { type: "string" },
+      items: {
+        type: "object", additionalProperties: false, required: ["code", "row", "fields", "fallbackMessage"],
+        properties: {
+          code: { type: "string", enum: [...scannerWarningCodes] },
+          row: { type: ["integer", "null"] },
+          fields: { type: "array", items: { type: "string", enum: [...LOG_LINE_FIELDS] } },
+          fallbackMessage: { type: ["string", "null"] },
+        },
+      },
     },
   },
 } as const;
@@ -156,6 +186,8 @@ const extractionInstructions = `Extract a logbook draft from these image(s). The
 - draft.title: sheet title if visible. If there is no dedicated title, use the value of a Tagesziel/Daily goal field as the title; otherwise use an empty string.
 - draft.dateText: visible date or date range, otherwise empty string.
 - draft.route.from/to/departed/arrived: visible route information, otherwise empty strings. Treat Standort morgens/Location morning as route.from and Standort abends/Location evening as route.to.
+- draft.technicalChecks: technical-log or daily-check entries, with the visible mark converted to the closest allowed status symbol and its label in text. Use ⌛ when no mark is visible.
+- draft.engineHourCounters: cumulative engine hour-meter readings at the start and end of the sheet. Use only a supplied engineId and preserve decimal readings as text.
 - draft.lines: one object per logbook row using only the schema's log line fields.
 - Use the renamed log line fields waves, compassCourse, magneticCourse, windDrift, weatherRemark, and temperature.
 - Do not output deprecated course or wind fields; split wind into windDirection, windStrength, and windUnit.
@@ -164,7 +196,7 @@ const extractionInstructions = `Extract a logbook draft from these image(s). The
 - Expected row data types are strings in the JSON schema. Transcribe numeric values as strings for numeric fields such as temperature, barometer, waves, compassCourse, magneticCourse, windDrift, speedKn, and logNm.
 - Include explicit units when visible for windUnit, seaUnit, tideUnit, and temperatureUnit; leave them empty only when no unit is shown.
 - Convert written weather conditions in any language to the closest canonical weather emoji. Interpret meteorological cloud-cover circles by their filled fraction (oktas): 0/8=☀️, 1–2/8=🌤️, 3–4/8=⛅, 5–7/8=🌥️, and 8/8=☁️. Use precipitation, thunderstorm, snow, fog, and other specific weather emojis when those marks or words are visible.
-- warnings: concise human-readable warnings for missing or ambiguous fields.`;
+- warnings: structured diagnostics using the allowed code, canonical row/field metadata, and fallbackMessage only for scannerGenerated diagnostics.`;
 
 const documentInterpretationInstructions = `Interpret the document before transcribing its rows:
 - Detect the language from the printed sheet headings. The sheet may use English, German, French, Italian, international abbreviations, or a mixture of languages.
@@ -178,12 +210,24 @@ const documentInterpretationInstructions = `Interpret the document before transc
 - Use the course sequence only to map columns. Never calculate, copy, or invent a missing course value to make the sequence complete or arithmetically consistent.
 - Preserve signed correction values, including explicit + and - signs.`;
 
-export function buildScannerUserPrompt(languageHint?: Locale) {
+export function buildScannerUserPrompt(languageHint?: Locale, template?: ScannerTemplate) {
   const hint = languageHint
     ? `User interface language hint: ${localeLabels[languageHint]} (${languageHint}). This is a preference only; detect the sheet's actual language independently.`
     : "User interface language hint: none. Detect the sheet language from the document.";
 
-  return `${extractionInstructions}\n\n${documentInterpretationInstructions}\n\n${formatTemplateRecognitionInstructions()}\n\n${hint}\n\nMultilingual field terminology:\n${formatScannerFieldAliases()}`;
+  return `${extractionInstructions}\n\n${documentInterpretationInstructions}\n\n${formatTemplateRecognitionInstructions()}\n\n${formatUserScannerTemplate(template)}\n\n${hint}\n\nMultilingual field terminology:\n${formatScannerFieldAliases()}`;
+}
+
+export function formatUserScannerTemplate(template?: ScannerTemplate) {
+  const checks = template?.technicalChecks ?? [];
+  const engines = template?.engines ?? [];
+  return `User-configured recognition template:
+- Expected technical checks (exact application labels): ${checks.length ? checks.map((check) => JSON.stringify(check)).join(", ") : "none supplied"}.
+- Match visible daily-check rows to these labels by meaning, even if the sheet uses an abbreviation, handwriting, or another supported language. Return each matched label exactly as supplied. Do not treat an unchecked row as absent; preserve its visible status mark.
+- Return additional clearly visible technical checks after the configured checks. Do not invent a completed status or value.
+- Engines (stable id | visible label | name | role): ${engines.length ? engines.map((engine) => `${engine.id} | ${engine.label} | ${engine.name} | ${engine.role}`).join("; ") : "none supplied"}.
+- Map each visible cumulative motor/engine-hours counter to the corresponding stable engine id using its heading, label, name, role, and column position. Distinguish start/from and end/to readings from per-row operating hours. Never put a cumulative counter in draft.lines[].motorHours.
+- If a configured check or engine counter is absent or unreadable, omit that check/counter and add a concise warning; never invent a reading.`;
 }
 
 export function formatScannerFieldAliases() {
@@ -226,7 +270,7 @@ export function isOpenAiScannerProviderConfigured() {
 
 export async function extractLogbookDraft(input: ScannerProviderInput): Promise<ScannerResult> {
   if (input.files.length === 0) {
-    return { draft: { title: "", dateText: "", route: { from: "", to: "", departed: "", arrived: "" }, lines: [] }, warnings: ["No images were provided for scanning."] };
+    return { draft: { title: "", dateText: "", route: { from: "", to: "", departed: "", arrived: "" }, technicalChecks: [], engineHourCounters: [], lines: [] }, warnings: [{ code: "noImages" }] };
   }
 
   if (!isOpenAiScannerProviderConfigured()) {
@@ -248,7 +292,7 @@ export async function extractLogbookDraft(input: ScannerProviderInput): Promise<
         {
           role: "user",
           content: [
-            { type: "input_text", text: buildScannerUserPrompt(input.languageHint) },
+            { type: "input_text", text: buildScannerUserPrompt(input.languageHint, input.template) },
             ...input.files.map((file) => ({
               type: "input_image",
               image_url: `data:${file.type || "image/jpeg"};base64,${file.buffer.toString("base64")}`,
@@ -282,7 +326,7 @@ export async function extractLogbookDraft(input: ScannerProviderInput): Promise<
 
 export const openAiScannerProvider = { extractLogbookDraft, isConfigured: isOpenAiScannerProviderConfigured };
 
-const shiftedCourseRepairWarning = "Detected a missing magnetic-course column and remapped the following variation and true-course columns.";
+const shiftedCourseRepairWarning: ScannerWarningDiagnostic = { code: "shiftedMissingMagneticCourse" };
 
 /**
  * Repairs a recurring vision-model error on sheets whose printed course chain
@@ -320,7 +364,7 @@ export function repairShiftedMissingMagneticCourse(result: ScannerResult) {
     line.variation = line.magneticCourse;
     line.magneticCourse = "";
   }
-  if (!result.warnings.includes(shiftedCourseRepairWarning)) result.warnings.push(shiftedCourseRepairWarning);
+  if (!result.warnings.some((warning) => warning.code === shiftedCourseRepairWarning.code)) result.warnings.push(shiftedCourseRepairWarning);
   return true;
 }
 
@@ -361,31 +405,37 @@ function parseScannerResult(payload: OpenAIResponsePayload): ScannerResult {
     throw new Error("OpenAI logbook scanner response did not include structured output text.");
   }
 
-  return JSON.parse(outputText) as ScannerResult;
+  const parsed = JSON.parse(outputText) as ScannerResult;
+  parsed.warnings = parsed.warnings.map(warning => ({
+    code: warning.code,
+    ...(typeof warning.row === "number" ? { row: warning.row } : {}),
+    ...(warning.fields?.length ? { fields: warning.fields } : {}),
+    ...(typeof warning.fallbackMessage === "string" ? { fallbackMessage: warning.fallbackMessage } : {}),
+  }));
+  return parsed;
 }
 
-export function findLocalWarnings(result: ScannerResult): string[] {
-  const warnings = new Set<string>();
+export function findLocalWarnings(result: ScannerResult): ScannerWarningDiagnostic[] {
+  const warnings: ScannerWarningDiagnostic[] = [];
   const route = result.draft.route;
+  const add = (warning: ScannerWarningDiagnostic) => {
+    if (!result.warnings.some(existing => existing.code === warning.code && existing.row === warning.row && JSON.stringify(existing.fields ?? []) === JSON.stringify(warning.fields ?? []))) warnings.push(warning);
+  };
 
-  if (!result.draft.title) warnings.add("Missing or unclear sheet title.");
-  if (!result.draft.dateText) warnings.add("Missing or unclear sheet date range.");
-  if (!route?.from) warnings.add("Missing or unclear route origin.");
-  if (!route?.to) warnings.add("Missing or unclear route destination.");
-  if (!route?.departed) warnings.add("Missing or unclear departure time.");
-  if (!route?.arrived) warnings.add("Missing or unclear arrival time.");
-  if (result.draft.lines.length === 0) warnings.add("No logbook rows were detected.");
+  if (!result.draft.title) add({ code: "missingSheetTitle" });
+  if (!result.draft.dateText) add({ code: "missingSheetDate" });
+  if (!route?.from) add({ code: "missingRouteOrigin" });
+  if (!route?.to) add({ code: "missingRouteDestination" });
+  if (!route?.departed) add({ code: "missingDepartureTime" });
+  if (!route?.arrived) add({ code: "missingArrivalTime" });
+  if (result.draft.lines.length === 0) add({ code: "noRows" });
 
   result.draft.lines.forEach((line, index) => {
-    const missingFields = ["time", "position", "courseOverGround", "speedKn", "logNm"].filter((field) => !line[field as keyof typeof line]);
-    if (missingFields.length > 0) {
-      warnings.add(`Row ${index + 1} is missing or unclear: ${missingFields.join(", ")}.`);
-    }
-
-    for (const warning of findCourseWarnings(line, index + 1)) warnings.add(warning);
+    const fields = ["time", "position", "courseOverGround", "speedKn", "logNm"].filter((field) => !line[field as keyof typeof line]) as (keyof typeof line)[];
+    if (fields.length > 0) add({ code: "missingFields", row: index + 1, fields });
+    for (const warning of findCourseWarnings(line, index + 1)) add(warning);
   });
-
-  return [...warnings].filter((warning) => !result.warnings.includes(warning));
+  return warnings;
 }
 
 const courseRelations = [
@@ -395,8 +445,8 @@ const courseRelations = [
   ["courseThroughWater", "currentDrift", "courseOverGround"],
 ] as const;
 
-function findCourseWarnings(line: ScannerResult["draft"]["lines"][number], rowNumber: number) {
-  const warnings: string[] = [];
+function findCourseWarnings(line: ScannerResult["draft"]["lines"][number], rowNumber: number): ScannerWarningDiagnostic[] {
+  const warnings: ScannerWarningDiagnostic[] = [];
   const populatedIndexes = criticalCourseScannerFields
     .map((field, index) => line[field]?.trim() ? index : -1)
     .filter((index) => index >= 0);
@@ -411,7 +461,7 @@ function findCourseWarnings(line: ScannerResult["draft"]["lines"][number], rowNu
       .slice(first + 1, last)
       .filter((field) => !line[field]?.trim());
     if (missingInteriorFields.length > 0) {
-      warnings.push(`Row ${rowNumber} has an incomplete course chain: ${missingInteriorFields.join(", ")} is missing or unclear.`);
+      warnings.push({ code: "incompleteCourseChain", row: rowNumber, fields: [...missingInteriorFields] });
     }
   }
 
@@ -423,7 +473,7 @@ function findCourseWarnings(line: ScannerResult["draft"]["lines"][number], rowNu
 
     const expected = normalizeCourse(from + correction);
     if (angularDifference(expected, normalizeCourse(actual)) > 1.5) {
-      warnings.push(`Row ${rowNumber} has inconsistent course conversion: ${fromField} + ${correctionField} does not match ${resultField}.`);
+      warnings.push({ code: "inconsistentCourseConversion", row: rowNumber, fields: [fromField, correctionField, resultField] });
     }
   }
 

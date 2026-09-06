@@ -3,6 +3,7 @@ import {
   buildScannerUserPrompt,
   formatTemplateRecognitionInstructions,
   formatScannerFieldAliases,
+  formatUserScannerTemplate,
 } from "../../../app/lib/logbook-scanner/openai-provider";
 import { criticalCourseScannerFields } from "../../../app/lib/logbook-scanner/field-aliases";
 
@@ -68,5 +69,17 @@ describe("logbook scanner prompt", () => {
     expect(instructions).toContain("unsupported revision");
     expect(instructions).toContain("cropped header");
     expect(instructions).toContain("never permission to invent");
+  });
+
+  it("passes configured technical checks and engine identities as recognition anchors", () => {
+    const instructions = formatUserScannerTemplate({
+      technicalChecks: ["Engine oil", "Custom bilge alarm"],
+      engines: [{ id: "port-engine", label: "Port", name: "Volvo Penta", role: "propulsion" }],
+    });
+
+    expect(instructions).toContain('"Engine oil", "Custom bilge alarm"');
+    expect(instructions).toContain("Return each matched label exactly as supplied");
+    expect(instructions).toContain("port-engine | Port | Volvo Penta | propulsion");
+    expect(instructions).toContain("Distinguish start/from and end/to readings from per-row operating hours");
   });
 });

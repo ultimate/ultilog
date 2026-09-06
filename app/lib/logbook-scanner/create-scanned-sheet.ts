@@ -13,6 +13,7 @@ import type {
 import type { UserPreferences } from "../users";
 import { normalizeIsoDate } from "../iso-date";
 import { normalizeScannedWeather } from "./weather";
+import { normalizeTechnicalCheck } from "../../domain/logbook/technical-log";
 
 type CurrentUserCrew = Partial<CrewMember> & Pick<CrewMember, "name">;
 
@@ -23,12 +24,14 @@ export type CreateScannedSheetInput = {
   primaryCrew?: CrewMember;
   logbook: PersistedLogbook;
   userPreferences?: ScannerUnitPreferences;
+  technicalLogTemplate?: LogSheet["technicalChecks"];
+  engineIds?: string[];
 };
 
 type ScannerUnitPreferences = Pick<UserPreferences, "windUnit" | "waterHeightUnit" | "temperatureUnit">;
 
 const verificationNote = "Please verify scanned information before locking this sheet.";
-const rolloverEndDateWarning = "A log-line date rollover would exceed the sheet end date; the inferred date was capped at the end date.";
+const rolloverEndDateWarning = { code: "rolloverExceededEndDate" } as const;
 
 const defaultLineForm: LineForm = {
   id: "",
@@ -76,6 +79,8 @@ export function createScannedSheet({
   primaryCrew,
   logbook,
   userPreferences,
+  technicalLogTemplate = [],
+  engineIds = [],
 }: CreateScannedSheetInput): LogSheet {
   const draft = scannerResult.draft;
   const extractedRoute = {
@@ -92,9 +97,9 @@ export function createScannedSheet({
     arrived: normalizeScannerRouteStamp(extractedRoute.arrived, endDate || fallbackDate),
   };
   const normalizedLines = scannedLinesToLogLines(draft.lines, userPreferences, startDate, endDate);
-  const warningMessages = [...scannerResult.warnings];
-  if (normalizedLines.rolloverExceededEndDate && !warningMessages.includes(rolloverEndDateWarning)) warningMessages.push(rolloverEndDateWarning);
-  const scannerWarnings = warningMessages.map((message) => ({ id: createId(), message }));
+  const warningDiagnostics = [...scannerResult.warnings];
+  if (normalizedLines.rolloverExceededEndDate && !warningDiagnostics.some(warning => warning.code === rolloverEndDateWarning.code)) warningDiagnostics.push(rolloverEndDateWarning);
+  const scannerWarnings = warningDiagnostics.map((warning) => ({ id: createId(), ...warning }));
 
   return {
     id: createId(),
@@ -107,9 +112,39 @@ export function createScannedSheet({
     route,
     crew: createInitialCrew({ logbook, primaryCrew, currentUser, route }),
     watchPlan: [],
-    technicalChecks: [],
+    technicalChecks: mergeTechnicalChecks(technicalLogTemplate, draft.technicalChecks ?? []),
+    engineHourCounters: scannedEngineHourCounters(draft.engineHourCounters ?? [], engineIds),
     lines: normalizedLines.lines,
   };
+}
+
+function mergeTechnicalChecks(template: LogSheet["technicalChecks"], scanned: LogSheet["technicalChecks"]) {
+  const validScanned = scanned.map(normalizeTechnicalCheck).filter((check): check is NonNullable<typeof check> => Boolean(check));
+  const byText = new Map(validScanned.map((check) => [normalizeLabel(check.text), check]));
+  const configured = template.map((check) => byText.get(normalizeLabel(check.text)) ?? check);
+  const configuredLabels = new Set(template.map((check) => normalizeLabel(check.text)));
+  return [...configured, ...validScanned.filter((check) => !configuredLabels.has(normalizeLabel(check.text)))];
+}
+
+function normalizeLabel(value: string) {
+  return value.toLocaleLowerCase().normalize("NFKD").replace(/[^\p{L}\p{N}]+/gu, "").trim();
+}
+
+function scannedEngineHourCounters(scanned: NonNullable<ScannerResult["draft"]["engineHourCounters"]>, engineIds: string[]) {
+  const allowed = new Set(engineIds);
+  return Object.fromEntries(scanned.flatMap(({ engineId, start, end }) => {
+    if (!allowed.has(engineId)) return [];
+    const values = { start: parseCounter(start), end: parseCounter(end) };
+    const counter = Object.fromEntries(Object.entries(values).filter((entry): entry is [string, number] => entry[1] !== undefined));
+    return Object.keys(counter).length ? [[engineId, counter]] : [];
+  }));
+}
+
+function parseCounter(value: string) {
+  const normalized = value.trim().replace(",", ".");
+  if (!normalized) return undefined;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : undefined;
 }
 
 function scannedLinesToLogLines(

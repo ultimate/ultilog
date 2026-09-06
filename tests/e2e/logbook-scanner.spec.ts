@@ -17,14 +17,14 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
   const currentLogbookResponse = await page.request.get("/api/logbook");
   expect(currentLogbookResponse.ok()).toBeTruthy();
   const currentLogbook = await currentLogbookResponse.json();
-  const scannedSheet = {
+  let scannedSheet = {
     id: createdSheetId,
     title: "Scanned marina departure",
     dateText: "04 Jul 2026",
     status: "Draft",
     source: "scanner",
     verificationNote: "Please verify scanned information before locking this sheet.",
-    scannerWarnings: [{ id: "warning-1", message: "Row 1 is missing or unclear: latitude." }],
+    scannerWarnings: [{ id: "warning-1", code: "missingFields", row: 1, fields: ["latitude"] }],
     boatId: currentLogbook.boats[0].id,
     route: {
       from: "Sample Harbor",
@@ -66,16 +66,16 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
   await page.route(`**/api/logbook/sheets/${createdSheetId}`, async (route) => {
     expect(route.request().method()).toBe("PUT");
     const submittedSheet = route.request().postDataJSON();
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        ...submittedSheet,
-        revision: (submittedSheet.revision ?? 0) + 1,
-        createdAt: submittedSheet.createdAt ?? "2026-07-04T09:00:00.000Z",
-        updatedAt: "2026-07-04T12:00:00.000Z",
-      }),
-    });
+    const persistedSheet = {
+      ...submittedSheet,
+      revision: (submittedSheet.revision ?? 0) + 1,
+      createdAt: submittedSheet.createdAt ?? "2026-07-04T09:00:00.000Z",
+      updatedAt: "2026-07-04T12:00:00.000Z",
+    };
+    // Focused sheet updates deliberately omit lines. Merge the returned metadata
+    // into the full GET fixture instead of replacing it with the focused payload.
+    scannedSheet = { ...scannedSheet, ...persistedSheet, lines: scannedSheet.lines };
+    await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(persistedSheet) });
   });
 
   const fileChooserPromise = page.waitForEvent("filechooser");
@@ -98,18 +98,37 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
   await expect(page.getByLabel("Scanned draft verification notice")).toBeVisible();
   await expect(page.getByLabel("Scanned draft verification notice")).toContainText("Please verify scanned information before locking this sheet.");
   const highlightedLatitude = page.locator("td.scanner-warning-field").filter({ hasText: String(scannedSheet.lines[0].latitude) });
-  await expect(highlightedLatitude).toHaveAttribute("title", "Row 1 is missing or unclear: latitude.");
+  await expect(highlightedLatitude).toHaveAttribute("title", "Row 1 is missing or unclear: Lat.");
+  await page.getByLabel("Language").first().selectOption("fr");
+  await expect(highlightedLatitude).toHaveAttribute("title", "Ligne 1 manquante ou peu claire : Lat.");
+  // The locale switch also translates the select's accessible name, so query it
+  // again with its current label instead of reusing an English-label locator.
+  await page.getByLabel("Langue").first().selectOption("en");
   await page.setViewportSize({ width: 390, height: 844 });
   await highlightedLatitude.tap();
-  await expect(page.getByRole("tooltip")).toContainText("Row 1 is missing or unclear: latitude.");
+  await expect(page.getByRole("tooltip")).toContainText("Row 1 is missing or unclear: Lat.");
   await page.getByRole("tooltip").getByRole("button", { name: "Acknowledge" }).click();
   await expect(page.getByLabel("Scanned draft verification notice")).toContainText("0 active of 1 total warnings");
   await expect(highlightedLatitude).toHaveCount(0);
 
+  await page.reload();
+  await expect(page.getByLabel("Scanned draft verification notice")).toContainText("0 active of 1 total warnings");
+  await expect(page.locator("td.scanner-warning-field").filter({ hasText: String(scannedSheet.lines[0].latitude) })).toHaveCount(0);
+
   await page.getByLabel("Show acknowledged warnings").check();
   const acknowledgedLatitude = page.locator("td.scanner-warning-field.acknowledged").filter({ hasText: String(scannedSheet.lines[0].latitude) });
   await acknowledgedLatitude.tap();
-  await expect(page.getByRole("tooltip").getByRole("button", { name: "Mark as unacknowledged" })).toBeVisible();
+  await expect(page.getByRole("tooltip").getByRole("button", { name: "Restore warning" })).toBeVisible();
+
+  // Warning review is metadata and remains available after the sheet is locked.
+  await page.keyboard.press("Escape");
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.getByRole("button", { name: "Lock", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Unlock", exact: true })).toBeVisible();
+  await acknowledgedLatitude.tap();
+  await page.getByRole("tooltip").getByRole("button", { name: "Restore warning" }).click();
+  await expect(page.getByLabel("Scanned draft verification notice")).toContainText("1 active of 1 total warnings");
+  await expect(page.locator("td.scanner-warning-field").filter({ hasText: String(scannedSheet.lines[0].latitude) })).toBeVisible();
   await expect(page.locator(".log-lines-table tbody tr")).toHaveCount(scannedSheet.lines.length);
   expect(scannerRequestReceived).toBeTruthy();
 });
