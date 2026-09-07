@@ -28,8 +28,7 @@ describe("immutable demo logbook template", () => {
       const boat = DEMO_LOGBOOK_TEMPLATE.boats.find((candidate) => candidate.id === sheet.boatId)!;
       for (const line of sheet.lines) {
         const hours = Object.values(line.engineHours ?? {});
-        expect(line.motorHours).toBe(hours.reduce((total, value) => total + value, 0));
-        if (line.motorHours > 0) expect(Object.keys(line.engineHours ?? {}).sort()).toEqual(boat.engines?.map((engine) => engine.id).sort());
+        if (hours.reduce((total, value) => total + value, 0) > 0) expect(Object.keys(line.engineHours ?? {}).sort()).toEqual(boat.engines?.map((engine) => engine.id).sort());
       }
     }
   });

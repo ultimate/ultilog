@@ -253,7 +253,6 @@ create table if not exists log_lines (
   sail_miles real not null default 0,
   sail_note text not null default '',
   motor_miles real not null default 0,
-  motor_hours real not null default 0,
   motor_note text not null default '',
   remarks text not null,
   primary key (sheet_id, sort_order)

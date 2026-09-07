@@ -35,7 +35,6 @@ const baseLine: LogLine = {
   sailMiles: 0,
   sailNote: "",
   motorMiles: 0,
-  motorHours: 0,
   motorNote: "",
   remarks: "",
 };
@@ -43,9 +42,9 @@ const baseLine: LogLine = {
 describe("calculateLogSheetMetrics", () => {
   it("calculates route, motion, and motor durations independently", () => {
     const metrics = calculateLogSheetMetrics([
-      { ...baseLine, time: "10:00", latitude: 47, longitude: 8, logNm: 5, motorHours: 1.25 },
+      { ...baseLine, time: "10:00", latitude: 47, longitude: 8, logNm: 5, engineHours: { "main-engine": 1.25 } },
       { ...baseLine, time: "09:00", latitude: 47, longitude: 8, logNm: 0 },
-      { ...baseLine, time: "09:30", latitude: 47.0001, longitude: 8.0001, logNm: 0, motorHours: 0.5 },
+      { ...baseLine, time: "09:30", latitude: 47.0001, longitude: 8.0001, logNm: 0, engineHours: { "main-engine": 0.5 } },
       { ...baseLine, time: "11:00", latitude: 47.2, longitude: 8.2, logNm: 11 },
     ], { from: "A", to: "B", departed: "2026-07-22, 08:30", arrived: "2026-07-22, 12:00" });
 
@@ -82,8 +81,8 @@ describe("calculateLogSheetMetrics", () => {
 
   it("sums engine-hours without double-counting simultaneous propulsion duration", () => {
     const metrics = calculateLogSheetMetrics([
-      { ...baseLine, engineHours: { port: 1, starboard: 1 }, motorHours: 2 },
-      { ...baseLine, time: "01:00", engineHours: { port: 0.5 }, motorHours: 0.5 },
+      { ...baseLine, engineHours: { port: 1, starboard: 1 } },
+      { ...baseLine, time: "01:00", engineHours: { port: 0.5 } },
     ]);
 
     expect(metrics.engineHours).toEqual({ port: 1.5, starboard: 1 });

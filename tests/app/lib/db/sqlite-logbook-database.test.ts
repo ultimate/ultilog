@@ -41,7 +41,7 @@ describe("SqliteLogbookDatabase", () => {
     const boat = { ...sampleBoats[0], id: "boat-1" };
     await db.upsertBoat(boat);
     const source = sampleLogSheets[0];
-    const line = { ...source.lines[0], engineHours: { "main-engine": 1.25 }, motorHours: 1.25 };
+    const line = { ...source.lines[0], engineHours: { "main-engine": 1.25 } };
     const affected = { ...source, id: "affected", boatId: boat.id, crew: [], lines: [line] };
     const unrelated = { ...source, id: "unrelated", title: "Untouched", boatId: boat.id, crew: [], lines: source.lines.slice(1, 3) };
     await db.upsertLogSheet(affected);
@@ -74,7 +74,7 @@ describe("SqliteLogbookDatabase", () => {
     const boat = { ...sampleBoats[0], id: "scanner-boat" };
     await db.upsertBoat(boat);
     const source = sampleLogSheets[0];
-    const lines = source.lines.slice(0, 2).map((line) => ({ ...line, engineHours: {}, motorHours: 0 }));
+    const lines = source.lines.slice(0, 2).map((line) => ({ ...line, engineHours: {} }));
     const { lines: _sourceLines, ...sheet } = { ...source, id: "scanned-sheet", boatId: boat.id, crew: [] };
 
     await db.createLogSheetAggregate(sheet, lines);
@@ -95,7 +95,7 @@ describe("SqliteLogbookDatabase", () => {
       id: "engine-hours-sheet",
       boatId: "boat-1",
       crew: [],
-      lines: [{ ...source.lines[0], engineHours: { "main-engine": 1.25 }, motorHours: 1.25 }],
+      lines: [{ ...source.lines[0], engineHours: { "main-engine": 1.25 } }],
     });
 
     const updated = await db.upsertBoat({ ...createdBoat!, owner: "Updated owner" });
@@ -113,21 +113,21 @@ describe("SqliteLogbookDatabase", () => {
     const boat = { id: "boat-1", name: "Boat", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: defaultDeviationTable() };
     await db.upsertBoat(boat);
     const source = sampleLogSheets[0];
-    const firstLines = source.lines.slice(0, 2).map(line => ({ ...line, motorHours: 0, engineHours: undefined }));
+    const firstLines = source.lines.slice(0, 2).map(line => ({ ...line, engineHours: undefined }));
     const first = { ...source, id: "first", boatId: boat.id, crew: [], lines: firstLines };
     const unrelated = { ...source, id: "unrelated", title: "Do not touch", boatId: boat.id, crew: [], lines: source.lines.slice(2, 4) };
     await db.upsertLogSheet(first);
     await db.upsertLogSheet(unrelated);
     const untouchedBefore = await db.query("select * from log_lines where sheet_id = ? order by sort_order", ["focused-lines:unrelated"]);
 
-    const created = { ...source.lines[2], id: "created-line", motorMiles: 7, sailMiles: 3, engineHours: { "main-engine": 2 }, motorHours: 2 };
+    const created = { ...source.lines[2], id: "created-line", motorMiles: 7, sailMiles: 3, engineHours: { "main-engine": 2 } };
     await db.createLogLine(first.id, created);
     const createdWithRevision = (await db.readLogbook()).sheets.find(sheet => sheet.id === first.id)!.lines.find(line => line.id === created.id)!;
-    await db.updateLogLine(first.id, created.id, { ...created, revision: createdWithRevision!.revision, motorMiles: 9, engineHours: { "main-engine": 3 }, motorHours: 3, remarks: "updated" });
+    await db.updateLogLine(first.id, created.id, { ...created, revision: createdWithRevision!.revision, motorMiles: 9, engineHours: { "main-engine": 3 }, remarks: "updated" });
     await db.reorderLogLines(first.id, [created.id, first.lines[1].id, first.lines[0].id]);
     const updatedLine = (await db.readLogbook()).sheets.find(sheet => sheet.id === first.id)!.lines.find(line => line.id === created.id)!;
     await expect(db.deleteLogLine(first.id, created.id, createdWithRevision.revision!)).rejects.toMatchObject({ code: "revision_conflict" });
-    expect((await db.readLogbook()).sheets.find(sheet => sheet.id === first.id)!.lines).toContainEqual(expect.objectContaining({ id: created.id, engineHours: { "main-engine": 3 }, motorHours: 3, remarks: "updated" }));
+    expect((await db.readLogbook()).sheets.find(sheet => sheet.id === first.id)!.lines).toContainEqual(expect.objectContaining({ id: created.id, engineHours: { "main-engine": 3 }, remarks: "updated" }));
     await db.deleteLogLine(first.id, created.id, updatedLine.revision!);
 
     const persisted = await db.readLogbook();

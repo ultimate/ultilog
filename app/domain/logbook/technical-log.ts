@@ -32,7 +32,6 @@ export function createTechnicalChecks(locale: Locale, customLines: readonly stri
 }
 
 export function normalizeTechnicalCheck(value: unknown): TechnicalCheck | undefined {
-  if (typeof value === "string") return value.trim() ? { status: DEFAULT_TECHNICAL_CHECK_STATUS, text: value.trim() } : undefined;
   if (!value || typeof value !== "object") return undefined;
   const candidate = value as Partial<TechnicalCheck>;
   const text = typeof candidate.text === "string" ? candidate.text.trim() : "";

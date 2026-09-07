@@ -11,6 +11,7 @@ export const USER_COMPLIANCE_MIGRATION_ID = "042_user_compliance_licenses";
 export const STRUCTURED_SCANNER_WARNINGS_MIGRATION_ID = "043_structure_scanner_warnings";
 export const LOCALIZED_SCANNER_WARNINGS_MIGRATION_ID = "044_localize_scanner_warnings";
 export const STRICT_STORAGE_FORMATS_MIGRATION_ID = "045_remove_legacy_storage_formats";
+export const STRICT_LOG_LINE_ENGINE_HOURS_MIGRATION_ID = "046_remove_legacy_log_line_motor_hours";
 
 let migrations: SqlMigration[] | undefined;
 let schemaSql: string | undefined;

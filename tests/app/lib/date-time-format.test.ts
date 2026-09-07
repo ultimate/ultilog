@@ -20,7 +20,7 @@ describe("date and time display formatting", () => {
     expect(formatStoredDateRange("2026-08-04T08:00:00+02:00", "2026-08-04T18:00:00+02:00", "dd.MM.yyyy")).toBe("04.08.2026");
   });
 
-  it("leaves legacy free-form values unchanged", () => {
+  it("leaves invalid non-ISO values unchanged", () => {
     expect(formatStoredDate("Summer cruise", "yyyy-MM-dd")).toBe("Summer cruise");
     expect(formatStoredTime("time open", "HH:mm")).toBe("time open");
   });

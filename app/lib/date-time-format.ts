@@ -17,10 +17,10 @@ export function isTimeFormat(value: unknown): value is TimeFormat {
   return typeof value === "string" && (timeFormats as readonly string[]).includes(value);
 }
 
-/** Formats a stored ISO date or the legacy `dd MMM yyyy` log-sheet date without changing storage. */
+/** Formats a stored ISO date without changing storage. */
 export function formatStoredDate(value: string | undefined | null, format: DateFormat, locale = "en"): string {
   if (!value) return "";
-  const normalized = normalizeIsoDate(value);
+  const normalized = /^\d{4}-\d{2}-\d{2}(?:$|[T, ])/.test(value.trim()) ? normalizeIsoDate(value) : undefined;
   if (!normalized) return value;
   const [year, month, day] = normalized.split("-");
   const shortMonth = new Intl.DateTimeFormat(locale, { month: "short", timeZone: "UTC" }).format(new Date(Date.UTC(Number(year), Number(month) - 1, Number(day))));

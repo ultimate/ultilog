@@ -67,9 +67,9 @@ function nonNegativeValue(value: string | undefined) {
   return Number.isFinite(parsed) && parsed < 0 ? "0" : value;
 }
 
-export function normalizeWindDriftTable(table: WindDriftTable | WindDriftTableRow[] = defaultWindDriftTable()): WindDriftTable {
-  const windSpeedLimits = Array.isArray(table) ? defaultWindDriftTable().windSpeedLimits : table.windSpeedLimits;
-  const rows = Array.isArray(table) ? table : table.rows;
+export function normalizeWindDriftTable(table: WindDriftTable = defaultWindDriftTable()): WindDriftTable {
+  const windSpeedLimits = table.windSpeedLimits;
+  const rows = table.rows;
   const rowsByAngle = new Map((rows ?? []).map((row) => [row.angle, row.values]));
   return {
     windSpeedLimits: {

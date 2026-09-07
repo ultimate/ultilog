@@ -188,7 +188,7 @@ describe("logbook endpoint", () => {
     expect(mockedWriteLogbook).not.toHaveBeenCalled();
   });
 
-  it("allows legacy boat and logsheet IDs to be normalized without treating the boat as deleted", async () => {
+  it("allows boat and logsheet IDs to be changed together without treating the boat as deleted", async () => {
     const boat = { id: "legacy-boat", archived: false, name: "Aurora", type: "Sail" as const, registration: "CH-1", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [] };
     const sheet = { id: "legacy-sheet", title: "Trip", status: "Draft" as const, boatId: boat.id, route: { from: "A", to: "B", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] };
     const normalized = { boats: [{ ...boat, id: "9adc47f1-0cd6-4298-b68a-80d6600e481b" }], crewMembers: [], sheets: [{ ...sheet, id: "95ed6e76-d127-4e9e-a653-b1fe28a29345", boatId: "9adc47f1-0cd6-4298-b68a-80d6600e481b" }] };

@@ -70,7 +70,7 @@ export const logSheetPrintTemplate = {
     column("speedKn", "print.column.speed", ["speedKn"], "number", "print-col-speed", 4.5, 4.5),
     column("logNm", "print.column.log", ["logNm"], "number", "print-col-log", 3.5, 3.5),
     column("sailMiles", "print.column.sail", ["sailMiles"], "number", "print-col-sail", 4, 4),
-    column("motor", "print.column.motor", ["motorMiles", "motorHours"], "composite", "print-col-motor", 4, 4),
+    column("motor", "print.column.motor", ["motorMiles"], "composite", "print-col-motor", 4, 4),
     column("remarks", "print.column.remarks", ["remarks"], "text", "print-col-remarks", 14.5, 29),
   ],
 } as const satisfies { id: string; revision: number; columns: readonly PrintLogColumn[] };

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { deleteLogbookEntity, mutationErrorDetail, normalizeLogbookIds, persistBoat, persistCrewMember, persistLogLine, persistSheet, uploadStoredImage } from "../../app/components/logbook/persistence";
+import { deleteLogbookEntity, mutationErrorDetail, persistBoat, persistCrewMember, persistLogLine, persistSheet, uploadStoredImage } from "../../app/components/logbook/persistence";
 import * as importOperations from "../../app/components/logbook/import";
 import type { PersistedLogbook } from "../../app/models/logbook";
 import { sampleLogSheets } from "../fixtures/logbook";
@@ -35,37 +35,6 @@ describe("logbook persistence", () => {
     expect(replacementSpy).not.toHaveBeenCalled();
     expect(fetchMock.mock.calls.map(([url]) => url)).not.toContain("/api/logbook/import");
     expect(fetchMock.mock.calls.some(([url]) => url === "/api/logbook")).toBe(false);
-  });
-
-  it("preserves images and stable crew references while normalizing routed identifiers", () => {
-    vi.mocked(crypto.randomUUID)
-      .mockReturnValueOnce("11111111-1111-4111-8111-111111111111")
-      .mockReturnValueOnce("33333333-3333-4333-8333-333333333333");
-    const logbook: PersistedLogbook = {
-      boats: [{ id: "boat-1", name: "Aurora", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [], image }],
-      crewMembers: [{ id: "crew-1", name: "Luca", nationality: "CH", role: "Skipper", address: "", certificate: "", isPrimary: true, image }],
-      sheets: [{ id: "sheet-1", title: "Trip", status: "Draft", boatId: "boat-1", route: { from: "A", to: "B", departed: "", arrived: "" }, crew: [{ id: "crew-1", name: "Luca", nationality: "CH", role: "Skipper", address: "", certificate: "", isPrimary: true, embarkationDateTime: "", embarkationPosition: "", disembarkationDateTime: "", disembarkationPosition: "", image }], watchPlan: [], technicalChecks: [], image, lines: [] }],
-    };
-
-    const { logbook: normalized } = normalizeLogbookIds(logbook);
-
-    expect(normalized.boats[0]).toMatchObject({ id: "11111111-1111-4111-8111-111111111111", image });
-    expect(normalized.crewMembers[0]).toMatchObject({ id: "crew-1", image });
-    expect(normalized.sheets[0]).toMatchObject({ id: "33333333-3333-4333-8333-333333333333", boatId: "11111111-1111-4111-8111-111111111111", image });
-    expect(normalized.sheets[0].crew[0]).toMatchObject({ id: "crew-1", image });
-  });
-
-  it("does not report changes for UUID entities with current crew assignments", () => {
-    const logbook: PersistedLogbook = {
-      boats: [{ id: "11111111-1111-4111-8111-111111111111", name: "Aurora", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [] }],
-      crewMembers: [{ id: "22222222-2222-4222-8222-222222222222", name: "Luca", nationality: "CH", role: "Skipper" }],
-      sheets: [{ id: "33333333-3333-4333-8333-333333333333", title: "Trip", status: "Draft", boatId: "11111111-1111-4111-8111-111111111111", route: { from: "A", to: "B", departed: "", arrived: "" }, crew: [{ id: "22222222-2222-4222-8222-222222222222", name: "Luca", nationality: "CH", role: "Skipper", embarkationDateTime: "", embarkationPosition: "", disembarkationDateTime: "", disembarkationPosition: "" }], watchPlan: [], technicalChecks: [], lines: [] }],
-    };
-
-    const normalized = normalizeLogbookIds(logbook);
-
-    expect(normalized.changed).toBe(false);
-    expect(normalized.logbook.sheets[0]).toBe(logbook.sheets[0]);
   });
 
   it("serializes sheet metadata without any log lines", async () => {

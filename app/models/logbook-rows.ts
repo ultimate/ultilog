@@ -74,7 +74,7 @@ export type CrewMemberRow = { revision?: number; created_at?: string | Date; upd
   is_primary?: number;
 };
 
-export type LogLineRow = { revision?: number; created_at?: string | Date; updated_at?: string | Date } & Omit<LogLine, "revision" | "createdAt" | "updatedAt" | "position" | "weatherRemark" | "temperature" | "temperatureUnit" | "logNm" | "windDirection" | "windStrength" | "windUnit" | "waves" | "seaUnit" | "tideUnit" | "compassCourse" | "magneticCourse" | "trueCourse" | "windDrift" | "courseThroughWater" | "currentDrift" | "courseOverGround" | "speedKn" | "sailMiles" | "sailNote" | "motorMiles" | "motorHours" | "engineHours" | "motorNote"> & {
+export type LogLineRow = { revision?: number; created_at?: string | Date; updated_at?: string | Date } & Omit<LogLine, "revision" | "createdAt" | "updatedAt" | "position" | "weatherRemark" | "temperature" | "temperatureUnit" | "logNm" | "windDirection" | "windStrength" | "windUnit" | "waves" | "seaUnit" | "tideUnit" | "compassCourse" | "magneticCourse" | "trueCourse" | "windDrift" | "courseThroughWater" | "currentDrift" | "courseOverGround" | "speedKn" | "sailMiles" | "sailNote" | "motorMiles" | "engineHours" | "motorNote"> & {
   engineHours?: Record<string, number>;
   sheet_id: string;
   sort_order: number;
@@ -100,6 +100,5 @@ export type LogLineRow = { revision?: number; created_at?: string | Date; update
   sail_miles: number;
   sail_note: string;
   motor_miles: number;
-  motor_hours: number;
   motor_note: string;
 };

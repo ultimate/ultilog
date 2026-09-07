@@ -11,7 +11,11 @@ export type BoatForm = Pick<Boat, "name" | "registration" | "flagState" | "homeP
   windDriftTable: NonNullable<Boat["windDriftTable"]>;
 };
 
-export type LineForm = Omit<Record<keyof LogLine, string>, "engineHours" | "revision" | "createdAt" | "updatedAt"> & { engineHours?: Record<string, string> };
+export type LineForm = Omit<Record<keyof LogLine, string>, "engineHours" | "revision" | "createdAt" | "updatedAt"> & {
+  /** Generic scanner/manual input copied into the selected main engine. */
+  motorHours: string;
+  engineHours?: Record<string, string>;
+};
 export type LineFormField = Exclude<keyof LineForm, "engineHours" | "id">;
 
 export type CrewForm = CrewMember;

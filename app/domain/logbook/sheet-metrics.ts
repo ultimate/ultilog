@@ -40,9 +40,7 @@ export function calculateLogSheetMetrics(lines: LogLine[], route?: LogSheet["rou
 
 function normalizedEngineHours(line: LogLine) {
   const entries = Object.entries(line.engineHours ?? {}).map(([id, value]) => [id, Math.max(0, numeric(value))] as const).filter(([, value]) => value > 0);
-  if (entries.length) return Object.fromEntries(entries) as Record<string, number>;
-  const legacy = Math.max(0, numeric(line.motorHours));
-  return legacy > 0 ? { "main-engine": legacy } : {};
+  return Object.fromEntries(entries) as Record<string, number>;
 }
 
 function lineEngineHours(line: LogLine | undefined) {

@@ -24,8 +24,8 @@ describe("technical log templates", () => {
     expect(checks).toHaveLength(8);
   });
 
-  it("normalizes legacy strings and rejects unsupported statuses", () => {
-    expect(normalizeTechnicalCheck("Engine oil")).toEqual({ status: "⌛", text: "Engine oil" });
+  it("rejects unstructured checks and normalizes unsupported statuses", () => {
+    expect(normalizeTechnicalCheck("Engine oil")).toBeUndefined();
     expect(normalizeTechnicalCheck({ status: "unknown", text: "Fuel" })).toEqual({ status: "⌛", text: "Fuel" });
     expect(TECHNICAL_CHECK_STATUSES).toContain("✅");
     expect(TECHNICAL_CHECK_STATUSES.slice(0, 2)).toEqual(["⌛", "✅"]);
