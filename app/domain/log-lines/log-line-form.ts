@@ -63,7 +63,6 @@ export function lineFormToLogLine(lineForm: LineForm): LogLine {
     sailNote: lineForm.sailNote,
     motorMiles: numberOrZero(lineForm.motorMiles),
     engineHours,
-    motorHours: Object.values(engineHours).reduce((sum, value) => sum + Number(value), 0),
     motorNote: lineForm.motorNote,
     remarks: lineForm.remarks,
   };

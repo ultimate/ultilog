@@ -111,7 +111,7 @@ export class LogSheetsRepository {
     const sheets: LogSheet[] = sheetRows.map((sheet) => ({
       ...mapStoredSheet(sheet),
       crew: (crewBySheet.get(sheet.id) ?? []).map(({ sheet_id, crew_member_id, sort_order, is_primary, embarkation_datetime, embarkation_position, disembarkation_datetime, disembarkation_position, image_data, image_mime_type, image_width, image_height, date_of_birth, place_of_birth, identity_document_type, identity_document_number, identity_document_issuing_date, identity_document_expiry_date, revision, created_at, updated_at, ...crew }) => ({ ...crew, ...concurrencyMetadata({ revision, created_at, updated_at }), ...(date_of_birth === undefined ? {} : { dateOfBirth: date_of_birth }), ...(place_of_birth === undefined ? {} : { placeOfBirth: place_of_birth }), ...(identity_document_type === undefined ? {} : { identityDocumentType: identity_document_type }), ...(identity_document_number === undefined ? {} : { identityDocumentNumber: identity_document_number }), ...(identity_document_issuing_date === undefined ? {} : { identityDocumentIssuingDate: identity_document_issuing_date }), ...(identity_document_expiry_date === undefined ? {} : { identityDocumentExpiryDate: identity_document_expiry_date }), id: unscopedId(crew_member_id), isPrimary: Boolean(is_primary), embarkationDateTime: embarkation_datetime, embarkationPosition: embarkation_position, disembarkationDateTime: disembarkation_datetime, disembarkationPosition: disembarkation_position, ...(crew.image_id ? { imageId: crew.image_id } : {}), ...(imageFromRow({ image_id: crew.image_id, image_data, image_mime_type, image_width, image_height }) ? { image: imageFromRow({ image_data, image_mime_type, image_width, image_height }) } : {}) })),
-      lines: (linesBySheet.get(sheet.id) ?? []).map(({ sheet_id, sort_order, position_name, weather_remark, log_nm, wind_direction, wind_strength, wind_unit, temperature_unit, waves, sea_unit, tide_unit, compass_course, magnetic_course, true_course, wind_drift, course_through_water, current_drift, course_over_ground, speed_kn, sail_miles, sail_note, motor_miles, motor_hours, engineHours, motor_note, revision: sheetLineRevision, created_at: sheetLineCreatedAt, updated_at: sheetLineUpdatedAt, ...line }) => ({
+      lines: (linesBySheet.get(sheet.id) ?? []).map(({ sheet_id, sort_order, position_name, weather_remark, log_nm, wind_direction, wind_strength, wind_unit, temperature_unit, waves, sea_unit, tide_unit, compass_course, magnetic_course, true_course, wind_drift, course_through_water, current_drift, course_over_ground, speed_kn, sail_miles, sail_note, motor_miles, engineHours, motor_note, revision: sheetLineRevision, created_at: sheetLineCreatedAt, updated_at: sheetLineUpdatedAt, ...line }) => ({
         ...line,
         ...concurrencyMetadata({ revision: sheetLineRevision, created_at: sheetLineCreatedAt, updated_at: sheetLineUpdatedAt }),
         barometer: Number(line.barometer) || 0,
@@ -138,7 +138,6 @@ export class LogSheetsRepository {
         sailNote: sail_note,
         motorMiles: Number(motor_miles) || 0,
         ...(Object.keys(engineHours ?? {}).length ? { engineHours } : {}),
-        motorHours: Object.keys(engineHours ?? {}).length ? Object.values(engineHours ?? {}).reduce((sum, hours) => sum + Number(hours), 0) : Number(motor_hours) || 0,
         motorNote: motor_note,
       })),
     }));
@@ -180,7 +179,7 @@ function mapStoredSheet(sheet: LogSheetRow): StoredLogSheet {
     route: parseJson<LogSheet["route"]>(sheet.route),
     watchPlan: parseJson<string[]>(sheet.watch_plan),
     technicalChecks: parseJson<LogSheet["technicalChecks"]>(sheet.technical_checks),
-    engineHourCounters: normalizeEngineHourCounters(parseJson<unknown>(sheet.engine_hour_counters ?? {})),
+    engineHourCounters: parseJson<NonNullable<LogSheet["engineHourCounters"]>>(sheet.engine_hour_counters ?? {}),
     ...(sheet.image_id ? { imageId: sheet.image_id } : {}),
     ...(imageFromRow(sheet) ? { image: imageFromRow(sheet) } : {}),
     metrics: {
@@ -202,17 +201,6 @@ function mapStoredSheet(sheet: LogSheetRow): StoredLogSheet {
       crew: privacyFromRow(sheet.share_crew),
     },
   };
-}
-
-function normalizeEngineHourCounters(value: unknown): NonNullable<LogSheet["engineHourCounters"]> {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
-  return Object.fromEntries(Object.entries(value).flatMap(([engineId, reading]) => {
-    if (!reading || typeof reading !== "object" || Array.isArray(reading)) return [];
-    const candidate = reading as { start?: unknown; end?: unknown };
-    const start = Number(candidate.start), end = Number(candidate.end);
-    const normalized = { ...(Number.isFinite(start) && start >= 0 ? { start } : {}), ...(Number.isFinite(end) && end >= 0 ? { end } : {}) };
-    return Object.keys(normalized).length ? [[engineId, normalized]] : [];
-  }));
 }
 
 function privacyFor(value: NonNullable<LogSheet["share"]>[keyof NonNullable<LogSheet["share"]>] | undefined) {

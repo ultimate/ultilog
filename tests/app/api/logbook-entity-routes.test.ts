@@ -37,7 +37,7 @@ describe("entity mutation routes", () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
-      error: "boats[0].flagState must identify a supported country.",
+      error: "boats[0].flagState must be an uppercase ISO 3166-1 alpha-2 country code.",
       code: "invalid_payload",
     });
   });

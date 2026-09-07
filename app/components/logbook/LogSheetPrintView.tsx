@@ -217,7 +217,7 @@ function formatLatLon(line: LogLine | undefined) {
 
 function formatMotor(line: LogLine | undefined, boat: Boat | undefined) {
   const hours = Object.entries(line?.engineHours ?? {}).map(([id, value]) => `${boat?.engines?.find((engine) => engine.id === id)?.label ?? id}: ${formatNumber(value)}h`);
-  return joinValues(formatNumber(line?.motorMiles), ...hours, !hours.length && line?.motorHours ? `${formatNumber(line.motorHours)}h` : undefined);
+  return joinValues(formatNumber(line?.motorMiles), ...hours);
 }
 
 function formatDegrees(value: number | undefined) {

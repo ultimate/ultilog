@@ -35,7 +35,6 @@ import {
 import {
   createId,
   modulePath,
-  normalizeLogbookIds,
   deleteLogbookEntity,
   persistBoat,
   persistCrewMember,
@@ -47,7 +46,6 @@ import {
   mutationErrorDetail,
 } from "./logbook/persistence";
 import { mergeMutationResult } from "./logbook/mutation-merge";
-import { replaceEntireLogbook } from "./logbook/import";
 import { LineMutationQueue } from "./logbook/line-mutation-queue";
 import {
   dateTimeLocalFromParts,
@@ -64,7 +62,6 @@ import { courseConversionColumns } from "../domain/nautical/course-conversion";
 import { calculateLogSheetMetrics, formatLogSheetDuration } from "../domain/logbook/sheet-metrics";
 import { calculateLogbookDayStatistics } from "../domain/logbook/logbook-statistics";
 import { activeBoats } from "../domain/boats/boat-policy";
-import { countryCodeForFlagValue } from "../lib/flags";
 import { readScannerUploadResponse } from "../lib/logbook-scanner/upload-response";
 import { lineFormToLogLine } from "../domain/log-lines/log-line-form";
 import { sortLogLinesByTime } from "../domain/log-lines/log-line-order";
@@ -480,60 +477,30 @@ export function LogbookApp({
       }
       if (!response.ok) throw new Error("Unable to load logbook");
       const storedLogbook = (await response.json()) as PersistedLogbook;
-      const {
-        logbook: initiallyNormalizedLogbook,
-        changed,
-        boatIds,
-        sheetIds,
-      } = normalizeLogbookIds(storedLogbook);
-      let normalizedLogbook = initiallyNormalizedLogbook;
-      if (changed) {
-        const normalizationResponse = await replaceEntireLogbook(initiallyNormalizedLogbook).catch(() => undefined);
-        if (!normalizationResponse?.ok) {
-          boatIds.clear();
-          sheetIds.clear();
-          normalizedLogbook = storedLogbook;
-          setSaveError(t("logbook.saveError"));
-        } else {
-          normalizedLogbook = await normalizationResponse.json() as PersistedLogbook;
-        }
-      }
       if (!isMounted) return;
       const route = routeFromPathname(window.location.pathname);
-      const normalizedItemId =
-        route.view === "boats" && route.itemId
-          ? boatIds.get(route.itemId)
-          : route.itemId &&
-              (route.view === "details" || route.view === "logbooks")
-            ? sheetIds.get(route.itemId)
-            : undefined;
-      const nextRoute = normalizedItemId
-        ? { ...route, itemId: normalizedItemId }
-        : route;
-      const nextRoutePath = normalizedItemId
-        ? modulePath(route.view, normalizedItemId)
-        : window.location.pathname;
+      const nextRoute = route;
       const routedSheet =
         nextRoute.itemId &&
         (nextRoute.view === "details" || nextRoute.view === "logbooks")
-          ? normalizedLogbook.sheets.find(
+          ? storedLogbook.sheets.find(
               (sheet) => sheet.id === nextRoute.itemId,
             )
           : undefined;
       const routedBoat =
         nextRoute.itemId && nextRoute.view === "boats"
-          ? normalizedLogbook.boats.find((boat) => boat.id === nextRoute.itemId)
+          ? storedLogbook.boats.find((boat) => boat.id === nextRoute.itemId)
           : undefined;
-      const availableStoredBoats = activeBoats(normalizedLogbook.boats);
-      const fallbackBoat = availableStoredBoats[0] ?? normalizedLogbook.boats[0] ?? emptyBoat;
+      const availableStoredBoats = activeBoats(storedLogbook.boats);
+      const fallbackBoat = availableStoredBoats[0] ?? storedLogbook.boats[0] ?? emptyBoat;
       const nextBoat = routedBoat ?? fallbackBoat;
 
-      logbookRef.current = normalizedLogbook;
+      logbookRef.current = storedLogbook;
       pendingMutationsRef.current.clear();
       failedMutationsRef.current.clear();
       mutationQueuesRef.current.clear();
       lineMutationQueueRef.current.clear();
-      setLogbook(normalizedLogbook);
+      setLogbook(storedLogbook);
       setActiveSheetId(routedSheet?.id ?? "");
       setSheetForm(
         routedSheet
@@ -556,20 +523,16 @@ export function LogbookApp({
         if (
           Number.isInteger(crewIndex) &&
           crewIndex >= 0 &&
-          crewIndex < normalizedLogbook.crewMembers.length
+          crewIndex < storedLogbook.crewMembers.length
         ) {
           setSelectedCrewIndex(crewIndex);
           setLastCrewIndex(crewIndex);
           setCrewForm(
             crewToForm(
-              normalizedLogbook.crewMembers[crewIndex] ?? defaultCrewForm,
+              storedLogbook.crewMembers[crewIndex] ?? defaultCrewForm,
             ),
           );
         }
-      }
-      if (normalizedItemId) {
-        window.history.replaceState(null, "", nextRoutePath);
-        setRoutePath(nextRoutePath);
       }
       setIsBackendReady(true);
     }
@@ -698,13 +661,12 @@ export function LogbookApp({
     const response = await fetch("/api/logbook");
     if (!response.ok) throw new Error("Unable to refresh scanned logbook");
     const storedLogbook = (await response.json()) as PersistedLogbook;
-    const { logbook: normalizedLogbook } = normalizeLogbookIds(storedLogbook);
-    const scannedSheet = normalizedLogbook.sheets.find(
+    const scannedSheet = storedLogbook.sheets.find(
       (sheet) => sheet.id === sheetId,
     );
     if (!scannedSheet) throw new Error("The scanned log sheet was saved but could not be loaded.");
-    logbookRef.current = normalizedLogbook;
-    setLogbook(normalizedLogbook);
+    logbookRef.current = storedLogbook;
+    setLogbook(storedLogbook);
     setShowNewSheet(false);
     setEditingSheetId(null);
     setActiveSheetId(scannedSheet.id);
@@ -1021,7 +983,7 @@ export function LogbookApp({
       name: boatForm.name,
       type: boatForm.type,
       registration: boatForm.registration,
-      flagState: countryCodeForFlagValue(boatForm.flagState),
+      flagState: boatForm.flagState,
       homePort: boatForm.homePort,
       owner: boatForm.owner,
       dimensions: boatForm.dimensions,
@@ -1901,7 +1863,7 @@ export function LogbookApp({
       return false;
     }
 
-    const { logbook: resetLogbook } = normalizeLogbookIds(payload.logbook);
+    const resetLogbook = payload.logbook;
     const firstBoat = resetLogbook.boats[0] ?? emptyBoat;
     const firstSheet = resetLogbook.sheets[0] ?? emptySheet;
     logbookRef.current = resetLogbook;

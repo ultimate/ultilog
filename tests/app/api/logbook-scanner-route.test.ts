@@ -265,7 +265,7 @@ describe("logbook scanner endpoint", () => {
         id: "unrelated-sheet", title: "Existing trip", status: "Draft", boatId: boat.id,
         route: { from: "X", to: "Y", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [],
         imageId: unrelatedImage.id, image: unrelatedImage,
-        lines: [{ id: "unrelated-line", time: "2026-01-01T00:00", position: "", latitude: 0, longitude: 0, logNm: 0, compassCourse: 0, waves: 0, barometer: 0, weather: "", weatherRemark: "", temperature: 0, temperatureUnit: "°C", windDirection: "", windStrength: 0, windUnit: "bft", seaUnit: "m", tide: 0, tideUnit: "m", moon: "", deviation: 0, magneticCourse: 0, variation: 0, trueCourse: 0, windDrift: 0, courseThroughWater: 0, currentDrift: 0, courseOverGround: 0, speedKn: 0, sailMiles: 0, sailNote: "", motorMiles: 0, motorHours: 0, motorNote: "", remarks: "" }],
+        lines: [{ id: "unrelated-line", time: "2026-01-01T00:00", position: "", latitude: 0, longitude: 0, logNm: 0, compassCourse: 0, waves: 0, barometer: 0, weather: "", weatherRemark: "", temperature: 0, temperatureUnit: "°C", windDirection: "", windStrength: 0, windUnit: "bft", seaUnit: "m", tide: 0, tideUnit: "m", moon: "", deviation: 0, magneticCourse: 0, variation: 0, trueCourse: 0, windDrift: 0, courseThroughWater: 0, currentDrift: 0, courseOverGround: 0, speedKn: 0, sailMiles: 0, sailNote: "", motorMiles: 0, motorNote: "", remarks: "" }],
       }],
     });
     mockedScanner.mockResolvedValueOnce(partialScannerResult);
