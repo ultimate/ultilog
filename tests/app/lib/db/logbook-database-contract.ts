@@ -111,6 +111,76 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
       } finally { await context.cleanup(); }
     });
 
+    it("copies required shared data with regenerated ids, private defaults, and optional visible crew", async () => {
+      const context = await setup();
+      try {
+        const sourceDb = context.database.forUser(context.other);
+        await sourceDb.upsertBoat({ ...context.boat, id: "source-boat", revision: undefined });
+        const sourceImageId = randomUUID();
+        await sourceDb.createStoredImage(sourceImageId, { data: "data:image/png;base64,Y29weQ==", mimeType: "image/png", width: 2, height: 3 });
+        const sourceLine = { ...sampleLogSheets[0].lines[0], id: "source-line", revision: undefined, createdAt: undefined, updatedAt: undefined };
+        await sourceDb.upsertCrewMember({ id: "sailor", name: "Sailor", nationality: "GB", role: "Crew" });
+        await sourceDb.upsertLogSheet({
+          ...sheet([sourceLine]), boatId: "source-boat", title: "Shared voyage", watchPlan: ["00-04"], technicalChecks: [{ status: "ok", text: "Rig" }],
+          crew: [{ id: "sailor", embarkationDateTime: "", embarkationPosition: "", disembarkationDateTime: "", disembarkationPosition: "" }],
+          imageId: sourceImageId,
+          share: { masterData: "registered", logLines: "registered", technicalLog: "registered", picture: "registered", metrics: "private", skipper: "registered", crew: "private" },
+        });
+        context.database.forUser(context.owner);
+        const copied = await context.database.copySharedSheet(context.other, "sheet", { destinationBoatId: "boat", includeCrew: true, includePicture: true });
+        expect(copied).toMatchObject({ title: "Shared voyage", status: "Draft", boatId: "boat", watchPlan: ["00-04"], technicalChecks: [{ status: "ok", text: "Rig" }], share: { masterData: "private", logLines: "private", technicalLog: "private", picture: "private", metrics: "private", skipper: "private", crew: "private" } });
+        expect(copied!.id).not.toBe("sheet");
+        expect(copied!.lines[0].id).not.toBe("source-line");
+        expect(copied!.crew).toHaveLength(1);
+        expect(copied!.crew[0].id).not.toBe("sailor");
+        expect(copied!.imageId).not.toBe(sourceImageId);
+        await expect(context.database.readStoredImage(copied!.imageId!)).resolves.toMatchObject({ data: "data:image/png;base64,Y29weQ==", width: 2, height: 3 });
+        const calculated = calculateLogSheetMetrics(copied!.lines, copied!.route);
+        expect(copied!.metrics).toMatchObject({ motorMiles: calculated.motorMiles, sailMiles: calculated.sailMiles, totalMiles: calculated.totalMiles, motorHours: calculated.motorHours, motionDurationMinutes: calculated.motionDurationMinutes });
+
+        const withoutCrew = await context.database.copySharedSheet(context.other, "sheet", { destinationBoatId: "boat" });
+        expect(withoutCrew!.crew).toEqual([]);
+      } finally { await context.cleanup(); }
+    });
+
+    it("rejects hidden required sections and invalid destination boats", async () => {
+      const context = await setup();
+      try {
+        const sourceDb = context.database.forUser(context.other);
+        await sourceDb.upsertBoat({ ...context.boat, id: "source-boat", revision: undefined });
+        await sourceDb.upsertLogSheet({ ...sheet([]), boatId: "source-boat", share: { masterData: "public", logLines: "private", technicalLog: "public", picture: "private", metrics: "private", skipper: "private", crew: "private" } });
+        context.database.forUser(context.owner);
+        await expect(context.database.copySharedSheet(context.other, "sheet", { destinationBoatId: "boat" })).rejects.toMatchObject({ code: "shared_sections_not_visible" });
+        await expect(context.database.copySharedSheet(context.other, "missing", { destinationBoatId: "boat" })).resolves.toBeUndefined();
+      } finally { await context.cleanup(); }
+    });
+
+    it("rejects missing and archived destination boats", async () => {
+      const context = await setup();
+      try {
+        const sourceDb = context.database.forUser(context.other);
+        await sourceDb.upsertBoat({ ...context.boat, id: "source-boat", revision: undefined });
+        await sourceDb.upsertLogSheet({ ...sheet([]), boatId: "source-boat", share: { masterData: "public", logLines: "public", technicalLog: "public", picture: "private", metrics: "private", skipper: "private", crew: "private" } });
+        context.database.forUser(context.owner);
+        await expect(context.database.copySharedSheet(context.other, "sheet", { destinationBoatId: "missing" })).rejects.toMatchObject({ code: "missing_boat" });
+        const archived = await context.database.upsertBoat({ ...context.boat, id: "archived", archived: true, revision: undefined });
+        await expect(context.database.copySharedSheet(context.other, "sheet", { destinationBoatId: archived!.id })).rejects.toMatchObject({ code: "archived_boat_for_new_sheet" });
+      } finally { await context.cleanup(); }
+    });
+
+    it("rolls the complete shared copy back when metric persistence fails", async () => {
+      const context = await setup();
+      try {
+        const sourceDb = context.database.forUser(context.other);
+        await sourceDb.upsertBoat({ ...context.boat, id: "source-boat", revision: undefined });
+        await sourceDb.upsertLogSheet({ ...sheet([sampleLogSheets[0].lines[0]]), boatId: "source-boat", share: { masterData: "public", logLines: "public", technicalLog: "public", picture: "private", metrics: "private", skipper: "private", crew: "private" } });
+        context.database.forUser(context.owner);
+        await harness.installMetricFailure(context.database);
+        await expect(context.database.copySharedSheet(context.other, "sheet", { destinationBoatId: "boat" })).rejects.toThrow(/metric/i);
+        expect((await context.database.readLogbook()).sheets).toEqual([]);
+      } finally { await context.cleanup(); }
+    });
+
     it("enforces image ownership and deterministically removes replaced orphans", async () => {
       const context = await setup();
       try {

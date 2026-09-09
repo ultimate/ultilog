@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import type { Boat, CrewMember, FocusedLogSheet, LogLine, LogSheet, PersistedLogbook } from "../models/logbook";
-import { LogbookDatabase, type SharedLogSheet } from "./db/logbook-database";
+import { LogbookDatabase, type CopySharedLogSheetOptions, type SharedLogSheet } from "./db/logbook-database";
 import { PostgresLogbookDatabase } from "./db/postgres-logbook-database";
 import { SqliteLogbookDatabase } from "./db/sqlite-logbook-database";
 
@@ -52,6 +52,7 @@ export const upsertCrewMember = (crew: CrewMember, userId: string) => mutate(use
 export const deleteCrewMember = (id: string, revision: number, userId: string) => mutate(userId, db => db.deleteCrewMember(id, revision));
 export const upsertLogSheet = (sheet: FocusedLogSheet, userId: string) => mutate(userId, db => db.upsertLogSheet(sheet));
 export const createLogSheetAggregate = (sheet: Omit<LogSheet, "lines">, lines: LogLine[], userId: string) => mutate(userId, db => db.createLogSheetAggregate(sheet, lines));
+export const copySharedLogSheet = (sourceOwnerId: string, sourceSheetId: string, options: CopySharedLogSheetOptions, userId: string) => mutate(userId, db => db.copySharedSheet(sourceOwnerId, sourceSheetId, options));
 export const deleteLogSheet = (id: string, revision: number, userId: string) => mutate(userId, db => db.deleteLogSheet(id, revision));
 export const createLogLine = (sheetId: string, line: LogLine, userId: string) => mutate(userId, db => db.createLogLine(sheetId, line));
 export const updateLogLine = (sheetId: string, lineId: string, line: LogLine, userId: string) => mutate(userId, db => db.updateLogLine(sheetId, lineId, line));

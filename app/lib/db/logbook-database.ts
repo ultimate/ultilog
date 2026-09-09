@@ -11,6 +11,7 @@ import { referencedBoatDeletionError, sheetBoatMutationError } from "../../domai
 import { sectionVisibility, sharedSheetCapability, type SectionVisibility, type SharedSheetCapability } from "../../domain/logbook/share-policy";
 
 export type SharedLogSheet = { sheet: LogSheet; boatName: string; capability: SharedSheetCapability; ownerAvatar?: string; showOwnerAvatarOnPrint?: boolean };
+export type CopySharedLogSheetOptions = { destinationBoatId: string; includeCrew?: boolean; includePicture?: boolean };
 
 export type QueryResult<Row> = { rows: Row[] };
 
@@ -310,6 +311,73 @@ export abstract class LogbookDatabase implements QueryableDatabase {
         : `https://secure.gravatar.com/avatar/${createHash("sha256").update(owner.email.trim().toLowerCase()).digest("hex")}?s=256&d=mp`
       : undefined;
     return { sheet: filterSharedSheet(sheet, visibility), boatName: visibility.masterData ? boat?.name ?? "" : "", capability, ownerAvatar, showOwnerAvatarOnPrint };
+  }
+
+  /** Copies a shared sheet into the currently scoped owner's logbook in one transaction. */
+  async copySharedSheet(sourceOwnerId: string, sourceSheetId: string, options: CopySharedLogSheetOptions): Promise<LogSheet | undefined> {
+    await this.ensureSchemaAndBackfill();
+    return this.withTransaction(async database => {
+      const recipientId = database.requireOwnerId();
+      const sourceRow = await database.sheets.findSharedByScopedId(scopedId(sourceOwnerId, sourceSheetId));
+      if (!sourceRow?.owner_id || sourceRow.owner_id !== sourceOwnerId) return undefined;
+
+      const sourceShell = LogSheetsRepository.toLogbook([], [sourceRow], [], []).sheets[0];
+      const visibility = sectionVisibility(sourceShell.share ?? defaultLogSheetShareSettings, true);
+      if (!visibility.masterData || !visibility.logLines || !visibility.technicalLog) {
+        throw Object.assign(new Error("The required shared sections are not visible."), { code: "shared_sections_not_visible" });
+      }
+
+      const boatRow = await database.boats.findById(options.destinationBoatId, recipientId);
+      const policyError = sheetBoatMutationError(boatRow ? { name: boatRow.name, archived: Boolean(boatRow.archived) } : undefined, false);
+      if (policyError) throw Object.assign(new Error(policyError.message), { code: policyError.code });
+
+      const [sourceCrewRows, sourceLineRows] = await Promise.all([
+        options.includeCrew && (visibility.crew || visibility.skipper) ? database.crew.findForSheet(sourceRow.id, sourceOwnerId) : [],
+        database.lines.findForSheet(sourceRow.id),
+      ]);
+      const source = LogSheetsRepository.toLogbook([], [sourceRow], sourceCrewRows, sourceLineRows).sheets[0];
+      const sheetId = crypto.randomUUID();
+      const lines = source.lines.map(({ revision: _revision, createdAt: _createdAt, updatedAt: _updatedAt, id: _id, ...line }) => ({ ...line, id: crypto.randomUUID() }));
+
+      let imageId: string | undefined;
+      if (options.includePicture && visibility.picture && source.image) {
+        imageId = crypto.randomUUID();
+        await database.images.create(imageId, recipientId, { data: source.image.data, mimeType: source.image.mimeType, width: source.image.width, height: source.image.height });
+      }
+
+      const crew = source.crew.filter((_, index) => index === 0 ? visibility.skipper : visibility.crew).map(member => {
+        const id = crypto.randomUUID();
+        const { revision: _revision, createdAt: _createdAt, updatedAt: _updatedAt, image: _image, imageId: _imageId, isPrimary: _primary, ...copy } = member;
+        return { ...copy, id, isPrimary: false };
+      });
+      for (const member of crew) await database.crew.insertProfile(member, recipientId);
+
+      const copied: LogSheet = {
+        id: sheetId,
+        title: source.title,
+        status: "Draft",
+        boatId: options.destinationBoatId,
+        route: { ...source.route },
+        crew,
+        watchPlan: [...source.watchPlan],
+        technicalChecks: source.technicalChecks.map(check => ({ ...check })),
+        ...(imageId ? { imageId } : {}),
+        lines: [],
+        share: { ...defaultLogSheetShareSettings },
+      };
+      const threshold = await database.motionStationaryThresholdNm();
+      await database.sheets.insert(copied, recipientId, threshold);
+      await database.crew.replaceAssignments(sheetId, crew, recipientId);
+      for (const line of lines) {
+        if (!await database.lines.create(sheetId, line, recipientId)) throw new Error("The copied log line could not be created.");
+      }
+      const row = (await database.sheets.findById(sheetId, recipientId))!;
+      const lineRows = await database.lines.findForSheet(row.id);
+      const persistedLines = LogSheetsRepository.toLogbook([], [row], [], lineRows).sheets[0].lines;
+      await database.sheets.updateMetrics(copied, persistedLines, recipientId, threshold);
+      const [createdRow, createdCrew] = await Promise.all([database.sheets.findById(sheetId, recipientId), database.crew.findForSheet(row.id, recipientId)]);
+      return createdRow ? withoutImageBytes(LogSheetsRepository.toLogbook([], [createdRow], createdCrew, lineRows).sheets[0]) : undefined;
+    });
   }
 
   protected async readTables(): Promise<PersistedLogbook> {
