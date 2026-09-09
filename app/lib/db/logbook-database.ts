@@ -8,6 +8,9 @@ import { StoredImagesRepository } from "../repositories/stored-images-repository
 import { backfillCrewMemberEncryption } from "./encryption-backfill";
 import { createHash } from "node:crypto";
 import { referencedBoatDeletionError, sheetBoatMutationError } from "../../domain/boats/boat-policy";
+import { sectionVisibility, sharedSheetCapability, type SectionVisibility, type SharedSheetCapability } from "../../domain/logbook/share-policy";
+
+export type SharedLogSheet = { sheet: LogSheet; boatName: string; capability: SharedSheetCapability; ownerAvatar?: string; showOwnerAvatarOnPrint?: boolean };
 
 export type QueryResult<Row> = { rows: Row[] };
 
@@ -275,7 +278,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
     });
   }
 
-  async readSharedSheet(sheetId: string, isAuthenticated: boolean, ownerId?: string): Promise<{ sheet: LogSheet; boatName: string; ownerAvatar?: string; showOwnerAvatarOnPrint?: boolean } | undefined> {
+  async readSharedSheet(sheetId: string, isAuthenticated: boolean, ownerId?: string): Promise<SharedLogSheet | undefined> {
     await this.ensureSchemaAndBackfill();
     const sharedRow = ownerId
       ? await this.sheets.findSharedByScopedId(scopedId(ownerId, sheetId))
@@ -284,6 +287,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
 
     const share = LogSheetsRepository.toLogbook([], [sharedRow], [], []).sheets[0]?.share ?? defaultLogSheetShareSettings;
     const visibility = sectionVisibility(share, isAuthenticated);
+    const capability = sharedSheetCapability(share, isAuthenticated);
     if (!Object.values(visibility).some(Boolean)) return undefined;
 
     const [boatRow, crewRows, lineRows] = await Promise.all([
@@ -305,7 +309,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
         ? `data:${owner.avatar_mime_type};base64,${owner.avatar_data}`
         : `https://secure.gravatar.com/avatar/${createHash("sha256").update(owner.email.trim().toLowerCase()).digest("hex")}?s=256&d=mp`
       : undefined;
-    return { sheet: filterSharedSheet(sheet, visibility), boatName: visibility.masterData ? boat?.name ?? "" : "", ownerAvatar, showOwnerAvatarOnPrint };
+    return { sheet: filterSharedSheet(sheet, visibility), boatName: visibility.masterData ? boat?.name ?? "" : "", capability, ownerAvatar, showOwnerAvatarOnPrint };
   }
 
   protected async readTables(): Promise<PersistedLogbook> {
@@ -345,24 +349,6 @@ function withoutImageBytes<T extends Boat | CrewMember | LogSheet>(entity: T): T
     return reference;
   });
   return result;
-}
-
-type SectionVisibility = Record<keyof NonNullable<LogSheet["share"]>, boolean>;
-
-function sectionVisibility(share: NonNullable<LogSheet["share"]>, isAuthenticated: boolean): SectionVisibility {
-  return {
-    masterData: canViewSection(share.masterData, isAuthenticated),
-    picture: canViewSection(share.picture, isAuthenticated),
-    logLines: canViewSection(share.logLines, isAuthenticated),
-    metrics: canViewSection(share.metrics, isAuthenticated),
-    technicalLog: canViewSection(share.technicalLog, isAuthenticated),
-    skipper: canViewSection(share.skipper, isAuthenticated),
-    crew: canViewSection(share.crew, isAuthenticated),
-  };
-}
-
-function canViewSection(privacy: LogSheet["share"] extends infer Share ? Share extends undefined ? never : Share[keyof Share] : never, isAuthenticated: boolean) {
-  return privacy === "public" || (privacy === "registered" && isAuthenticated);
 }
 
 function filterSharedSheet(sheet: LogSheet, visibility: SectionVisibility): LogSheet {

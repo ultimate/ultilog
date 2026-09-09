@@ -86,6 +86,31 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
       } finally { await context.cleanup(); }
     });
 
+    it("returns copy capability from source sharing even when visible collections are empty", async () => {
+      const context = await setup();
+      try {
+        await context.database.upsertLogSheet({
+          ...sheet([]),
+          technicalChecks: [],
+          share: {
+            masterData: "public",
+            logLines: "public",
+            technicalLog: "public",
+            picture: "private",
+            metrics: "private",
+            skipper: "private",
+            crew: "private",
+          },
+        });
+
+        const shared = await context.database.readSharedSheet("sheet", false, context.owner);
+
+        expect(shared?.sheet.lines).toEqual([]);
+        expect(shared?.sheet.technicalChecks).toEqual([]);
+        expect(shared?.capability).toEqual({ canCopy: true, missingRequiredSections: [], requiresAuthentication: false });
+      } finally { await context.cleanup(); }
+    });
+
     it("enforces image ownership and deterministically removes replaced orphans", async () => {
       const context = await setup();
       try {

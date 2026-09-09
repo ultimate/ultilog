@@ -25,7 +25,7 @@ export default async function SharedLogbookPage({ params }: { params: Promise<{ 
     );
   }
 
-  const { sheet, boatName } = shared;
+  const { sheet, boatName, capability } = shared;
   const metrics = sheet.metrics;
   const hasCrew = sheet.crew.length > 0;
   const hasTechnicalLog = sheet.technicalChecks.length > 0;
@@ -34,7 +34,7 @@ export default async function SharedLogbookPage({ params }: { params: Promise<{ 
   const hasSupportContent = hasCrew || hasTechnicalLog || hasLogLines;
 
   return (
-    <main className="app-shell shared-logbook-page">
+    <main className="app-shell shared-logbook-page" data-can-copy={capability.canCopy}>
       <section className="app-content">
         <article className="logbook-section sheet-master-header">
           {sheet.image ? <EntityImage image={sheet.image} entityType="sheet" alt={`${sheet.title} image`} variant="header" /> : null}
