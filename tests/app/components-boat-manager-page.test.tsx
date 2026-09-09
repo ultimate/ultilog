@@ -16,7 +16,6 @@ const boat: Boat = {
   owner: "Owner",
   dimensions: "10m",
   logfactor: 1,
-  yachtData: {},
   deviationTable: [],
 };
 

@@ -227,7 +227,6 @@ export const en = {
   "details.engineRuntime": "Engine runtime increment",
   "dashboard.totalEngineHours": "Total engine-hours",
   "dashboard.propulsionDuration": "Propulsion duration",
-  "boats.safety": "Safety",
   "boats.deviationTable": "Deviation table",
   "boats.deviationHelp": "Compass headings from 0° to 350° in 10° steps. Enter deviation values such as +2° or -1°.",
   "boats.heading": "Heading",

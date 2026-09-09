@@ -26,7 +26,7 @@ const reorder = await import("../../../app/api/logbook/sheets/[id]/lines/reorder
 const images = await import("../../../app/api/images/route");
 const logbookImport = await import("../../../app/api/logbook/import/route");
 
-const boatFixture = { id: "boat-1", name: "Aurora é", type: "Sail", registration: "CH-1", flagState: "CH", homePort: "Basel", owner: "Ada", dimensions: "10m", logfactor: 1, yachtData: {}, deviationTable: [] };
+const boatFixture = { id: "boat-1", name: "Aurora é", type: "Sail", registration: "CH-1", flagState: "CH", homePort: "Basel", owner: "Ada", dimensions: "10m", logfactor: 1, deviationTable: [] };
 const crewFixture = { id: "crew-1", name: "Zoë", nationality: "CH", role: "Skipper", address: "Basel", certificate: "ICC" };
 const sheetFixture = { id: "sheet-1", title: "Rhône trip", status: "Draft", boatId: "boat-1", route: { from: "Basel", to: "Brest", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [] };
 const lineFixture = { id: "line-1", time: "12:00", position: "47°", weather: "clear", weatherRemark: "", temperatureUnit: "C", windDirection: "N", windUnit: "kn", seaUnit: "m", tideUnit: "m", moon: "", sailNote: "", motorNote: "", remarks: "café", latitude: 47, longitude: 8, temperature: 20, barometer: 1013, windStrength: 5, waves: 0, tide: 0, compassCourse: 0, deviation: 0, magneticCourse: 0, variation: 0, trueCourse: 0, windDrift: 0, courseThroughWater: 0, currentDrift: 0, courseOverGround: 0, speedKn: 0, logNm: 0, sailMiles: 0, motorMiles: 0, motorHours: 0 };

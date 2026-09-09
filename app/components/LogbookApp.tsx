@@ -987,24 +987,12 @@ export function LogbookApp({
       homePort: boatForm.homePort,
       owner: boatForm.owner,
       dimensions: boatForm.dimensions,
+      manufacturer: boatForm.manufacturer,
+      mmsi: boatForm.mmsi,
       logfactor: boatForm.logfactor,
       deviationTable: normalizeDeviationTable(boatForm.deviationTable),
       windDriftTable: normalizeWindDriftTable(boatForm.windDriftTable),
       engines: boatForm.engines,
-      yachtData: {
-        "Class / type":
-          boatForm.type === "Sail" ? "Cruising yacht" : "Motor yacht",
-        MMSI: boatForm.mmsi || "—",
-        Manufacturer: boatForm.manufacturer || "—",
-        "Hull length": boatForm.dimensions || "—",
-        Beam: previousBoat?.yachtData.Beam ?? "—",
-        Draft: previousBoat?.yachtData.Draft ?? "—",
-        Displacement: previousBoat?.yachtData.Displacement ?? "—",
-        "Rig / sail area": boatForm.type === "Sail" ? "To be completed" : "n/a",
-        Propeller: previousBoat?.yachtData.Propeller ?? "—",
-        Electronics: previousBoat?.yachtData.Electronics ?? "To be completed",
-        Safety: boatForm.safety || "To be completed",
-      },
       image: boatForm.image,
     };
     const nextLogbook = {

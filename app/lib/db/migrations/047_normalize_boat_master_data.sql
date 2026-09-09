@@ -1,0 +1,1 @@
+-- Applied programmatically so legacy JSON can be decoded consistently by SQLite and PostgreSQL.

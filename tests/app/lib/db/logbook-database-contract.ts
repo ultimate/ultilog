@@ -24,7 +24,7 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
         [owner, "Contract owner", `${owner}@example.test`, "", other, "Other owner", `${other}@example.test`, ""],
       );
       const database = resource.database.forUser(owner);
-      const boat = await database.upsertBoat({ id: "boat", name: "Contract boat", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: defaultDeviationTable() });
+      const boat = await database.upsertBoat({ id: "boat", name: "Contract boat", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, deviationTable: defaultDeviationTable() });
       return { ...resource, database, owner, other, boat: boat! };
     }
 

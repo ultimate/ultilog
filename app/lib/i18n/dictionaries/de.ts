@@ -229,7 +229,6 @@ export const de: Dictionary = {
   "details.engineRuntime": "Motorlaufzeit-Intervall",
   "dashboard.totalEngineHours": "Motorstunden gesamt",
   "dashboard.propulsionDuration": "Antriebsdauer",
-  "boats.safety": "Sicherheit",
   "boats.deviationTable": "Deviationstabelle",
   "boats.deviationHelp": "Kompasskurse von 0° bis 350° in 10°-Schritten. Gib Deviationswerte wie +2° oder -1° ein.",
   "boats.heading": "Kurs",

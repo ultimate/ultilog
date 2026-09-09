@@ -41,7 +41,7 @@ for (const dialect of dialects) {
       expect((await db.query<{ count: number | string }>(`select count(*) as count from stored_images where owner_id = ${db.placeholder(1)}`, [ownerId])).rows[0]).toMatchObject({ count: expect.anything() });
       expect(Number((await db.query<{ count: number | string }>(`select count(*) as count from stored_images where id = ${db.placeholder(1)}`, [ids.boat])).rows[0].count)).toBe(1);
 
-      const boat = { id: "boat", name: "Image boat", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: defaultDeviationTable(), imageId: ids.boat };
+      const boat = { id: "boat", name: "Image boat", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, deviationTable: defaultDeviationTable(), imageId: ids.boat };
       const crew: CrewMember = { id: "crew", name: "Global crew", nationality: "", role: "", address: "", certificate: "", imageId: ids.crew };
       const assignment = { ...crew, embarkationDateTime: "", embarkationPosition: "", disembarkationDateTime: "", disembarkationPosition: "" };
       const sheet = (id: string, imageId: string): LogSheet => ({ id, title: id, status: "Draft", boatId: boat.id, route: { from: "", to: "", departed: "", arrived: "" }, crew: [{ ...assignment }], watchPlan: [], technicalChecks: [], lines: [], imageId });
