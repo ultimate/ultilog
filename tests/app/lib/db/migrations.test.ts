@@ -221,15 +221,14 @@ describe("runMigrations", () => {
     expect(db.calls.at(-1)).toEqual({ sql: "alter table log_sheets drop column date_range", params: undefined });
   });
 
-  it("backfills typed boat master data without replacing existing values", async () => {
+  it("backfills the three supported boat values before dropping valid legacy JSON", async () => {
     const calls: Array<{ sql: string; params?: unknown[] }> = [];
     const db: QueryableDatabase = {
       placeholder: (index) => `$${index}`,
       async query<Row>(sql: string, params?: unknown[]) {
         calls.push({ sql, params });
-        if (sql.startsWith("select id, manufacturer")) return { rows: [
-          { id: "legacy", manufacturer: null, mmsi: null, yacht_data: JSON.stringify({ Manufacturer: "  Yard  ", MMSI: "—" }) },
-          { id: "existing", manufacturer: "Current yard", mmsi: "123", yacht_data: JSON.stringify({ Manufacturer: "Old yard", MMSI: "999" }) },
+        if (sql.includes("select boats.id, boats.manufacturer")) return { rows: [
+          { id: "legacy", manufacturer: null, mmsi: null, yacht_data: JSON.stringify({ Manufacturer: "  Yard  ", MMSI: " 269123456 ", Engine: " D2-55 ", Electronics: "VHF" }), engine_id: "engine-1", engine_model: "" },
         ] as Row[] };
         return { rows: [] };
       },
@@ -237,8 +236,31 @@ describe("runMigrations", () => {
 
     await normalizeBoatMasterData(db);
 
-    expect(calls).toContainEqual({ sql: "update boats set manufacturer = $1, mmsi = $2 where id = $3", params: ["Yard", null, "legacy"] });
-    expect(calls).not.toContainEqual(expect.objectContaining({ params: expect.arrayContaining(["Old yard"]) }));
+    expect(calls).toContainEqual({ sql: "update boats set manufacturer = $1, mmsi = $2 where id = $3", params: ["Yard", "269123456", "legacy"] });
+    expect(calls).toContainEqual({ sql: "update engines set model = $1 where id = $2", params: ["D2-55", "engine-1"] });
+    expect(calls.at(-1)?.sql).toBe("alter table boats drop column yacht_data");
+  });
+
+  it("ignores malformed, null, and placeholder legacy boat values and preserves typed values", async () => {
+    const calls: Array<{ sql: string; params?: unknown[] }> = [];
+    const db: QueryableDatabase = {
+      placeholder: (index) => `$${index}`,
+      async query<Row>(sql: string, params?: unknown[]) {
+        calls.push({ sql, params });
+        if (sql.includes("select boats.id, boats.manufacturer")) return { rows: [
+          { id: "malformed", manufacturer: null, mmsi: null, yacht_data: "{not-json", engine_id: "engine-malformed", engine_model: "" },
+          { id: "null", manufacturer: null, mmsi: null, yacht_data: null, engine_id: "engine-null", engine_model: "" },
+          { id: "placeholder", manufacturer: null, mmsi: null, yacht_data: JSON.stringify({ Manufacturer: "—", MMSI: "To be completed", Engine: " to be completed " }), engine_id: "engine-placeholder", engine_model: "" },
+          { id: "existing", manufacturer: "Current yard", mmsi: "123", yacht_data: JSON.stringify({ Manufacturer: "Old yard", MMSI: "999", Engine: "Old engine" }), engine_id: "engine-existing", engine_model: "Current engine" },
+        ] as Row[] };
+        return { rows: [] };
+      },
+    };
+
+    await normalizeBoatMasterData(db);
+
+    const updates = calls.filter(({ sql }) => sql.startsWith("update boats") || sql.startsWith("update engines"));
+    expect(updates).toEqual([]);
     expect(calls.at(-1)?.sql).toBe("alter table boats drop column yacht_data");
   });
 
