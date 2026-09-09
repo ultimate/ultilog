@@ -101,8 +101,9 @@ export type Boat = {
   homePort: string;
   owner: string;
   dimensions: string;
+  manufacturer?: string;
+  mmsi?: string;
   logfactor: number;
-  yachtData: Record<string, string>;
   deviationTable: DeviationTableRow[];
   windDriftTable?: WindDriftTable;
   engines?: BoatEngine[];

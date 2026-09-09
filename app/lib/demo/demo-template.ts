@@ -106,11 +106,8 @@ const boats: DemoBoat[] = [
     owner: "Ultilog Sailing Club",
     dimensions: "12.4 m · 7.8 t · CE category A",
     logfactor: 1.05,
-    yachtData: {
-      Manufacturer: "Hallberg-Rassy 40",
-      MMSI: "269123456",
-      Safety: "6-person liferaft, EPIRB, jacklines, MOB beacon",
-    },
+    manufacturer: "Hallberg-Rassy 40",
+    mmsi: "269123456",
     engines: [{ id: "main-engine", name: "Main engine", label: "Main", role: "propulsion", manufacturer: "Volvo Penta", model: "D2-55 · 55 HP" }],
     deviationTable: demoDeviationTable(40),
     windDriftTable: {
@@ -132,11 +129,8 @@ const boats: DemoBoat[] = [
     owner: "Ultilog Yacht Club",
     dimensions: "10.8 m · 6.1 t · CE category B",
     logfactor: 0.98,
-    yachtData: {
-      Manufacturer: "Beneteau Antares 11",
-      MMSI: "238987650",
-      Safety: "6-person liferaft, EPIRB, flares, lifejackets",
-    },
+    manufacturer: "Beneteau Antares 11",
+    mmsi: "238987650",
     engines: [
       { id: "port-engine", name: "Port engine", label: "Port", role: "propulsion", manufacturer: "Volvo Penta", model: "D4 · 220 HP" },
       { id: "starboard-engine", name: "Starboard engine", label: "Stbd", role: "propulsion", manufacturer: "Volvo Penta", model: "D4 · 220 HP" },

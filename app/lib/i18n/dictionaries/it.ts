@@ -229,7 +229,6 @@ export const it: Dictionary = {
   "details.engineRuntime": "Intervallo di funzionamento",
   "dashboard.totalEngineHours": "Ore motore totali",
   "dashboard.propulsionDuration": "Durata propulsione",
-  "boats.safety": "Sicurezza",
   "boats.deviationTable": "Tabella di deviazione",
   "boats.deviationHelp": "Rotte bussola da 0° a 350° con passi di 10°. Inserisci valori di deviazione come +2° o -1°.",
   "boats.heading": "Rotta",

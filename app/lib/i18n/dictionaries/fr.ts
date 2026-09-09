@@ -229,7 +229,6 @@ export const fr: Dictionary = {
   "details.engineRuntime": "Intervalle de fonctionnement",
   "dashboard.totalEngineHours": "Total des heures moteur",
   "dashboard.propulsionDuration": "Durée de propulsion",
-  "boats.safety": "Sécurité",
   "boats.deviationTable": "Table de déviation",
   "boats.deviationHelp": "Caps compas de 0° à 350° par pas de 10°. Saisissez des valeurs de déviation comme +2° ou -1°.",
   "boats.heading": "Cap",

@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import initSqlJs from "sql.js";
 import { readFile } from "node:fs/promises";
-import { normalizeBoatFlagStates, removeLegacyLogSheetDateRange, runMigrations, structureScannerWarnings } from "../../../../app/lib/db/migrations";
+import { normalizeBoatFlagStates, normalizeBoatMasterData, removeLegacyLogSheetDateRange, runMigrations, structureScannerWarnings } from "../../../../app/lib/db/migrations";
 import type { QueryableDatabase, QueryResult } from "../../../../app/lib/db/logbook-database";
-import { readMigrations, STRICT_LOG_LINE_ENGINE_HOURS_MIGRATION_ID, STRUCTURED_SCANNER_WARNINGS_MIGRATION_ID, USER_COMPLIANCE_MIGRATION_ID } from "../../../../app/lib/db/schema";
+import { NORMALIZED_BOAT_MASTER_DATA_MIGRATION_ID, readMigrations, STRUCTURED_SCANNER_WARNINGS_MIGRATION_ID, USER_COMPLIANCE_MIGRATION_ID } from "../../../../app/lib/db/schema";
 
 class DuplicateColumnDatabase implements QueryableDatabase {
   calls: string[] = [];
@@ -101,7 +101,7 @@ class RemoveDateRangeDatabase implements QueryableDatabase {
 describe("runMigrations", () => {
   it("discovers migrations in order", async () => {
     const migrations = await readMigrations();
-    expect(migrations.at(-1)?.id).toBe(STRICT_LOG_LINE_ENGINE_HOURS_MIGRATION_ID);
+    expect(migrations.at(-1)?.id).toBe(NORMALIZED_BOAT_MASTER_DATA_MIGRATION_ID);
     expect(migrations.find(({ id }) => id === USER_COMPLIANCE_MIGRATION_ID)?.sql).toContain("user_compliance_licenses");
     expect(migrations.find(({ id }) => id === STRUCTURED_SCANNER_WARNINGS_MIGRATION_ID)?.sql).toContain("scanner warning JSON");
   });
@@ -219,6 +219,27 @@ describe("runMigrations", () => {
     await removeLegacyLogSheetDateRange(db);
     expect(db.calls).toContainEqual({ sql: "update log_sheets set route = $1 where id = $2", params: [JSON.stringify({ from: "A", to: "B", departed: "2026-05-14T00:00:00+00:00", arrived: "2026-05-14T00:00:00+00:00" }), "legacy-sheet"] });
     expect(db.calls.at(-1)).toEqual({ sql: "alter table log_sheets drop column date_range", params: undefined });
+  });
+
+  it("backfills typed boat master data without replacing existing values", async () => {
+    const calls: Array<{ sql: string; params?: unknown[] }> = [];
+    const db: QueryableDatabase = {
+      placeholder: (index) => `$${index}`,
+      async query<Row>(sql: string, params?: unknown[]) {
+        calls.push({ sql, params });
+        if (sql.startsWith("select id, manufacturer")) return { rows: [
+          { id: "legacy", manufacturer: null, mmsi: null, yacht_data: JSON.stringify({ Manufacturer: "  Yard  ", MMSI: "—" }) },
+          { id: "existing", manufacturer: "Current yard", mmsi: "123", yacht_data: JSON.stringify({ Manufacturer: "Old yard", MMSI: "999" }) },
+        ] as Row[] };
+        return { rows: [] };
+      },
+    };
+
+    await normalizeBoatMasterData(db);
+
+    expect(calls).toContainEqual({ sql: "update boats set manufacturer = $1, mmsi = $2 where id = $3", params: ["Yard", null, "legacy"] });
+    expect(calls).not.toContainEqual(expect.objectContaining({ params: expect.arrayContaining(["Old yard"]) }));
+    expect(calls.at(-1)?.sql).toBe("alter table boats drop column yacht_data");
   });
 
 });

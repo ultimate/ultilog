@@ -10,13 +10,14 @@ export type ImageRowFields = {
   image_height?: number | null;
 };
 
-export type BoatRow = { revision?: number; created_at?: string | Date; updated_at?: string | Date } & Omit<Boat, "revision" | "createdAt" | "updatedAt" | "archived" | "flagState" | "homePort" | "yachtData" | "deviationTable" | "windDriftTable" | "image" | "imageId" | "logfactor" | "engines"> & ImageRowFields & {
+export type BoatRow = { revision?: number; created_at?: string | Date; updated_at?: string | Date } & Omit<Boat, "revision" | "createdAt" | "updatedAt" | "archived" | "flagState" | "homePort" | "manufacturer" | "mmsi" | "deviationTable" | "windDriftTable" | "image" | "imageId" | "logfactor" | "engines"> & ImageRowFields & {
   engines?: Boat["engines"];
   archived?: number | boolean | null;
   flag_state: string;
   home_port: string;
   logfactor?: number | null;
-  yacht_data: unknown;
+  manufacturer?: string | null;
+  mmsi?: string | null;
   deviation_table: unknown;
   wind_drift_table?: unknown;
 };

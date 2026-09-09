@@ -33,12 +33,13 @@ describe("immutable demo logbook template", () => {
     }
   });
 
-  it("uses form-compatible yacht data and illustrative shifted deviation curves", () => {
+  it("uses typed boat master data and illustrative shifted deviation curves", () => {
     const sailboat = DEMO_LOGBOOK_TEMPLATE.boats.find((boat) => boat.type === "Sail")!;
     expect(sailboat.homePort).toBe("Basel");
 
     for (const boat of DEMO_LOGBOOK_TEMPLATE.boats) {
-      expect(Object.keys(boat.yachtData).sort()).toEqual(["MMSI", "Manufacturer", "Safety"]);
+      expect(boat.manufacturer).toBeTruthy();
+      expect(boat.mmsi).toMatch(/^\d+$/);
       expect(boat.engines?.length).toBeGreaterThan(0);
       const deviations = boat.deviationTable.map((row) => Number(row.deviation));
       expect(Math.min(...deviations)).toBeLessThanOrEqual(-14);

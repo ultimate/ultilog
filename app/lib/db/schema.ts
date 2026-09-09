@@ -12,6 +12,7 @@ export const STRUCTURED_SCANNER_WARNINGS_MIGRATION_ID = "043_structure_scanner_w
 export const LOCALIZED_SCANNER_WARNINGS_MIGRATION_ID = "044_localize_scanner_warnings";
 export const STRICT_STORAGE_FORMATS_MIGRATION_ID = "045_remove_legacy_storage_formats";
 export const STRICT_LOG_LINE_ENGINE_HOURS_MIGRATION_ID = "046_remove_legacy_log_line_motor_hours";
+export const NORMALIZED_BOAT_MASTER_DATA_MIGRATION_ID = "047_normalize_boat_master_data";
 
 let migrations: SqlMigration[] | undefined;
 let schemaSql: string | undefined;

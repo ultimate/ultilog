@@ -32,13 +32,13 @@ export class BoatsRepository {
   async upsert(boat: Boat, ownerId: string) {
     const id = scopedId(ownerId, boat.id);
     const existing = await this.findById(boat.id, ownerId);
-    const values = [boat.archived ? 1 : 0, boat.name, boat.type, boat.registration, boat.flagState, boat.homePort, boat.owner, boat.dimensions, boat.logfactor, JSON.stringify(boat.yachtData), JSON.stringify(boat.deviationTable), JSON.stringify(boat.windDriftTable ?? []), boat.imageId ?? boat.image?.id ?? null];
+    const values = [boat.archived ? 1 : 0, boat.name, boat.type, boat.registration, boat.flagState, boat.homePort, boat.owner, boat.dimensions, boat.manufacturer || null, boat.mmsi || null, boat.logfactor, JSON.stringify(boat.deviationTable), JSON.stringify(boat.windDriftTable ?? []), boat.imageId ?? boat.image?.id ?? null];
     if (existing) {
       const expected = expectedRevision(boat.revision);
-      const assignments = ["archived", "name", "type", "registration", "flag_state", "home_port", "owner", "dimensions", "logfactor", "yacht_data", "deviation_table", "wind_drift_table", "image_id"].map((column, index) => `${column} = ${this.db.placeholder(index + 1)}`);
-      const updated = await this.db.query<{ revision: number }>(`update boats set ${assignments.join(", ")}, revision = revision + 1, updated_at = ${this.now()} where id = ${this.db.placeholder(14)} and owner_id = ${this.db.placeholder(15)} and revision = ${this.db.placeholder(16)} returning revision`, [...values, id, ownerId, expected]);
+      const assignments = ["archived", "name", "type", "registration", "flag_state", "home_port", "owner", "dimensions", "manufacturer", "mmsi", "logfactor", "deviation_table", "wind_drift_table", "image_id"].map((column, index) => `${column} = ${this.db.placeholder(index + 1)}`);
+      const updated = await this.db.query<{ revision: number }>(`update boats set ${assignments.join(", ")}, revision = revision + 1, updated_at = ${this.now()} where id = ${this.db.placeholder(15)} and owner_id = ${this.db.placeholder(16)} and revision = ${this.db.placeholder(17)} returning revision`, [...values, id, ownerId, expected]);
       if (!updated.rows.length) throw Object.assign(new Error("The boat was changed by another request."), { code: "revision_conflict" });
-    } else await this.db.query(`insert into boats (id, archived, name, type, registration, flag_state, home_port, owner, dimensions, logfactor, yacht_data, deviation_table, wind_drift_table, image_id, owner_id) values (${this.values(15)})`, [id, ...values, ownerId]);
+    } else await this.db.query(`insert into boats (id, archived, name, type, registration, flag_state, home_port, owner, dimensions, manufacturer, mmsi, logfactor, deviation_table, wind_drift_table, image_id, owner_id) values (${this.values(16)})`, [id, ...values, ownerId]);
     await this.syncEngines(id, boat.engines);
     return this.findById(boat.id, ownerId);
   }
@@ -54,8 +54,8 @@ export class BoatsRepository {
 
   async insert(boat: Boat, ownerId: string) {
     await this.db.query(
-      `insert into boats (id, archived, name, type, registration, flag_state, home_port, owner, dimensions, logfactor, yacht_data, deviation_table, wind_drift_table, image_id, owner_id) values (${this.values(15)})`,
-      [scopedId(ownerId, boat.id), boat.archived ? 1 : 0, boat.name, boat.type, boat.registration, boat.flagState, boat.homePort, boat.owner, boat.dimensions, boat.logfactor, JSON.stringify(boat.yachtData), JSON.stringify(boat.deviationTable), JSON.stringify(boat.windDriftTable ?? []), boat.imageId ?? boat.image?.id ?? null, ownerId],
+      `insert into boats (id, archived, name, type, registration, flag_state, home_port, owner, dimensions, manufacturer, mmsi, logfactor, deviation_table, wind_drift_table, image_id, owner_id) values (${this.values(16)})`,
+      [scopedId(ownerId, boat.id), boat.archived ? 1 : 0, boat.name, boat.type, boat.registration, boat.flagState, boat.homePort, boat.owner, boat.dimensions, boat.manufacturer || null, boat.mmsi || null, boat.logfactor, JSON.stringify(boat.deviationTable), JSON.stringify(boat.windDriftTable ?? []), boat.imageId ?? boat.image?.id ?? null, ownerId],
     );
     // Replacements normally cascade through boats, but explicitly clear equipment
     // rows as well so legacy SQLite databases with foreign keys previously disabled
