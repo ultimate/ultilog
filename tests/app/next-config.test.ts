@@ -40,10 +40,19 @@ describe("Next.js security headers", () => {
     expect(csp).toContain("https://*.tile.openstreetmap.org");
     expect(csp).toContain("https://tiles.openseamap.org");
     expect(csp).toContain("https://www.gravatar.com");
+    expect(csp).toContain("https://secure.gravatar.com");
     expect(csp).toContain("img-src 'self' data:");
     expect(csp).not.toContain("openai.com");
     expect(csp).not.toMatch(/smtp/i);
     expect(csp).not.toContain("'unsafe-eval'");
+  });
+
+  it("allows Gravatar images on both configured hosts", () => {
+    const config = createNextConfig(PHASE_PRODUCTION_BUILD);
+    expect(config.images?.remotePatterns).toEqual(expect.arrayContaining([
+      expect.objectContaining({ hostname: "www.gravatar.com", pathname: "/avatar/**" }),
+      expect.objectContaining({ hostname: "secure.gravatar.com", pathname: "/avatar/**" }),
+    ]));
   });
 
   it("permits eval only for React's development runtime", async () => {

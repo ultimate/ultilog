@@ -44,7 +44,7 @@ const USER_COLUMNS = "id, name, email, avatar_data, avatar_mime_type, password_h
 
 export function gravatarAvatarUrl(email: string) {
   const emailHash = createHash("sha256").update(normalizeEmail(email)).digest("hex");
-  return `https://www.gravatar.com/avatar/${emailHash}?s=256&d=mp`;
+  return `https://secure.gravatar.com/avatar/${emailHash}?s=256&d=mp`;
 }
 
 function avatarFromRow(row: { email: string; avatar_data?: string | null; avatar_mime_type?: string | null }) {
