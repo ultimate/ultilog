@@ -16,7 +16,7 @@ describe("users preferences", () => {
     const { gravatarAvatarUrl } = await importUsersWithTempDatabase();
 
     expect(gravatarAvatarUrl("  Sailor@Example.COM ")).toBe(
-      "https://www.gravatar.com/avatar/c9f866bbdbc2ee575094e2ac4039c0d6ba20153b025ea723affb8abc152219b3?s=256&d=mp",
+      "https://secure.gravatar.com/avatar/c9f866bbdbc2ee575094e2ac4039c0d6ba20153b025ea723affb8abc152219b3?s=256&d=mp",
     );
   });
 
@@ -27,6 +27,32 @@ describe("users preferences", () => {
     await expect(findUserById(user.id)).resolves.toMatchObject({
       avatar: gravatarAvatarUrl("avatar@example.test"),
     });
+  });
+
+  it("lists community and admin users without coupling directory reads to crew decryption", async () => {
+    const { listUsersForAdmin, listUsersForDirectory, registerUser } = await importUsersWithTempDatabase();
+    const user = await registerUser({ name: "Directory User", email: "directory@example.test", password: "Harbor lantern atlas 2026" });
+    const { getDatabase } = await import("../../../app/lib/logbook-store");
+    const db = getDatabase();
+    await db.query("insert into crew_members (id, name, nationality, role, owner_id) values (?, ?, ?, ?, ?)", [`${user.id}:crew`, "plaintext", "", "Crew", user.id]);
+
+    const masterKey = process.env.CREW_ENCRYPTION_MASTER_KEY;
+    const dataKey = process.env.CREW_DATA_ENCRYPTION_KEY;
+    delete process.env.CREW_ENCRYPTION_MASTER_KEY;
+    delete process.env.CREW_DATA_ENCRYPTION_KEY;
+    try {
+      await expect(listUsersForDirectory()).resolves.toEqual([
+        expect.objectContaining({ id: user.id, username: "Directory User", avatar: gravatarUrlForDirectoryUser() }),
+      ]);
+      await expect(listUsersForAdmin()).resolves.toEqual([
+        expect.objectContaining({ id: user.id, name: "Directory User", avatar: gravatarUrlForDirectoryUser() }),
+      ]);
+    } finally {
+      if (masterKey === undefined) delete process.env.CREW_ENCRYPTION_MASTER_KEY;
+      else process.env.CREW_ENCRYPTION_MASTER_KEY = masterKey;
+      if (dataKey === undefined) delete process.env.CREW_DATA_ENCRYPTION_KEY;
+      else process.env.CREW_DATA_ENCRYPTION_KEY = dataKey;
+    }
   });
 
   it("stores uploaded profile pictures without encryption", async () => {
@@ -137,6 +163,10 @@ describe("users preferences", () => {
     await expect(updateUserViewPreferences(user.id, { countryCode: "" })).resolves.toMatchObject({ countryCode: "" });
   });
 });
+
+function gravatarUrlForDirectoryUser() {
+  return "https://secure.gravatar.com/avatar/c6daeae2048bd586bbba7e7956f2b2b35660817e31b2d41ec3666540260abda7?s=256&d=mp";
+}
 
 async function importUsersWithTempDatabase() {
   vi.resetModules();

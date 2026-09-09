@@ -39,7 +39,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
   async flush() {}
 
   async migrate() {
-    await this.ensureSchemaAndBackfill();
+    await this.ensureSchema();
   }
 
   forUser(userId: string) {
@@ -303,7 +303,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
     const ownerAvatar = owner && showOwnerAvatarOnPrint
       ? owner.avatar_data && owner.avatar_mime_type
         ? `data:${owner.avatar_mime_type};base64,${owner.avatar_data}`
-        : `https://www.gravatar.com/avatar/${createHash("sha256").update(owner.email.trim().toLowerCase()).digest("hex")}?s=256&d=mp`
+        : `https://secure.gravatar.com/avatar/${createHash("sha256").update(owner.email.trim().toLowerCase()).digest("hex")}?s=256&d=mp`
       : undefined;
     return { sheet: filterSharedSheet(sheet, visibility), boatName: visibility.masterData ? boat?.name ?? "" : "", ownerAvatar, showOwnerAvatarOnPrint };
   }
