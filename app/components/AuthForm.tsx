@@ -51,7 +51,7 @@ export function AuthForm({ mode, footer }: Props) {
       setError(t("auth.demoError"));
       return;
     }
-    window.location.assign("/");
+    window.location.assign(loginReturnDestination());
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -102,7 +102,7 @@ export function AuthForm({ mode, footer }: Props) {
       window.location.assign(`/check-email?email=${encodeURIComponent(profile.email)}`);
       return;
     }
-    window.location.assign("/");
+    window.location.assign(loginReturnDestination());
   }
 
   const form = (
@@ -173,4 +173,9 @@ export function AuthForm({ mode, footer }: Props) {
       </section>
     </main>
   );
+}
+
+export function loginReturnDestination(search = typeof window === "undefined" ? "" : window.location.search) {
+  const destination = new URLSearchParams(search).get("callbackUrl");
+  return destination?.startsWith("/") && !destination.startsWith("//") ? destination : "/";
 }
