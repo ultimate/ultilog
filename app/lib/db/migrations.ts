@@ -13,7 +13,7 @@ type CrewAssignmentRow = { sheet_id: string; crew_member_id: string; sort_order:
 type LegacyLogSheetDateRow = { id: string; date_range: string; route: unknown };
 type LegacyBoatEngineRow = { boat_id: string; yacht_data: unknown; engine_id: string; model: string };
 type LegacyBoatFlagRow = { id: string; flag_state: string };
-type LegacyBoatMasterDataRow = { id: string; manufacturer: string | null; mmsi: string | null; yacht_data: unknown };
+type LegacyBoatMasterDataRow = { id: string; manufacturer: string | null; mmsi: string | null; yacht_data: unknown; engine_id: string | null; engine_model: string | null };
 type ScannerWarningsRow = { id: string; scanner_warnings: unknown };
 import { readMigrations } from "./schema";
 
@@ -95,13 +95,22 @@ export async function normalizeBoatMasterData(db: QueryableDatabase) {
     }
   }
 
-  const boats = await db.query<LegacyBoatMasterDataRow>("select id, manufacturer, mmsi, yacht_data from boats");
+  const boats = await db.query<LegacyBoatMasterDataRow>(`
+    select boats.id, boats.manufacturer, boats.mmsi, boats.yacht_data,
+      engines.id as engine_id, engines.model as engine_model
+    from boats
+    left join engines on engines.boat_id = boats.id and engines.sort_order = 0
+  `);
   for (const boat of boats.rows) {
     const data = parseYachtData(boat.yacht_data);
     const manufacturer = boat.manufacturer || migratedMasterDataValue(data.Manufacturer);
     const mmsi = boat.mmsi || migratedMasterDataValue(data.MMSI);
     if (manufacturer !== boat.manufacturer || mmsi !== boat.mmsi) {
       await db.query(`update boats set manufacturer = ${db.placeholder(1)}, mmsi = ${db.placeholder(2)} where id = ${db.placeholder(3)}`, [manufacturer, mmsi, boat.id]);
+    }
+    const engineModel = migratedMasterDataValue(data.Engine);
+    if (boat.engine_id && !boat.engine_model?.trim() && engineModel) {
+      await db.query(`update engines set model = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [engineModel, boat.engine_id]);
     }
   }
   await db.query("alter table boats drop column yacht_data");
@@ -256,9 +265,9 @@ async function moveLegacyBoatEngine(db: QueryableDatabase) {
 
   for (const row of rows.rows) {
     const yachtData = parseYachtData(row.yacht_data);
-    const legacyEngine = typeof yachtData.Engine === "string" ? yachtData.Engine.trim() : "";
+    const legacyEngine = migratedMasterDataValue(yachtData.Engine);
     delete yachtData.Engine;
-    if (legacyEngine && legacyEngine !== "—" && !row.model.trim()) {
+    if (legacyEngine && !row.model.trim()) {
       await db.query(`update engines set model = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [legacyEngine, row.engine_id]);
     }
     await db.query(`update boats set yacht_data = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [JSON.stringify(yachtData), row.boat_id]);
