@@ -22,7 +22,7 @@ describe("logbook persistence", () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: "image-1" }), { status: 200, headers: { "Content-Type": "application/json" } }));
     vi.stubGlobal("fetch", fetchMock);
     const replacementSpy = vi.spyOn(importOperations, "replaceEntireLogbook");
-    const boat = { id: "boat-1", name: "Solo", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [] } as PersistedLogbook["boats"][number];
+    const boat = { id: "boat-1", name: "Solo", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, deviationTable: [] } as PersistedLogbook["boats"][number];
     const crew = { id: "crew-1", name: "Ada", nationality: "", role: "Crew" } as PersistedLogbook["crewMembers"][number];
     const sheet = { ...sampleLogSheets[0], id: "sheet-1", boatId: boat.id, crew: [{ ...crew, embarkationDateTime: "", embarkationPosition: "", disembarkationDateTime: "", disembarkationPosition: "" }] };
 
@@ -90,7 +90,7 @@ describe("logbook persistence", () => {
   it("uses focused endpoints and payloads for boats, crew, and deletions", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
-    const boat = { id: "boat-1", name: "Solo", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [] } as PersistedLogbook["boats"][number];
+    const boat = { id: "boat-1", name: "Solo", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, deviationTable: [] } as PersistedLogbook["boats"][number];
     const crew = { id: "crew-1", name: "Ada", nationality: "", role: "Crew", address: "", certificate: "", isPrimary: false } as PersistedLogbook["crewMembers"][number];
 
     await persistBoat(boat);

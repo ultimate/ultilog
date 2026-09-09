@@ -21,7 +21,7 @@ describe("SqliteLogbookDatabase", () => {
     await db.query("insert into users (id, name, email, password_hash) values (?, ?, ?, ?)", ["focused-user", "Focused", "focused@example.test", ""]);
     await db.query("insert into crew_members (id, name, nationality, role, owner_id) values (?, ?, ?, ?, ?)", ["focused-user:legacy-crew", "Legacy plaintext", "", "Crew", "focused-user"]);
 
-    const boat = { id: "boat-1", name: "Boat", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: defaultDeviationTable() };
+    const boat = { id: "boat-1", name: "Boat", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, deviationTable: defaultDeviationTable() };
     const createdBoat = await db.upsertBoat(boat);
     const sheet = { id: "sheet-1", title: "Trip", status: "Draft" as const, boatId: boat.id, route: { from: "", to: "", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] };
     await db.upsertLogSheet(sheet);
@@ -110,7 +110,7 @@ describe("SqliteLogbookDatabase", () => {
     const db = new SqliteLogbookDatabase(await tempDatabasePath()).forUser("focused-lines");
     await db.migrate();
     await db.query("insert into users (id, name, email, password_hash) values (?, ?, ?, ?)", ["focused-lines", "Lines", "focused@example.test", ""]);
-    const boat = { id: "boat-1", name: "Boat", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: defaultDeviationTable() };
+    const boat = { id: "boat-1", name: "Boat", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, deviationTable: defaultDeviationTable() };
     await db.upsertBoat(boat);
     const source = sampleLogSheets[0];
     const firstLines = source.lines.slice(0, 2).map(line => ({ ...line, engineHours: undefined }));
@@ -143,7 +143,7 @@ describe("SqliteLogbookDatabase", () => {
     const owner = new SqliteLogbookDatabase(path).forUser("owner-a");
     await owner.migrate();
     await owner.query("insert into users (id, name, email, password_hash) values (?, ?, ?, ?), (?, ?, ?, ?)", ["owner-a", "A", "a@example.test", "", "owner-b", "B", "b@example.test", ""]);
-    const initial = { id: "shared-id", name: "Owner A boat", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: defaultDeviationTable() };
+    const initial = { id: "shared-id", name: "Owner A boat", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, deviationTable: defaultDeviationTable() };
     const created = await owner.upsertBoat(initial);
     await expect(owner.upsertBoat({ ...initial, revision: created!.revision, name: "Updated" })).resolves.toMatchObject({ name: "Updated" });
     const other = new SqliteLogbookDatabase(path).forUser("owner-b");
@@ -158,7 +158,7 @@ describe("SqliteLogbookDatabase", () => {
     const db = new SqliteLogbookDatabase(await tempDatabasePath()).forUser("policy-user");
     await db.migrate();
     await db.query("insert into users (id, name, email, password_hash) values (?, ?, ?, ?)", ["policy-user", "Policy", "policy@example.test", ""]);
-    const boat = { id: "boat-1", archived: true, name: "Archived", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: defaultDeviationTable() };
+    const boat = { id: "boat-1", archived: true, name: "Archived", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, deviationTable: defaultDeviationTable() };
     const createdBoat = await db.upsertBoat(boat);
     const sheet = { id: "sheet-1", title: "Trip", status: "Draft" as const, boatId: boat.id, route: { from: "", to: "", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] };
     await expect(db.upsertLogSheet(sheet)).rejects.toMatchObject({ code: "archived_boat_for_new_sheet" });
@@ -173,7 +173,7 @@ describe("SqliteLogbookDatabase", () => {
     const db = new SqliteLogbookDatabase(await tempDatabasePath()).forUser("rollback-user");
     await db.migrate();
     await db.query("insert into users (id, name, email, password_hash) values (?, ?, ?, ?)", ["rollback-user", "Rollback", "rollback@example.test", ""]);
-    const boat = { id: "boat-1", name: "Boat", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: defaultDeviationTable() };
+    const boat = { id: "boat-1", name: "Boat", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, deviationTable: defaultDeviationTable() };
     await db.upsertBoat(boat);
     const original = { id: "sheet-1", title: "Original", status: "Draft" as const, boatId: boat.id, route: { from: "", to: "", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] };
     await db.upsertLogSheet(original);
@@ -195,7 +195,7 @@ describe("SqliteLogbookDatabase", () => {
     const db = new SqliteLogbookDatabase(await tempDatabasePath()).forUser("concurrent-user");
     await db.migrate();
     await db.query("insert into users (id, name, email, password_hash) values (?, ?, ?, ?)", ["concurrent-user", "Concurrent", "concurrent@example.test", ""]);
-    const boat = { id: "boat-1", name: "Boat", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: defaultDeviationTable() };
+    const boat = { id: "boat-1", name: "Boat", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, deviationTable: defaultDeviationTable() };
     await db.upsertBoat(boat);
     const source = sampleLogSheets[0];
     const sheet = { ...source, id: "sheet-1", boatId: boat.id, crew: [], lines: source.lines.slice(0, 2) };
@@ -262,7 +262,7 @@ describe("SqliteLogbookDatabase", () => {
     await firstWrapper.query("insert into users (id, name, email, password_hash) values (?, ?, ?, ?)", ["new-user", "New User", "new@example.test", ""]);
     const updatedLogbook = {
       crewMembers: [],
-      boats: [{ id: "boat-1", archived: true, name: "SY Repository Test", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: defaultDeviationTable() }],
+      boats: [{ id: "boat-1", archived: true, name: "SY Repository Test", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, deviationTable: defaultDeviationTable() }],
       sheets: [{ id: "sheet-1", title: "Repository integration test", status: "Draft" as const, boatId: "boat-1", route: { from: "", to: "", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] }],
     };
 
@@ -276,7 +276,7 @@ describe("SqliteLogbookDatabase", () => {
     const db = new SqliteLogbookDatabase(databasePath).forUser("line-id-user");
     await db.migrate();
     await db.query("insert into users (id, name, email, password_hash) values (?, ?, ?, ?)", ["line-id-user", "Line IDs", "lines@example.test", ""]);
-    const boat = { id: "boat-1", archived: false, name: "ID test", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: defaultDeviationTable() };
+    const boat = { id: "boat-1", archived: false, name: "ID test", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, deviationTable: defaultDeviationTable() };
     const original = sampleLogSheets[0].lines.slice(0, 2).map((line) => ({ ...line, time: "2026-05-14T10:00" }));
     const sheet = { id: "sheet-1", title: "Stable IDs", status: "Draft" as const, boatId: boat.id, route: { from: "", to: "", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [...original].reverse() };
 

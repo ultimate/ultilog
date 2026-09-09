@@ -13,6 +13,7 @@ type CrewAssignmentRow = { sheet_id: string; crew_member_id: string; sort_order:
 type LegacyLogSheetDateRow = { id: string; date_range: string; route: unknown };
 type LegacyBoatEngineRow = { boat_id: string; yacht_data: unknown; engine_id: string; model: string };
 type LegacyBoatFlagRow = { id: string; flag_state: string };
+type LegacyBoatMasterDataRow = { id: string; manufacturer: unknown; mmsi: unknown; yacht_data: unknown };
 type ScannerWarningsRow = { id: string; scanner_warnings: unknown };
 import { readMigrations } from "./schema";
 
@@ -35,6 +36,10 @@ export async function runMigrations(db: QueryableDatabase) {
 }
 
 async function applyMigration(db: QueryableDatabase, id: string, sql: string) {
+  if (id === "047_normalize_boat_master_data") {
+    await normalizeBoatMasterData(db);
+    return;
+  }
   if (id === "043_structure_scanner_warnings" || id === "044_localize_scanner_warnings") {
     await structureScannerWarnings(db);
     return;
@@ -78,6 +83,35 @@ async function applyMigration(db: QueryableDatabase, id: string, sql: string) {
       if (!isDuplicateColumnError(error)) throw error;
     }
   }
+}
+
+/** Moves supported boat master data out of the legacy catch-all JSON column. */
+export async function normalizeBoatMasterData(db: QueryableDatabase) {
+  for (const column of ["manufacturer", "mmsi"]) {
+    try {
+      await db.query(`alter table boats add column ${column} text`);
+    } catch (error) {
+      if (!isDuplicateColumnError(error)) throw error;
+    }
+  }
+
+  const rows = await db.query<LegacyBoatMasterDataRow>("select id, manufacturer, mmsi, yacht_data from boats");
+  for (const row of rows.rows) {
+    const legacy = parseYachtData(row.yacht_data);
+    const manufacturer = retainedMasterData(row.manufacturer, legacy.Manufacturer);
+    const mmsi = retainedMasterData(row.mmsi, legacy.MMSI);
+    if (manufacturer !== row.manufacturer || mmsi !== row.mmsi) {
+      await db.query(`update boats set manufacturer = ${db.placeholder(1)}, mmsi = ${db.placeholder(2)} where id = ${db.placeholder(3)}`, [manufacturer, mmsi, row.id]);
+    }
+  }
+  await db.query("alter table boats drop column yacht_data");
+}
+
+function retainedMasterData(current: unknown, legacy: unknown): string | null {
+  const currentValue = typeof current === "string" ? current.trim() : "";
+  if (currentValue && currentValue !== "—" && currentValue !== "To be completed") return currentValue;
+  const legacyValue = typeof legacy === "string" ? legacy.trim() : "";
+  return legacyValue && legacyValue !== "—" && legacyValue !== "To be completed" ? legacyValue : null;
 }
 
 type LegacyStorageBoatRow = { id: string; wind_drift_table: unknown };

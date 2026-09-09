@@ -11,8 +11,7 @@ const boat = {
   owner: "Skipper",
   dimensions: "10m",
   logfactor: 1,
-  yachtData: {},
-  deviationTable: [],
+    deviationTable: [],
 };
 
 describe("boat validation", () => {

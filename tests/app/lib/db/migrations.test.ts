@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import initSqlJs from "sql.js";
 import { readFile } from "node:fs/promises";
-import { normalizeBoatFlagStates, removeLegacyLogSheetDateRange, runMigrations, structureScannerWarnings } from "../../../../app/lib/db/migrations";
+import { normalizeBoatFlagStates, normalizeBoatMasterData, removeLegacyLogSheetDateRange, runMigrations, structureScannerWarnings } from "../../../../app/lib/db/migrations";
 import type { QueryableDatabase, QueryResult } from "../../../../app/lib/db/logbook-database";
-import { readMigrations, STRICT_LOG_LINE_ENGINE_HOURS_MIGRATION_ID, STRUCTURED_SCANNER_WARNINGS_MIGRATION_ID, USER_COMPLIANCE_MIGRATION_ID } from "../../../../app/lib/db/schema";
+import { readMigrations, NORMALIZED_BOAT_MASTER_DATA_MIGRATION_ID, STRUCTURED_SCANNER_WARNINGS_MIGRATION_ID, USER_COMPLIANCE_MIGRATION_ID } from "../../../../app/lib/db/schema";
 
 class DuplicateColumnDatabase implements QueryableDatabase {
   calls: string[] = [];
@@ -101,7 +101,7 @@ class RemoveDateRangeDatabase implements QueryableDatabase {
 describe("runMigrations", () => {
   it("discovers migrations in order", async () => {
     const migrations = await readMigrations();
-    expect(migrations.at(-1)?.id).toBe(STRICT_LOG_LINE_ENGINE_HOURS_MIGRATION_ID);
+    expect(migrations.at(-1)?.id).toBe(NORMALIZED_BOAT_MASTER_DATA_MIGRATION_ID);
     expect(migrations.find(({ id }) => id === USER_COMPLIANCE_MIGRATION_ID)?.sql).toContain("user_compliance_licenses");
     expect(migrations.find(({ id }) => id === STRUCTURED_SCANNER_WARNINGS_MIGRATION_ID)?.sql).toContain("scanner warning JSON");
   });
@@ -128,6 +128,28 @@ describe("runMigrations", () => {
       { sql: "update boats set flag_state = ?1 where id = ?2", params: ["HR", "emoji"] },
       { sql: "update boats set flag_state = ?1 where id = ?2", params: ["", "unknown"] },
     ]);
+  });
+
+  it("moves boat manufacturer and MMSI to typed columns without overwriting real values", async () => {
+    const calls: Array<{ sql: string; params?: unknown[] }> = [];
+    const db: QueryableDatabase = {
+      placeholder: (index) => `$${index}`,
+      query: async <Row>(sql: string, params?: unknown[]) => {
+        calls.push({ sql, params });
+        if (sql === "select id, manufacturer, mmsi, yacht_data from boats") return { rows: [
+          { id: "legacy", manufacturer: null, mmsi: "", yacht_data: JSON.stringify({ Manufacturer: " Legacy Yard ", MMSI: "269123456" }) },
+          { id: "modern", manufacturer: "Modern Yard", mmsi: "111", yacht_data: JSON.stringify({ Manufacturer: "Old Yard", MMSI: "222" }) },
+          { id: "placeholder", manufacturer: null, mmsi: null, yacht_data: JSON.stringify({ Manufacturer: "—", MMSI: "To be completed" }) },
+        ] as Row[] };
+        return { rows: [] };
+      },
+    };
+
+    await normalizeBoatMasterData(db);
+
+    expect(calls).toContainEqual({ sql: "update boats set manufacturer = $1, mmsi = $2 where id = $3", params: ["Legacy Yard", "269123456", "legacy"] });
+    expect(calls).not.toContainEqual(expect.objectContaining({ params: expect.arrayContaining(["Old Yard"]) }));
+    expect(calls).toContainEqual({ sql: "alter table boats drop column yacht_data", params: undefined });
   });
 
   it("permanently converts legacy scanner warning arrays to structured records", async () => {

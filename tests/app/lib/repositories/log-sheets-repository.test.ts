@@ -55,7 +55,7 @@ describe("LogSheetsRepository", () => {
   });
 
   it("maps relational rows back to a persisted logbook", () => {
-    const boatRow: BoatRow = { ...boat, flag_state: boat.flagState, home_port: boat.homePort, yacht_data: JSON.stringify(boat.yachtData), deviation_table: JSON.stringify(boat.deviationTable) };
+    const boatRow: BoatRow = { ...boat, flag_state: boat.flagState, home_port: boat.homePort, deviation_table: JSON.stringify(boat.deviationTable) };
     const sheetRow = logSheetRow();
     const crewRow: CrewMemberRow = { sheet_id: sheet.id, crew_member_id: "luca-frei-swiss", sort_order: 0, ...crew, embarkation_datetime: crew.embarkationDateTime, embarkation_position: crew.embarkationPosition, disembarkation_datetime: crew.disembarkationDateTime, disembarkation_position: crew.disembarkationPosition };
     const lineRow: LogLineRow = logLineRow();
@@ -110,7 +110,7 @@ describe("LogSheetsRepository", () => {
 
     expect(db.calls[0].values?.slice(15, 17)).toEqual([image.id, "repository-user"]);
 
-    const boatRow: BoatRow = { ...boat, flag_state: boat.flagState, home_port: boat.homePort, yacht_data: JSON.stringify(boat.yachtData), deviation_table: JSON.stringify(boat.deviationTable), image_data: "base64-boat", image_mime_type: "image/png", image_width: 640, image_height: 480 };
+    const boatRow: BoatRow = { ...boat, flag_state: boat.flagState, home_port: boat.homePort, deviation_table: JSON.stringify(boat.deviationTable), image_data: "base64-boat", image_mime_type: "image/png", image_width: 640, image_height: 480 };
     const sheetRow = logSheetRow({ image_id: image.id, image_data: image.data, image_mime_type: image.mimeType, image_width: image.width, image_height: image.height });
     const crewRow: CrewMemberRow = { sheet_id: sheet.id, crew_member_id: "luca-frei-swiss", sort_order: 0, ...crew, embarkation_datetime: crew.embarkationDateTime, embarkation_position: crew.embarkationPosition, disembarkation_datetime: crew.disembarkationDateTime, disembarkation_position: crew.disembarkationPosition, image_data: "base64-crew", image_mime_type: "image/jpeg", image_width: 320, image_height: 240 };
 

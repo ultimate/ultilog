@@ -275,15 +275,6 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
               </div>
               {boatForm.image ? <small>{boatForm.image.width} × {boatForm.image.height} · {boatForm.image.mimeType}</small> : null}
             </div>
-            <label className="wide-field">
-              {t("boats.safety")}
-              <textarea
-                value={boatForm.safety}
-                onChange={(e) =>
-                  setBoatForm({ ...boatForm, safety: e.target.value })
-                }
-              />
-            </label>
             <label>
               {t("boats.logfactor")}
               <input

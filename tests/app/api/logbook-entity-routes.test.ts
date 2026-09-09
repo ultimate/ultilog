@@ -10,7 +10,7 @@ const store = await import("../../../app/lib/logbook-store");
 const boats = await import("../../../app/api/logbook/boats/route");
 const boat = await import("../../../app/api/logbook/boats/[id]/route");
 
-const entity = { id: "boat-1", name: "Aurora", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [] };
+const entity = { id: "boat-1", name: "Aurora", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, deviationTable: [] };
 const context = (id: string) => ({ params: Promise.resolve({ id }) });
 const mockedAuth = auth as unknown as Mock;
 

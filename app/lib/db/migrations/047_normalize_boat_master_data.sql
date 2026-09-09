@@ -1,0 +1,2 @@
+-- Applied programmatically so JSON can be decoded consistently by SQLite and PostgreSQL.
+-- Adds nullable manufacturer and MMSI columns, backfills them, and drops yacht_data.

@@ -111,7 +111,7 @@ describe("logbook endpoint", () => {
   it("returns 413 for count limits and accepts the boundary", async () => {
     mockedAuth.mockResolvedValue(session);
     mockedWriteLogbook.mockImplementation(async value => value);
-    const boat = { id: "boat", name: "Boat", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [] };
+    const boat = { id: "boat", name: "Boat", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, deviationTable: [] };
     const atLimit = { ...logbook, boats: Array.from({ length: LOGBOOK_LIMITS.boats }, (_, i) => ({ ...boat, id: `boat-${i}` })) };
     expect((await PUT(importRequest("https://ultilog.test/api/logbook", { method: "PUT", body: JSON.stringify(atLimit) }))).status).toBe(200);
     const overLimit = await PUT(importRequest("https://ultilog.test/api/logbook", { method: "PUT", body: JSON.stringify({ ...atLimit, boats: [...atLimit.boats, boat] }) }));
@@ -121,7 +121,7 @@ describe("logbook endpoint", () => {
 
   it("rejects malformed nested values and unsupported or oversized images", async () => {
     mockedAuth.mockResolvedValue(session);
-    const boat = { id: "boat", name: "Boat", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [] };
+    const boat = { id: "boat", name: "Boat", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, deviationTable: [] };
     const malformed = { ...logbook, boats: [{ ...boat, engines: [{ id: "engine", name: 42, label: "Main", role: "propulsion" }] }] };
     expect((await PUT(importRequest("https://ultilog.test/api/logbook", { method: "PUT", body: JSON.stringify(malformed) }))).status).toBe(400);
     const invalidMime = { ...logbook, boats: [{ ...boat, image: { ...image, mimeType: "image/svg+xml" } }] };
@@ -141,7 +141,7 @@ describe("logbook endpoint", () => {
 
   it("preserves image payloads when writing the current user's logbook", async () => {
     const imageLogbook: PersistedLogbook = {
-      boats: [{ id: "boat-1", name: "Aurora", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [], image }],
+      boats: [{ id: "boat-1", name: "Aurora", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, deviationTable: [], image }],
       crewMembers: [{ id: "crew-1", name: "Luca", nationality: "CH", role: "Skipper", address: "", certificate: "", isPrimary: true, image }],
       sheets: [{ id: "sheet-1", title: "Trip", status: "Draft", boatId: "boat-1", route: { from: "A", to: "B", departed: "", arrived: "" }, crew: [{ id: "crew-1", name: "Luca", nationality: "CH", role: "Skipper", address: "", certificate: "", isPrimary: true, embarkationDateTime: "", embarkationPosition: "", disembarkationDateTime: "", disembarkationPosition: "", image }], watchPlan: [], technicalChecks: [], image, lines: [] }],
     };
@@ -173,7 +173,7 @@ describe("logbook endpoint", () => {
   });
 
   it("rejects deleting a boat that is referenced by a persisted logsheet", async () => {
-    const boat = { id: "boat-1", archived: false, name: "Aurora", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [] };
+    const boat = { id: "boat-1", archived: false, name: "Aurora", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, deviationTable: [] };
     const sheet = { id: "sheet-1", title: "Trip", status: "Draft" as const, boatId: boat.id, route: { from: "A", to: "B", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] };
     mockedAuth.mockResolvedValueOnce(session);
     mockedReadLogbook.mockResolvedValueOnce({ boats: [boat], crewMembers: [], sheets: [sheet] });
@@ -189,7 +189,7 @@ describe("logbook endpoint", () => {
   });
 
   it("allows boat and logsheet IDs to be changed together without treating the boat as deleted", async () => {
-    const boat = { id: "legacy-boat", archived: false, name: "Aurora", type: "Sail" as const, registration: "CH-1", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [] };
+    const boat = { id: "legacy-boat", archived: false, name: "Aurora", type: "Sail" as const, registration: "CH-1", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, deviationTable: [] };
     const sheet = { id: "legacy-sheet", title: "Trip", status: "Draft" as const, boatId: boat.id, route: { from: "A", to: "B", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] };
     const normalized = { boats: [{ ...boat, id: "9adc47f1-0cd6-4298-b68a-80d6600e481b" }], crewMembers: [], sheets: [{ ...sheet, id: "95ed6e76-d127-4e9e-a653-b1fe28a29345", boatId: "9adc47f1-0cd6-4298-b68a-80d6600e481b" }] };
     mockedAuth.mockResolvedValueOnce(session);
@@ -203,7 +203,7 @@ describe("logbook endpoint", () => {
   });
 
   it("allows archiving and restoring a referenced boat", async () => {
-    const boat = { id: "boat-1", archived: false, name: "Aurora", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [] };
+    const boat = { id: "boat-1", archived: false, name: "Aurora", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, deviationTable: [] };
     const sheet = { id: "sheet-1", title: "Trip", status: "Draft" as const, boatId: boat.id, route: { from: "A", to: "B", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] };
     const current = { boats: [boat], crewMembers: [], sheets: [sheet] };
     const archived = { ...current, boats: [{ ...boat, archived: true }] };
@@ -216,7 +216,7 @@ describe("logbook endpoint", () => {
   });
 
   it("rejects assigning an archived boat to a new logsheet", async () => {
-    const boat = { id: "boat-1", archived: true, name: "Aurora", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [] };
+    const boat = { id: "boat-1", archived: true, name: "Aurora", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, deviationTable: [] };
     const next = { boats: [boat], crewMembers: [], sheets: [{ id: "sheet-1", title: "Trip", status: "Draft" as const, boatId: boat.id, route: { from: "", to: "", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] }] };
     mockedAuth.mockResolvedValueOnce(session);
     mockedReadLogbook.mockResolvedValueOnce({ boats: [boat], crewMembers: [], sheets: [] });
@@ -229,7 +229,7 @@ describe("logbook endpoint", () => {
 
   it("removes images and public sharing from demo writes", async () => {
     const demoLogbook: PersistedLogbook = {
-      boats: [{ id: "boat-1", name: "Aurora", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, yachtData: {}, deviationTable: [], image }],
+      boats: [{ id: "boat-1", name: "Aurora", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, deviationTable: [], image }],
       crewMembers: [{ id: "crew-1", name: "Luca", nationality: "CH", role: "Skipper", image }],
       sheets: [{ id: "sheet-1", title: "Trip", status: "Draft", boatId: "boat-1", route: { from: "", to: "", departed: "", arrived: "" }, crew: [{ id: "crew-1", name: "Luca", nationality: "CH", role: "Skipper", embarkationDateTime: "", embarkationPosition: "", disembarkationDateTime: "", disembarkationPosition: "", image }], watchPlan: [], technicalChecks: [], image, lines: [], share: { masterData: "public", picture: "public", logLines: "public", metrics: "public", technicalLog: "public", skipper: "public", crew: "public" } }],
     };
