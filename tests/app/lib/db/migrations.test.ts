@@ -241,7 +241,7 @@ describe("runMigrations", () => {
     expect(calls.at(-1)?.sql).toBe("alter table boats drop column yacht_data");
   });
 
-  it("ignores malformed, null, and placeholder legacy boat values and preserves typed values", async () => {
+  it("normalizes every absent legacy yacht-data representation and preserves real values", async () => {
     const calls: Array<{ sql: string; params?: unknown[] }> = [];
     const db: QueryableDatabase = {
       placeholder: (index) => `$${index}`,
@@ -250,7 +250,11 @@ describe("runMigrations", () => {
         if (sql.includes("select boats.id, boats.manufacturer")) return { rows: [
           { id: "malformed", manufacturer: null, mmsi: null, yacht_data: "{not-json", engine_id: "engine-malformed", engine_model: "" },
           { id: "null", manufacturer: null, mmsi: null, yacht_data: null, engine_id: "engine-null", engine_model: "" },
-          { id: "placeholder", manufacturer: null, mmsi: null, yacht_data: JSON.stringify({ Manufacturer: "—", MMSI: "To be completed", Engine: " to be completed " }), engine_id: "engine-placeholder", engine_model: "" },
+          { id: "dash", manufacturer: null, mmsi: null, yacht_data: JSON.stringify({ Manufacturer: "—", MMSI: " — ", Engine: "—" }), engine_id: "engine-dash", engine_model: "" },
+          { id: "todo", manufacturer: null, mmsi: null, yacht_data: JSON.stringify({ Manufacturer: "To be completed", MMSI: " TO BE COMPLETED ", Engine: " to be completed " }), engine_id: "engine-todo", engine_model: "" },
+          { id: "na", manufacturer: null, mmsi: null, yacht_data: JSON.stringify({ Manufacturer: "n/a", MMSI: " N/A ", Engine: "n/A" }), engine_id: "engine-na", engine_model: "" },
+          { id: "blank", manufacturer: null, mmsi: null, yacht_data: JSON.stringify({ Manufacturer: "", MMSI: "   ", Engine: "\t" }), engine_id: "engine-blank", engine_model: "" },
+          { id: "real", manufacturer: null, mmsi: null, yacht_data: JSON.stringify({ Manufacturer: " N/A Marine ", MMSI: " 269123456 ", Engine: " Model — 2 " }), engine_id: "engine-real", engine_model: "" },
           { id: "existing", manufacturer: "Current yard", mmsi: "123", yacht_data: JSON.stringify({ Manufacturer: "Old yard", MMSI: "999", Engine: "Old engine" }), engine_id: "engine-existing", engine_model: "Current engine" },
         ] as Row[] };
         return { rows: [] };
@@ -260,7 +264,10 @@ describe("runMigrations", () => {
     await normalizeBoatMasterData(db);
 
     const updates = calls.filter(({ sql }) => sql.startsWith("update boats") || sql.startsWith("update engines"));
-    expect(updates).toEqual([]);
+    expect(updates).toEqual([
+      { sql: "update boats set manufacturer = $1, mmsi = $2 where id = $3", params: ["N/A Marine", "269123456", "real"] },
+      { sql: "update engines set model = $1 where id = $2", params: ["Model — 2", "engine-real"] },
+    ]);
     expect(calls.at(-1)?.sql).toBe("alter table boats drop column yacht_data");
   });
 

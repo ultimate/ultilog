@@ -199,6 +199,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
             <label>
               {t("boats.manufacturer")}
               <input
+                placeholder={t("boats.masterDataPlaceholder")}
                 value={boatForm.manufacturer}
                 onChange={(e) =>
                   setBoatForm({ ...boatForm, manufacturer: e.target.value })
@@ -208,6 +209,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
             <label>
               MMSI
               <input
+                placeholder={t("boats.masterDataPlaceholder")}
                 value={boatForm.mmsi}
                 onChange={(e) =>
                   setBoatForm({ ...boatForm, mmsi: e.target.value })

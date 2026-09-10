@@ -119,7 +119,8 @@ export async function normalizeBoatMasterData(db: QueryableDatabase) {
 function migratedMasterDataValue(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const normalized = value.trim();
-  return !normalized || normalized === "—" || normalized.toLowerCase() === "to be completed" ? null : normalized;
+  const normalizedPlaceholder = normalized.toLowerCase();
+  return !normalized || normalized === "—" || normalizedPlaceholder === "to be completed" || normalizedPlaceholder === "n/a" ? null : normalized;
 }
 
 type LegacyStorageBoatRow = { id: string; wind_drift_table: unknown };

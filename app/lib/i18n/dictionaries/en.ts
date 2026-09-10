@@ -210,6 +210,7 @@ export const en = {
   "boats.dimensions": "Dimensions",
   "boats.logfactor": "Log factor",
   "boats.manufacturer": "Manufacturer",
+  "boats.masterDataPlaceholder": "To be completed",
   "boats.engines": "Engines",
   "boats.enginesHelp": "Configure stable engine identities. Engines used by logs can be archived but not deleted.",
   "boats.engineName": "Engine name",
