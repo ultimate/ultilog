@@ -30,8 +30,12 @@ export async function runMigrations(db: QueryableDatabase) {
 
   for (const migration of await readMigrations()) {
     if (applied.has(migration.id)) continue;
-    await applyMigration(db, migration.id, migration.sql);
-    await db.query(`insert into schema_migrations (id) values (${db.placeholder(1)})`, [migration.id]);
+    const applyAndRecord = async (target: QueryableDatabase) => {
+      await applyMigration(target, migration.id, migration.sql);
+      await target.query(`insert into schema_migrations (id) values (${target.placeholder(1)})`, [migration.id]);
+    };
+    if (db.migrationTransaction) await db.migrationTransaction(applyAndRecord);
+    else await applyAndRecord(db);
   }
 }
 
@@ -87,7 +91,13 @@ async function applyMigration(db: QueryableDatabase, id: string, sql: string) {
 
 /** Moves useful boat master data into typed columns and retires the legacy JSON blob. */
 export async function normalizeBoatMasterData(db: QueryableDatabase) {
+  const columnRows = db.placeholder(1) === "$1"
+    ? await db.query<{ name: string }>("select column_name as name from information_schema.columns where table_schema = current_schema() and table_name = 'boats'")
+    : await db.query<{ name: string }>("select name from pragma_table_info('boats')");
+  const columns = new Set(columnRows.rows.map(({ name }) => name));
+  if (!columns.has("yacht_data")) return;
   for (const column of ["manufacturer", "mmsi"]) {
+    if (columns.has(column)) continue;
     try {
       await db.query(`alter table boats add column ${column} text`);
     } catch (error) {
