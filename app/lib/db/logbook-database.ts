@@ -18,6 +18,7 @@ export type QueryResult<Row> = { rows: Row[] };
 export interface QueryableDatabase {
   placeholder(index: number): string;
   query<Row>(sql: string, values?: unknown[]): Promise<QueryResult<Row>>;
+  migrationTransaction?<T>(operation: (database: QueryableDatabase) => Promise<T>): Promise<T>;
 }
 
 const emptyLogbook: PersistedLogbook = { boats: [], crewMembers: [], sheets: [] };
@@ -37,6 +38,10 @@ export abstract class LogbookDatabase implements QueryableDatabase {
   protected abstract withTransaction<T>(operation: (database: LogbookDatabase) => Promise<T>): Promise<T>;
 
   async transaction<T>(operation: (database: LogbookDatabase) => Promise<T>): Promise<T> {
+    return this.withTransaction(operation);
+  }
+
+  async migrationTransaction<T>(operation: (database: QueryableDatabase) => Promise<T>): Promise<T> {
     return this.withTransaction(operation);
   }
 
