@@ -1733,6 +1733,14 @@ img.entity-image--preview {
   background: rgba(12, 24, 38, 0.72);
 }
 
+.shared-copy-action { display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
+.shared-copy-action > p, .share-logsheet-panel p { margin:0; }
+.shared-copy-action .button-link { display:inline-flex; align-items:center; min-height:2.75rem; padding:.65rem 1rem; border-radius:.75rem; background:var(--primary); color:white; font-weight:800; text-decoration:none; }
+.share-logsheet-panel label:not(.checkbox-row) { display:grid; gap:.4rem; font-weight:800; }
+.share-logsheet-panel select { min-height:2.75rem; border:1px solid var(--border); border-radius:.65rem; padding:.5rem; background:var(--card); color:var(--foreground); }
+.share-logsheet-panel .checkbox-row { display:flex; align-items:center; gap:.65rem; }
+.share-logsheet-panel .modal-actions { display:flex; justify-content:flex-end; gap:.65rem; }
+
 .share-logsheet-panel {
   display: grid;
   gap: 1.1rem;

@@ -4,6 +4,7 @@ import { EntityImage } from "../../components/logbook/EntityImage";
 import { LogLinesMapView } from "../../components/logbook/OpenSeaMapView";
 import { formatLogSheetDuration } from "../../domain/logbook/sheet-metrics";
 import { formatMiles } from "../../lib/format-number";
+import { SharedLogbookCopy } from "../../components/logbook/SharedLogbookCopy";
 
 export default async function SharedLogbookPage({ params }: { params: Promise<{ segments?: string[] }> }) {
   const { segments = [] } = await params;
@@ -32,6 +33,7 @@ export default async function SharedLogbookPage({ params }: { params: Promise<{ 
   const hasLogLines = sheet.lines.length > 0;
   const hasMetrics = Boolean(metrics);
   const hasSupportContent = hasCrew || hasTechnicalLog || hasLogLines;
+  const returnPath = `/share/${segments.map(encodeURIComponent).join("/")}`;
 
   return (
     <main className="app-shell shared-logbook-page" data-can-copy={capability.canCopy}>
@@ -50,6 +52,8 @@ export default async function SharedLogbookPage({ params }: { params: Promise<{ 
             </div>
           )}
         </article>
+
+        <SharedLogbookCopy ownerId={shared.sourceOwnerId ?? ownerId ?? ""} sheetId={sheetId!} isAuthenticated={Boolean(session?.user?.id)} canCopy={capability.canCopy} requiresAuthentication={capability.requiresAuthentication} canIncludeCrew={hasCrew} canIncludePicture={Boolean(sheet.image)} returnPath={returnPath} />
 
         {hasMetrics ? (
           <section className="entry-metrics logbook-section" aria-label="Shared logbook summary">
