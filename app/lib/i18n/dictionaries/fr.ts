@@ -786,4 +786,10 @@ export const fr: Dictionary = {
   "sharedCopy.requestError": "La feuille n’a pas pu être copiée. Veuillez réessayer.",
   "sharedCopy.loadError": "Vos bateaux n’ont pas pu être chargés. Veuillez réessayer.",
 
+  "sharedCopy.missingRequiredPrefix": "Pour copier ce journal, le propriétaire doit partager :",
+  "sharedCopy.askOwner": "Veuillez demander au propriétaire de partager ces informations si vous souhaitez copier le journal.",
+  "sharedCopy.requiredMasterData": "données principales",
+  "sharedCopy.requiredLogLines": "lignes du journal",
+  "sharedCopy.requiredTechnicalLog": "journal technique",
+
 };

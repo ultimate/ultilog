@@ -786,4 +786,10 @@ export const it: Dictionary = {
   "sharedCopy.requestError": "Impossibile copiare il foglio. Riprova.",
   "sharedCopy.loadError": "Impossibile caricare le tue barche. Riprova.",
 
+  "sharedCopy.missingRequiredPrefix": "Per copiare questo giornale, il proprietario deve condividere:",
+  "sharedCopy.askOwner": "Chiedi al proprietario di condividere queste informazioni se desideri copiare il giornale.",
+  "sharedCopy.requiredMasterData": "dati principali",
+  "sharedCopy.requiredLogLines": "righe del giornale",
+  "sharedCopy.requiredTechnicalLog": "registro tecnico",
+
 };

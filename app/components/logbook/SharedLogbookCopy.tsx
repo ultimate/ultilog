@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { useI18n } from "../../lib/i18n";
+import type { CopyRequiredSection } from "../../domain/logbook/share-policy";
 
 type BoatSummary = { id: string; name: string; archived?: boolean };
 type Props = {
@@ -12,6 +13,7 @@ type Props = {
   isAuthenticated: boolean;
   canCopy: boolean;
   requiresAuthentication: boolean;
+  missingRequiredSections: CopyRequiredSection[];
   canIncludeCrew: boolean;
   canIncludePicture: boolean;
   returnPath: string;
@@ -28,6 +30,10 @@ export function eligibleBoats(value: unknown): BoatSummary[] {
 
 export function copiedSheetPath(id: string) {
   return `/details/${encodeURIComponent(id)}`;
+}
+
+export function copyActionDisabled(isAuthenticated: boolean, canCopy: boolean, boats: BoatSummary[] | null) {
+  return !isAuthenticated || !canCopy || boats === null || boats.length === 0;
 }
 
 export function SharedLogbookCopy(props: Props) {
@@ -60,13 +66,27 @@ export function SharedLogbookCopy(props: Props) {
     return () => { active = false; };
   }, [props.canCopy, props.isAuthenticated, t]);
 
-  if (!props.isAuthenticated) {
-    if (!props.canCopy && !props.requiresAuthentication) return null;
-    return <section className="logbook-section shared-copy-action"><p>{t("sharedCopy.signInExplanation")}</p><Link className="button-link" href={`/login?callbackUrl=${encodeURIComponent(props.returnPath)}`}>{t("sharedCopy.signIn")}</Link></section>;
-  }
-  if (!props.canCopy) return null;
-  if (boats === null) return <section className="logbook-section shared-copy-action"><p>{t("sharedCopy.loadingBoats")}</p></section>;
-  if (boats.length === 0) return <section className="logbook-section shared-copy-action"><h2>{t("sharedCopy.noBoatsTitle")}</h2><p>{error || t("sharedCopy.noBoats")}</p><Link className="button-link" href={`/boats?returnTo=${encodeURIComponent(props.returnPath)}`}>{t("sharedCopy.createBoat")}</Link></section>;
+  const missingSectionLabels: Record<CopyRequiredSection, string> = {
+    masterData: t("sharedCopy.requiredMasterData"),
+    logLines: t("sharedCopy.requiredLogLines"),
+    technicalLog: t("sharedCopy.requiredTechnicalLog"),
+  };
+  const isDisabled = copyActionDisabled(props.isAuthenticated, props.canCopy, boats);
+  const unavailableMessage = props.missingRequiredSections.length > 0 && !props.requiresAuthentication
+    ? `${t("sharedCopy.missingRequiredPrefix")} ${props.missingRequiredSections.map(section => missingSectionLabels[section]).join(", ")}. ${t("sharedCopy.askOwner")}`
+    : "";
+
+  if (!props.isAuthenticated) return <section className="logbook-section shared-copy-action" aria-describedby="shared-copy-guidance">
+    <button type="button" disabled>{t("sharedCopy.action")}</button>
+    <p id="shared-copy-guidance">{unavailableMessage || t("sharedCopy.signInExplanation")}</p>
+    {(props.canCopy || props.requiresAuthentication) ? <Link className="button-link" href={`/login?callbackUrl=${encodeURIComponent(props.returnPath)}`}>{t("sharedCopy.signIn")}</Link> : null}
+  </section>;
+  if (!props.canCopy) return <section className="logbook-section shared-copy-action" aria-describedby="shared-copy-guidance">
+    <button type="button" disabled>{t("sharedCopy.action")}</button>
+    <p id="shared-copy-guidance">{unavailableMessage}</p>
+  </section>;
+  if (boats === null) return <section className="logbook-section shared-copy-action"><button type="button" disabled>{t("sharedCopy.action")}</button><p>{t("sharedCopy.loadingBoats")}</p></section>;
+  if (boats.length === 0) return <section className="logbook-section shared-copy-action"><button type="button" disabled>{t("sharedCopy.action")}</button><div><h2>{t("sharedCopy.noBoatsTitle")}</h2><p>{error || t("sharedCopy.noBoats")}</p></div><Link className="button-link" href={`/boats?returnTo=${encodeURIComponent(props.returnPath)}`}>{t("sharedCopy.createBoat")}</Link></section>;
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -92,7 +112,7 @@ export function SharedLogbookCopy(props: Props) {
   }
 
   return <section className="logbook-section shared-copy-action">
-    <button type="button" onClick={() => setIsOpen(true)}>{t("sharedCopy.action")}</button>
+    <button type="button" disabled={isDisabled} onClick={() => setIsOpen(true)}>{t("sharedCopy.action")}</button>
     {isOpen ? <div className="share-logsheet-modal" role="dialog" aria-modal="true" aria-labelledby="shared-copy-title">
       <form className="share-logsheet-panel" onSubmit={submit}>
         <div className="share-logsheet-heading"><div><p className="eyebrow">{t("sharedCopy.eyebrow")}</p><h2 id="shared-copy-title">{t("sharedCopy.title")}</h2></div><button type="button" aria-label={t("sharedCopy.close")} onClick={() => setIsOpen(false)}>×</button></div>

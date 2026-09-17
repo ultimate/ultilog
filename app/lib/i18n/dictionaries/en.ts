@@ -784,6 +784,12 @@ export const en = {
   "sharedCopy.requestError": "The sheet could not be copied. Please try again.",
   "sharedCopy.loadError": "Your boats could not be loaded. Please try again.",
 
+  "sharedCopy.missingRequiredPrefix": "To copy this logbook, the owner must share",
+  "sharedCopy.askOwner": "Please ask the owner to share this information if you want to copy the logbook.",
+  "sharedCopy.requiredMasterData": "master data",
+  "sharedCopy.requiredLogLines": "log lines",
+  "sharedCopy.requiredTechnicalLog": "technical log",
+
 } as const;
 
 export type TranslationKey = keyof typeof en;

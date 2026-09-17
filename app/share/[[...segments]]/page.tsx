@@ -53,7 +53,7 @@ export default async function SharedLogbookPage({ params }: { params: Promise<{ 
           )}
         </article>
 
-        <SharedLogbookCopy ownerId={shared.sourceOwnerId ?? ownerId ?? ""} sheetId={sheetId!} isAuthenticated={Boolean(session?.user?.id)} canCopy={capability.canCopy} requiresAuthentication={capability.requiresAuthentication} canIncludeCrew={hasCrew} canIncludePicture={Boolean(sheet.image)} returnPath={returnPath} />
+        <SharedLogbookCopy ownerId={shared.sourceOwnerId ?? ownerId ?? ""} sheetId={sheetId!} isAuthenticated={Boolean(session?.user?.id)} canCopy={capability.canCopy} requiresAuthentication={capability.requiresAuthentication} missingRequiredSections={capability.missingRequiredSections} canIncludeCrew={hasCrew} canIncludePicture={Boolean(sheet.image)} returnPath={returnPath} />
 
         {hasMetrics ? (
           <section className="entry-metrics logbook-section" aria-label="Shared logbook summary">

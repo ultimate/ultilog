@@ -786,4 +786,10 @@ export const de: Dictionary = {
   "sharedCopy.requestError": "Das Blatt konnte nicht kopiert werden. Bitte versuche es erneut.",
   "sharedCopy.loadError": "Deine Boote konnten nicht geladen werden. Bitte versuche es erneut.",
 
+  "sharedCopy.missingRequiredPrefix": "Um dieses Logbuch zu kopieren, muss der Eigentümer Folgendes freigeben:",
+  "sharedCopy.askOwner": "Bitte den Eigentümer, diese Informationen freizugeben, wenn du das Logbuch kopieren möchtest.",
+  "sharedCopy.requiredMasterData": "Stammdaten",
+  "sharedCopy.requiredLogLines": "Logzeilen",
+  "sharedCopy.requiredTechnicalLog": "Techniklog",
+
 };
