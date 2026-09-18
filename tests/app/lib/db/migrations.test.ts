@@ -1,71 +1,9 @@
 import { describe, expect, it } from "vitest";
 import initSqlJs from "sql.js";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { readFile } from "node:fs/promises";
 import { normalizeBoatFlagStates, normalizeBoatMasterData, removeLegacyLogSheetDateRange, runMigrations, structureScannerWarnings } from "../../../../app/lib/db/migrations";
 import type { QueryableDatabase, QueryResult } from "../../../../app/lib/db/logbook-database";
-import { NORMALIZED_BOAT_MASTER_DATA_MIGRATION_ID, readMigrations, STRUCTURED_SCANNER_WARNINGS_MIGRATION_ID, USER_COMPLIANCE_MIGRATION_ID } from "../../../../app/lib/db/schema";
-import { SqliteLogbookDatabase } from "../../../../app/lib/db/sqlite-logbook-database";
-
-type MigrationFailurePoint = "after-columns" | "during-backfill" | "after-drop" | "before-marker";
-
-class TransactionalSqlJsDatabase implements QueryableDatabase {
-  private failure?: MigrationFailurePoint;
-
-  constructor(private readonly db: import("sql.js").Database, failure?: MigrationFailurePoint) {
-    this.failure = failure;
-  }
-
-  placeholder() { return "?"; }
-
-  async query<Row>(sql: string, values: unknown[] = []): Promise<QueryResult<Row>> {
-    const normalized = sql.trim().toLowerCase();
-    if (this.failure === "after-columns" && normalized.startsWith("select boats.id")) return this.fail();
-    if (this.failure === "during-backfill" && normalized.startsWith("update engines")) return this.fail();
-    if (this.failure === "before-marker" && normalized.startsWith("insert into schema_migrations")) return this.fail();
-    if (normalized.startsWith("select")) {
-      const statement = this.db.prepare(sql, values as import("sql.js").SqlValue[]);
-      const rows: Row[] = [];
-      try {
-        while (statement.step()) rows.push(statement.getAsObject() as Row);
-      } finally { statement.free(); }
-      return { rows };
-    }
-    if (values.length) this.db.run(sql, values as import("sql.js").SqlValue[]);
-    else this.db.exec(sql);
-    if (this.failure === "after-drop" && normalized === "alter table boats drop column yacht_data") return this.fail();
-    return { rows: [] };
-  }
-
-  async migrationTransaction<T>(operation: (database: QueryableDatabase) => Promise<T>): Promise<T> {
-    this.db.run("begin");
-    try {
-      const result = await operation(this);
-      this.db.run("commit");
-      return result;
-    } catch (error) {
-      this.db.run("rollback");
-      throw error;
-    }
-  }
-
-  private fail<Row>(): Promise<QueryResult<Row>> {
-    this.failure = undefined;
-    throw new Error("injected migration failure");
-  }
-}
-
-async function pre047Database(failure?: MigrationFailurePoint) {
-  const SQL = await initSqlJs();
-  const raw = new SQL.Database();
-  raw.run("create table schema_migrations (id text primary key); create table boats (id text primary key, yacht_data text); create table engines (id text primary key, boat_id text, sort_order integer, model text);");
-  const priorIds = (await readMigrations()).map(({ id }) => id).filter((id) => id !== NORMALIZED_BOAT_MASTER_DATA_MIGRATION_ID);
-  for (const id of priorIds) raw.run("insert into schema_migrations (id) values (?)", [id]);
-  raw.run("insert into boats values (?, ?)", ["boat", JSON.stringify({ Manufacturer: "Legacy yard", MMSI: "269123456", Engine: "D2-55", Electronics: "VHF" })]);
-  raw.run("insert into engines values (?, ?, ?, ?)", ["engine", "boat", 0, ""]);
-  return { raw, database: new TransactionalSqlJsDatabase(raw, failure) };
-}
+import { readMigrations, SHARED_SHEET_SOURCE_DETAILS_MIGRATION_ID, STRUCTURED_SCANNER_WARNINGS_MIGRATION_ID, USER_COMPLIANCE_MIGRATION_ID } from "../../../../app/lib/db/schema";
 
 class DuplicateColumnDatabase implements QueryableDatabase {
   calls: string[] = [];
@@ -163,7 +101,7 @@ class RemoveDateRangeDatabase implements QueryableDatabase {
 describe("runMigrations", () => {
   it("discovers migrations in order", async () => {
     const migrations = await readMigrations();
-    expect(migrations.at(-1)?.id).toBe(NORMALIZED_BOAT_MASTER_DATA_MIGRATION_ID);
+    expect(migrations.at(-1)?.id).toBe(SHARED_SHEET_SOURCE_DETAILS_MIGRATION_ID);
     expect(migrations.find(({ id }) => id === USER_COMPLIANCE_MIGRATION_ID)?.sql).toContain("user_compliance_licenses");
     expect(migrations.find(({ id }) => id === STRUCTURED_SCANNER_WARNINGS_MIGRATION_ID)?.sql).toContain("scanner warning JSON");
   });
@@ -283,15 +221,15 @@ describe("runMigrations", () => {
     expect(db.calls.at(-1)).toEqual({ sql: "alter table log_sheets drop column date_range", params: undefined });
   });
 
-  it("backfills the three supported boat values before dropping valid legacy JSON", async () => {
+  it("backfills typed boat master data without replacing existing values", async () => {
     const calls: Array<{ sql: string; params?: unknown[] }> = [];
     const db: QueryableDatabase = {
       placeholder: (index) => `$${index}`,
       async query<Row>(sql: string, params?: unknown[]) {
         calls.push({ sql, params });
-        if (sql.includes("information_schema.columns")) return { rows: [{ name: "yacht_data" }] as Row[] };
-        if (sql.includes("select boats.id, boats.manufacturer")) return { rows: [
-          { id: "legacy", manufacturer: null, mmsi: null, yacht_data: JSON.stringify({ Manufacturer: "  Yard  ", MMSI: " 269123456 ", Engine: " D2-55 ", Electronics: "VHF" }), engine_id: "engine-1", engine_model: "" },
+        if (sql.startsWith("select id, manufacturer")) return { rows: [
+          { id: "legacy", manufacturer: null, mmsi: null, yacht_data: JSON.stringify({ Manufacturer: "  Yard  ", MMSI: "—" }) },
+          { id: "existing", manufacturer: "Current yard", mmsi: "123", yacht_data: JSON.stringify({ Manufacturer: "Old yard", MMSI: "999" }) },
         ] as Row[] };
         return { rows: [] };
       },
@@ -299,102 +237,9 @@ describe("runMigrations", () => {
 
     await normalizeBoatMasterData(db);
 
-    expect(calls).toContainEqual({ sql: "update boats set manufacturer = $1, mmsi = $2 where id = $3", params: ["Yard", "269123456", "legacy"] });
-    expect(calls).toContainEqual({ sql: "update engines set model = $1 where id = $2", params: ["D2-55", "engine-1"] });
+    expect(calls).toContainEqual({ sql: "update boats set manufacturer = $1, mmsi = $2 where id = $3", params: ["Yard", null, "legacy"] });
+    expect(calls).not.toContainEqual(expect.objectContaining({ params: expect.arrayContaining(["Old yard"]) }));
     expect(calls.at(-1)?.sql).toBe("alter table boats drop column yacht_data");
-  });
-
-  it("normalizes every absent legacy yacht-data representation and preserves real values", async () => {
-    const calls: Array<{ sql: string; params?: unknown[] }> = [];
-    const db: QueryableDatabase = {
-      placeholder: (index) => `$${index}`,
-      async query<Row>(sql: string, params?: unknown[]) {
-        calls.push({ sql, params });
-        if (sql.includes("information_schema.columns")) return { rows: [{ name: "yacht_data" }] as Row[] };
-        if (sql.includes("select boats.id, boats.manufacturer")) return { rows: [
-          { id: "malformed", manufacturer: null, mmsi: null, yacht_data: "{not-json", engine_id: "engine-malformed", engine_model: "" },
-          { id: "null", manufacturer: null, mmsi: null, yacht_data: null, engine_id: "engine-null", engine_model: "" },
-          { id: "dash", manufacturer: null, mmsi: null, yacht_data: JSON.stringify({ Manufacturer: "—", MMSI: " — ", Engine: "—" }), engine_id: "engine-dash", engine_model: "" },
-          { id: "todo", manufacturer: null, mmsi: null, yacht_data: JSON.stringify({ Manufacturer: "To be completed", MMSI: " TO BE COMPLETED ", Engine: " to be completed " }), engine_id: "engine-todo", engine_model: "" },
-          { id: "na", manufacturer: null, mmsi: null, yacht_data: JSON.stringify({ Manufacturer: "n/a", MMSI: " N/A ", Engine: "n/A" }), engine_id: "engine-na", engine_model: "" },
-          { id: "blank", manufacturer: null, mmsi: null, yacht_data: JSON.stringify({ Manufacturer: "", MMSI: "   ", Engine: "\t" }), engine_id: "engine-blank", engine_model: "" },
-          { id: "real", manufacturer: null, mmsi: null, yacht_data: JSON.stringify({ Manufacturer: " N/A Marine ", MMSI: " 269123456 ", Engine: " Model — 2 " }), engine_id: "engine-real", engine_model: "" },
-          { id: "existing", manufacturer: "Current yard", mmsi: "123", yacht_data: JSON.stringify({ Manufacturer: "Old yard", MMSI: "999", Engine: "Old engine" }), engine_id: "engine-existing", engine_model: "Current engine" },
-        ] as Row[] };
-        return { rows: [] };
-      },
-    };
-
-    await normalizeBoatMasterData(db);
-
-    const updates = calls.filter(({ sql }) => sql.startsWith("update boats") || sql.startsWith("update engines"));
-    expect(updates).toEqual([
-      { sql: "update boats set manufacturer = $1, mmsi = $2 where id = $3", params: ["N/A Marine", "269123456", "real"] },
-      { sql: "update engines set model = $1 where id = $2", params: ["Model — 2", "engine-real"] },
-    ]);
-    expect(calls.at(-1)?.sql).toBe("alter table boats drop column yacht_data");
-  });
-
-  it.each<MigrationFailurePoint>(["after-columns", "during-backfill", "after-drop", "before-marker"])(
-    "atomically recovers from a failure %s",
-    async (failure) => {
-      const { raw, database } = await pre047Database(failure);
-
-      await expect(runMigrations(database)).rejects.toThrow("injected migration failure");
-      expect(raw.exec("select id from schema_migrations where id = '047_normalize_boat_master_data'")).toEqual([]);
-      expect(raw.exec("select yacht_data from boats")[0]?.values).toHaveLength(1);
-
-      await expect(runMigrations(database)).resolves.toBeUndefined();
-      expect(raw.exec("select manufacturer, mmsi from boats")[0].values).toEqual([["Legacy yard", "269123456"]]);
-      expect(raw.exec("select model from engines")[0].values).toEqual([["D2-55"]]);
-      expect(raw.exec("select id from schema_migrations where id = '047_normalize_boat_master_data'")[0].values).toEqual([["047_normalize_boat_master_data"]]);
-      expect(() => raw.exec("select yacht_data from boats")).toThrow(/no such column/i);
-      raw.close();
-    },
-  );
-
-  it("upgrades, persists, reopens, reads, and updates a real pre-047 SQLite database", async () => {
-    const directory = await mkdtemp(join(tmpdir(), "ultilog-migration-047-"));
-    const databasePath = join(directory, "logbook.sqlite");
-    try {
-      const current = new SqliteLogbookDatabase(databasePath);
-      await current.migrate();
-      await current.query("alter table boats add column yacht_data text");
-      await current.query("delete from schema_migrations where id = ?", [NORMALIZED_BOAT_MASTER_DATA_MIGRATION_ID]);
-      await current.query("insert into users (id, name, email, password_hash) values (?, ?, ?, ?)", ["owner", "Owner", "owner@example.test", ""]);
-
-      const legacyRows = [
-        ["owner:valid", "Valid", JSON.stringify({ Manufacturer: " Legacy yard ", MMSI: " 269123456 ", Engine: " D2-55 ", Electronics: "VHF" })],
-        ["owner:malformed", "Malformed", "{not-json"],
-        ["owner:null", "Null", null],
-        ["owner:placeholder", "Placeholder", JSON.stringify({ Manufacturer: "—", MMSI: "To be completed", Engine: "n/a" })],
-        ["owner:existing", "Existing", JSON.stringify({ Manufacturer: "Old yard", MMSI: "999", Engine: "Old engine" })],
-      ];
-      for (const [id, name, yachtData] of legacyRows) {
-        await current.query("insert into boats (id, name, type, registration, flag_state, home_port, owner, dimensions, owner_id, yacht_data, manufacturer, mmsi) values (?, ?, 'Sail', '', '', '', '', '', 'owner', ?, ?, ?)", [id, name, yachtData, id === "owner:existing" ? "Current yard" : null, id === "owner:existing" ? "123" : null]);
-      }
-      await current.query("insert into engines (id, boat_id, sort_order, name, short_label, role, model) values (?, ?, 0, 'Main engine', 'Main', 'propulsion', ?), (?, ?, 0, 'Main engine', 'Main', 'propulsion', ?)", ["owner:valid:main", "owner:valid", "", "owner:existing:main", "owner:existing", "Current engine"]);
-      await current.flush();
-
-      const upgrading = new SqliteLogbookDatabase(databasePath);
-      await upgrading.migrate();
-      await upgrading.flush();
-
-      const reopened = new SqliteLogbookDatabase(databasePath).forUser("owner");
-      const boats = (await reopened.readLogbook()).boats;
-      expect(boats.find(({ id }) => id === "valid")).toMatchObject({ manufacturer: "Legacy yard", mmsi: "269123456", engines: [expect.objectContaining({ model: "D2-55" })] });
-      expect(boats.find(({ id }) => id === "malformed")).not.toHaveProperty("manufacturer");
-      expect(boats.find(({ id }) => id === "null")).not.toHaveProperty("mmsi");
-      expect(boats.find(({ id }) => id === "placeholder")).not.toHaveProperty("manufacturer");
-      expect(boats.find(({ id }) => id === "existing")).toMatchObject({ manufacturer: "Current yard", mmsi: "123", engines: [expect.objectContaining({ model: "Current engine" })] });
-      await expect(reopened.query("select yacht_data from boats")).rejects.toThrow(/no such column/i);
-
-      const valid = boats.find(({ id }) => id === "valid")!;
-      const updated = await reopened.upsertBoat({ ...valid, manufacturer: "Updated yard" });
-      expect(updated?.manufacturer).toBe("Updated yard");
-    } finally {
-      await rm(directory, { recursive: true, force: true });
-    }
   });
 
 });

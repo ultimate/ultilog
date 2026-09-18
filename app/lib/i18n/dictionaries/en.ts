@@ -790,6 +790,10 @@ export const en = {
   "sharedCopy.requiredLogLines": "log lines",
   "sharedCopy.requiredTechnicalLog": "technical log",
 
+  "details.sharedSource.label": "Imported logsheet information",
+  "details.sharedSource.heading": "Imported from a shared logsheet",
+  "details.sharedSource.notice": "This logsheet was copied from {owner}, sheet “{sheet}”, on {date}.",
+
 } as const;
 
 export type TranslationKey = keyof typeof en;

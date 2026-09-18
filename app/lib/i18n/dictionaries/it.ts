@@ -792,4 +792,8 @@ export const it: Dictionary = {
   "sharedCopy.requiredLogLines": "righe del giornale",
   "sharedCopy.requiredTechnicalLog": "registro tecnico",
 
+  "details.sharedSource.label": "Informazioni sul foglio importato",
+  "details.sharedSource.heading": "Importato da un foglio condiviso",
+  "details.sharedSource.notice": "Questo foglio è stato copiato dal foglio “{sheet}” di {owner} il {date}.",
+
 };

@@ -94,7 +94,12 @@ export function validatePersistedLogbook(value: unknown): PersistedLogbook {
     if (totalLines > LOGBOOK_LIMITS.logLines) throw new LogbookValidationError("Too many log lines.", "limit", "too_many_log_lines");
     if (sheet.share !== undefined) assert(record(sheet.share) && ["masterData", "picture", "logLines", "metrics", "technicalLog", "skipper", "crew"].every(k => ["private", "registered", "public"].includes((sheet.share as Record<string, unknown>)[k] as string)), `sheets[${i}].share is malformed.`);
     if (sheet.metrics !== undefined) assert(record(sheet.metrics) && Object.entries(sheet.metrics).every(([, x]) => x === null || finite(x) || numberRecord(x)), `sheets[${i}].metrics is malformed.`);
-    assert(optional(sheet.source, x => x === "manual" || x === "scanner") && optional(sheet.verificationNote, string) && optional(sheet.scannerWarnings, scannerWarnings), `sheets[${i}] optional values are malformed.`);
+    const sourceDetails = sheet.sourceDetails;
+    const validSourceDetails = sourceDetails === undefined || record(sourceDetails)
+      && string(sourceDetails.ownerName) && string(sourceDetails.sheetTitle) && isoTimestamp(sourceDetails.importedAt);
+    assert(optional(sheet.source, x => x === "manual" || x === "scanner" || x === "shared") && validSourceDetails
+      && (sheet.source === "shared" ? sourceDetails !== undefined : sourceDetails === undefined)
+      && optional(sheet.verificationNote, string) && optional(sheet.scannerWarnings, scannerWarnings), `sheets[${i}] optional values are malformed.`);
     if (sheet.scannerWarnings !== undefined) {
       const warningIds = (sheet.scannerWarnings as Array<{ id: string }>).map(warning => warning.id);
       assert(new Set(warningIds).size === warningIds.length, `sheets[${i}].scannerWarnings IDs must be unique.`);

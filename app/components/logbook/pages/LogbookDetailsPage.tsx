@@ -79,7 +79,7 @@ type LogbookDetailsPageProps = Record<string, any>;
 
 export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const { t } = useI18n();
-  const { formatTime } = useDateTimeFormat();
+  const { formatTime, formatDateTime } = useDateTimeFormat();
   const {
     isBackendReady,
     hasSelectedSheet,
@@ -243,6 +243,12 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     ["crew", "Crew information"],
   ] as const;
   const showScannerDraftNotice = activeSheet.source === "scanner";
+  const sharedSourceNotice = activeSheet.source === "shared" && activeSheet.sourceDetails
+    ? t("details.sharedSource.notice")
+      .replace("{owner}", activeSheet.sourceDetails.ownerName)
+      .replace("{sheet}", activeSheet.sourceDetails.sheetTitle)
+      .replace("{date}", formatDateTime(activeSheet.sourceDetails.importedAt))
+    : "";
   const courseConversionSequences = useRef<Record<string, number>>({});
   const sheetImageInputRef = useRef<HTMLInputElement>(null);
 
@@ -904,6 +910,12 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
 
           {!showNewSheet && (
             <>
+              {sharedSourceNotice && (
+                <aside className="scanner-draft-notice logbook-section" aria-label={t("details.sharedSource.label")}>
+                  <div className="scanner-draft-notice-icon" aria-hidden="true">ℹ️</div>
+                  <div><h3>{t("details.sharedSource.heading")}</h3><p>{sharedSourceNotice}</p></div>
+                </aside>
+              )}
               {showScannerDraftNotice && (
                 <aside
                   className="scanner-draft-notice logbook-section"

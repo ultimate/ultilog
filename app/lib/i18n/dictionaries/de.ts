@@ -792,4 +792,8 @@ export const de: Dictionary = {
   "sharedCopy.requiredLogLines": "Logzeilen",
   "sharedCopy.requiredTechnicalLog": "Techniklog",
 
+  "details.sharedSource.label": "Information zum importierten Logblatt",
+  "details.sharedSource.heading": "Aus einem geteilten Logblatt importiert",
+  "details.sharedSource.notice": "Dieses Logblatt wurde am {date} von {owner} aus dem Blatt „{sheet}“ kopiert.",
+
 };

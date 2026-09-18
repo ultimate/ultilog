@@ -21,8 +21,10 @@ export class LogSheetsRepository {
 
     const metrics = calculateLogSheetMetrics(sheet.lines, sheet.route, { stationaryDistanceThresholdNm: motionStationaryThresholdNm });
     const revision = expectedRevision(sheet.revision);
+    const source = existing.source === "shared" ? existing.source : sheet.source;
+    const sourceDetails = existing.source === "shared" ? existing.source_details : sheet.sourceDetails;
     const values = [
-      sheet.title, sheet.status, sheet.source ?? null, sheet.verificationNote ?? null,
+      sheet.title, sheet.status, source ?? null, sourceDetails ? (typeof sourceDetails === "string" ? sourceDetails : JSON.stringify(sourceDetails)) : null, sheet.verificationNote ?? null,
       sheet.scannerWarnings ? JSON.stringify(sheet.scannerWarnings) : null,
       scopedId(ownerId, sheet.boatId), JSON.stringify({}), JSON.stringify(sheet.route),
       JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan),
@@ -35,14 +37,14 @@ export class LogSheetsRepository {
       scopedId(ownerId, sheet.id), ownerId, revision,
     ];
     const columns = [
-      "title", "status", "source", "verification_note", "scanner_warnings", "boat_id", "skipper", "route",
+      "title", "status", "source", "source_details", "verification_note", "scanner_warnings", "boat_id", "skipper", "route",
       "weather_briefing", "day_summary", "remarks", "watch_plan", "technical_checks", "engine_hour_counters", "image_id",
       "motor_miles", "sail_miles", "total_miles", "duration_minutes", "motor_hours", "overall_duration_minutes", "motion_duration_minutes",
       "share_privacy", "share_master_data", "share_picture", "share_loglines", "share_metrics", "share_technical_log", "share_skipper", "share_crew",
     ];
     const assignments = columns.map((column, index) => `${column} = ${this.db.placeholder(index + 1)}`).join(", ");
     const result = await this.db.query<{ revision: number }>(
-      `update log_sheets set ${assignments}, revision = revision + 1, updated_at = ${this.now()} where id = ${this.db.placeholder(31)} and owner_id = ${this.db.placeholder(32)} and revision = ${this.db.placeholder(33)} returning revision`,
+      `update log_sheets set ${assignments}, revision = revision + 1, updated_at = ${this.now()} where id = ${this.db.placeholder(32)} and owner_id = ${this.db.placeholder(33)} and revision = ${this.db.placeholder(34)} returning revision`,
       values,
     );
     if (!result.rows.length) throw Object.assign(new Error("The log sheet was changed by another request."), { code: "revision_conflict" });
@@ -69,8 +71,8 @@ export class LogSheetsRepository {
   async insert(sheet: LogSheet, ownerId: string, motionStationaryThresholdNm = 0.1) {
     const metrics = calculateLogSheetMetrics(sheet.lines, sheet.route, { stationaryDistanceThresholdNm: motionStationaryThresholdNm });
     await this.db.query(
-      `insert into log_sheets (id, title, status, source, verification_note, scanner_warnings, boat_id, skipper, route, weather_briefing, day_summary, remarks, watch_plan, technical_checks, engine_hour_counters, image_id, owner_id, motor_miles, sail_miles, total_miles, duration_minutes, motor_hours, overall_duration_minutes, motion_duration_minutes, share_privacy, share_master_data, share_picture, share_loglines, share_metrics, share_technical_log, share_skipper, share_crew) values (${this.values(32)})`,
-      [scopedId(ownerId, sheet.id), sheet.title, sheet.status, sheet.source ?? null, sheet.verificationNote ?? null, sheet.scannerWarnings ? JSON.stringify(sheet.scannerWarnings) : null, scopedId(ownerId, sheet.boatId), JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), JSON.stringify(sheet.engineHourCounters ?? {}), sheet.imageId ?? sheet.image?.id ?? null, ownerId, metrics.motorMiles, metrics.sailMiles, metrics.totalMiles, metrics.durationMinutes, metrics.motorHours, metrics.overallDurationMinutes, metrics.motionDurationMinutes, overallPrivacy(sheet.share), privacyFor(sheet.share?.masterData), privacyFor(sheet.share?.picture), privacyFor(sheet.share?.logLines), privacyFor(sheet.share?.metrics), privacyFor(sheet.share?.technicalLog), privacyFor(sheet.share?.skipper), privacyFor(sheet.share?.crew)],
+      `insert into log_sheets (id, title, status, source, source_details, verification_note, scanner_warnings, boat_id, skipper, route, weather_briefing, day_summary, remarks, watch_plan, technical_checks, engine_hour_counters, image_id, owner_id, motor_miles, sail_miles, total_miles, duration_minutes, motor_hours, overall_duration_minutes, motion_duration_minutes, share_privacy, share_master_data, share_picture, share_loglines, share_metrics, share_technical_log, share_skipper, share_crew) values (${this.values(33)})`,
+      [scopedId(ownerId, sheet.id), sheet.title, sheet.status, sheet.source ?? null, sheet.sourceDetails ? JSON.stringify(sheet.sourceDetails) : null, sheet.verificationNote ?? null, sheet.scannerWarnings ? JSON.stringify(sheet.scannerWarnings) : null, scopedId(ownerId, sheet.boatId), JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), JSON.stringify(sheet.engineHourCounters ?? {}), sheet.imageId ?? sheet.image?.id ?? null, ownerId, metrics.motorMiles, metrics.sailMiles, metrics.totalMiles, metrics.durationMinutes, metrics.motorHours, metrics.overallDurationMinutes, metrics.motionDurationMinutes, overallPrivacy(sheet.share), privacyFor(sheet.share?.masterData), privacyFor(sheet.share?.picture), privacyFor(sheet.share?.logLines), privacyFor(sheet.share?.metrics), privacyFor(sheet.share?.technicalLog), privacyFor(sheet.share?.skipper), privacyFor(sheet.share?.crew)],
     );
     return this.findById(sheet.id, ownerId);
   }
@@ -174,6 +176,7 @@ function mapStoredSheet(sheet: LogSheetRow): StoredLogSheet {
     title: sheet.title,
     status: sheet.status,
     ...(sheet.source ? { source: sheet.source } : {}),
+    ...(sheet.source_details ? { sourceDetails: parseJson<NonNullable<LogSheet["sourceDetails"]>>(sheet.source_details) } : {}),
     ...(sheet.verification_note ? { verificationNote: sheet.verification_note } : {}),
     ...(sheet.scanner_warnings ? { scannerWarnings: parseJson<ScannerWarning[]>(sheet.scanner_warnings) } : {}),
     boatId: unscopedId(sheet.boat_id),
