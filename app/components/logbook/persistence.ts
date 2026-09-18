@@ -74,8 +74,11 @@ export const persistBoat = (boat: Boat, isNew = false, options?: RequestOptions)
   entityRequest(isNew ? "/api/logbook/boats" : `/api/logbook/boats/${encodeURIComponent(boat.id)}`, isNew ? "POST" : "PUT", boat, options);
 export const persistCrewMember = (crew: CrewMember, isNew = false, options?: RequestOptions) =>
   entityRequest(isNew ? "/api/logbook/crew" : `/api/logbook/crew/${encodeURIComponent(crew.id)}`, isNew ? "POST" : "PUT", crew, options);
-export const persistSheet = (sheet: LogSheet, isNew = false, options?: RequestOptions) =>
-  entityRequest(isNew ? "/api/logbook/sheets" : `/api/logbook/sheets/${encodeURIComponent(sheet.id)}`, isNew ? "POST" : "PUT", sheet, options);
+export const persistSheet = (sheet: LogSheet, isNew = false, options?: RequestOptions) => {
+  // Copy provenance is immutable server metadata, not part of focused writes.
+  const { copyProvenance: _copyProvenance, ...focusedSheet } = sheet;
+  return entityRequest(isNew ? "/api/logbook/sheets" : `/api/logbook/sheets/${encodeURIComponent(sheet.id)}`, isNew ? "POST" : "PUT", focusedSheet, options);
+};
 export const persistLogLine = (sheetId: string, line: LogLine, isNew: boolean) =>
   entityRequest(`/api/logbook/sheets/${encodeURIComponent(sheetId)}/lines${isNew ? "" : `/${encodeURIComponent(line.id)}`}`, isNew ? "POST" : "PUT", line);
 export const deleteLogLine = (sheetId: string, lineId: string, revision: number) => deletionRequest(`/api/logbook/sheets/${encodeURIComponent(sheetId)}/lines/${encodeURIComponent(lineId)}`, revision);

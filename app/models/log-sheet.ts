@@ -30,6 +30,16 @@ export type TechnicalCheck = { status: string; text: string };
 export type EngineHourCounter = { start?: number; end?: number };
 export type ScannerWarning = ScannerWarningDiagnostic & { id: string; acknowledgedAt?: string };
 
+/** Server-managed identity of the shared sheet from which this detached sheet was copied. */
+export type LogSheetCopyProvenance = {
+  sourceOwnerId: string;
+  sourceSheetId: string;
+  sourceRevision: number;
+  copiedAt: string;
+  /** A snapshot for display; the source is not expected to remain available. */
+  sourceTitle?: string;
+};
+
 export type LogSheet = {
   revision?: number;
   createdAt?: string;
@@ -43,6 +53,7 @@ export type LogSheet = {
     sheetTitle: string;
     importedAt: string;
   };
+  copyProvenance?: LogSheetCopyProvenance;
   verificationNote?: string;
   scannerWarnings?: ScannerWarning[];
   boatId: string;
@@ -65,6 +76,6 @@ export type LogSheet = {
 };
 
 /** Write model for the focused sheet endpoints. */
-export type FocusedLogSheet = Omit<LogSheet, "crew" | "lines"> & {
+export type FocusedLogSheet = Omit<LogSheet, "crew" | "lines" | "copyProvenance"> & {
   crew: SheetCrewAssignment[];
 };

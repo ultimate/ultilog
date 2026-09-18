@@ -46,6 +46,7 @@ describe("logbook persistence", () => {
       id: "sheet-1",
       title: "Edited",
       boatId: "boat-1",
+      copyProvenance: { sourceOwnerId: "owner", sourceSheetId: "source", sourceRevision: 3, copiedAt: "2026-09-18T10:00:00.000Z", sourceTitle: "Original" },
       lines: [{ ...sourceSheet.lines[0], id: "line-1", time: "2026-08-11T10:00", remarks: "later edit" }],
     };
 
@@ -56,7 +57,7 @@ describe("logbook persistence", () => {
     expect(url).toBe("/api/logbook/sheets/sheet-1");
     expect(init.method).toBe("PUT");
     expect(JSON.parse(init.body)).toEqual({
-      ...Object.fromEntries(Object.entries(sheet).filter(([key]) => !["lines", "crew"].includes(key))),
+      ...Object.fromEntries(Object.entries(sheet).filter(([key]) => !["lines", "crew", "copyProvenance"].includes(key))),
       crew: sheet.crew.map(({ id, embarkationDateTime, embarkationPosition, disembarkationDateTime, disembarkationPosition }) =>
         ({ id, embarkationDateTime, embarkationPosition, disembarkationDateTime, disembarkationPosition })),
     });
@@ -66,6 +67,7 @@ describe("logbook persistence", () => {
     expect(init.body).not.toContain('"address"');
     expect(init.body).not.toContain('"certificate"');
     expect(init.body).not.toContain('"lines"');
+    expect(init.body).not.toContain('"copyProvenance"');
     expect(init.body).not.toContain("unrelated-sheet");
     expect(init.body).not.toContain("base64-image");
     expect(init.body).not.toContain('"boats"');

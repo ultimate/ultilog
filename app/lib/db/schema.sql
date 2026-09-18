@@ -141,6 +141,11 @@ create table if not exists log_sheets (
   owner_id text not null references users(id) on delete cascade,
   source text,
   source_details text,
+  source_owner_id text,
+  source_sheet_id text,
+  source_revision integer,
+  copied_at text,
+  source_title text,
   verification_note text,
   scanner_warnings text,
   image_data text,
@@ -179,6 +184,7 @@ create table if not exists engines (
 );
 
 create index if not exists log_sheets_share_privacy_idx on log_sheets (share_privacy);
+create index if not exists log_sheets_copy_source_idx on log_sheets (owner_id, source_owner_id, source_sheet_id);
 create index if not exists log_sheets_total_miles_idx on log_sheets (total_miles);
 create index if not exists log_sheets_duration_minutes_idx on log_sheets (duration_minutes);
 create index if not exists log_sheets_overall_duration_minutes_idx on log_sheets (overall_duration_minutes);
