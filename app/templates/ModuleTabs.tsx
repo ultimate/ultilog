@@ -1,5 +1,4 @@
 import Image from "next/image";
-import Link from "next/link";
 import { LocaleSelect, MobileLocaleAction, useI18n } from "../lib/i18n";
 import { moduleTabs, type ModuleTab } from "./app-shell";
 
@@ -69,7 +68,6 @@ export function ModuleTabs({ activeModule, onSelectModule, onOpenProfile, theme,
         <section className="sync-icon-card" aria-label={t("nav.cloudSyncStatus")}><span className="sync-icon" aria-hidden="true" /></section>
         <LocaleSelect className="sidebar-control-row locale-select" />
         <div className="sidebar-control-row"><button className="theme-toggle" type="button" onClick={onToggleTheme}><span className="theme-icon" aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span><span>{theme === "dark" ? t("nav.light") : t("nav.dark")}</span></button></div>
-        <Link className="legal-help-link" href="/legal" aria-label="Legal notice and contact"><span aria-hidden="true">?</span><strong>Legal &amp; contact</strong></Link>
         <button className={`profile-card ${activeModule === "profile" ? "active" : ""}`} type="button" onClick={onOpenProfile}><span>{userAvatar ? <Image unoptimized className="user-avatar" src={userAvatar} alt="" width={32} height={32} /> : <Image className="nav-svg-icon" src="/icons/icon_profile.svg" alt="" width={24} height={24} />}</span><strong>{userName ?? t("nav.profile")}</strong><small>{userEmail ?? t("nav.noEmail")}</small></button>
         <button className="logout-chip" type="button" onClick={onLogout} disabled={isLoggingOut} aria-label={t("nav.logout")}>{isLoggingOut ? t("nav.signingOut") : t("nav.logout")}</button>
       </aside>
@@ -78,7 +76,6 @@ export function ModuleTabs({ activeModule, onSelectModule, onOpenProfile, theme,
         <button className="mobile-sync-action" type="button" disabled aria-label={t("nav.synced")}><span className="sync-icon" aria-hidden="true" /></button>
         <MobileLocaleAction className="mobile-locale-action" />
         <button className="mobile-theme-action" type="button" onClick={onToggleTheme} aria-label={theme === "dark" ? t("nav.switchLight") : t("nav.switchDark")}><span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span><small>{theme === "dark" ? t("nav.light") : t("nav.dark")}</small></button>
-        <Link className="mobile-legal-action" href="/legal" aria-label="Legal notice and contact"><span aria-hidden="true">?</span><small>Legal</small></Link>
         <button className={`mobile-profile-action ${activeModule === "profile" ? "active" : ""}`} type="button" onClick={onOpenProfile} aria-label={t("nav.profile")}><span aria-hidden="true">{userAvatar ? <Image unoptimized className="user-avatar" src={userAvatar} alt="" width={32} height={32} /> : <Image className="nav-svg-icon" src="/icons/icon_profile.svg" alt="" width={24} height={24} />}</span><small>{t("nav.profile")}</small></button>
       </nav>
     </>

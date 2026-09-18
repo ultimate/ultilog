@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useI18n } from "../../../lib/i18n";
 import type { ChangeEvent, FormEvent, Dispatch, ReactNode, SetStateAction } from "react";
 import type { Boat, PersistedLogbook } from "../../../models/logbook";
@@ -206,9 +207,12 @@ export function ProfilePage(props: ProfilePageProps) {
           <h1>{t("profile.title")}</h1>
           <p>{t("profile.subtitle")}</p>
         </div>
-        <button className="secondary-action" type="button" onClick={logout} disabled={isLoggingOut}>
-          {isLoggingOut ? t("nav.signingOut") : t("nav.logout")}
-        </button>
+        <div className="profile-heading-actions">
+          <Link className="secondary-action" href="/legal">Legal &amp; contact</Link>
+          <button className="secondary-action" type="button" onClick={logout} disabled={isLoggingOut}>
+            {isLoggingOut ? t("nav.signingOut") : t("nav.logout")}
+          </button>
+        </div>
       </div>
       <section className="profile-grid">
         <article className="profile-hero-card">
