@@ -3,6 +3,7 @@
 import { FormEvent, ReactNode, useState } from "react";
 import { signIn } from "next-auth/react";
 import Image from "next/image";
+import Link from "next/link";
 import { LocaleSelect, useI18n } from "../lib/i18n";
 import { PasswordField } from "./PasswordField";
 import { PASSWORD_MAX_UTF8_BYTES, PASSWORD_MIN_CHARACTERS } from "../lib/security/password-policy";
@@ -171,6 +172,13 @@ export function AuthForm({ mode, footer }: Props) {
           />
         </a>
       </section>
+      <nav className="public-legal-bar" aria-label="Legal information">
+        <Link href="/legal">Legal notice &amp; contact</Link>
+        <span aria-hidden="true">·</span>
+        <a href="mailto:ultilog@verkin.de">ultilog@verkin.de</a>
+        <span aria-hidden="true">·</span>
+        <a href="https://github.com/verkin/ultilog" target="_blank" rel="noopener noreferrer">GitHub</a>
+      </nav>
     </main>
   );
 }
