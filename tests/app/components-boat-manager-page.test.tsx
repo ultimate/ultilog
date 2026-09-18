@@ -43,6 +43,13 @@ function renderManager(logbook: PersistedLogbook, selectedBoat: Boat, flagState 
 }
 
 describe("BoatManagerPage archiving", () => {
+  it("renders translated master-data guidance as placeholders rather than form values", () => {
+    const markup = renderManager({ boats: [boat], crewMembers: [], sheets: [] }, boat);
+
+    expect(markup.match(/placeholder="To be completed"/g)).toHaveLength(2);
+    expect(markup).toContain('placeholder="To be completed" value=""');
+  });
+
   it("stores an ISO code while showing the selected country flag", () => {
     const markup = renderManager({ boats: [boat], crewMembers: [], sheets: [] }, boat, "CH");
 

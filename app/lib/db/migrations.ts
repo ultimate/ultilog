@@ -13,7 +13,7 @@ type CrewAssignmentRow = { sheet_id: string; crew_member_id: string; sort_order:
 type LegacyLogSheetDateRow = { id: string; date_range: string; route: unknown };
 type LegacyBoatEngineRow = { boat_id: string; yacht_data: unknown; engine_id: string; model: string };
 type LegacyBoatFlagRow = { id: string; flag_state: string };
-type LegacyBoatMasterDataRow = { id: string; manufacturer: string | null; mmsi: string | null; yacht_data: unknown };
+type LegacyBoatMasterDataRow = { id: string; manufacturer: string | null; mmsi: string | null; yacht_data: unknown; engine_id: string | null; engine_model: string | null };
 type ScannerWarningsRow = { id: string; scanner_warnings: unknown };
 import { readMigrations } from "./schema";
 
@@ -30,8 +30,12 @@ export async function runMigrations(db: QueryableDatabase) {
 
   for (const migration of await readMigrations()) {
     if (applied.has(migration.id)) continue;
-    await applyMigration(db, migration.id, migration.sql);
-    await db.query(`insert into schema_migrations (id) values (${db.placeholder(1)})`, [migration.id]);
+    const applyAndRecord = async (target: QueryableDatabase) => {
+      await applyMigration(target, migration.id, migration.sql);
+      await target.query(`insert into schema_migrations (id) values (${target.placeholder(1)})`, [migration.id]);
+    };
+    if (db.migrationTransaction) await db.migrationTransaction(applyAndRecord);
+    else await applyAndRecord(db);
   }
 }
 
@@ -87,7 +91,16 @@ async function applyMigration(db: QueryableDatabase, id: string, sql: string) {
 
 /** Moves useful boat master data into typed columns and retires the legacy JSON blob. */
 export async function normalizeBoatMasterData(db: QueryableDatabase) {
+  const columnRows = db.placeholder(1) === "$1"
+    ? await db.query<{ name: string }>("select column_name as name from information_schema.columns where table_schema = current_schema() and table_name = 'boats'")
+    : await db.query<{ name: string }>("select name from pragma_table_info('boats')");
+  const columns = new Set(columnRows.rows.map(({ name }) => name));
+  // Some lightweight migration adapters cannot expose schema metadata. An empty
+  // result means "unknown", not "the legacy column is absent".
+  const schemaIsKnown = columns.size > 0;
+  if (schemaIsKnown && !columns.has("yacht_data")) return;
   for (const column of ["manufacturer", "mmsi"]) {
+    if (columns.has(column)) continue;
     try {
       await db.query(`alter table boats add column ${column} text`);
     } catch (error) {
@@ -95,13 +108,24 @@ export async function normalizeBoatMasterData(db: QueryableDatabase) {
     }
   }
 
-  const boats = await db.query<LegacyBoatMasterDataRow>("select id, manufacturer, mmsi, yacht_data from boats");
+  const boats = schemaIsKnown
+    ? await db.query<LegacyBoatMasterDataRow>(`
+      select boats.id, boats.manufacturer, boats.mmsi, boats.yacht_data,
+        engines.id as engine_id, engines.model as engine_model
+      from boats
+      left join engines on engines.boat_id = boats.id and engines.sort_order = 0
+    `)
+    : await db.query<LegacyBoatMasterDataRow>("select id, manufacturer, mmsi, yacht_data from boats");
   for (const boat of boats.rows) {
     const data = parseYachtData(boat.yacht_data);
     const manufacturer = boat.manufacturer || migratedMasterDataValue(data.Manufacturer);
     const mmsi = boat.mmsi || migratedMasterDataValue(data.MMSI);
     if (manufacturer !== boat.manufacturer || mmsi !== boat.mmsi) {
       await db.query(`update boats set manufacturer = ${db.placeholder(1)}, mmsi = ${db.placeholder(2)} where id = ${db.placeholder(3)}`, [manufacturer, mmsi, boat.id]);
+    }
+    const engineModel = migratedMasterDataValue(data.Engine);
+    if (boat.engine_id && !boat.engine_model?.trim() && engineModel) {
+      await db.query(`update engines set model = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [engineModel, boat.engine_id]);
     }
   }
   await db.query("alter table boats drop column yacht_data");
@@ -110,7 +134,8 @@ export async function normalizeBoatMasterData(db: QueryableDatabase) {
 function migratedMasterDataValue(value: unknown): string | null {
   if (typeof value !== "string") return null;
   const normalized = value.trim();
-  return !normalized || normalized === "—" || normalized.toLowerCase() === "to be completed" ? null : normalized;
+  const normalizedPlaceholder = normalized.toLowerCase();
+  return !normalized || normalized === "—" || normalizedPlaceholder === "to be completed" || normalizedPlaceholder === "n/a" ? null : normalized;
 }
 
 type LegacyStorageBoatRow = { id: string; wind_drift_table: unknown };
@@ -256,9 +281,9 @@ async function moveLegacyBoatEngine(db: QueryableDatabase) {
 
   for (const row of rows.rows) {
     const yachtData = parseYachtData(row.yacht_data);
-    const legacyEngine = typeof yachtData.Engine === "string" ? yachtData.Engine.trim() : "";
+    const legacyEngine = migratedMasterDataValue(yachtData.Engine);
     delete yachtData.Engine;
-    if (legacyEngine && legacyEngine !== "—" && !row.model.trim()) {
+    if (legacyEngine && !row.model.trim()) {
       await db.query(`update engines set model = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [legacyEngine, row.engine_id]);
     }
     await db.query(`update boats set yacht_data = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [JSON.stringify(yachtData), row.boat_id]);

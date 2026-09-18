@@ -128,7 +128,8 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
         });
         context.database.forUser(context.owner);
         const copied = await context.database.copySharedSheet(context.other, "sheet", { destinationBoatId: "boat", includeCrew: true, includePicture: true });
-        expect(copied).toMatchObject({ title: "Shared voyage", status: "Draft", boatId: "boat", watchPlan: ["00-04"], technicalChecks: [{ status: "ok", text: "Rig" }], share: { masterData: "private", logLines: "private", technicalLog: "private", picture: "private", metrics: "private", skipper: "private", crew: "private" } });
+        expect(copied).toMatchObject({ title: "Shared voyage", status: "Draft", source: "shared", sourceDetails: { ownerName: "Other owner", sheetTitle: "Shared voyage", importedAt: expect.any(String) }, boatId: "boat", watchPlan: ["00-04"], technicalChecks: [{ status: "ok", text: "Rig" }], share: { masterData: "private", logLines: "private", technicalLog: "private", picture: "private", metrics: "private", skipper: "private", crew: "private" } });
+        expect(new Date(copied!.sourceDetails!.importedAt).toISOString()).toBe(copied!.sourceDetails!.importedAt);
         expect(copied!.id).not.toBe("sheet");
         expect(copied!.lines[0].id).not.toBe("source-line");
         expect(copied!.crew).toHaveLength(1);
