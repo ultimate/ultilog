@@ -140,6 +140,7 @@ create table if not exists log_sheets (
   engine_hour_counters text not null default '{}',
   owner_id text not null references users(id) on delete cascade,
   source text,
+  source_details text,
   verification_note text,
   scanner_warnings text,
   image_data text,

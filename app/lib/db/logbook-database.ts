@@ -10,7 +10,7 @@ import { createHash } from "node:crypto";
 import { referencedBoatDeletionError, sheetBoatMutationError } from "../../domain/boats/boat-policy";
 import { sectionVisibility, sharedSheetCapability, type SectionVisibility, type SharedSheetCapability } from "../../domain/logbook/share-policy";
 
-export type SharedLogSheet = { sheet: LogSheet; boatName: string; capability: SharedSheetCapability; ownerAvatar?: string; showOwnerAvatarOnPrint?: boolean };
+export type SharedLogSheet = { sheet: LogSheet; boatName: string; capability: SharedSheetCapability; sourceOwnerId?: string; ownerAvatar?: string; showOwnerAvatarOnPrint?: boolean };
 export type CopySharedLogSheetOptions = { destinationBoatId: string; includeCrew?: boolean; includePicture?: boolean };
 
 export type QueryResult<Row> = { rows: Row[] };
@@ -315,7 +315,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
         ? `data:${owner.avatar_mime_type};base64,${owner.avatar_data}`
         : `https://secure.gravatar.com/avatar/${createHash("sha256").update(owner.email.trim().toLowerCase()).digest("hex")}?s=256&d=mp`
       : undefined;
-    return { sheet: filterSharedSheet(sheet, visibility), boatName: visibility.masterData ? boat?.name ?? "" : "", capability, ownerAvatar, showOwnerAvatarOnPrint };
+    return { sheet: filterSharedSheet(sheet, visibility), boatName: visibility.masterData ? boat?.name ?? "" : "", capability, sourceOwnerId: sharedRow.owner_id, ownerAvatar, showOwnerAvatarOnPrint };
   }
 
   /** Copies a shared sheet into the currently scoped owner's logbook in one transaction. */
@@ -341,6 +341,10 @@ export abstract class LogbookDatabase implements QueryableDatabase {
         database.lines.findForSheet(sourceRow.id),
       ]);
       const source = LogSheetsRepository.toLogbook([], [sourceRow], sourceCrewRows, sourceLineRows).sheets[0];
+      const sourceOwner = (await database.query<{ name: string }>(
+        `select name from users where id = ${database.placeholder(1)} limit 1`,
+        [sourceOwnerId],
+      )).rows[0];
       const sheetId = crypto.randomUUID();
       const lines = source.lines.map(({ revision: _revision, createdAt: _createdAt, updatedAt: _updatedAt, id: _id, ...line }) => ({ ...line, id: crypto.randomUUID() }));
 
@@ -361,6 +365,8 @@ export abstract class LogbookDatabase implements QueryableDatabase {
         id: sheetId,
         title: source.title,
         status: "Draft",
+        source: "shared",
+        sourceDetails: { ownerName: sourceOwner?.name ?? sourceOwnerId, sheetTitle: source.title, importedAt: new Date().toISOString() },
         boatId: options.destinationBoatId,
         route: { ...source.route },
         crew,

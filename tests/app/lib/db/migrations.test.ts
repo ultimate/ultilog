@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { normalizeBoatFlagStates, normalizeBoatMasterData, removeLegacyLogSheetDateRange, runMigrations, structureScannerWarnings } from "../../../../app/lib/db/migrations";
 import type { QueryableDatabase, QueryResult } from "../../../../app/lib/db/logbook-database";
-import { NORMALIZED_BOAT_MASTER_DATA_MIGRATION_ID, readMigrations, STRUCTURED_SCANNER_WARNINGS_MIGRATION_ID, USER_COMPLIANCE_MIGRATION_ID } from "../../../../app/lib/db/schema";
+import { NORMALIZED_BOAT_MASTER_DATA_MIGRATION_ID, readMigrations, SHARED_SHEET_SOURCE_DETAILS_MIGRATION_ID, STRUCTURED_SCANNER_WARNINGS_MIGRATION_ID, USER_COMPLIANCE_MIGRATION_ID } from "../../../../app/lib/db/schema";
 import { SqliteLogbookDatabase } from "../../../../app/lib/db/sqlite-logbook-database";
 
 type MigrationFailurePoint = "after-columns" | "during-backfill" | "after-drop" | "before-marker";
@@ -66,7 +66,6 @@ async function pre047Database(failure?: MigrationFailurePoint) {
   raw.run("insert into engines values (?, ?, ?, ?)", ["engine", "boat", 0, ""]);
   return { raw, database: new TransactionalSqlJsDatabase(raw, failure) };
 }
-
 class DuplicateColumnDatabase implements QueryableDatabase {
   calls: string[] = [];
   placeholder(index: number) {
@@ -163,7 +162,7 @@ class RemoveDateRangeDatabase implements QueryableDatabase {
 describe("runMigrations", () => {
   it("discovers migrations in order", async () => {
     const migrations = await readMigrations();
-    expect(migrations.at(-1)?.id).toBe(NORMALIZED_BOAT_MASTER_DATA_MIGRATION_ID);
+    expect(migrations.at(-1)?.id).toBe(SHARED_SHEET_SOURCE_DETAILS_MIGRATION_ID);
     expect(migrations.find(({ id }) => id === USER_COMPLIANCE_MIGRATION_ID)?.sql).toContain("user_compliance_licenses");
     expect(migrations.find(({ id }) => id === STRUCTURED_SCANNER_WARNINGS_MIGRATION_ID)?.sql).toContain("scanner warning JSON");
   });
@@ -301,6 +300,25 @@ describe("runMigrations", () => {
 
     expect(calls).toContainEqual({ sql: "update boats set manufacturer = $1, mmsi = $2 where id = $3", params: ["Yard", "269123456", "legacy"] });
     expect(calls).toContainEqual({ sql: "update engines set model = $1 where id = $2", params: ["D2-55", "engine-1"] });
+    expect(calls.at(-1)?.sql).toBe("alter table boats drop column yacht_data");
+  });
+
+  it("backfills typed boat data when a migration adapter cannot report schema metadata", async () => {
+    const calls: Array<{ sql: string; params?: unknown[] }> = [];
+    const db: QueryableDatabase = {
+      placeholder: (index) => `$${index}`,
+      async query<Row>(sql: string, params?: unknown[]) {
+        calls.push({ sql, params });
+        if (sql === "select id, manufacturer, mmsi, yacht_data from boats") return { rows: [
+          { id: "legacy", manufacturer: null, mmsi: null, yacht_data: JSON.stringify({ Manufacturer: "Yard" }) },
+        ] as Row[] };
+        return { rows: [] };
+      },
+    };
+
+    await normalizeBoatMasterData(db);
+
+    expect(calls).toContainEqual({ sql: "update boats set manufacturer = $1, mmsi = $2 where id = $3", params: ["Yard", null, "legacy"] });
     expect(calls.at(-1)?.sql).toBe("alter table boats drop column yacht_data");
   });
 

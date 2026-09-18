@@ -37,7 +37,12 @@ export type LogSheet = {
   id: string;
   title: string;
   status: "Draft" | "Locked";
-  source?: "manual" | "scanner";
+  source?: "manual" | "scanner" | "shared";
+  sourceDetails?: {
+    ownerName: string;
+    sheetTitle: string;
+    importedAt: string;
+  };
   verificationNote?: string;
   scannerWarnings?: ScannerWarning[];
   boatId: string;

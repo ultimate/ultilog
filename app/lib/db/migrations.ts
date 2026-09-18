@@ -95,7 +95,10 @@ export async function normalizeBoatMasterData(db: QueryableDatabase) {
     ? await db.query<{ name: string }>("select column_name as name from information_schema.columns where table_schema = current_schema() and table_name = 'boats'")
     : await db.query<{ name: string }>("select name from pragma_table_info('boats')");
   const columns = new Set(columnRows.rows.map(({ name }) => name));
-  if (!columns.has("yacht_data")) return;
+  // Some lightweight migration adapters cannot expose schema metadata. An empty
+  // result means "unknown", not "the legacy column is absent".
+  const schemaIsKnown = columns.size > 0;
+  if (schemaIsKnown && !columns.has("yacht_data")) return;
   for (const column of ["manufacturer", "mmsi"]) {
     if (columns.has(column)) continue;
     try {
@@ -105,12 +108,14 @@ export async function normalizeBoatMasterData(db: QueryableDatabase) {
     }
   }
 
-  const boats = await db.query<LegacyBoatMasterDataRow>(`
-    select boats.id, boats.manufacturer, boats.mmsi, boats.yacht_data,
-      engines.id as engine_id, engines.model as engine_model
-    from boats
-    left join engines on engines.boat_id = boats.id and engines.sort_order = 0
-  `);
+  const boats = schemaIsKnown
+    ? await db.query<LegacyBoatMasterDataRow>(`
+      select boats.id, boats.manufacturer, boats.mmsi, boats.yacht_data,
+        engines.id as engine_id, engines.model as engine_model
+      from boats
+      left join engines on engines.boat_id = boats.id and engines.sort_order = 0
+    `)
+    : await db.query<LegacyBoatMasterDataRow>("select id, manufacturer, mmsi, yacht_data from boats");
   for (const boat of boats.rows) {
     const data = parseYachtData(boat.yacht_data);
     const manufacturer = boat.manufacturer || migratedMasterDataValue(data.Manufacturer);

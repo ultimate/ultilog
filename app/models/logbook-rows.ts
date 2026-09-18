@@ -28,6 +28,7 @@ export type LogSheetRow = ImageRowFields & {
   title: string;
   status: LogSheet["status"];
   source?: LogSheet["source"] | null;
+  source_details?: string | LogSheet["sourceDetails"] | null;
   verification_note?: string | null;
   scanner_warnings?: string | ScannerWarning[] | null;
   boat_id: string;
