@@ -7,6 +7,7 @@ import { useI18n } from "../../lib/i18n";
 import type { CopyRequiredSection } from "../../domain/logbook/share-policy";
 
 type BoatSummary = { id: string; name: string; archived?: boolean };
+type PreviousCopySummary = { id: string; title: string; copiedAt: string };
 type Props = {
   ownerId: string;
   sheetId: string;
@@ -46,6 +47,7 @@ export function SharedLogbookCopy(props: Props) {
   const [includePicture, setIncludePicture] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [previousCopy, setPreviousCopy] = useState<PreviousCopySummary | null>(null);
 
   useEffect(() => {
     if (!props.isAuthenticated || !props.canCopy) return;
@@ -96,9 +98,13 @@ export function SharedLogbookCopy(props: Props) {
     try {
       const response = await fetch(`/api/shared/logbooks/${encodeURIComponent(props.ownerId)}/${encodeURIComponent(props.sheetId)}/copy`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ destinationBoatId, ...(props.canIncludeCrew ? { includeCrew } : {}), ...(props.canIncludePicture ? { includePicture } : {}) }),
+        body: JSON.stringify({ destinationBoatId, ...(props.canIncludeCrew ? { includeCrew } : {}), ...(props.canIncludePicture ? { includePicture } : {}), ...(previousCopy ? { allowDuplicate: true } : {}) }),
       });
-      const payload = await response.json().catch(() => ({})) as { id?: string };
+      const payload = await response.json().catch(() => ({})) as { id?: string; code?: string; previousCopy?: PreviousCopySummary };
+      if (response.status === 409 && payload.code === "duplicate_shared_copy" && payload.previousCopy) {
+        setPreviousCopy(payload.previousCopy);
+        return;
+      }
       if (!response.ok || !payload.id) {
         setError(response.status === 401 || response.status === 403 ? t("sharedCopy.authorizationError") : response.status === 400 || response.status === 409 || response.status === 422 ? t("sharedCopy.validationError") : t("sharedCopy.requestError"));
         return;
@@ -120,8 +126,9 @@ export function SharedLogbookCopy(props: Props) {
         <label>{t("sharedCopy.destination")}<select required value={destinationBoatId} onChange={event => setDestinationBoatId(event.target.value)}>{boats.map(boat => <option key={boat.id} value={boat.id}>{boat.name}</option>)}</select></label>
         {props.canIncludeCrew ? <label className="checkbox-row"><input type="checkbox" checked={includeCrew} onChange={event => setIncludeCrew(event.target.checked)} />{t("sharedCopy.includeCrew")}</label> : null}
         {props.canIncludePicture ? <label className="checkbox-row"><input type="checkbox" checked={includePicture} onChange={event => setIncludePicture(event.target.checked)} />{t("sharedCopy.includePicture")}</label> : null}
+        {previousCopy ? <div className="auth-error" role="alert"><strong>{t("sharedCopy.previouslyCopied")}</strong><p>{t("sharedCopy.duplicateMileage")}</p><p>{previousCopy.title}</p></div> : null}
         {error ? <p className="auth-error" role="alert">{error}</p> : null}
-        <div className="modal-actions"><button type="button" disabled={isSubmitting} onClick={() => setIsOpen(false)}>{t("sharedCopy.cancel")}</button><button type="submit" disabled={isSubmitting || !destinationBoatId}>{isSubmitting ? t("sharedCopy.copying") : t("sharedCopy.confirm")}</button></div>
+        <div className="modal-actions"><button type="button" disabled={isSubmitting} onClick={() => setIsOpen(false)}>{t("sharedCopy.cancel")}</button><button type="submit" disabled={isSubmitting || !destinationBoatId}>{isSubmitting ? t("sharedCopy.copying") : previousCopy ? t("sharedCopy.confirmDuplicate") : t("sharedCopy.confirm")}</button></div>
       </form>
     </div> : null}
   </section>;

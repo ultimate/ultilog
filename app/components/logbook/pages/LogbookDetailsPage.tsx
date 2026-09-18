@@ -243,7 +243,12 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     ["crew", "Crew information"],
   ] as const;
   const showScannerDraftNotice = activeSheet.source === "scanner";
-  const sharedSourceNotice = activeSheet.source === "shared" && activeSheet.sourceDetails
+  const sharedSourceNotice = activeSheet.copyProvenance
+    ? t("details.sharedSource.provenance")
+      .replace("{sheet}", activeSheet.copyProvenance.sourceTitle ?? activeSheet.copyProvenance.sourceSheetId)
+      .replace("{revision}", String(activeSheet.copyProvenance.sourceRevision))
+      .replace("{date}", formatDateTime(activeSheet.copyProvenance.copiedAt))
+    : activeSheet.source === "shared" && activeSheet.sourceDetails
     ? t("details.sharedSource.notice")
       .replace("{owner}", activeSheet.sourceDetails.ownerName)
       .replace("{sheet}", activeSheet.sourceDetails.sheetTitle)

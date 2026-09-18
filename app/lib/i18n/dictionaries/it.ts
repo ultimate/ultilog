@@ -780,6 +780,9 @@ export const it: Dictionary = {
   "sharedCopy.includePicture": "Includi foto condivisa",
   "sharedCopy.cancel": "Annulla",
   "sharedCopy.confirm": "Copia foglio",
+  "sharedCopy.previouslyCopied": "Previously copied",
+  "sharedCopy.duplicateMileage": "Another copy may cause the same voyage mileage to be counted multiple times. Copies remain independent and editable.",
+  "sharedCopy.confirmDuplicate": "Copy another anyway",
   "sharedCopy.copying": "Copia in corso…",
   "sharedCopy.authorizationError": "Non sei autorizzato a copiare questo foglio. Accedi di nuovo o verifica la condivisione.",
   "sharedCopy.validationError": "Impossibile convalidare la copia. Verifica destinazione e opzioni di condivisione.",
@@ -795,5 +798,6 @@ export const it: Dictionary = {
   "details.sharedSource.label": "Informazioni sul foglio importato",
   "details.sharedSource.heading": "Importato da un foglio condiviso",
   "details.sharedSource.notice": "Questo foglio è stato copiato dal foglio “{sheet}” di {owner} il {date}.",
+  "details.sharedSource.provenance": "Copied from “{sheet}” (source revision {revision}) on {date}. This copy remains available independently of its source.",
 
 };
