@@ -23,7 +23,7 @@ export function CookieBanner() {
   }
 
   return (
-    <aside className="cookie-banner" aria-label="Cookie notice" role="dialog" aria-live="polite">
+    <aside className="cookie-banner" aria-label="Cookie notice" aria-live="polite">
       <div>
         <strong>Cookies aboard</strong>
         <p>
