@@ -19,6 +19,7 @@ export async function authenticatedMutation<T>(request: Request, operation: (own
     if (error instanceof LogbookValidationError && error.kind === "limit") return NextResponse.json({ error: error.message, code: error.code ?? "entity_count_limit_exceeded" }, { status: 413 });
     if (error instanceof LogbookValidationError || error instanceof SyntaxError) return NextResponse.json({ error: error.message, code: "invalid_payload" }, { status: 400 });
     if (code === "shared_sections_not_visible") return NextResponse.json({ error: error instanceof Error ? error.message : "Copy forbidden", code }, { status: 403 });
+    if (code === "invalid_password") return NextResponse.json({ error: "Current password is incorrect.", code }, { status: 403 });
     if (["revision_conflict", "referenced_boat_deleted", "missing_boat", "archived_boat_for_new_sheet", "missing_image", "referenced_image"].includes(code ?? "")) return NextResponse.json({ error: error instanceof Error ? error.message : "Mutation rejected", code }, { status: 409 });
     const reference = crypto.randomUUID();
     console.error(`[logbook-mutation:${reference}]`, error);
@@ -58,6 +59,10 @@ export async function jsonBody(request: Request, byteLimit: number) {
 }
 
 export async function deleteRevision(request: Request) {
+  return (await deleteConfirmation(request)).revision;
+}
+
+export async function deleteConfirmation(request: Request) {
   let body: unknown;
   try {
     body = await jsonBody(request, 1024);
@@ -65,11 +70,12 @@ export async function deleteRevision(request: Request) {
     if (error instanceof RequestBodyTooLargeError) throw error;
     throw Object.assign(new Error("A positive integer revision is required."), { code: "invalid_revision" });
   }
-  const revision = body && typeof body === "object" && !Array.isArray(body) ? (body as { revision?: unknown }).revision : undefined;
+  const record = body && typeof body === "object" && !Array.isArray(body) ? body as { revision?: unknown; password?: unknown } : {};
+  const revision = record.revision;
   if (!Number.isSafeInteger(revision) || Number(revision) <= 0) {
     throw Object.assign(new Error("A positive integer revision is required."), { code: "invalid_revision" });
   }
-  return revision as number;
+  return { revision: revision as number, password: typeof record.password === "string" ? record.password : "" };
 }
 
 function envBytes(name: string, fallback: number) {

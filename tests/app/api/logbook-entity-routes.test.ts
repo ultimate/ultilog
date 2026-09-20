@@ -4,11 +4,14 @@ vi.mock("../../../auth", () => ({ auth: vi.fn() }));
 vi.mock("../../../app/lib/logbook-store", () => ({
   upsertBoat: vi.fn(), deleteBoat: vi.fn(), upsertCrewMember: vi.fn(), deleteCrewMember: vi.fn(), upsertLogSheet: vi.fn(), deleteLogSheet: vi.fn(),
 }));
+vi.mock("../../../app/lib/users", () => ({ verifyUserPassword: vi.fn() }));
 
 const { auth } = await import("../../../auth");
 const store = await import("../../../app/lib/logbook-store");
 const boats = await import("../../../app/api/logbook/boats/route");
 const boat = await import("../../../app/api/logbook/boats/[id]/route");
+const sheet = await import("../../../app/api/logbook/sheets/[id]/route");
+const { verifyUserPassword } = await import("../../../app/lib/users");
 
 const entity = { id: "boat-1", name: "Aurora", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, deviationTable: [] };
 const context = (id: string) => ({ params: Promise.resolve({ id }) });
@@ -16,6 +19,21 @@ const mockedAuth = auth as unknown as Mock;
 
 describe("entity mutation routes", () => {
   beforeEach(() => { vi.clearAllMocks(); mockedAuth.mockResolvedValue({ user: { id: "owner-1" }, expires: "2099-01-01" }); });
+
+  it("requires the account password before deleting a logsheet", async () => {
+    vi.mocked(verifyUserPassword).mockResolvedValueOnce(false);
+    const rejected = await sheet.DELETE(new Request("https://example.test", { method: "DELETE", body: JSON.stringify({ revision: 4, password: "wrong" }) }), context("sheet-1"));
+    expect(rejected.status).toBe(403);
+    await expect(rejected.json()).resolves.toMatchObject({ code: "invalid_password" });
+    expect(store.deleteLogSheet).not.toHaveBeenCalled();
+
+    vi.mocked(verifyUserPassword).mockResolvedValueOnce(true);
+    vi.mocked(store.deleteLogSheet).mockResolvedValueOnce({ id: "sheet-1" } as never);
+    const accepted = await sheet.DELETE(new Request("https://example.test", { method: "DELETE", body: JSON.stringify({ revision: 4, password: "correct" }) }), context("sheet-1"));
+    expect(accepted.status).toBe(200);
+    expect(verifyUserPassword).toHaveBeenLastCalledWith("owner-1", "correct");
+    expect(store.deleteLogSheet).toHaveBeenLastCalledWith("sheet-1", 4, "owner-1");
+  });
 
   it("requires authentication", async () => {
     mockedAuth.mockResolvedValueOnce(null);
