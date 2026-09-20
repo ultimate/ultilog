@@ -98,6 +98,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     isActiveSheetLocked,
     updateActiveSheetStatus,
     updateActiveSheetShare,
+    deleteActiveSheet,
     updateScannerWarningAcknowledgment,
     renderInlineBoatField,
     renderInlineDateField,
@@ -139,6 +140,10 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const onShowCourseColumnsChange = props.onShowCourseColumnsChange as (show: boolean) => void;
   const [isMapExpanded, setIsMapExpanded] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
   const [shareDraftState, setShareDraftState] = useState<{ sheetId: string; share: LogSheetShareSettings }>({ sheetId: "", share: defaultLogSheetShareSettings });
   const [newTechnicalCheck, setNewTechnicalCheck] = useState("");
   const [technicalCheckDraftState, setTechnicalCheckDraftState] = useState<{ sheetId: string; drafts: Record<number, string> }>({ sheetId: "", drafts: {} });
@@ -841,6 +846,9 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                   >
                     <span aria-hidden="true">↗</span> Share
                   </button>
+                  <button type="button" className="edit-chip compact-chip danger-chip" onClick={() => setIsDeleteDialogOpen(true)}>
+                    {t("common.delete")}
+                  </button>
                   {isActiveSheetLocked ? (
                     <button
                       type="button"
@@ -1019,6 +1027,26 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                       ))}
                     </fieldset>
                   </div>
+                </div>
+              )}
+
+              {isDeleteDialogOpen && (
+                <div className="share-logsheet-modal" role="dialog" aria-modal="true" aria-labelledby="delete-logsheet-title">
+                  <form className="share-logsheet-panel" onSubmit={async event => {
+                    event.preventDefault(); setIsDeleting(true); setDeleteError("");
+                    const deleted = await (deleteActiveSheet as (password: string) => Promise<boolean>)(deletePassword);
+                    setIsDeleting(false);
+                    if (!deleted) setDeleteError("The logsheet could not be deleted. Check your password and try again.");
+                  }}>
+                    <div className="share-logsheet-heading"><h2 id="delete-logsheet-title">Delete logsheet?</h2></div>
+                    <p>This permanently deletes this logsheet and all of its log lines. Enter your password to confirm.</p>
+                    <label>Password<input type="password" autoComplete="current-password" required value={deletePassword} onChange={event => setDeletePassword(event.currentTarget.value)} autoFocus /></label>
+                    {deleteError && <p className="form-error" role="alert">{deleteError}</p>}
+                    <div className="modal-actions">
+                      <button type="button" className="ghost-button" disabled={isDeleting} onClick={() => { setIsDeleteDialogOpen(false); setDeletePassword(""); setDeleteError(""); }}>Cancel</button>
+                      <button type="submit" className="danger-button" disabled={isDeleting || !deletePassword}>{isDeleting ? "Deleting…" : "Delete logsheet"}</button>
+                    </div>
+                  </form>
                 </div>
               )}
 

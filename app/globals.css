@@ -1738,6 +1738,9 @@ img.entity-image--preview {
 .shared-copy-action .button-link { display:inline-flex; align-items:center; min-height:2.75rem; padding:.65rem 1rem; border-radius:.75rem; background:var(--primary); color:white; font-weight:800; text-decoration:none; }
 .share-logsheet-panel label:not(.checkbox-row) { display:grid; gap:.4rem; font-weight:800; }
 .share-logsheet-panel select { min-height:2.75rem; border:1px solid var(--border); border-radius:.65rem; padding:.5rem; background:var(--card); color:var(--foreground); }
+.share-logsheet-panel input { min-height:2.75rem; border:1px solid var(--border); border-radius:.65rem; padding:.5rem; background:var(--card); color:var(--foreground); }
+.danger-chip { color:var(--danger, #b42318); border-color:currentColor; }
+.danger-button { background:var(--danger, #b42318); color:white; border-color:transparent; }
 .share-logsheet-panel .checkbox-row { display:flex; align-items:center; gap:.65rem; }
 .share-logsheet-panel .modal-actions { display:flex; justify-content:flex-end; gap:.65rem; }
 

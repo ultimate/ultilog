@@ -80,7 +80,10 @@ export const persistLogLine = (sheetId: string, line: LogLine, isNew: boolean) =
   entityRequest(`/api/logbook/sheets/${encodeURIComponent(sheetId)}/lines${isNew ? "" : `/${encodeURIComponent(line.id)}`}`, isNew ? "POST" : "PUT", line);
 export const deleteLogLine = (sheetId: string, lineId: string, revision: number) => deletionRequest(`/api/logbook/sheets/${encodeURIComponent(sheetId)}/lines/${encodeURIComponent(lineId)}`, revision);
 export const reorderLogLines = (sheetId: string, lineIds: string[]) => fetch(`/api/logbook/sheets/${encodeURIComponent(sheetId)}/lines/reorder`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ lineIds }) });
-export const deleteLogbookEntity = (kind: "boat" | "crew" | "sheet", id: string, revision: number, options?: RequestOptions) => {
+export const deleteLogbookEntity = (kind: "boat" | "crew" | "sheet", id: string, revision: number, options?: RequestOptions, password?: string) => {
   const collection = kind === "boat" ? "boats" : kind === "sheet" ? "sheets" : "crew";
+  if (kind === "sheet") return fetch(`/api/logbook/${collection}/${encodeURIComponent(id)}`, {
+    method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ revision, password }), signal: options?.signal, keepalive: options?.keepalive,
+  });
   return deletionRequest(`/api/logbook/${collection}/${encodeURIComponent(id)}`, revision, options);
 };
