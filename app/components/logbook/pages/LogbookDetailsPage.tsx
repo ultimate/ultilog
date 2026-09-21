@@ -243,11 +243,12 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     ["crew", "Crew information"],
   ] as const;
   const showScannerDraftNotice = activeSheet.source === "scanner";
-  const sharedSourceNotice = activeSheet.source === "shared" && activeSheet.sourceDetails
-    ? t("details.sharedSource.notice")
-      .replace("{owner}", activeSheet.sourceDetails.ownerName)
-      .replace("{sheet}", activeSheet.sourceDetails.sheetTitle)
-      .replace("{date}", formatDateTime(activeSheet.sourceDetails.importedAt))
+  const sharedSourceNotice = activeSheet.copyProvenance
+    ? t("details.sharedSource.provenance")
+      .replace("{owner}", activeSheet.copyProvenance.sourceOwnerName)
+      .replace("{sheet}", activeSheet.copyProvenance.sourceTitle ?? activeSheet.copyProvenance.sourceSheetId)
+      .replace("{revision}", String(activeSheet.copyProvenance.sourceRevision))
+      .replace("{date}", formatDateTime(activeSheet.copyProvenance.copiedAt))
     : "";
   const courseConversionSequences = useRef<Record<string, number>>({});
   const sheetImageInputRef = useRef<HTMLInputElement>(null);

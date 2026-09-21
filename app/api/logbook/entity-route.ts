@@ -19,6 +19,7 @@ export async function authenticatedMutation<T>(request: Request, operation: (own
     if (error instanceof LogbookValidationError && error.kind === "limit") return NextResponse.json({ error: error.message, code: error.code ?? "entity_count_limit_exceeded" }, { status: 413 });
     if (error instanceof LogbookValidationError || error instanceof SyntaxError) return NextResponse.json({ error: error.message, code: "invalid_payload" }, { status: 400 });
     if (code === "shared_sections_not_visible") return NextResponse.json({ error: error instanceof Error ? error.message : "Copy forbidden", code }, { status: 403 });
+    if (code === "duplicate_shared_copy") return NextResponse.json({ error: error instanceof Error ? error.message : "Duplicate copy confirmation required", code, previousCopy: (error as { previousCopy?: unknown }).previousCopy }, { status: 409 });
     if (["revision_conflict", "referenced_boat_deleted", "missing_boat", "archived_boat_for_new_sheet", "missing_image", "referenced_image"].includes(code ?? "")) return NextResponse.json({ error: error instanceof Error ? error.message : "Mutation rejected", code }, { status: 409 });
     const reference = crypto.randomUUID();
     console.error(`[logbook-mutation:${reference}]`, error);

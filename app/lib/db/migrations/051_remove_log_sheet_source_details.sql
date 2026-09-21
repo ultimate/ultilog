@@ -1,0 +1,2 @@
+-- Applied by removeLogSheetSourceDetails so databases that never received the
+-- short-lived column are also supported.

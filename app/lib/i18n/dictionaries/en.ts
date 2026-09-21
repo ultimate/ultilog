@@ -779,6 +779,9 @@ export const en = {
   "sharedCopy.cancel": "Cancel",
   "sharedCopy.confirm": "Copy sheet",
   "sharedCopy.copying": "Copying…",
+  "sharedCopy.previouslyCopied": "Previously copied",
+  "sharedCopy.duplicateMileage": "Another copy may cause the same voyage mileage to be counted multiple times. Copies remain independent and editable.",
+  "sharedCopy.confirmDuplicate": "Copy another anyway",
   "sharedCopy.authorizationError": "You are not authorized to copy this sheet. Sign in again or check its sharing access.",
   "sharedCopy.validationError": "The copy could not be validated. Check the destination and sharing options.",
   "sharedCopy.requestError": "The sheet could not be copied. Please try again.",
@@ -793,6 +796,7 @@ export const en = {
   "details.sharedSource.label": "Imported logsheet information",
   "details.sharedSource.heading": "Imported from a shared logsheet",
   "details.sharedSource.notice": "This logsheet was copied from {owner}, sheet “{sheet}”, on {date}.",
+  "details.sharedSource.provenance": "Copied from {owner}’s “{sheet}” (source revision {revision}) on {date}. This copy remains available independently of its source.",
 
 } as const;
 

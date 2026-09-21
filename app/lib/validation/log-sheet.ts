@@ -11,6 +11,7 @@ export function validateLogSheet(value: unknown): LogSheet {
 /** Focused sheet requests omit log lines; line routes own that collection. */
 export function validateFocusedLogSheet(value: unknown): FocusedLogSheet {
   if (!value || typeof value !== "object" || Array.isArray(value) || "lines" in value) throw new LogbookValidationError("Focused sheet payloads must omit lines.");
+  if ("copyProvenance" in value) throw new LogbookValidationError("Copy provenance is server-managed and must be omitted.");
   const crew = (value as { crew?: unknown }).crew;
   if (!Array.isArray(crew)) throw new LogbookValidationError("sheet crew must be an array.");
   const assignmentKeys = ["id", "embarkationDateTime", "embarkationPosition", "disembarkationDateTime", "disembarkationPosition"] as const;

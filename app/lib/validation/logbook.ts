@@ -94,11 +94,13 @@ export function validatePersistedLogbook(value: unknown): PersistedLogbook {
     if (totalLines > LOGBOOK_LIMITS.logLines) throw new LogbookValidationError("Too many log lines.", "limit", "too_many_log_lines");
     if (sheet.share !== undefined) assert(record(sheet.share) && ["masterData", "picture", "logLines", "metrics", "technicalLog", "skipper", "crew"].every(k => ["private", "registered", "public"].includes((sheet.share as Record<string, unknown>)[k] as string)), `sheets[${i}].share is malformed.`);
     if (sheet.metrics !== undefined) assert(record(sheet.metrics) && Object.entries(sheet.metrics).every(([, x]) => x === null || finite(x) || numberRecord(x)), `sheets[${i}].metrics is malformed.`);
-    const sourceDetails = sheet.sourceDetails;
-    const validSourceDetails = sourceDetails === undefined || record(sourceDetails)
-      && string(sourceDetails.ownerName) && string(sourceDetails.sheetTitle) && isoTimestamp(sourceDetails.importedAt);
-    assert(optional(sheet.source, x => x === "manual" || x === "scanner" || x === "shared") && validSourceDetails
-      && (sheet.source === "shared" ? sourceDetails !== undefined : sourceDetails === undefined)
+    const copyProvenance = sheet.copyProvenance;
+    const validCopyProvenance = copyProvenance === undefined || record(copyProvenance)
+      && string(copyProvenance.sourceOwnerId) && string(copyProvenance.sourceOwnerName) && string(copyProvenance.sourceSheetId)
+      && Number.isSafeInteger(copyProvenance.sourceRevision) && Number(copyProvenance.sourceRevision) > 0
+      && isoTimestamp(copyProvenance.copiedAt) && optional(copyProvenance.sourceTitle, string);
+    assert(optional(sheet.source, x => x === "manual" || x === "scanner" || x === "shared")
+      && validCopyProvenance && (sheet.source === "shared" || copyProvenance === undefined)
       && optional(sheet.verificationNote, string) && optional(sheet.scannerWarnings, scannerWarnings), `sheets[${i}] optional values are malformed.`);
     if (sheet.scannerWarnings !== undefined) {
       const warningIds = (sheet.scannerWarnings as Array<{ id: string }>).map(warning => warning.id);
