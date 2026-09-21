@@ -44,6 +44,10 @@ async function applyMigration(db: QueryableDatabase, id: string, sql: string) {
     await normalizeBoatMasterData(db);
     return;
   }
+  if (id === "051_remove_log_sheet_source_details") {
+    await removeLogSheetSourceDetails(db);
+    return;
+  }
   if (id === "043_structure_scanner_warnings" || id === "044_localize_scanner_warnings") {
     await structureScannerWarnings(db);
     return;
@@ -87,6 +91,13 @@ async function applyMigration(db: QueryableDatabase, id: string, sql: string) {
       if (!isDuplicateColumnError(error)) throw error;
     }
   }
+}
+
+async function removeLogSheetSourceDetails(db: QueryableDatabase) {
+  const columnRows = db.placeholder(1) === "$1"
+    ? await db.query<{ name: string }>("select column_name as name from information_schema.columns where table_schema = current_schema() and table_name = 'log_sheets' and column_name = 'source_details'")
+    : await db.query<{ name: string }>("select name from pragma_table_info('log_sheets') where name = 'source_details'");
+  if (columnRows.rows.length) await db.query("alter table log_sheets drop column source_details");
 }
 
 /** Moves useful boat master data into typed columns and retires the legacy JSON blob. */

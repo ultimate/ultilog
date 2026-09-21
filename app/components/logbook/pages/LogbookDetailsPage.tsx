@@ -249,11 +249,6 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
       .replace("{sheet}", activeSheet.copyProvenance.sourceTitle ?? activeSheet.copyProvenance.sourceSheetId)
       .replace("{revision}", String(activeSheet.copyProvenance.sourceRevision))
       .replace("{date}", formatDateTime(activeSheet.copyProvenance.copiedAt))
-    : activeSheet.source === "shared" && activeSheet.sourceDetails
-    ? t("details.sharedSource.notice")
-      .replace("{owner}", activeSheet.sourceDetails.ownerName)
-      .replace("{sheet}", activeSheet.sourceDetails.sheetTitle)
-      .replace("{date}", formatDateTime(activeSheet.sourceDetails.importedAt))
     : "";
   const courseConversionSequences = useRef<Record<string, number>>({});
   const sheetImageInputRef = useRef<HTMLInputElement>(null);

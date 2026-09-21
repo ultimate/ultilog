@@ -28,8 +28,6 @@ export type LogSheetRow = ImageRowFields & {
   title: string;
   status: LogSheet["status"];
   source?: LogSheet["source"] | null;
-  /** Legacy read compatibility; structured copy provenance uses the columns below. */
-  source_details?: string | LogSheet["sourceDetails"] | null;
   source_owner_id?: string | null;
   source_owner_name?: string | null;
   source_sheet_id?: string | null;
