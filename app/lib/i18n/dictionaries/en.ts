@@ -796,7 +796,7 @@ export const en = {
   "details.sharedSource.label": "Imported logsheet information",
   "details.sharedSource.heading": "Imported from a shared logsheet",
   "details.sharedSource.notice": "This logsheet was copied from {owner}, sheet “{sheet}”, on {date}.",
-  "details.sharedSource.provenance": "Copied from “{sheet}” (source revision {revision}) on {date}. This copy remains available independently of its source.",
+  "details.sharedSource.provenance": "Copied from {owner}’s “{sheet}” (source revision {revision}) on {date}. This copy remains available independently of its source.",
 
 } as const;
 

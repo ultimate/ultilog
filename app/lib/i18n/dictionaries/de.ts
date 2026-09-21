@@ -798,6 +798,6 @@ export const de: Dictionary = {
   "details.sharedSource.label": "Information zum importierten Logblatt",
   "details.sharedSource.heading": "Aus einem geteilten Logblatt importiert",
   "details.sharedSource.notice": "Dieses Logblatt wurde am {date} von {owner} aus dem Blatt „{sheet}“ kopiert.",
-  "details.sharedSource.provenance": "Copied from “{sheet}” (source revision {revision}) on {date}. This copy remains available independently of its source.",
+  "details.sharedSource.provenance": "Copied from {owner}’s “{sheet}” (source revision {revision}) on {date}. This copy remains available independently of its source.",
 
 };

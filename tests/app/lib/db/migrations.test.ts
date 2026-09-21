@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { normalizeBoatFlagStates, normalizeBoatMasterData, removeLegacyLogSheetDateRange, runMigrations, structureScannerWarnings } from "../../../../app/lib/db/migrations";
 import type { QueryableDatabase, QueryResult } from "../../../../app/lib/db/logbook-database";
-import { LOG_SHEET_COPY_PROVENANCE_MIGRATION_ID, NORMALIZED_BOAT_MASTER_DATA_MIGRATION_ID, readMigrations, SHARED_SHEET_SOURCE_DETAILS_MIGRATION_ID, STRUCTURED_SCANNER_WARNINGS_MIGRATION_ID, USER_COMPLIANCE_MIGRATION_ID } from "../../../../app/lib/db/schema";
+import { LOG_SHEET_COPY_SOURCE_OWNER_NAME_MIGRATION_ID, NORMALIZED_BOAT_MASTER_DATA_MIGRATION_ID, readMigrations, SHARED_SHEET_SOURCE_DETAILS_MIGRATION_ID, STRUCTURED_SCANNER_WARNINGS_MIGRATION_ID, USER_COMPLIANCE_MIGRATION_ID } from "../../../../app/lib/db/schema";
 import { SqliteLogbookDatabase } from "../../../../app/lib/db/sqlite-logbook-database";
 
 type MigrationFailurePoint = "after-columns" | "during-backfill" | "after-drop" | "before-marker";
@@ -162,7 +162,7 @@ class RemoveDateRangeDatabase implements QueryableDatabase {
 describe("runMigrations", () => {
   it("discovers migrations in order", async () => {
     const migrations = await readMigrations();
-    expect(migrations.at(-1)?.id).toBe(LOG_SHEET_COPY_PROVENANCE_MIGRATION_ID);
+    expect(migrations.at(-1)?.id).toBe(LOG_SHEET_COPY_SOURCE_OWNER_NAME_MIGRATION_ID);
     expect(migrations.find(({ id }) => id === SHARED_SHEET_SOURCE_DETAILS_MIGRATION_ID)).toBeDefined();
     expect(migrations.find(({ id }) => id === USER_COMPLIANCE_MIGRATION_ID)?.sql).toContain("user_compliance_licenses");
     expect(migrations.find(({ id }) => id === STRUCTURED_SCANNER_WARNINGS_MIGRATION_ID)?.sql).toContain("scanner warning JSON");

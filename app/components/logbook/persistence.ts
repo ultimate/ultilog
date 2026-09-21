@@ -76,7 +76,7 @@ export const persistCrewMember = (crew: CrewMember, isNew = false, options?: Req
   entityRequest(isNew ? "/api/logbook/crew" : `/api/logbook/crew/${encodeURIComponent(crew.id)}`, isNew ? "POST" : "PUT", crew, options);
 export const persistSheet = (sheet: LogSheet, isNew = false, options?: RequestOptions) => {
   // Copy provenance is immutable server metadata, not part of focused writes.
-  const { copyProvenance: _copyProvenance, ...focusedSheet } = sheet;
+  const { copyProvenance: _copyProvenance, sourceDetails: _legacySourceDetails, ...focusedSheet } = sheet;
   return entityRequest(isNew ? "/api/logbook/sheets" : `/api/logbook/sheets/${encodeURIComponent(sheet.id)}`, isNew ? "POST" : "PUT", focusedSheet, options);
 };
 export const persistLogLine = (sheetId: string, line: LogLine, isNew: boolean) =>

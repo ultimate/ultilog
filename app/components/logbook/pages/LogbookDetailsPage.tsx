@@ -245,6 +245,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const showScannerDraftNotice = activeSheet.source === "scanner";
   const sharedSourceNotice = activeSheet.copyProvenance
     ? t("details.sharedSource.provenance")
+      .replace("{owner}", activeSheet.copyProvenance.sourceOwnerName)
       .replace("{sheet}", activeSheet.copyProvenance.sourceTitle ?? activeSheet.copyProvenance.sourceSheetId)
       .replace("{revision}", String(activeSheet.copyProvenance.sourceRevision))
       .replace("{date}", formatDateTime(activeSheet.copyProvenance.copiedAt))

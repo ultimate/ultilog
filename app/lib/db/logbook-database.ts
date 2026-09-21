@@ -352,6 +352,10 @@ export abstract class LogbookDatabase implements QueryableDatabase {
         database.lines.findForSheet(sourceRow.id),
       ]);
       const source = LogSheetsRepository.toLogbook([], [sourceRow], sourceCrewRows, sourceLineRows).sheets[0];
+      const sourceOwner = (await database.query<{ name: string }>(
+        `select name from users where id = ${database.placeholder(1)} limit 1`,
+        [sourceOwnerId],
+      )).rows[0];
       const sheetId = crypto.randomUUID();
       const copiedAt = new Date().toISOString();
       const lines = source.lines.map(({ revision: _revision, createdAt: _createdAt, updatedAt: _updatedAt, id: _id, ...line }) => ({ ...line, id: crypto.randomUUID() }));
@@ -374,7 +378,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
         title: source.title,
         status: "Draft",
         source: "shared",
-        copyProvenance: { sourceOwnerId, sourceSheetId, sourceRevision: Number(sourceRow.revision ?? 1), copiedAt, sourceTitle: source.title },
+        copyProvenance: { sourceOwnerId, sourceOwnerName: sourceOwner?.name ?? sourceOwnerId, sourceSheetId, sourceRevision: Number(sourceRow.revision ?? 1), copiedAt, sourceTitle: source.title },
         boatId: options.destinationBoatId,
         route: { ...source.route },
         crew,

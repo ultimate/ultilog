@@ -140,8 +140,10 @@ create table if not exists log_sheets (
   engine_hour_counters text not null default '{}',
   owner_id text not null references users(id) on delete cascade,
   source text,
+  -- Legacy display snapshot for copies predating the structured provenance columns.
   source_details text,
   source_owner_id text,
+  source_owner_name text,
   source_sheet_id text,
   source_revision integer,
   copied_at text,

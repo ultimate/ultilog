@@ -798,6 +798,6 @@ export const it: Dictionary = {
   "details.sharedSource.label": "Informazioni sul foglio importato",
   "details.sharedSource.heading": "Importato da un foglio condiviso",
   "details.sharedSource.notice": "Questo foglio è stato copiato dal foglio “{sheet}” di {owner} il {date}.",
-  "details.sharedSource.provenance": "Copied from “{sheet}” (source revision {revision}) on {date}. This copy remains available independently of its source.",
+  "details.sharedSource.provenance": "Copied from {owner}’s “{sheet}” (source revision {revision}) on {date}. This copy remains available independently of its source.",
 
 };

@@ -33,6 +33,8 @@ export type ScannerWarning = ScannerWarningDiagnostic & { id: string; acknowledg
 /** Server-managed identity of the shared sheet from which this detached sheet was copied. */
 export type LogSheetCopyProvenance = {
   sourceOwnerId: string;
+  /** Username snapshot for display after the source owner or sheet is unavailable. */
+  sourceOwnerName: string;
   sourceSheetId: string;
   sourceRevision: number;
   copiedAt: string;
@@ -48,6 +50,7 @@ export type LogSheet = {
   title: string;
   status: "Draft" | "Locked";
   source?: "manual" | "scanner" | "shared";
+  /** @deprecated Read-only compatibility for copies created before structured copyProvenance. */
   sourceDetails?: {
     ownerName: string;
     sheetTitle: string;
@@ -76,6 +79,6 @@ export type LogSheet = {
 };
 
 /** Write model for the focused sheet endpoints. */
-export type FocusedLogSheet = Omit<LogSheet, "crew" | "lines" | "copyProvenance"> & {
+export type FocusedLogSheet = Omit<LogSheet, "crew" | "lines" | "copyProvenance" | "sourceDetails"> & {
   crew: SheetCrewAssignment[];
 };

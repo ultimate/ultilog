@@ -99,7 +99,7 @@ export function validatePersistedLogbook(value: unknown): PersistedLogbook {
       && string(sourceDetails.ownerName) && string(sourceDetails.sheetTitle) && isoTimestamp(sourceDetails.importedAt);
     const copyProvenance = sheet.copyProvenance;
     const validCopyProvenance = copyProvenance === undefined || record(copyProvenance)
-      && string(copyProvenance.sourceOwnerId) && string(copyProvenance.sourceSheetId)
+      && string(copyProvenance.sourceOwnerId) && string(copyProvenance.sourceOwnerName) && string(copyProvenance.sourceSheetId)
       && Number.isSafeInteger(copyProvenance.sourceRevision) && Number(copyProvenance.sourceRevision) > 0
       && isoTimestamp(copyProvenance.copiedAt) && optional(copyProvenance.sourceTitle, string);
     assert(optional(sheet.source, x => x === "manual" || x === "scanner" || x === "shared") && validSourceDetails

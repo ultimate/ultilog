@@ -46,7 +46,7 @@ describe("logbook persistence", () => {
       id: "sheet-1",
       title: "Edited",
       boatId: "boat-1",
-      copyProvenance: { sourceOwnerId: "owner", sourceSheetId: "source", sourceRevision: 3, copiedAt: "2026-09-18T10:00:00.000Z", sourceTitle: "Original" },
+      copyProvenance: { sourceOwnerId: "owner", sourceOwnerName: "Source owner", sourceSheetId: "source", sourceRevision: 3, copiedAt: "2026-09-18T10:00:00.000Z", sourceTitle: "Original" },
       lines: [{ ...sourceSheet.lines[0], id: "line-1", time: "2026-08-11T10:00", remarks: "later edit" }],
     };
 

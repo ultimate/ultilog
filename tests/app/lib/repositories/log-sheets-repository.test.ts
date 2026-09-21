@@ -51,7 +51,7 @@ describe("LogSheetsRepository", () => {
     await new LogSheetsRepository(db).insert(sheet, "repository-user");
 
     expect(db.calls[0].sql).toContain("insert into log_sheets");
-    expect(db.calls[0].values).toEqual([`repository-user:${sheet.id}`, sheet.title, sheet.status, null, null, null, null, null, null, null, null, null, `repository-user:${sheet.boatId}`, JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), JSON.stringify({}), null, "repository-user", 9, 54, 63, 635, 1, 635, 635, "private", "private", "private", "private", "private", "private", "private", "private"]);
+    expect(db.calls[0].values).toEqual([`repository-user:${sheet.id}`, sheet.title, sheet.status, null, null, null, null, null, null, null, null, null, null, `repository-user:${sheet.boatId}`, JSON.stringify({}), JSON.stringify(sheet.route), JSON.stringify({}), JSON.stringify({}), JSON.stringify([]), JSON.stringify(sheet.watchPlan), JSON.stringify(sheet.technicalChecks), JSON.stringify({}), null, "repository-user", 9, 54, 63, 635, 1, 635, 635, "private", "private", "private", "private", "private", "private", "private", "private"]);
   });
 
   it("maps relational rows back to a persisted logbook", () => {
@@ -97,14 +97,14 @@ describe("LogSheetsRepository", () => {
   });
 
   it("persists and maps shared-import provenance", async () => {
-    const copyProvenance = { sourceOwnerId: "source-owner", sourceSheetId: "source-sheet", sourceRevision: 7, copiedAt: "2026-09-18T08:30:00.000Z", sourceTitle: "Original passage" };
+    const copyProvenance = { sourceOwnerId: "source-owner", sourceOwnerName: "Source owner", sourceSheetId: "source-sheet", sourceRevision: 7, copiedAt: "2026-09-18T08:30:00.000Z", sourceTitle: "Original passage" };
     const db = new MockDatabase();
 
     await new LogSheetsRepository(db).insert({ ...sheet, source: "shared", copyProvenance }, "repository-user");
 
     expect(db.calls[0].values).toContain("shared");
-    expect(db.calls[0].values).toEqual(expect.arrayContaining(["source-owner", "source-sheet", 7, copyProvenance.copiedAt, "Original passage"]));
-    expect(LogSheetsRepository.toLogbook([], [logSheetRow({ source: "shared", source_owner_id: "source-owner", source_sheet_id: "source-sheet", source_revision: 7, copied_at: copyProvenance.copiedAt, source_title: "Original passage" })], [], []).sheets[0]).toMatchObject({ source: "shared", copyProvenance });
+    expect(db.calls[0].values).toEqual(expect.arrayContaining(["source-owner", "Source owner", "source-sheet", 7, copyProvenance.copiedAt, "Original passage"]));
+    expect(LogSheetsRepository.toLogbook([], [logSheetRow({ source: "shared", source_owner_id: "source-owner", source_owner_name: "Source owner", source_sheet_id: "source-sheet", source_revision: 7, copied_at: copyProvenance.copiedAt, source_title: "Original passage" })], [], []).sheets[0]).toMatchObject({ source: "shared", copyProvenance });
   });
 
   it("maps the single structured scanner warning format without compatibility conversion", () => {
@@ -119,7 +119,7 @@ describe("LogSheetsRepository", () => {
 
     await new LogSheetsRepository(db).insert({ ...sheet, image }, "repository-user");
 
-    expect(db.calls[0].values?.slice(21, 23)).toEqual([image.id, "repository-user"]);
+    expect(db.calls[0].values?.slice(22, 24)).toEqual([image.id, "repository-user"]);
 
     const boatRow: BoatRow = { ...boat, flag_state: boat.flagState, home_port: boat.homePort, deviation_table: JSON.stringify(boat.deviationTable), image_data: "base64-boat", image_mime_type: "image/png", image_width: 640, image_height: 480 };
     const sheetRow = logSheetRow({ image_id: image.id, image_data: image.data, image_mime_type: image.mimeType, image_width: image.width, image_height: image.height });
