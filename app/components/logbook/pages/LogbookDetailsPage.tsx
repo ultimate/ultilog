@@ -1039,7 +1039,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                     if (!deleted) setDeleteError("The logsheet could not be deleted. Check your password and try again.");
                   }}>
                     <div className="share-logsheet-heading"><h2 id="delete-logsheet-title">Delete logsheet?</h2></div>
-                    <p>This permanently deletes this logsheet and all of its log lines. Enter your password to confirm.</p>
+                    <p>This permanently deletes this logsheet and all of its log lines. Its mileage will no longer count toward your totals or license progress. Enter your password to confirm.</p>
                     <label>Password<input type="password" autoComplete="current-password" required value={deletePassword} onChange={event => setDeletePassword(event.currentTarget.value)} autoFocus /></label>
                     {deleteError && <p className="form-error" role="alert">{deleteError}</p>}
                     <div className="modal-actions">
