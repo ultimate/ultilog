@@ -80,6 +80,8 @@ export function ProfilePage(props: ProfilePageProps) {
   const [avatarCrop, setAvatarCrop] = useState<AvatarCrop | null>(null);
   const motionThresholdValue = motionThresholdDraft ?? formatDecimalPreference(profilePreferences.motionStationaryThresholdNm);
 
+  // Keep the editable draft aligned when persisted preferences change externally.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setTechnicalTemplateDraft(profilePreferences.technicalLogTemplate.join("\n")); }, [profilePreferences.technicalLogTemplate]);
 
   const technicalTemplateLines = () => technicalTemplateDraft.split("\n").map((line) => line.trim()).filter(Boolean);
