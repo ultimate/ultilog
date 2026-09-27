@@ -1,6 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { calculateLogSheetMetrics } from "../../../../app/domain/logbook/sheet-metrics";
+import { calculateLogbookStatistics } from "../../../../app/domain/logbook/logbook-statistics";
+import { calculateLicenseProgress } from "../../../../app/domain/compliance/license-progress";
+import type { Requirement } from "../../../../app/domain/compliance/catalog";
 import type { LogbookDatabase } from "../../../../app/lib/db/logbook-database";
 import { defaultDeviationTable, type LogLine, type LogSheet } from "../../../../app/models/logbook";
 import { sampleLogSheets } from "../../../fixtures/logbook";
@@ -160,6 +163,71 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
       } finally { await context.cleanup(); }
     });
 
+    it("counts a copied sheet read by its recipient exactly like a manually created sheet", async () => {
+      const context = await setup();
+      try {
+        const sourceDb = context.database.forUser(context.other);
+        await sourceDb.upsertBoat({ ...context.boat, id: "source-boat", revision: undefined });
+        const sourceLines = voyageLines();
+        const voyage = {
+          ...sheet(sourceLines),
+          boatId: "source-boat",
+          route: { from: "A", to: "B", departed: "2026-09-10T08:00:00Z", arrived: "2026-09-12T08:00:00Z" },
+          share: { masterData: "registered", logLines: "registered", technicalLog: "registered", picture: "private", metrics: "private", skipper: "private", crew: "private" } as const,
+        };
+        await sourceDb.upsertLogSheet(voyage);
+
+        context.database.forUser(context.owner);
+        const manual = await context.database.upsertLogSheet({ ...voyage, id: "manual", boatId: "boat", share: undefined });
+        const copied = await context.database.copySharedSheet(context.other, "sheet", { destinationBoatId: "boat" });
+        const recipientSheets = (await context.database.readLogbook()).sheets;
+        const recipientCopy = recipientSheets.find(candidate => candidate.id === copied!.id)!;
+        const recipientManual = recipientSheets.find(candidate => candidate.id === manual!.id)!;
+
+        expect(recipientCopy.id).not.toBe(voyage.id);
+        expect(recipientCopy.lines.map(line => line.id)).not.toEqual(sourceLines.map(line => line.id));
+        const copiedMetrics = calculateLogSheetMetrics(recipientCopy.lines, recipientCopy.route);
+        const manualMetrics = calculateLogSheetMetrics(recipientManual.lines, recipientManual.route);
+        expect(copiedMetrics).toMatchObject({ sailMiles: 9, motorMiles: 6, totalMiles: 15 });
+        expect(copiedMetrics).toEqual(manualMetrics);
+        expect(recipientCopy.metrics).toMatchObject(copiedMetrics);
+
+        expect(calculateLogbookStatistics([recipientCopy])).toEqual({ sailMiles: 9, motorMiles: 6, totalMiles: 15, sailingDays: 3, daysAtSea: 3 });
+        expect(calculateLogbookStatistics([recipientCopy])).toEqual(calculateLogbookStatistics([recipientManual]));
+        expect(calculateLogbookStatistics(recipientSheets)).toEqual({ sailMiles: 18, motorMiles: 12, totalMiles: 30, sailingDays: 3, daysAtSea: 3 });
+
+        const requirements = [
+          automaticRequirement("sail", "sail-miles"), automaticRequirement("motor", "motor-miles"),
+          automaticRequirement("total", "total-miles"), automaticRequirement("sailing-days", "days-sailing"),
+          automaticRequirement("sea-days", "days-at-sea"),
+        ];
+        expect(calculateLicenseProgress(requirements, [recipientCopy]).map(item => item.achievedValue)).toEqual([9, 6, 15, 3, 3]);
+        expect(calculateLicenseProgress(requirements, [recipientCopy]).map(item => item.achievedValue))
+          .toEqual(calculateLicenseProgress(requirements, [recipientManual]).map(item => item.achievedValue));
+      } finally { await context.cleanup(); }
+    });
+
+    it("copies empty visible log lines despite private source metrics and contributes zero miles", async () => {
+      const context = await setup();
+      try {
+        const sourceDb = context.database.forUser(context.other);
+        await sourceDb.upsertBoat({ ...context.boat, id: "source-boat", revision: undefined });
+        await sourceDb.upsertLogSheet({
+          ...sheet([]), boatId: "source-boat",
+          share: { masterData: "public", logLines: "public", technicalLog: "public", picture: "private", metrics: "private", skipper: "private", crew: "private" },
+        });
+
+        context.database.forUser(context.owner);
+        const copied = await context.database.copySharedSheet(context.other, "sheet", { destinationBoatId: "boat" });
+        const recipientCopy = (await context.database.readLogbook()).sheets.find(candidate => candidate.id === copied!.id)!;
+
+        expect(recipientCopy.lines).toEqual([]);
+        expect(calculateLogSheetMetrics(recipientCopy.lines, recipientCopy.route)).toMatchObject({ sailMiles: 0, motorMiles: 0, totalMiles: 0 });
+        expect(calculateLogbookStatistics([recipientCopy])).toEqual({ sailMiles: 0, motorMiles: 0, totalMiles: 0, sailingDays: 0, daysAtSea: 0 });
+        expect(calculateLicenseProgress([automaticRequirement("miles", "total-miles")], [recipientCopy])[0].achievedValue).toBe(0);
+      } finally { await context.cleanup(); }
+    });
+
     it("rejects hidden required sections and invalid destination boats", async () => {
       const context = await setup();
       try {
@@ -230,4 +298,16 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
 
 function sheet(lines: LogLine[]): LogSheet {
   return { id: "sheet", title: "Contract sheet", status: "Draft", boatId: "boat", route: { from: "", to: "", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines };
+}
+
+function voyageLines(): LogLine[] {
+  return [
+    { ...sampleLogSheets[0].lines[0], id: "source-line-1", time: "2026-09-10T08:00:00Z", latitude: 54, longitude: 10, logNm: 0, sailMiles: 0, motorMiles: 0 },
+    { ...sampleLogSheets[0].lines[0], id: "source-line-2", time: "2026-09-11T08:00:00Z", latitude: 54, longitude: 11, logNm: 6, sailMiles: 4, motorMiles: 2 },
+    { ...sampleLogSheets[0].lines[0], id: "source-line-3", time: "2026-09-12T08:00:00Z", latitude: 54, longitude: 12, logNm: 15, sailMiles: 5, motorMiles: 4 },
+  ];
+}
+
+function automaticRequirement(id: string, type: Requirement["type"]): Requirement {
+  return { id, type, threshold: 100, filters: null, translationKey: "dashboard.totalMiles", unit: type.includes("miles") ? "nautical-miles" : "days" } as Requirement;
 }

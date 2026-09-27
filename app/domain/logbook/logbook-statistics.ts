@@ -1,10 +1,31 @@
 import type { LogLine, LogSheet } from "../../models/logbook";
-import { defaultMotionStationaryThresholdNm, isLogLineMotionInterval } from "./sheet-metrics";
+import { calculateLogSheetMetrics, defaultMotionStationaryThresholdNm, isLogLineMotionInterval } from "./sheet-metrics";
 
 export type LogbookDayStatistics = {
   sailingDays: number;
   daysAtSea: number;
 };
+
+export type LogbookStatistics = LogbookDayStatistics & {
+  sailMiles: number;
+  motorMiles: number;
+  totalMiles: number;
+};
+
+/** Aggregates the mileage and day counters displayed by the dashboard. */
+export function calculateLogbookStatistics(
+  sheets: readonly LogSheet[],
+  stationaryDistanceThresholdNm = defaultMotionStationaryThresholdNm,
+): LogbookStatistics {
+  const miles = sheets.reduce((totals, sheet) => {
+    const metrics = calculateLogSheetMetrics(sheet.lines, sheet.route, { stationaryDistanceThresholdNm });
+    totals.sailMiles += metrics.sailMiles;
+    totals.motorMiles += metrics.motorMiles;
+    totals.totalMiles += metrics.totalMiles;
+    return totals;
+  }, { sailMiles: 0, motorMiles: 0, totalMiles: 0 });
+  return { ...miles, ...calculateLogbookDayStatistics([...sheets], stationaryDistanceThresholdNm) };
+}
 
 /**
  * Counts distinct local calendar days across a logbook. A complete route defines

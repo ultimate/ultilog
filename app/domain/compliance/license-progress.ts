@@ -1,7 +1,6 @@
 import type { LogSheet } from "../../models/logbook";
 import type { Requirement } from "./catalog";
-import { calculateLogbookDayStatistics } from "../logbook/logbook-statistics";
-import { calculateLogSheetMetrics } from "../logbook/sheet-metrics";
+import { calculateLogbookStatistics } from "../logbook/logbook-statistics";
 
 export type RequirementProgress = {
   requirement: Requirement;
@@ -79,15 +78,7 @@ export function calculateLicenseProgress(
 }
 
 function collectStatistics(sheets: readonly LogSheet[]): AutomaticStatistics {
-  const miles = sheets.reduce((totals, sheet) => {
-    const metrics = calculateLogSheetMetrics(sheet.lines, sheet.route);
-    totals.sailMiles += metrics.sailMiles;
-    totals.motorMiles += metrics.motorMiles;
-    totals.totalMiles += metrics.totalMiles;
-    return totals;
-  }, { sailMiles: 0, motorMiles: 0, totalMiles: 0 });
-  const days = calculateLogbookDayStatistics([...sheets]);
-  return { ...miles, ...days };
+  return calculateLogbookStatistics(sheets);
 }
 
 function positiveTarget(value: number | undefined) {
