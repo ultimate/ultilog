@@ -311,6 +311,18 @@ export async function validateUser(email: string, password: string): Promise<App
   return toAppUser(user, await manualGroupsForUser(user.id));
 }
 
+/** Verifies a password for a sensitive action without exposing the stored hash. */
+export async function verifyUserPassword(userId: string, password: string): Promise<boolean> {
+  const db = getDatabase();
+  await db.migrate();
+  const result = await db.query<Pick<UserRow, "password_hash">>(
+    `select password_hash from users where id = ${db.placeholder(1)}`,
+    [userId],
+  );
+  const passwordHash = result.rows[0]?.password_hash;
+  return Boolean(passwordHash) && bcrypt.compare(password.normalize("NFC"), passwordHash);
+}
+
 export function isAdminUser(user?: { groups?: string[] } | null) {
   return user?.groups?.includes("admin") ?? false;
 }

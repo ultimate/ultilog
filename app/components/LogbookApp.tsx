@@ -356,7 +356,7 @@ export function LogbookApp({
     | { kind: "sheet"; id: string }
     | { kind: "line"; sheetId: string; entity: LogLine; isNew: boolean; previousLineIds: string[]; lineIds: string[] }
     | { kind: "line-deletion"; sheetId: string; id: string; revision: number }
-    | { kind: "deletion"; entityKind: "boat" | "crew" | "sheet"; id: string; revision: number };
+    | { kind: "deletion"; entityKind: "boat" | "crew" | "sheet"; id: string; revision: number; password?: string };
 
   async function saveLogbookNow(nextLogbook: PersistedLogbook, mutation: FocusedMutation) {
     logbookRef.current = nextLogbook;
@@ -424,7 +424,7 @@ export function LogbookApp({
         : mutation.kind === "crew" ? persistCrewMember(entity as CrewMember, mutation.isNew)
         : mutation.kind === "line-deletion" ? persistDeleteLogLine(mutation.sheetId, mutation.id, mutation.revision)
         : mutation.kind === "sheet" ? persistSheet(entity as LogSheet ?? current.sheets.find((sheet) => "id" in mutation && sheet.id === mutation.id)!, "isNew" in mutation && mutation.isNew)
-        : deleteLogbookEntity(mutation.entityKind, mutation.id, mutation.revision)).catch((error) => {
+        : deleteLogbookEntity(mutation.entityKind, mutation.id, mutation.revision, undefined, mutation.password)).catch((error) => {
           requestError = error;
           return undefined;
         });
@@ -1107,6 +1107,20 @@ export function LogbookApp({
       return;
     setSelectedBoatId(nextBoats[0]?.id ?? "");
     setEditingBoatId(nextBoats[0]?.id ?? null);
+  }
+
+  async function deleteActiveSheet(password: string) {
+    const sheet = logbookRef.current.sheets.find(candidate => candidate.id === activeSheet.id);
+    if (!sheet) return false;
+    const previousLogbook = logbookRef.current;
+    const nextLogbook = { ...logbookRef.current, sheets: logbookRef.current.sheets.filter(candidate => candidate.id !== sheet.id) };
+    const deleted = await saveLogbookNow(nextLogbook, { kind: "deletion", entityKind: "sheet", id: sheet.id, revision: sheet.revision ?? 0, password });
+    if (deleted) navigate("logbooks");
+    else {
+      logbookRef.current = previousLogbook;
+      setLogbook(previousLogbook);
+    }
+    return deleted;
   }
 
   async function setSelectedBoatArchived(archived: boolean) {
@@ -1984,6 +1998,7 @@ export function LogbookApp({
               isActiveSheetLocked={isActiveSheetLocked}
               updateActiveSheetStatus={updateActiveSheetStatus}
               updateActiveSheetShare={updateActiveSheetShare}
+              deleteActiveSheet={deleteActiveSheet}
               updateScannerWarningAcknowledgment={updateScannerWarningAcknowledgment}
               renderInlineBoatField={renderInlineBoatField}
               activeBoat={activeBoat}
