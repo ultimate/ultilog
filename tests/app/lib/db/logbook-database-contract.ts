@@ -128,8 +128,8 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
         });
         context.database.forUser(context.owner);
         const copied = await context.database.copySharedSheet(context.other, "sheet", { destinationBoatId: "boat", includeCrew: true, includePicture: true });
-        expect(copied).toMatchObject({ title: "Shared voyage", status: "Draft", source: "shared", sourceDetails: { ownerName: "Other owner", sheetTitle: "Shared voyage", importedAt: expect.any(String) }, boatId: "boat", watchPlan: ["00-04"], technicalChecks: [{ status: "ok", text: "Rig" }], share: { masterData: "private", logLines: "private", technicalLog: "private", picture: "private", metrics: "private", skipper: "private", crew: "private" } });
-        expect(new Date(copied!.sourceDetails!.importedAt).toISOString()).toBe(copied!.sourceDetails!.importedAt);
+        expect(copied).toMatchObject({ title: "Shared voyage", status: "Draft", source: "shared", copyProvenance: { sourceOwnerId: context.other, sourceOwnerName: "Other owner", sourceSheetId: "sheet", sourceRevision: expect.any(Number), copiedAt: expect.any(String), sourceTitle: "Shared voyage" }, boatId: "boat", watchPlan: ["00-04"], technicalChecks: [{ status: "ok", text: "Rig" }], share: { masterData: "private", logLines: "private", technicalLog: "private", picture: "private", metrics: "private", skipper: "private", crew: "private" } });
+        expect(new Date(copied!.copyProvenance!.copiedAt).toISOString()).toBe(copied!.copyProvenance!.copiedAt);
         expect(copied!.id).not.toBe("sheet");
         expect(copied!.lines[0].id).not.toBe("source-line");
         expect(copied!.crew).toHaveLength(1);
@@ -139,8 +139,24 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
         const calculated = calculateLogSheetMetrics(copied!.lines, copied!.route);
         expect(copied!.metrics).toMatchObject({ motorMiles: calculated.motorMiles, sailMiles: calculated.sailMiles, totalMiles: calculated.totalMiles, motorHours: calculated.motorHours, motionDurationMinutes: calculated.motionDurationMinutes });
 
-        const withoutCrew = await context.database.copySharedSheet(context.other, "sheet", { destinationBoatId: "boat" });
+        await expect(context.database.copySharedSheet(context.other, "sheet", { destinationBoatId: "boat" })).rejects.toMatchObject({
+          code: "duplicate_shared_copy",
+          previousCopy: { id: copied!.id, title: "Shared voyage", copiedAt: copied!.copyProvenance!.copiedAt },
+        });
+        const withoutCrew = await context.database.copySharedSheet(context.other, "sheet", { destinationBoatId: "boat", allowDuplicate: true });
         expect(withoutCrew!.crew).toEqual([]);
+
+        const { lines: _lines, crew: copiedCrew, copyProvenance: _attemptedChange, ...editableCopy } = copied!;
+        const edited = await context.database.upsertLogSheet({ ...editableCopy, crew: copiedCrew.map(member => ({ id: member.id, embarkationDateTime: member.embarkationDateTime, embarkationPosition: member.embarkationPosition, disembarkationDateTime: member.disembarkationDateTime, disembarkationPosition: member.disembarkationPosition })), title: "My edited copy" });
+        expect(edited!.copyProvenance).toEqual(copied!.copyProvenance);
+
+        sourceDb.forUser(context.other);
+        const sourceSheet = (await sourceDb.readLogbook()).sheets.find(candidate => candidate.id === "sheet")!;
+        await sourceDb.deleteLogSheet("sheet", sourceSheet.revision!);
+        context.database.forUser(context.owner);
+        expect((await context.database.readLogbook()).sheets.find(candidate => candidate.id === copied!.id)).toMatchObject({ title: "My edited copy", copyProvenance: copied!.copyProvenance });
+        await context.database.deleteLogSheet(copied!.id, edited!.revision!);
+        expect((await context.database.readLogbook()).sheets.some(candidate => candidate.id === copied!.id)).toBe(false);
       } finally { await context.cleanup(); }
     });
 

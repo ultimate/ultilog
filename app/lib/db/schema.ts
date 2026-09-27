@@ -13,7 +13,9 @@ export const LOCALIZED_SCANNER_WARNINGS_MIGRATION_ID = "044_localize_scanner_war
 export const STRICT_STORAGE_FORMATS_MIGRATION_ID = "045_remove_legacy_storage_formats";
 export const STRICT_LOG_LINE_ENGINE_HOURS_MIGRATION_ID = "046_remove_legacy_log_line_motor_hours";
 export const NORMALIZED_BOAT_MASTER_DATA_MIGRATION_ID = "047_normalize_boat_master_data";
-export const SHARED_SHEET_SOURCE_DETAILS_MIGRATION_ID = "048_shared_sheet_source_details";
+export const LOG_SHEET_COPY_PROVENANCE_MIGRATION_ID = "049_log_sheet_copy_provenance";
+export const LOG_SHEET_COPY_SOURCE_OWNER_NAME_MIGRATION_ID = "050_log_sheet_copy_source_owner_name";
+export const REMOVE_LOG_SHEET_SOURCE_DETAILS_MIGRATION_ID = "051_remove_log_sheet_source_details";
 
 let migrations: SqlMigration[] | undefined;
 let schemaSql: string | undefined;

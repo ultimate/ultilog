@@ -780,6 +780,9 @@ export const de: Dictionary = {
   "sharedCopy.includePicture": "Geteiltes Bild übernehmen",
   "sharedCopy.cancel": "Abbrechen",
   "sharedCopy.confirm": "Blatt kopieren",
+  "sharedCopy.previouslyCopied": "Previously copied",
+  "sharedCopy.duplicateMileage": "Another copy may cause the same voyage mileage to be counted multiple times. Copies remain independent and editable.",
+  "sharedCopy.confirmDuplicate": "Copy another anyway",
   "sharedCopy.copying": "Wird kopiert…",
   "sharedCopy.authorizationError": "Du bist nicht berechtigt, dieses Blatt zu kopieren. Melde dich erneut an oder prüfe die Freigabe.",
   "sharedCopy.validationError": "Die Kopie konnte nicht validiert werden. Prüfe Ziel und Freigabeoptionen.",
@@ -795,5 +798,6 @@ export const de: Dictionary = {
   "details.sharedSource.label": "Information zum importierten Logblatt",
   "details.sharedSource.heading": "Aus einem geteilten Logblatt importiert",
   "details.sharedSource.notice": "Dieses Logblatt wurde am {date} von {owner} aus dem Blatt „{sheet}“ kopiert.",
+  "details.sharedSource.provenance": "Copied from {owner}’s “{sheet}” (source revision {revision}) on {date}. This copy remains available independently of its source.",
 
 };

@@ -2,7 +2,7 @@ import { defaultLogSheetShareSettings, type Boat, type CrewMember, type FocusedL
 import { BoatsRepository } from "../repositories/boats-repository";
 import { CrewRepository } from "../repositories/crew-repository";
 import { LogLinesRepository } from "../repositories/log-lines-repository";
-import { expectedRevision, scopedId } from "../repositories/boats-repository";
+import { expectedRevision, scopedId, unscopedId } from "../repositories/boats-repository";
 import { LogSheetsRepository } from "../repositories/log-sheets-repository";
 import { StoredImagesRepository } from "../repositories/stored-images-repository";
 import { backfillCrewMemberEncryption } from "./encryption-backfill";
@@ -11,7 +11,8 @@ import { referencedBoatDeletionError, sheetBoatMutationError } from "../../domai
 import { sectionVisibility, sharedSheetCapability, type SectionVisibility, type SharedSheetCapability } from "../../domain/logbook/share-policy";
 
 export type SharedLogSheet = { sheet: LogSheet; boatName: string; capability: SharedSheetCapability; sourceOwnerId?: string; ownerAvatar?: string; showOwnerAvatarOnPrint?: boolean };
-export type CopySharedLogSheetOptions = { destinationBoatId: string; includeCrew?: boolean; includePicture?: boolean };
+export type CopySharedLogSheetOptions = { destinationBoatId: string; includeCrew?: boolean; includePicture?: boolean; allowDuplicate?: boolean };
+export type PreviousCopySummary = { id: string; title: string; copiedAt: string };
 
 export type QueryResult<Row> = { rows: Row[] };
 
@@ -326,6 +327,16 @@ export abstract class LogbookDatabase implements QueryableDatabase {
       const sourceRow = await database.sheets.findSharedByScopedId(scopedId(sourceOwnerId, sourceSheetId));
       if (!sourceRow?.owner_id || sourceRow.owner_id !== sourceOwnerId) return undefined;
 
+      const previousRow = await database.sheets.findPreviousCopy(recipientId, sourceOwnerId, sourceSheetId);
+      if (previousRow && !options.allowDuplicate) {
+        const previousCopy: PreviousCopySummary = {
+          id: unscopedId(previousRow.id),
+          title: previousRow.title,
+          copiedAt: previousRow.copied_at ? new Date(previousRow.copied_at).toISOString() : new Date(previousRow.created_at!).toISOString(),
+        };
+        throw Object.assign(new Error("This shared sheet was copied before."), { code: "duplicate_shared_copy", previousCopy });
+      }
+
       const sourceShell = LogSheetsRepository.toLogbook([], [sourceRow], [], []).sheets[0];
       const visibility = sectionVisibility(sourceShell.share ?? defaultLogSheetShareSettings, true);
       if (!visibility.masterData || !visibility.logLines || !visibility.technicalLog) {
@@ -346,6 +357,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
         [sourceOwnerId],
       )).rows[0];
       const sheetId = crypto.randomUUID();
+      const copiedAt = new Date().toISOString();
       const lines = source.lines.map(({ revision: _revision, createdAt: _createdAt, updatedAt: _updatedAt, id: _id, ...line }) => ({ ...line, id: crypto.randomUUID() }));
 
       let imageId: string | undefined;
@@ -366,7 +378,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
         title: source.title,
         status: "Draft",
         source: "shared",
-        sourceDetails: { ownerName: sourceOwner?.name ?? sourceOwnerId, sheetTitle: source.title, importedAt: new Date().toISOString() },
+        copyProvenance: { sourceOwnerId, sourceOwnerName: sourceOwner?.name ?? sourceOwnerId, sourceSheetId, sourceRevision: Number(sourceRow.revision ?? 1), copiedAt, sourceTitle: source.title },
         boatId: options.destinationBoatId,
         route: { ...source.route },
         crew,
