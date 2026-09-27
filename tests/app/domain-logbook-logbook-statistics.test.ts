@@ -67,7 +67,7 @@ describe("calculateLogbookDayStatistics", () => {
 });
 
 function sheet(departed: string, arrived: string, lines: LogLine[] = []): LogSheet {
-  return { id: `${departed}-${arrived}`, title: "Test", status: "Draft", boatId: "boat", route: { from: "A", to: "B", departed, arrived }, crew: [], watchPlan: [], technicalChecks: [], lines };
+  return { id: `${departed}-${arrived}`, title: "Test", status: "Draft", boatId: "boat", route: { from: "A", to: "B", departed, arrived }, crew: [], technicalChecks: [], lines };
 }
 
 function line(time: string, logNm: number): LogLine {

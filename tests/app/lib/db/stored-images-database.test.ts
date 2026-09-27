@@ -44,7 +44,7 @@ for (const dialect of dialects) {
       const boat = { id: "boat", name: "Image boat", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, deviationTable: defaultDeviationTable(), imageId: ids.boat };
       const crew: CrewMember = { id: "crew", name: "Global crew", nationality: "", role: "", address: "", certificate: "", imageId: ids.crew };
       const assignment = { ...crew, embarkationDateTime: "", embarkationPosition: "", disembarkationDateTime: "", disembarkationPosition: "" };
-      const sheet = (id: string, imageId: string): LogSheet => ({ id, title: id, status: "Draft", boatId: boat.id, route: { from: "", to: "", departed: "", arrived: "" }, crew: [{ ...assignment }], watchPlan: [], technicalChecks: [], lines: [], imageId });
+      const sheet = (id: string, imageId: string): LogSheet => ({ id, title: id, status: "Draft", boatId: boat.id, route: { from: "", to: "", departed: "", arrived: "" }, crew: [{ ...assignment }], technicalChecks: [], lines: [], imageId });
       const createdBoat = await db.upsertBoat(boat);
       const createdCrew = await db.upsertCrewMember(crew);
       const firstSheet = await db.upsertLogSheet(sheet("sheet-1", ids.sheet));

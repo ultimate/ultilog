@@ -4,7 +4,7 @@ import { validatePersistedLogbook } from "../../../app/lib/validation/logbook";
 const warningLogbook = (scannerWarnings: unknown) => ({
   boats: [{ id: "boat", name: "Boat", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, deviationTable: [] }],
   crewMembers: [],
-  sheets: [{ id: "sheet", title: "Sheet", status: "Draft", source: "scanner", boatId: "boat", route: { from: "", to: "", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [], scannerWarnings }],
+  sheets: [{ id: "sheet", title: "Sheet", status: "Draft", source: "scanner", boatId: "boat", route: { from: "", to: "", departed: "", arrived: "" }, crew: [], technicalChecks: [], lines: [], scannerWarnings }],
 });
 
 describe("structured scanner warning validation", () => {

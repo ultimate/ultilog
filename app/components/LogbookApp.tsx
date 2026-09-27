@@ -114,7 +114,8 @@ type SheetInlineField =
   | "departed"
   | "from"
   | "arrived"
-  | "to";
+  | "to"
+  | "remarks";
 
 type SheetFormPreferences = Pick<ProfilePreferences, "defaultBoatId">;
 type LineFormPreferences = Pick<
@@ -816,13 +817,23 @@ export function LogbookApp({
   ) =>
     editingSheetField === field ? (
       <span className={`inline-value-editor inline-value-editor-${field}`}>
-        <input
-          type={inputType}
-          aria-label={`${t("details.edit")} ${field}`}
-          value={sheetInlineDraft}
-          onChange={(event) => setSheetInlineDraft(event.target.value)}
-          autoFocus
-        />
+        {inputType === "textarea" ? (
+          <textarea
+            aria-label={`${t("details.edit")} ${field}`}
+            value={sheetInlineDraft}
+            onChange={(event) => setSheetInlineDraft(event.target.value)}
+            rows={5}
+            autoFocus
+          />
+        ) : (
+          <input
+            type={inputType}
+            aria-label={`${t("details.edit")} ${field}`}
+            value={sheetInlineDraft}
+            onChange={(event) => setSheetInlineDraft(event.target.value)}
+            autoFocus
+          />
+        )}
         {sheetInlineActions}
       </span>
     ) : (
@@ -1063,7 +1074,7 @@ export function LogbookApp({
       boatId: sheetForm.boatId,
       route,
       crew: existingSheet?.crew ?? initialCrew,
-      watchPlan: existingSheet?.watchPlan ?? [],
+      remarks: existingSheet?.remarks ?? "",
       technicalChecks: existingSheet?.technicalChecks ?? createTechnicalChecks(preferences.language, preferences.technicalLogTemplate, preferences.enabledStandardTechnicalChecks),
       engineHourCounters: existingSheet?.engineHourCounters ?? (() => {
         const previousSheet = currentLogbook.sheets
@@ -1228,6 +1239,7 @@ export function LogbookApp({
           return { ...sheet, route: { ...sheet.route, from: value } };
         if (field === "to")
           return { ...sheet, route: { ...sheet.route, to: value } };
+        if (field === "remarks") return { ...sheet, remarks: value };
         if (field === "departed") {
           return {
             ...sheet,

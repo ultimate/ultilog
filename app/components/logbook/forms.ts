@@ -1,7 +1,7 @@
 import { dateTimeLocalFromStamp, timezoneOffsetFromStamp } from "./date-utils";
 import { defaultDeviationTable, defaultMainEngine, defaultWindDriftTable, normalizeDeviationTable, normalizeWindDriftTable, type Boat, type BoatForm, type CrewForm, type LineForm, type LogLine, type LogSheet, type PersistedLogbook, type SheetForm } from "../../models/logbook";
 export const emptyBoat: Boat = { id: "", archived: false, name: "", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", manufacturer: "", mmsi: "", logfactor: 1, deviationTable: defaultDeviationTable(), windDriftTable: defaultWindDriftTable(), engines: [defaultMainEngine()], image: undefined };
-export const emptySheet: LogSheet = { id: "", title: "", status: "Draft", boatId: "", route: { from: "", to: "", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], image: undefined, lines: [] };
+export const emptySheet: LogSheet = { id: "", title: "", status: "Draft", boatId: "", route: { from: "", to: "", departed: "", arrived: "" }, crew: [], remarks: "", technicalChecks: [], image: undefined, lines: [] };
 export const defaultLogbook: PersistedLogbook = { boats: [], crewMembers: [], sheets: [] };
 
 export const defaultSheetForm = (boatId: string): SheetForm => ({ title: "", status: "Draft", boatId, fromDate: new Date().toISOString().slice(0, 10), toDate: new Date().toISOString().slice(0, 10), from: "", to: "", fromTime: "", toTime: "", fromTimezone: timezoneOffsetFromStamp(""), toTimezone: timezoneOffsetFromStamp(""), image: undefined });

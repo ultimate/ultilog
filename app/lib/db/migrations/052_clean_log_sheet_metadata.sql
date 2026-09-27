@@ -1,0 +1,2 @@
+-- Applied by cleanLogSheetMetadata to support both SQLite and PostgreSQL,
+-- including databases whose legacy placeholder columns are already absent.
