@@ -1032,6 +1032,21 @@ td { color: #28384b; line-height: 1.45; }
   margin: 0;
 }
 
+.sheet-master-map-grid .logbook-sheet-map-section {
+  gap: 0.4rem;
+  grid-template-rows: auto minmax(0, 1fr);
+  padding: 0.5rem !important;
+}
+
+.sheet-master-map-grid .open-seamap-detail {
+  height: 100%;
+  min-height: 0;
+}
+
+.sheet-master-map-grid .open-seamap-detail .open-seamap-map {
+  min-height: 0;
+}
+
 .sheet-remarks-section .inline-value-button {
   width: 100%;
   min-height: 5rem;
