@@ -1,8 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { calculateLogbookDayStatistics } from "../../app/domain/logbook/logbook-statistics";
+import { calculateLogbookDayStatistics, calculateLogbookStatistics } from "../../app/domain/logbook/logbook-statistics";
 import type { LogLine, LogSheet } from "../../app/models/logbook";
 
 describe("calculateLogbookDayStatistics", () => {
+  it("aggregates a regenerated-id copy exactly like its manually created source", () => {
+    const manual = sheet("2026-09-10T08:00:00Z", "2026-09-12T08:00:00Z", [
+      { ...line("2026-09-10T08:00:00Z", 0), id: "manual-1" },
+      { ...line("2026-09-11T08:00:00Z", 6), id: "manual-2", sailMiles: 4, motorMiles: 2 },
+      { ...line("2026-09-12T08:00:00Z", 15), id: "manual-3", sailMiles: 5, motorMiles: 4 },
+    ]);
+    const copied = { ...manual, id: "copy", lines: manual.lines.map((item, index) => ({ ...item, id: `copy-${index + 1}` })) };
+
+    expect(calculateLogbookStatistics([copied])).toEqual({ sailMiles: 9, motorMiles: 6, totalMiles: 15, sailingDays: 3, daysAtSea: 3 });
+    expect(calculateLogbookStatistics([copied])).toEqual(calculateLogbookStatistics([manual]));
+  });
+
   it("counts a single-day sheet once", () => {
     expect(calculateLogbookDayStatistics([sheet("2026-06-01T08:00:00+02:00", "2026-06-01T18:00:00+02:00")])).toEqual({ sailingDays: 1, daysAtSea: 0 });
   });

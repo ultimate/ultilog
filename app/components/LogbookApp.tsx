@@ -60,7 +60,7 @@ import {
 import { ManagerShell } from "./managers/ManagerShell";
 import { courseConversionColumns } from "../domain/nautical/course-conversion";
 import { calculateLogSheetMetrics, formatLogSheetDuration } from "../domain/logbook/sheet-metrics";
-import { calculateLogbookDayStatistics } from "../domain/logbook/logbook-statistics";
+import { calculateLogbookStatistics } from "../domain/logbook/logbook-statistics";
 import { activeBoats } from "../domain/boats/boat-policy";
 import { readScannerUploadResponse } from "../lib/logbook-scanner/upload-response";
 import { lineFormToLogLine } from "../domain/log-lines/log-line-form";
@@ -940,13 +940,13 @@ export function LogbookApp({
       sheet,
       metrics: calculateLogSheetMetrics(sheet.lines, sheet.route, { stationaryDistanceThresholdNm: preferences.motionStationaryThresholdNm }),
     }));
-    const totalNm = sheetsWithMetrics.reduce((sum, item) => sum + item.metrics.totalMiles, 0);
-    const sailNm = sheetsWithMetrics.reduce((sum, item) => sum + item.metrics.sailMiles, 0);
-    const motorNm = sheetsWithMetrics.reduce((sum, item) => sum + item.metrics.motorMiles, 0);
+    const aggregateStatistics = calculateLogbookStatistics(logbook.sheets, preferences.motionStationaryThresholdNm);
+    const totalNm = aggregateStatistics.totalMiles;
+    const sailNm = aggregateStatistics.sailMiles;
+    const motorNm = aggregateStatistics.motorMiles;
     const durationMinutes = sheetsWithMetrics.reduce((sum, item) => sum + (item.metrics.overallDurationMinutes ?? item.metrics.durationMinutes ?? 0), 0);
     const motionDurationMinutes = sheetsWithMetrics.reduce((sum, item) => sum + item.metrics.motionDurationMinutes, 0);
     const motorHours = sheetsWithMetrics.reduce((sum, item) => sum + item.metrics.motorHours, 0);
-    const dayStatistics = calculateLogbookDayStatistics(logbook.sheets, preferences.motionStationaryThresholdNm);
     const timeline = sheetsWithMetrics
       .slice().sort((a, b) => a.sheet.route.departed.localeCompare(b.sheet.route.departed))
       .map((item) => ({ label: monthLabelForSheet(item.sheet), totalNm: item.metrics.totalMiles, sailNm: item.metrics.sailMiles, motorNm: item.metrics.motorMiles, overallMinutes: item.metrics.overallDurationMinutes ?? item.metrics.durationMinutes ?? 0, motionMinutes: item.metrics.motionDurationMinutes, motorMinutes: item.metrics.motorHours * 60 }));
@@ -963,7 +963,8 @@ export function LogbookApp({
       durationMinutes,
       motionDurationMinutes,
       motorHours,
-      ...dayStatistics,
+      sailingDays: aggregateStatistics.sailingDays,
+      daysAtSea: aggregateStatistics.daysAtSea,
       timeline,
       boatDistribution,
       sheets: logbook.sheets.length,
