@@ -48,6 +48,10 @@ async function applyMigration(db: QueryableDatabase, id: string, sql: string) {
     await removeLogSheetSourceDetails(db);
     return;
   }
+  if (id === "052_clean_log_sheet_metadata") {
+    await cleanLogSheetMetadata(db);
+    return;
+  }
   if (id === "043_structure_scanner_warnings" || id === "044_localize_scanner_warnings") {
     await structureScannerWarnings(db);
     return;
@@ -90,6 +94,17 @@ async function applyMigration(db: QueryableDatabase, id: string, sql: string) {
     } catch (error) {
       if (!isDuplicateColumnError(error)) throw error;
     }
+  }
+}
+
+async function cleanLogSheetMetadata(db: QueryableDatabase) {
+  const columnRows = db.placeholder(1) === "$1"
+    ? await db.query<{ name: string }>("select column_name as name from information_schema.columns where table_schema = current_schema() and table_name = 'log_sheets'")
+    : await db.query<{ name: string }>("select name from pragma_table_info('log_sheets')");
+  const columns = new Set(columnRows.rows.map(({ name }) => name));
+  if (columns.has("remarks")) await db.query("update log_sheets set remarks = '' where remarks = '[]'");
+  for (const column of ["weather_briefing", "day_summary", "watch_plan"]) {
+    if (columns.has(column)) await db.query(`alter table log_sheets drop column ${column}`);
   }
 }
 

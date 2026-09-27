@@ -37,7 +37,6 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
       arrived: "04 Jul 2026, 11:30",
     },
     crew: [],
-    watchPlan: [],
     technicalChecks: [],
     lines: sampleLogSheets[0].lines.slice(0, 1),
   };

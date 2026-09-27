@@ -807,7 +807,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
               </div>
             </form>
           ) : (
-            <>
+            <div className="sheet-master-map-grid">
               <section
                 className="sheet-title-row logbook-section sheet-master-header"
                 aria-label={t("details.headerAria")}
@@ -914,7 +914,19 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                   </div>
                 </div>
               </section>
-            </>
+              <article className="map-card logbook-section logbook-sheet-map-section">
+                <div className="logbook-map-heading">
+                  <h3>{t("details.positions")}</h3>
+                  <button className="edit-chip" type="button" onClick={() => setIsMapExpanded(true)}>
+                    {t("details.fullMap")}
+                  </button>
+                </div>
+                <LogLinesMapView
+                  logLines={activeSheet.lines}
+                  onAddLogLineAt={isActiveSheetLocked ? undefined : startAddingLineAtCoordinates}
+                />
+              </article>
+            </div>
           )}
 
           {!showNewSheet && (
@@ -1382,22 +1394,10 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                     </button>
                   </form>
                 </article>
-                <article className="map-card logbook-section logbook-sheet-map-section">
-                  <div className="logbook-map-heading">
-                    <h3>{t("details.positions")}</h3>
-                    <button
-                      className="edit-chip"
-                      type="button"
-                      onClick={() => setIsMapExpanded(true)}
-                    >
-                      {t("details.fullMap")}
-                    </button>
-                  </div>
-                  <LogLinesMapView
-                    logLines={activeSheet.lines}
-                    onAddLogLineAt={isActiveSheetLocked ? undefined : startAddingLineAtCoordinates}
-                  />
-                </article>
+              </section>
+              <section className="info-card logbook-section sheet-remarks-section" aria-labelledby="sheet-remarks-heading">
+                <h3 id="sheet-remarks-heading">{t("details.remarks")}</h3>
+                {renderInlineTextField("remarks", activeSheet.remarks ?? "", "—", "textarea")}
               </section>
               {isMapExpanded && (
                 <div

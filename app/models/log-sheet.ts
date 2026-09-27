@@ -61,7 +61,8 @@ export type LogSheet = {
     arrived: string;
   };
   crew: SheetCrewMember[];
-  watchPlan: string[];
+  /** General notes applying to the whole log sheet. */
+  remarks?: string;
   technicalChecks: TechnicalCheck[];
   /** Cumulative hour-meter readings for each engine at the sheet boundaries. */
   engineHourCounters?: Record<string, EngineHourCounter>;

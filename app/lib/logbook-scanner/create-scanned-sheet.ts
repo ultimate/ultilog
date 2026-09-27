@@ -111,7 +111,7 @@ export function createScannedSheet({
     boatId,
     route,
     crew: createInitialCrew({ logbook, primaryCrew, currentUser, route }),
-    watchPlan: [],
+    remarks: "",
     technicalChecks: mergeTechnicalChecks(technicalLogTemplate, draft.technicalChecks ?? []),
     engineHourCounters: scannedEngineHourCounters(draft.engineHourCounters ?? [], engineIds),
     lines: normalizedLines.lines,

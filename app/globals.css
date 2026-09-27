@@ -985,7 +985,8 @@ td { color: #28384b; line-height: 1.45; }
 }
 
 .inline-value-editor input,
-.inline-value-editor select {
+.inline-value-editor select,
+.inline-value-editor textarea {
   min-width: 0;
   width: 100%;
   border: 1px solid var(--border);
@@ -994,6 +995,10 @@ td { color: #28384b; line-height: 1.45; }
   color: var(--foreground);
   background: #f8fbfd;
   font: inherit;
+}
+
+.inline-value-editor textarea {
+  resize: vertical;
 }
 
 .inline-value-actions {
@@ -1014,6 +1019,30 @@ td { color: #28384b; line-height: 1.45; }
   position: relative;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
+}
+
+.sheet-master-map-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(20rem, 0.8fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.sheet-master-map-grid > .logbook-section {
+  margin: 0;
+}
+
+.sheet-remarks-section .inline-value-button {
+  width: 100%;
+  min-height: 5rem;
+  align-items: flex-start;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 900px) {
+  .sheet-master-map-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .sheet-master-title {

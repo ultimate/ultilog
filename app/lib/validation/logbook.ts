@@ -84,7 +84,7 @@ export function validatePersistedLogbook(value: unknown): PersistedLogbook {
   value.crewMembers.forEach((crew, i) => validateCrew(crew, `crewMembers[${i}]`));
   let totalLines = 0, totalSheetCrew = 0;
   value.sheets.forEach((sheet, i) => {
-    assert(record(sheet) && ["id", "title", "boatId"].every(k => string(sheet[k])) && ["Draft", "Locked"].includes(sheet.status as string) && record(sheet.route) && ["from", "to", "departed", "arrived"].every(k => string((sheet.route as Record<string, unknown>)[k])) && Array.isArray(sheet.crew) && strings(sheet.watchPlan) && Array.isArray(sheet.technicalChecks) && Array.isArray(sheet.lines), `sheets[${i}] is malformed.`);
+    assert(record(sheet) && ["id", "title", "boatId"].every(k => string(sheet[k])) && (sheet.remarks === undefined || string(sheet.remarks)) && ["Draft", "Locked"].includes(sheet.status as string) && record(sheet.route) && ["from", "to", "departed", "arrived"].every(k => string((sheet.route as Record<string, unknown>)[k])) && Array.isArray(sheet.crew) && Array.isArray(sheet.technicalChecks) && Array.isArray(sheet.lines), `sheets[${i}] is malformed.`);
     sheet.crew.forEach((crew, j) => validateCrew(crew, `sheets[${i}].crew[${j}]`, true));
     totalSheetCrew += sheet.crew.length;
     if (totalSheetCrew > LOGBOOK_LIMITS.crewMembers) throw new LogbookValidationError("Too many crew members.", "limit", "too_many_crew_members");

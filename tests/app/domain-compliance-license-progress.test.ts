@@ -11,7 +11,7 @@ function sheet(day: string, sailMiles = 0, motorMiles = 0, moving = false): LogS
   const first = `${day}T08:00:00Z`;
   const last = `${day}T10:00:00Z`;
   return {
-    id: `${day}-${sailMiles}-${motorMiles}`, title: "Test", status: "Locked", boatId: "boat", crew: [], watchPlan: [], technicalChecks: [],
+    id: `${day}-${sailMiles}-${motorMiles}`, title: "Test", status: "Locked", boatId: "boat", crew: [], technicalChecks: [],
     route: { from: "A", to: "B", departed: first, arrived: last },
     lines: [
       { id: "a", time: first, logNm: 0, latitude: 1, longitude: 1 },

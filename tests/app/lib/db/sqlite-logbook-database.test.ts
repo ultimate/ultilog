@@ -23,7 +23,7 @@ describe("SqliteLogbookDatabase", () => {
 
     const boat = { id: "boat-1", name: "Boat", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, deviationTable: defaultDeviationTable() };
     const createdBoat = await db.upsertBoat(boat);
-    const sheet = { id: "sheet-1", title: "Trip", status: "Draft" as const, boatId: boat.id, route: { from: "", to: "", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] };
+    const sheet = { id: "sheet-1", title: "Trip", status: "Draft" as const, boatId: boat.id, route: { from: "", to: "", departed: "", arrived: "" }, crew: [], technicalChecks: [], lines: [] };
     await db.upsertLogSheet(sheet);
 
     vi.stubEnv("CREW_DATA_ENCRYPTION_KEY", "");
@@ -160,7 +160,7 @@ describe("SqliteLogbookDatabase", () => {
     await db.query("insert into users (id, name, email, password_hash) values (?, ?, ?, ?)", ["policy-user", "Policy", "policy@example.test", ""]);
     const boat = { id: "boat-1", archived: true, name: "Archived", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, deviationTable: defaultDeviationTable() };
     const createdBoat = await db.upsertBoat(boat);
-    const sheet = { id: "sheet-1", title: "Trip", status: "Draft" as const, boatId: boat.id, route: { from: "", to: "", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] };
+    const sheet = { id: "sheet-1", title: "Trip", status: "Draft" as const, boatId: boat.id, route: { from: "", to: "", departed: "", arrived: "" }, crew: [], technicalChecks: [], lines: [] };
     await expect(db.upsertLogSheet(sheet)).rejects.toMatchObject({ code: "archived_boat_for_new_sheet" });
     await db.upsertBoat({ ...boat, revision: createdBoat!.revision, archived: false });
     await db.upsertLogSheet(sheet);
@@ -175,7 +175,7 @@ describe("SqliteLogbookDatabase", () => {
     await db.query("insert into users (id, name, email, password_hash) values (?, ?, ?, ?)", ["rollback-user", "Rollback", "rollback@example.test", ""]);
     const boat = { id: "boat-1", name: "Boat", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, deviationTable: defaultDeviationTable() };
     await db.upsertBoat(boat);
-    const original = { id: "sheet-1", title: "Original", status: "Draft" as const, boatId: boat.id, route: { from: "", to: "", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] };
+    const original = { id: "sheet-1", title: "Original", status: "Draft" as const, boatId: boat.id, route: { from: "", to: "", departed: "", arrived: "" }, crew: [], technicalChecks: [], lines: [] };
     await db.upsertLogSheet(original);
     const query = db.query.bind(db);
     const failure = vi.spyOn(db, "query").mockImplementation(async (sql, values) => {
@@ -263,7 +263,7 @@ describe("SqliteLogbookDatabase", () => {
     const updatedLogbook = {
       crewMembers: [],
       boats: [{ id: "boat-1", archived: true, name: "SY Repository Test", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, deviationTable: defaultDeviationTable() }],
-      sheets: [{ id: "sheet-1", title: "Repository integration test", status: "Draft" as const, boatId: "boat-1", route: { from: "", to: "", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [] }],
+      sheets: [{ id: "sheet-1", title: "Repository integration test", status: "Draft" as const, boatId: "boat-1", route: { from: "", to: "", departed: "", arrived: "" }, crew: [], technicalChecks: [], lines: [] }],
     };
 
     await firstWrapper.writeLogbook(updatedLogbook);
@@ -278,7 +278,7 @@ describe("SqliteLogbookDatabase", () => {
     await db.query("insert into users (id, name, email, password_hash) values (?, ?, ?, ?)", ["line-id-user", "Line IDs", "lines@example.test", ""]);
     const boat = { id: "boat-1", archived: false, name: "ID test", type: "Sail" as const, registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, deviationTable: defaultDeviationTable() };
     const original = sampleLogSheets[0].lines.slice(0, 2).map((line) => ({ ...line, time: "2026-05-14T10:00" }));
-    const sheet = { id: "sheet-1", title: "Stable IDs", status: "Draft" as const, boatId: boat.id, route: { from: "", to: "", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines: [...original].reverse() };
+    const sheet = { id: "sheet-1", title: "Stable IDs", status: "Draft" as const, boatId: boat.id, route: { from: "", to: "", departed: "", arrived: "" }, crew: [], technicalChecks: [], lines: [...original].reverse() };
 
     await db.writeLogbook({ boats: [boat], crewMembers: [], sheets: [sheet] });
     const reloaded = await new SqliteLogbookDatabase(databasePath).forUser("line-id-user").readLogbook();

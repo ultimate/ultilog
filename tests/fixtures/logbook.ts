@@ -53,7 +53,6 @@ export const sampleLogSheets: LogSheet[] = [
       { id: "sofia-marin-italian", name: "Sofia Marin", nationality: "Italian", role: "Watch lead", embarkationDateTime: "2026-05-12T00:00", embarkationPosition: "Preveza", disembarkationDateTime: "2026-05-16T00:00", disembarkationPosition: "Fiskardo" },
       { id: "jonas-meier-swiss", name: "Jonas Meier", nationality: "Swiss", role: "Trainee", embarkationDateTime: "2026-05-12T00:00", embarkationPosition: "Preveza", disembarkationDateTime: "2026-05-16T00:00", disembarkationPosition: "Fiskardo" },
     ],
-    watchPlan: ["08-12: Luca / Jonas", "12-16: Nina / Sofia", "16-20: Sofia / Jonas"],
     technicalChecks: ["Engine oil checked", "Bilge dry", "Fresh water 62%", "Diesel 74%", "Navigation lights tested"].map((text) => ({ status: "⌛", text })),
     lines: [
       { id: "fixture-line-1", time: "2026-05-14T07:35", position: "Preveza fairway", latitude: 38.956, longitude: 20.754, logNm: 0, weather: "☀️", weatherRemark: "Clear morning, good visibility", temperature: 22, temperatureUnit: "°C", barometer: 1016, windDirection: "NW", windStrength: 3, windUnit: "bft", waves: 1, seaUnit: "m", tide: 0, tideUnit: "m", moon: "🌔", compassCourse: 211, deviation: 0, magneticCourse: 211, variation: 4, trueCourse: 215, windDrift: 0, courseThroughWater: 215, currentDrift: 0, courseOverGround: 215, speedKn: 0, sailMiles: 0, sailNote: "Main + genoa", motorMiles: 0, engineHours: { "main-engine": 0.4 }, motorNote: "departure", remarks: "Departed after safety briefing." },
@@ -78,7 +77,6 @@ export const sampleLogSheets: LogSheet[] = [
       { id: "mara-novak-croatian", name: "Mara Novak", nationality: "Croatian", role: "Local skipper", embarkationDateTime: "2026-06-03T00:00", embarkationPosition: "Split", disembarkationDateTime: "2026-06-03T00:00", disembarkationPosition: "Vis" },
       { id: "nina-baumann-swiss", name: "Nina Baumann", address: "Seestrasse 10, 8002 Zürich", certificate: "ICC Ocean · No. CH-88421 · Bern · 12 Mar 2022 · SSA", nationality: "Swiss", role: "Personal log owner", embarkationDateTime: "2026-06-03T00:00", embarkationPosition: "Split", disembarkationDateTime: "2026-06-03T00:00", disembarkationPosition: "Vis" },
     ],
-    watchPlan: ["09-12: Mara / Nina", "12-15: Nina / Mara"],
     technicalChecks: ["Fuel valves open", "VHF radio check", "Cooling water visible", "Harbor documents photographed"].map((text) => ({ status: "⌛", text })),
     lines: [
       { id: "fixture-line-6", time: "2026-06-03T09:20", position: "Split harbor", latitude: 43.503, longitude: 16.441, logNm: 0, weather: "🌫️", weatherRemark: "Morning mist lifting", temperature: 21, temperatureUnit: "°C", barometer: 1012, windDirection: "W", windStrength: 2, windUnit: "bft", waves: 1, seaUnit: "m", tide: 0, tideUnit: "m", moon: "🌖", compassCourse: 187, deviation: 0, magneticCourse: 187, variation: 3, trueCourse: 190, windDrift: 0, courseThroughWater: 190, currentDrift: 0, courseOverGround: 190, speedKn: 0, sailMiles: 0, sailNote: "n/a", motorMiles: 0, motorNote: "On", remarks: "Left berth with local skipper." },

@@ -39,10 +39,7 @@ export type LogSheetRow = ImageRowFields & {
   boat_id: string;
   skipper: unknown;
   route: unknown;
-  weather_briefing: unknown;
-  day_summary: unknown;
   remarks: unknown;
-  watch_plan: unknown;
   technical_checks: unknown;
   engine_hour_counters?: unknown;
   motor_miles?: number | null;

@@ -382,7 +382,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
         boatId: options.destinationBoatId,
         route: { ...source.route },
         crew,
-        watchPlan: [...source.watchPlan],
+        remarks: source.remarks ?? "",
         technicalChecks: source.technicalChecks.map(check => ({ ...check })),
         ...(imageId ? { imageId } : {}),
         lines: [],

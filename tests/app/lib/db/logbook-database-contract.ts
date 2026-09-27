@@ -121,14 +121,14 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
         const sourceLine = { ...sampleLogSheets[0].lines[0], id: "source-line", revision: undefined, createdAt: undefined, updatedAt: undefined };
         await sourceDb.upsertCrewMember({ id: "sailor", name: "Sailor", nationality: "GB", role: "Crew" });
         await sourceDb.upsertLogSheet({
-          ...sheet([sourceLine]), boatId: "source-boat", title: "Shared voyage", watchPlan: ["00-04"], technicalChecks: [{ status: "ok", text: "Rig" }],
+          ...sheet([sourceLine]), boatId: "source-boat", title: "Shared voyage", remarks: "A smooth crossing.", technicalChecks: [{ status: "ok", text: "Rig" }],
           crew: [{ id: "sailor", embarkationDateTime: "", embarkationPosition: "", disembarkationDateTime: "", disembarkationPosition: "" }],
           imageId: sourceImageId,
           share: { masterData: "registered", logLines: "registered", technicalLog: "registered", picture: "registered", metrics: "private", skipper: "registered", crew: "private" },
         });
         context.database.forUser(context.owner);
         const copied = await context.database.copySharedSheet(context.other, "sheet", { destinationBoatId: "boat", includeCrew: true, includePicture: true });
-        expect(copied).toMatchObject({ title: "Shared voyage", status: "Draft", source: "shared", copyProvenance: { sourceOwnerId: context.other, sourceOwnerName: "Other owner", sourceSheetId: "sheet", sourceRevision: expect.any(Number), copiedAt: expect.any(String), sourceTitle: "Shared voyage" }, boatId: "boat", watchPlan: ["00-04"], technicalChecks: [{ status: "ok", text: "Rig" }], share: { masterData: "private", logLines: "private", technicalLog: "private", picture: "private", metrics: "private", skipper: "private", crew: "private" } });
+        expect(copied).toMatchObject({ title: "Shared voyage", status: "Draft", source: "shared", copyProvenance: { sourceOwnerId: context.other, sourceOwnerName: "Other owner", sourceSheetId: "sheet", sourceRevision: expect.any(Number), copiedAt: expect.any(String), sourceTitle: "Shared voyage" }, boatId: "boat", remarks: "A smooth crossing.", technicalChecks: [{ status: "ok", text: "Rig" }], share: { masterData: "private", logLines: "private", technicalLog: "private", picture: "private", metrics: "private", skipper: "private", crew: "private" } });
         expect(new Date(copied!.copyProvenance!.copiedAt).toISOString()).toBe(copied!.copyProvenance!.copiedAt);
         expect(copied!.id).not.toBe("sheet");
         expect(copied!.lines[0].id).not.toBe("source-line");
@@ -229,5 +229,5 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
 }
 
 function sheet(lines: LogLine[]): LogSheet {
-  return { id: "sheet", title: "Contract sheet", status: "Draft", boatId: "boat", route: { from: "", to: "", departed: "", arrived: "" }, crew: [], watchPlan: [], technicalChecks: [], lines };
+  return { id: "sheet", title: "Contract sheet", status: "Draft", boatId: "boat", route: { from: "", to: "", departed: "", arrived: "" }, crew: [], technicalChecks: [], lines };
 }
