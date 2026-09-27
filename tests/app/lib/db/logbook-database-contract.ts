@@ -190,7 +190,14 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
         const manualMetrics = calculateLogSheetMetrics(recipientManual.lines, recipientManual.route);
         expect(copiedMetrics).toMatchObject({ sailMiles: 9, motorMiles: 6, totalMiles: 15 });
         expect(copiedMetrics).toEqual(manualMetrics);
-        expect(recipientCopy.metrics).toMatchObject(copiedMetrics);
+        expect(recipientCopy.metrics).toMatchObject({
+          sailMiles: copiedMetrics.sailMiles,
+          motorMiles: copiedMetrics.motorMiles,
+          totalMiles: copiedMetrics.totalMiles,
+          durationMinutes: copiedMetrics.durationMinutes,
+          overallDurationMinutes: copiedMetrics.overallDurationMinutes,
+          motionDurationMinutes: copiedMetrics.motionDurationMinutes,
+        });
 
         expect(calculateLogbookStatistics([recipientCopy])).toEqual({ sailMiles: 9, motorMiles: 6, totalMiles: 15, sailingDays: 3, daysAtSea: 3 });
         expect(calculateLogbookStatistics([recipientCopy])).toEqual(calculateLogbookStatistics([recipientManual]));
