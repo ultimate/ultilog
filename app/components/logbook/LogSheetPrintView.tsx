@@ -116,7 +116,7 @@ export function LogSheetPrintView(props: LogSheetPrintViewProps) {
             <section className="print-crew-box"><h2>{t("crew.list")}</h2>{renderCrew(sheet)}</section>
             <section className="print-tech-box"><h2>{t("print.footer.techLog")}</h2>{renderList(sheet?.technicalChecks.map((item) => `${item.status} ${item.text}`), t("print.truncated"))}</section>
             <section className="print-route-box"><h2>{t("print.footer.routeMap")}</h2></section>
-            <section className="print-remarks-box"><h2>{t("print.footer.remarksSignature")}</h2>{hasTruncatedRemark(page.lines) ? <small>{t("print.truncated")}</small> : null}{props.avatar ? <Image className="print-owner-avatar" src={props.avatar} alt="" width={68} height={68} unoptimized /> : null}</section>
+            <section className="print-remarks-box"><h2>{t("print.footer.remarksSignature")}</h2>{sheet?.remarks ? <p className="print-sheet-remarks">{sheet.remarks}</p> : <div className="print-writing-lines" aria-hidden="true" />}{hasTruncatedRemark(page.lines) ? <small>{t("print.truncated")}</small> : null}{props.avatar ? <Image className="print-owner-avatar" src={props.avatar} alt="" width={68} height={68} unoptimized /> : null}</section>
             <span className="print-page-number">{formatPageOf(t("print.pageOf"), page.pageIndex + 1, page.pageCount)}</span>
           </footer>
           <span className="print-template-marker" aria-label="UltiLog print template marker">{templateMarker}</span>
@@ -270,6 +270,7 @@ const printStyles = `
 .print-footer h2 { margin: 0 0 2mm; font-size: 8pt; text-transform: uppercase; }
 .print-route-box { background: #fff; }
 .print-remarks-box { position: relative; }
+.print-sheet-remarks { max-height: 25mm; margin: 0; overflow: hidden; font-size: 7pt; line-height: 1.25; white-space: pre-wrap; overflow-wrap: anywhere; }
 .print-owner-avatar { position: absolute; right: 3mm; bottom: 3mm; width: 18mm; height: 18mm; border: .25mm solid #000; border-radius: 50%; object-fit: cover; }
 .print-crew-box ul, .print-tech-box ul { margin: 0; padding-left: 3.5mm; font-size: 7pt; }
 .print-writing-lines { height: 21mm; background: repeating-linear-gradient(to bottom, transparent 0, transparent 7mm, #000 7.2mm); }
