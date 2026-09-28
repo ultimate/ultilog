@@ -1058,6 +1058,11 @@ td { color: #28384b; line-height: 1.45; }
   .sheet-master-map-grid {
     grid-template-columns: 1fr;
   }
+
+  .sheet-master-map-grid .open-seamap-detail {
+    aspect-ratio: 1;
+    height: auto;
+  }
 }
 
 .sheet-master-title {

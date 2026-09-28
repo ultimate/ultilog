@@ -30,9 +30,9 @@ test("prints empty sheets with fixed blank rows and print-only layout", async ({
   await expect(printPage.locator(".print-header")).toHaveCount(1);
   await expect(printPage.locator(".print-footer")).toHaveCount(1);
   await expect(printPage.locator(".print-page-number")).toHaveText("Page 1 of 1");
-  await expect(printPage.locator(".print-template-marker")).toHaveText("ULTILOG:ultilog-logsheet:v2:full:en");
+  await expect(printPage.locator(".print-template-marker")).toHaveText("ULTILOG:ultilog-logsheet:v3:full:en");
   await expect(printPage).toHaveAttribute("data-template-id", "ultilog-logsheet");
-  await expect(printPage).toHaveAttribute("data-template-revision", "2");
+  await expect(printPage).toHaveAttribute("data-template-revision", "3");
   await expect(printPage).toHaveAttribute("data-template-variant", "full");
   await expect(printPage).toHaveAttribute("data-template-locale", "en");
   await expect(printPage.locator("tbody tr")).toHaveCount(20);
@@ -69,6 +69,7 @@ test("splits filled sheets that exceed one A4 landscape page", async ({ page }) 
     ...demoSheet,
     id: "print-long-sheet",
     title: "Long printable passage",
+    remarks: "Sheet-level passage remarks included in the printed footer.",
     lines: Array.from({ length: 21 }, (_, index) => ({
       ...demoSheet.lines[index % demoSheet.lines.length],
       id: `print-long-line-${index}`,
@@ -95,6 +96,10 @@ test("splits filled sheets that exceed one A4 landscape page", async ({ page }) 
   await expect(printPages.nth(0).locator("tbody tr")).toHaveCount(20);
   await expect(printPages.nth(1).locator("tbody tr")).toHaveCount(20);
   await expect(printPages.nth(0).locator(".print-remark-small, .print-remark-tiny")).toHaveCount(1);
+  await expect(printPages.locator(".print-sheet-remarks")).toHaveText([
+    longSheet.remarks,
+    longSheet.remarks,
+  ]);
 });
 
 async function expectPrintContentWithinPage(printPage: Locator) {

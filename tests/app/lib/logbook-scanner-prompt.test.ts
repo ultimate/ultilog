@@ -78,7 +78,7 @@ describe("logbook scanner prompt", () => {
   it("describes conditional recognition and diagnostics for versioned UltiLog templates", () => {
     const instructions = formatTemplateRecognitionInstructions();
 
-    expect(instructions).toContain("ULTILOG:ultilog-logsheet:v2:<variant>:<locale>");
+    expect(instructions).toContain("ULTILOG:ultilog-logsheet:v3:<variant>:<locale>");
     expect(instructions).toContain("full: time (");
     expect(instructions).toContain("compact: time (");
     expect(instructions).toContain("unsupported revision");
