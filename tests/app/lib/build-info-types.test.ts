@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import { isReleaseVersion, parseBuildInfo } from "../../../app/lib/build-info-types";
 
 describe("build info", () => {
-  it.each(["0.1.0", "1.0.0", "12.34.56-rc.1", "1.2.3+build.5"])("accepts version %s", (version) => {
+  it.each(["260911.0", "260911.1", "240229.34"])("accepts version %s", (version) => {
     expect(isReleaseVersion(version)).toBe(true);
   });
 
-  it.each(["v1.2.3", "1.2", "01.2.3", "1.2.3-01", "", null])("rejects version %s", (version) => {
+  it.each(["v260911.0", "260911", "260911.01", "260911.1-beta", "260231.0", "", null])("rejects version %s", (version) => {
     expect(isReleaseVersion(version)).toBe(false);
   });
 
@@ -17,6 +17,6 @@ describe("build info", () => {
   it("requires a valid version in production and accepts deployment metadata", () => {
     expect(() => parseBuildInfo({ environment: "production" })).toThrow(/require/i);
     expect(() => parseBuildInfo({ environment: "production", version: "latest" })).toThrow(/version/i);
-    expect(parseBuildInfo({ environment: "production", version: "1.2.3", branch: "main", commitSha: "abcdef1", targetEnvironment: "production", deploymentUrl: "https://ultilog.example" })).toMatchObject({ environment: "production", version: "1.2.3" });
+    expect(parseBuildInfo({ environment: "production", version: "260911.0", branch: "main", commitSha: "abcdef1", targetEnvironment: "production", deploymentUrl: "https://ultilog.example" })).toMatchObject({ environment: "production", version: "260911.0" });
   });
 });

@@ -2,7 +2,7 @@ export const BUILD_ENVIRONMENTS = ["production", "preview", "staging", "developm
 
 export type BuildEnvironment = (typeof BUILD_ENVIRONMENTS)[number];
 
-/** A SemVer release identifier. The `v` used by some Git tags is deliberately not part of it. */
+/** A UTC-date release identifier (`yyMMdd.suffix`), without the Git tag's `v` prefix. */
 export type ReleaseVersion = string & { readonly __releaseVersion: unique symbol };
 
 type DeploymentMetadata = {
@@ -18,18 +18,25 @@ export type BuildInfo =
   | (DeploymentMetadata & { environment: "staging"; version?: ReleaseVersion })
   | (DeploymentMetadata & { environment: "development"; version?: ReleaseVersion });
 
-// SemVer 2.0.0, including optional pre-release and build identifiers.
-const releaseVersionPattern =
-  /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/;
+const releaseVersionPattern = /^(\d{2})(\d{2})(\d{2})\.(0|[1-9]\d*)$/;
 
 const shaPattern = /^[0-9a-f]{7,64}$/i;
 const buildEnvironments = new Set<string>(BUILD_ENVIRONMENTS);
 
-export const isReleaseVersion = (value: unknown): value is ReleaseVersion =>
-  typeof value === "string" && releaseVersionPattern.test(value);
+export const isReleaseVersion = (value: unknown): value is ReleaseVersion => {
+  if (typeof value !== "string") return false;
+  const match = value.match(releaseVersionPattern);
+  if (match === null) return false;
+
+  const year = 2000 + Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+};
 
 export function parseReleaseVersion(value: unknown): ReleaseVersion {
-  if (!isReleaseVersion(value)) throw new TypeError("Invalid release version: expected a SemVer version");
+  if (!isReleaseVersion(value)) throw new TypeError("Invalid release version: expected yyMMdd.suffix");
   return value;
 }
 

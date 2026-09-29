@@ -3,7 +3,7 @@ import { CHANGELOG_CATEGORIES } from "../../../app/lib/changelog-categories";
 import { parseReleaseData } from "../../../app/content/releases";
 
 const validRelease = {
-  version: "1.2.3",
+  version: "260911.0",
   releasedAt: "2026-09-29T12:30:00Z",
   entries: [{ category: "feature", prNumber: 42, prUrl: "https://github.com/example/ultilog/pull/42", title: { en: "Add releases", de: "Releases hinzufügen" } }],
 };
