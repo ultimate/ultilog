@@ -6,6 +6,7 @@ export type BuildEnvironment = (typeof BUILD_ENVIRONMENTS)[number];
 export type ReleaseVersion = string & { readonly __releaseVersion: unique symbol };
 
 type DeploymentMetadata = {
+  identity?: string;
   branch?: string;
   commitSha?: string;
   targetEnvironment?: string;
@@ -62,6 +63,7 @@ export function parseBuildInfo(value: unknown): BuildInfo {
   }
 
   const branch = optionalNonEmptyString(value, "branch");
+  const identity = optionalNonEmptyString(value, "identity");
   const commitSha = optionalNonEmptyString(value, "commitSha");
   if (commitSha !== undefined && !shaPattern.test(commitSha)) throw new TypeError("Invalid build info commitSha");
   const targetEnvironment = optionalNonEmptyString(value, "targetEnvironment");
@@ -77,6 +79,7 @@ export function parseBuildInfo(value: unknown): BuildInfo {
 
   return {
     environment: value.environment,
+    ...(identity === undefined ? {} : { identity }),
     ...(version === undefined ? {} : { version }),
     ...(branch === undefined ? {} : { branch }),
     ...(commitSha === undefined ? {} : { commitSha }),

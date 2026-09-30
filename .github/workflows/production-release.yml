@@ -139,11 +139,9 @@ jobs:
       - name: Build the reserved version for Vercel
         env:
           BUILD_VERSION: ${{ steps.version.outputs.version }}
-          NEXT_PUBLIC_BUILD_VERSION: ${{ steps.version.outputs.version }}
         run: >-
           npx vercel@latest build --prod --token="$VERCEL_TOKEN"
           --build-env BUILD_VERSION="$BUILD_VERSION"
-          --build-env NEXT_PUBLIC_BUILD_VERSION="$NEXT_PUBLIC_BUILD_VERSION"
 
       - name: Deploy the exact prebuilt output to production
         id: deploy

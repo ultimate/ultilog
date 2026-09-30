@@ -86,6 +86,7 @@ import type { OnboardingTaskId } from "../lib/onboarding/tasks";
 import type { ProfilePreferences } from "./onboarding/useOnboardingProfile";
 import { DateTimeFormatProvider } from "../lib/DateTimeFormatProvider";
 import { formatStoredDateTime } from "../lib/date-time-format";
+import type { BuildInfo } from "../lib/build-info-types";
 
 type AdminUser = { id: string; name: string; email: string; groups: string[] };
 const adminUserColumns = [
@@ -188,11 +189,13 @@ function calculateSheetSummary(sheet: LogSheet, motionStationaryThresholdNm: num
 
 
 export function LogbookApp({
+  buildInfo: _buildInfo,
   userId,
   userEmail,
   userName,
   userGroups = [],
 }: {
+  buildInfo: BuildInfo;
   userId?: string;
   userEmail?: string;
   userName?: string;

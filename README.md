@@ -196,8 +196,8 @@ project's production branch set to `main` and do not override this repository
 setting in the Vercel dashboard.
 
 After reserving a tag, the workflow passes that exact version to `vercel build`
-as both `BUILD_VERSION` and `NEXT_PUBLIC_BUILD_VERSION`, then promotes only that
-prebuilt output with `vercel deploy --prebuilt --prod`. The matching GitHub
+as the server-only `BUILD_VERSION`, then promotes only that prebuilt output with
+`vercel deploy --prebuilt --prod`. The matching GitHub
 Release is created only after Vercel reports a successful production deployment.
 If building or deployment fails after the tag was pushed, the tag remains
 reserved: do not delete, move, or reuse it. Fix the problem and dispatch a new
