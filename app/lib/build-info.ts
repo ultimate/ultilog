@@ -32,10 +32,10 @@ export function buildInfoFromEnvironment(environment: BuildEnvironmentVariables)
 
   const branch = value(environment, "VERCEL_GIT_COMMIT_REF");
   const fullCommitSha = value(environment, "VERCEL_GIT_COMMIT_SHA");
-  const commitSha = fullCommitSha?.slice(0, 7);
+  const commitSha = fullCommitSha && /^[0-9a-f]{7,64}$/i.test(fullCommitSha) ? fullCommitSha : undefined;
   const common = {
     ...(branch ? { branch } : {}),
-    ...(commitSha && /^[0-9a-f]{7}$/i.test(commitSha) ? { commitSha } : {}),
+    ...(commitSha ? { commitSha } : {}),
     targetEnvironment: vercelEnvironment,
     ...(deploymentUrl(environment) ? { deploymentUrl: deploymentUrl(environment) } : {}),
   };
@@ -46,7 +46,7 @@ export function buildInfoFromEnvironment(environment: BuildEnvironmentVariables)
   }
 
   const normalizedEnvironment = vercelEnvironment === "preview" ? "preview" : "staging";
-  const identity = previewIdentity(common.branch, common.commitSha);
+  const identity = previewIdentity(common.branch, common.commitSha?.slice(0, 7));
   return parseBuildInfo({
     environment: normalizedEnvironment,
     ...(identity ? { identity } : {}),

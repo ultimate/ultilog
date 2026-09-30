@@ -11,6 +11,8 @@ import { dateFormats, formatStoredDate, formatStoredTime, timeFormats } from "..
 import { STANDARD_TECHNICAL_CHECK_IDS, standardTechnicalLogTemplate, type StandardTechnicalCheckId } from "../../../domain/logbook/technical-log";
 import { pageSizeOptions, normalizePageSize } from "../PaginationControls";
 import { CountryFlagSelector } from "../../CountryFlagSelector";
+import { BuildIdentity } from "../../BuildIdentity";
+import type { BuildInfo } from "../../../lib/build-info-types";
 
 type ProfilePageProps = Record<string, any>;
 
@@ -216,6 +218,7 @@ export function ProfilePage(props: ProfilePageProps) {
           </button>
         </div>
       </div>
+      <BuildIdentity buildInfo={props.buildInfo as BuildInfo} placement="profile" />
       <section className="profile-grid">
         <article className="profile-hero-card">
           <label className="profile-avatar profile-avatar-upload" title={t("profile.avatarUpload")}>

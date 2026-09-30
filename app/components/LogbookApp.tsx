@@ -189,7 +189,7 @@ function calculateSheetSummary(sheet: LogSheet, motionStationaryThresholdNm: num
 
 
 export function LogbookApp({
-  buildInfo: _buildInfo,
+  buildInfo,
   userId,
   userEmail,
   userName,
@@ -1905,6 +1905,7 @@ export function LogbookApp({
         </div>
       )}
       <ModuleTabs
+        buildInfo={buildInfo}
         activeModule={activeModule}
         onSelectModule={(module) => navigate(module)}
         onOpenProfile={() => navigate("profile")}
@@ -2085,6 +2086,7 @@ export function LogbookApp({
 
           {activeModule === "profile" && (
             <ProfilePage
+              buildInfo={buildInfo}
               logout={logout}
               isLoggingOut={isLoggingOut}
               accountName={accountName}

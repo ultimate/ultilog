@@ -20,7 +20,7 @@ describe("server build information", () => {
   it("builds a preview identity from the full branch and seven SHA characters", () => {
     const branch = `feature/${"long-branch-".repeat(20)}`;
     expect(buildInfoFromEnvironment({ VERCEL_ENV: "preview", VERCEL_GIT_COMMIT_REF: branch, VERCEL_GIT_COMMIT_SHA: "abcdef1234567890" }))
-      .toMatchObject({ environment: "preview", identity: `${branch}@abcdef1`, branch, commitSha: "abcdef1" });
+      .toMatchObject({ environment: "preview", identity: `${branch}@abcdef1`, branch, commitSha: "abcdef1234567890" });
   });
 
   it("uses VERCEL_TARGET_ENV for a custom staging environment", () => {
