@@ -26,7 +26,7 @@ export function entriesFromPullRequests(pullRequests, repository) {
       category: categoryByLabel.get(recognized[0]),
       prNumber: pullRequest.number,
       prUrl: `https://github.com/${repository}/pull/${pullRequest.number}`,
-      title: { en: pullRequest.title, de: null, fr: null, it: null },
+      title: { en: pullRequest.title },
     });
   }
   const categoryOrder = new Map(CATEGORY_DEFINITIONS.map((item, index) => [item.category, index]));

@@ -189,6 +189,23 @@ h1 { margin:0 0 .45rem; font-size:1.8rem; line-height:1.1; letter-spacing:-.04em
 .build-diagnostics dd { margin:0; overflow-wrap:anywhere; }
 .build-diagnostics code { white-space:normal; }
 .build-diagnostics a { color:inherit; }
+.build-identity-open { width:100%; text-align:left; cursor:pointer; font:inherit; }
+.build-identity-open:hover { border-color:var(--blue); }
+.profile-changelog-link { margin:0 0 1rem; }
+.changelog-page { max-width:72rem; }
+.changelog-language-notice,.changelog-empty { border:1px solid var(--line); border-radius:12px; padding:.8rem 1rem; background:var(--surface); }
+.changelog-language-notice { border-style:dashed; }
+.changelog-release { margin-bottom:1rem; border:1px solid var(--line); border-radius:18px; padding:1.25rem; background:var(--surface); box-shadow:var(--design-shadow); }
+.changelog-release.current { border-width:2px; }
+.changelog-release>header { display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; }
+.changelog-release h2 { margin:.1rem 0 0; }
+.changelog-release time { color:var(--subtle); }
+.changelog-categories { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; margin-top:1rem; }
+.changelog-categories section { min-width:0; }
+.changelog-categories h3 { margin:0 0 .4rem; font-size:1rem; }
+.changelog-categories ul { margin:0; padding-left:1.25rem; }
+.changelog-categories li+li { margin-top:.35rem; }
+.changelog-recent-title { margin:1.5rem 0 .75rem; }
 .mobile-nav-actions { display:none; }
 .profile-grid { display:grid; grid-template-columns:minmax(280px,.9fr) minmax(0,1.1fr); gap:1rem; }
 .profile-hero-card { display:flex; align-items:center; gap:1rem; border:1px solid var(--line); border-radius:18px; background:var(--surface); box-shadow:var(--design-shadow); padding:1.25rem; }
@@ -227,6 +244,7 @@ h1 { margin:0 0 .45rem; font-size:1.8rem; line-height:1.1; letter-spacing:-.04em
 }
 @media (max-width: 760px) { .profile-grid { grid-template-columns:1fr; } }
 @media (max-width: 760px) { .build-identity--profile { width:100%; max-width:100%; }.build-identity--profile .build-identity-line { flex-wrap:wrap; }.build-identity--profile .build-branch { flex:1 1 10rem; } }
+@media (max-width: 760px) { .changelog-categories { grid-template-columns:1fr; }.changelog-release>header { flex-direction:column; gap:.35rem; } }
 @media (max-width: 1000px) {
   .app-sidebar { display:grid; grid-template-columns:minmax(0,1fr) minmax(4.5rem,.28fr); align-items:stretch; gap:.25rem; }
   .logout-chip { display:none; }

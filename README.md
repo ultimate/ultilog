@@ -177,8 +177,8 @@ labels stop the release with a diagnostic. During release,
 production tag, resolves their associated merged pull requests, and writes the
 deterministically ordered `app/content/releases.json` and GitHub Release body.
 The previous release's JSON asset is used as the input so release history is
-preserved. Translatable title slots are initialized for German, French, and
-Italian while the English title remains the pull request title verbatim.
+preserved. New entries initially contain only the pull request title as English;
+the stable schema permits German, French, and Italian titles to be added later.
 
 GitHub Actions concurrency group `production-release` allows only one release
 workflow to allocate and tag a version at a time and does not cancel an active

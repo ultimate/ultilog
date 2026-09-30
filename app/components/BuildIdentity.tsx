@@ -3,6 +3,7 @@ import type { BuildInfo } from "../lib/build-info-types";
 type BuildIdentityProps = {
   buildInfo: BuildInfo;
   placement?: "sidebar" | "profile";
+  onOpenChangelog?: () => void;
 };
 
 const environmentLabel = (environment: BuildInfo["environment"]) => ({
@@ -40,10 +41,13 @@ function IdentitySummary({ buildInfo }: { buildInfo: BuildInfo }) {
 }
 
 /** Compact, non-editable deployment identity and optional diagnostics. */
-export function BuildIdentity({ buildInfo, placement = "sidebar" }: BuildIdentityProps) {
+export function BuildIdentity({ buildInfo, placement = "sidebar", onOpenChangelog }: BuildIdentityProps) {
   const hasDiagnostics = Boolean(buildInfo.commitSha || buildInfo.deploymentUrl);
   const className = `build-identity build-identity--${buildInfo.environment} build-identity--${placement}`;
 
+  if (buildInfo.environment === "production" && onOpenChangelog) {
+    return <button type="button" className={`${className} build-identity-open`} onClick={onOpenChangelog}><IdentitySummary buildInfo={buildInfo} /></button>;
+  }
   if (!hasDiagnostics) return <div className={className}><IdentitySummary buildInfo={buildInfo} /></div>;
 
   return (

@@ -219,6 +219,7 @@ export function ProfilePage(props: ProfilePageProps) {
         </div>
       </div>
       <BuildIdentity buildInfo={props.buildInfo as BuildInfo} placement="profile" />
+      <button className="secondary-action profile-changelog-link" type="button" onClick={props.onOpenChangelog}>{t("changelog.profileLink")}</button>
       <section className="profile-grid">
         <article className="profile-hero-card">
           <label className="profile-avatar profile-avatar-upload" title={t("profile.avatarUpload")}>

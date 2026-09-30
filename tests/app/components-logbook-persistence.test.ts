@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { deleteLogbookEntity, mutationErrorDetail, persistBoat, persistCrewMember, persistLogLine, persistSheet, uploadStoredImage } from "../../app/components/logbook/persistence";
+import { deleteLogbookEntity, modulePath, mutationErrorDetail, persistBoat, persistCrewMember, persistLogLine, routeFromPathname, persistSheet, uploadStoredImage } from "../../app/components/logbook/persistence";
 import * as importOperations from "../../app/components/logbook/import";
 import type { PersistedLogbook } from "../../app/models/logbook";
 import { sampleLogSheets } from "../fixtures/logbook";
@@ -9,6 +9,10 @@ const image = { data: "base64-image", mimeType: "image/png", width: 64, height: 
 vi.stubGlobal("crypto", { randomUUID: vi.fn() });
 
 describe("logbook persistence", () => {
+  it("routes desktop and profile changelog entry points to the changelog view", () => {
+    expect(modulePath("changelog")).toBe("/changelog");
+    expect(routeFromPathname("/changelog")).toEqual({ view: "changelog" });
+  });
   it("formats actionable mutation errors returned by the API", async () => {
     const response = Response.json({ error: "boats[0].flagState must identify a supported country.", code: "invalid_payload" }, { status: 400 });
 

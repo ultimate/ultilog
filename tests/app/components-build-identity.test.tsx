@@ -14,6 +14,12 @@ describe("BuildIdentity", () => {
     expect(markup).toContain('aria-label="Production build v260930.2"');
   });
 
+  it("makes a production identity a desktop changelog entry point", () => {
+    const markup = renderToStaticMarkup(<BuildIdentity buildInfo={parseBuildInfo({ environment: "production", version: "260930.2" })} onOpenChangelog={() => undefined} />);
+    expect(markup).toContain('<button type="button"');
+    expect(markup).toContain("v260930.2");
+  });
+
   it("renders preview branch and short SHA while retaining full diagnostics", () => {
     const markup = render({ environment: "preview", branch: "feature/logbook", commitSha: "abcdef1234567890", deploymentUrl: "https://ultilog-git-feature.vercel.app" });
     expect(markup).toContain("PREVIEW");

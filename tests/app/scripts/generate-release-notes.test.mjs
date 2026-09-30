@@ -40,7 +40,7 @@ describe("release changelog generation", () => {
   it("preserves title characters verbatim and safely serializes them", () => {
     const title = 'Fix "quotes", backslash \\ and <tags>\nnext line';
     const entries = entriesFromPullRequests([pr(10, title, ["changelog:fix"])], repo);
-    expect(entries[0].title).toEqual({ en: title, de: null, fr: null, it: null });
+    expect(entries[0].title).toEqual({ en: title });
     expect(JSON.parse(JSON.stringify(entries))[0].title.en).toBe(title);
     expect(renderReleaseBody(entries)).toContain('- Fix "quotes", backslash \\\\ and \\<tags\\> next line');
   });

@@ -87,6 +87,7 @@ import type { ProfilePreferences } from "./onboarding/useOnboardingProfile";
 import { DateTimeFormatProvider } from "../lib/DateTimeFormatProvider";
 import { formatStoredDateTime } from "../lib/date-time-format";
 import type { BuildInfo } from "../lib/build-info-types";
+import { ChangelogPage } from "../templates/ChangelogPage";
 
 type AdminUser = { id: string; name: string; email: string; groups: string[] };
 const adminUserColumns = [
@@ -1909,6 +1910,7 @@ export function LogbookApp({
         activeModule={activeModule}
         onSelectModule={(module) => navigate(module)}
         onOpenProfile={() => navigate("profile")}
+        onOpenChangelog={() => navigate("changelog")}
         theme={theme}
         onToggleTheme={() => updatePreferences({ theme: theme === "dark" ? "light" : "dark" })}
         userEmail={accountEmail || userEmail}
@@ -2087,6 +2089,7 @@ export function LogbookApp({
           {activeModule === "profile" && (
             <ProfilePage
               buildInfo={buildInfo}
+              onOpenChangelog={() => navigate("changelog")}
               logout={logout}
               isLoggingOut={isLoggingOut}
               accountName={accountName}
@@ -2130,6 +2133,8 @@ export function LogbookApp({
               setDeleteForm={setDeleteForm}
             />
           )}
+
+          {activeModule === "changelog" && <ChangelogPage />}
 
           {activeModule === "admin" && isAdmin && (
             <section className="module-panel" aria-label={t("admin.aria")}>
