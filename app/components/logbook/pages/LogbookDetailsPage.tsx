@@ -1394,10 +1394,10 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                     </button>
                   </form>
                 </article>
-              </section>
-              <section className="info-card logbook-section sheet-remarks-section" aria-labelledby="sheet-remarks-heading">
-                <h3 id="sheet-remarks-heading">{t("details.remarks")}</h3>
-                {renderInlineTextField("remarks", activeSheet.remarks ?? "", "—", "textarea")}
+                <article className="info-card logbook-section sheet-remarks-section" aria-labelledby="sheet-remarks-heading">
+                  <h3 id="sheet-remarks-heading">{t("details.remarks")}</h3>
+                  {renderInlineTextField("remarks", activeSheet.remarks ?? "", "—", "textarea")}
+                </article>
               </section>
               {isMapExpanded && (
                 <div
