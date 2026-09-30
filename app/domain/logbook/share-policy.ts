@@ -11,6 +11,26 @@ export type SharedSheetCapability = {
   requiresAuthentication: boolean;
 };
 
+const privacyLevel: Record<LogSheetSharePrivacy, number> = {
+  private: 0,
+  registered: 1,
+  public: 2,
+};
+
+/** The skipper is the first crew member, so they cannot be less visible than the rest of the crew. */
+export function isSkipperSharingSufficient(share: Pick<LogSheetShareSettings, "skipper" | "crew">) {
+  return privacyLevel[share.skipper] >= privacyLevel[share.crew];
+}
+
+/** Raises skipper visibility when necessary without reducing any existing sharing choice. */
+export function enforceSkipperSharing(share: LogSheetShareSettings): LogSheetShareSettings {
+  return isSkipperSharingSufficient(share) ? share : { ...share, skipper: share.crew };
+}
+
+export function isPrivacyAtLeast(privacy: LogSheetSharePrivacy, minimum: LogSheetSharePrivacy) {
+  return privacyLevel[privacy] >= privacyLevel[minimum];
+}
+
 export function sectionVisibility(share: LogSheetShareSettings, isAuthenticated: boolean): SectionVisibility {
   return {
     masterData: canViewSection(share.masterData, isAuthenticated),

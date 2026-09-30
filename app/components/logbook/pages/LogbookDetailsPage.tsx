@@ -1,4 +1,5 @@
 import { TECHNICAL_CHECK_STATUSES } from "../../../domain/logbook/technical-log";
+import { enforceSkipperSharing, isPrivacyAtLeast } from "../../../domain/logbook/share-policy";
 import { EntityImage } from "../EntityImage";
 import { useI18n } from "../../../lib/i18n";
 import { useDateTimeFormat } from "../../../lib/DateTimeFormatProvider";
@@ -233,7 +234,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const sharePath = sharingOwnerId ? `/share/${encodeURIComponent(sharingOwnerId)}/${encodeURIComponent(activeSheet.id)}` : `/share/${encodeURIComponent(activeSheet.id)}`;
   const shareUrl = typeof window === "undefined" ? sharePath : `${window.location.origin}${sharePath}`;
   const setShare = (patch: Partial<LogSheetShareSettings>) => {
-    const nextShare = { ...shareDraft, ...patch };
+    const nextShare = enforceSkipperSharing({ ...shareDraft, ...patch });
     setShareDraftState({ sheetId: activeSheet.id, share: nextShare });
     void updateShare(nextShare);
   };
@@ -1031,13 +1032,17 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                           <select
                             value={shareDraft[field]}
                             onChange={(event) => setShare({ [field]: event.currentTarget.value } as Partial<LogSheetShareSettings>)}
+                            aria-describedby={field === "skipper" || field === "crew" ? "crew-sharing-explanation" : undefined}
                           >
-                            <option value="private">Private</option>
-                            <option value="registered">Registered users only</option>
+                            <option value="private" disabled={field === "skipper" && !isPrivacyAtLeast("private", shareDraft.crew)}>Private</option>
+                            <option value="registered" disabled={field === "skipper" && !isPrivacyAtLeast("registered", shareDraft.crew)}>Registered users only</option>
                             <option value="public">Public to everyone</option>
                           </select>
                         </label>
                       ))}
+                      <p id="crew-sharing-explanation" className="share-logsheet-explanation">
+                        The skipper is included with the crew. When you share crew information, skipper sharing is automatically raised to the same level.
+                      </p>
                     </fieldset>
                   </div>
                 </div>

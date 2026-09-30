@@ -1861,6 +1861,15 @@ img.entity-image--preview {
   min-height: 2.75rem;
 }
 
+.share-logsheet-options .share-logsheet-explanation {
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--primary) 9%, transparent);
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
 
 /* Print visibility and A4 log sheet defaults */
 .print-only {
