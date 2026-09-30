@@ -19,4 +19,9 @@ describe("build info", () => {
     expect(() => parseBuildInfo({ environment: "production", version: "latest" })).toThrow(/version/i);
     expect(parseBuildInfo({ environment: "production", version: "260911.0", branch: "main", commitSha: "abcdef1", targetEnvironment: "production", deploymentUrl: "https://ultilog.example" })).toMatchObject({ environment: "production", version: "260911.0" });
   });
+
+  it("rejects identities that cross production and preview boundaries", () => {
+    expect(() => parseBuildInfo({ environment: "production", version: "260911.0", identity: "topic@abcdef1" })).toThrow(/identity/i);
+    expect(() => parseBuildInfo({ environment: "preview", version: "260911.0", identity: "topic@abcdef1" })).toThrow(/preview/i);
+  });
 });

@@ -61,9 +61,15 @@ export function parseBuildInfo(value: unknown): BuildInfo {
   if (value.environment === "production" && version === undefined) {
     throw new TypeError("Production builds require a release version");
   }
+  if (value.environment === "preview" && version !== undefined) {
+    throw new TypeError("Preview builds cannot claim a production release version");
+  }
 
   const branch = optionalNonEmptyString(value, "branch");
   const identity = optionalNonEmptyString(value, "identity");
+  if (value.environment === "production" && identity !== undefined && identity !== version) {
+    throw new TypeError("Production build identity must match its release version");
+  }
   const commitSha = optionalNonEmptyString(value, "commitSha");
   if (commitSha !== undefined && !shaPattern.test(commitSha)) throw new TypeError("Invalid build info commitSha");
   const targetEnvironment = optionalNonEmptyString(value, "targetEnvironment");

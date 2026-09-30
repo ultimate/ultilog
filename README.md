@@ -180,6 +180,46 @@ The previous release's JSON asset is used as the input so release history is
 preserved. New entries initially contain only the pull request title as English;
 the stable schema permits German, French, and Italian titles to be added later.
 
+#### Version and changelog contract
+
+Production versions use `yyMMdd.suffix`, where `yyMMdd` is the **UTC** calendar
+date on which the release is allocated and `suffix` starts at `0` each UTC day.
+For example, the first and second releases on 30 September 2026 are `260930.0`
+and `260930.1`. The corresponding annotated Git tags are immutable and always
+use a leading `v`, such as `v260930.1`; never move, delete, or reuse one of these
+tags. Production builds receive the version only through the release workflow's
+server-side `BUILD_VERSION` value.
+
+Preview builds are deliberately not production versions. Their identity is the
+Git branch followed by `@` and the first seven characters of the commit SHA,
+for example `feature/release-page@1a2b3c4`. Missing preview components are
+omitted rather than being replaced with a production version. Local builds are
+identified explicitly as development, and custom Vercel targets retain their
+target environment name.
+
+The recognized public changelog labels are:
+
+- `changelog:feature` for a new user-facing capability;
+- `changelog:improvement` for an improvement to existing behavior;
+- `changelog:fix` for a user-facing correction;
+- `changelog:security` for a security-related change.
+
+An unlabeled pull request is **deliberately omitted** from the changelog; labels
+are optional. Applying exactly one recognized `changelog:*` label publishes the
+PR title verbatim, so write that title for users rather than as an implementation
+note. Prefer a concise title such as **“Show release history in the profile”**
+over a technical title such as **“Refactor ProfilePage props and JSON loader”**.
+Likewise, prefer **“Keep imported positions accurate”** over **“Fix coordinate
+normalizer float branch”**. A lightweight pull-request check permits no label
+but rejects multiple recognized labels, because one entry cannot belong to two
+release categories.
+
+Generated entries initially contain only `title.en`, preserving the original PR
+title as the historical English source. Translators may later add `title.de`,
+`title.fr`, or `title.it` to the entry in `releases.json`; they must not rewrite
+`title.en`. The changelog selects a translated field independently per entry and
+falls back to the unchanged English title when that field is absent.
+
 GitHub Actions concurrency group `production-release` allows only one release
 workflow to allocate and tag a version at a time and does not cancel an active
 release. The checkout has complete history and all tags are fetched before the

@@ -136,6 +136,13 @@ jobs:
           fi
           node scripts/generate-release-notes.mjs
 
+      - name: Validate generated release artifact
+        run: >-
+          node scripts/validate-release-artifact.mjs
+          --file app/content/releases.json
+          --version "${{ steps.version.outputs.version }}"
+          --tag "${{ steps.version.outputs.tag }}"
+
       - name: Build the reserved version for Vercel
         env:
           BUILD_VERSION: ${{ steps.version.outputs.version }}
