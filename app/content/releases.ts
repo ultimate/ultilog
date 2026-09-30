@@ -3,9 +3,9 @@ import { parseReleaseVersion, type ReleaseVersion } from "../lib/build-info-type
 
 export type ChangelogTitle = {
   en: string;
-  de?: string;
-  fr?: string;
-  it?: string;
+  de: string | null;
+  fr: string | null;
+  it: string | null;
 };
 
 export type ChangelogEntry = {
@@ -35,11 +35,12 @@ const parseTitle = (value: unknown): ChangelogTitle => {
     if (!(locales as readonly string[]).includes(key)) throw new TypeError(`Unsupported title locale: ${key}`);
   }
   for (const locale of locales) {
-    if (value[locale] !== undefined && (typeof value[locale] !== "string" || value[locale].trim() === "")) {
+    if (locale !== "en" && value[locale] == null) continue;
+    if (typeof value[locale] !== "string" || value[locale].trim() === "") {
       throw new TypeError(`Invalid ${locale} changelog title`);
     }
   }
-  return Object.fromEntries(locales.filter((locale) => value[locale] !== undefined).map((locale) => [locale, value[locale]])) as ChangelogTitle;
+  return { en: value.en, de: (value.de as string | null) ?? null, fr: (value.fr as string | null) ?? null, it: (value.it as string | null) ?? null };
 };
 
 const parseTimestamp = (value: unknown): string => {

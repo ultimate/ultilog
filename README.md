@@ -168,6 +168,18 @@ when a separate approval is desired. Before allocating a version it runs the
 same typecheck, unit tests, production build, and end-to-end checks used for pull
 requests, and verifies that it can access the Vercel production project.
 
+Pull requests can opt into the public changelog with exactly one of
+`changelog:feature`, `changelog:improvement`, `changelog:fix`, or
+`changelog:security` (defined in `.github/labels.yml`). Pull requests without
+one of these labels are intentionally omitted, while conflicting changelog
+labels stop the release with a diagnostic. During release,
+`scripts/generate-release-notes.mjs` examines commits since the previous
+production tag, resolves their associated merged pull requests, and writes the
+deterministically ordered `app/content/releases.json` and GitHub Release body.
+The previous release's JSON asset is used as the input so release history is
+preserved. Translatable title slots are initialized for German, French, and
+Italian while the English title remains the pull request title verbatim.
+
 GitHub Actions concurrency group `production-release` allows only one release
 workflow to allocate and tag a version at a time and does not cancel an active
 release. The checkout has complete history and all tags are fetched before the

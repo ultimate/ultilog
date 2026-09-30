@@ -119,6 +119,23 @@ jobs:
             sleep 2
           done
 
+      - name: Generate release changelog
+        id: notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+          RELEASE_TARGET: ${{ steps.version.outputs.tag }}
+        shell: bash
+        run: |
+          previous_tag="$(git describe --tags --abbrev=0 --match 'v[0-9][0-9][0-9][0-9][0-9][0-9].[0-9]*' "${RELEASE_TARGET}^" 2>/dev/null || true)"
+          if [ -n "$previous_tag" ]; then
+            gh release download "$previous_tag" --pattern releases.json --dir /tmp/previous-release || true
+            if [ -f /tmp/previous-release/releases.json ]; then
+              cp /tmp/previous-release/releases.json app/content/releases.json
+            fi
+          fi
+          node scripts/generate-release-notes.mjs
+
       - name: Build the reserved version for Vercel
         env:
           BUILD_VERSION: ${{ steps.version.outputs.version }}
@@ -143,5 +160,6 @@ jobs:
         run: >-
           gh release create "${{ steps.version.outputs.tag }}"
           --verify-tag
-          --generate-notes
+          --notes-file release-body.md
+          app/content/releases.json
           --title "${{ steps.version.outputs.tag }}"
