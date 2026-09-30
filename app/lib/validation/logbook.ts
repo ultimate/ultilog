@@ -1,8 +1,9 @@
-import type { PersistedLogbook } from "../../models/logbook";
+import type { LogSheetShareSettings, PersistedLogbook } from "../../models/logbook";
 import { StoredImageValidationError, validateStoredImage } from "./stored-image";
 import { scannerWarningCodes } from "../logbook-scanner/warning-codes";
 import { scannerFieldAliases } from "../logbook-scanner/field-aliases";
 import { isSupportedCountryCode } from "../flags";
+import { isSkipperSharingSufficient } from "../../domain/logbook/share-policy";
 
 export const LOGBOOK_LIMITS = {
   requestBytes: 8 * 1024 * 1024,
@@ -92,7 +93,10 @@ export function validatePersistedLogbook(value: unknown): PersistedLogbook {
     if (sheet.engineHourCounters !== undefined) assert(record(sheet.engineHourCounters) && Object.values(sheet.engineHourCounters).every(reading => record(reading) && optional(reading.start, finite) && optional(reading.end, finite) && (reading.start === undefined || Number(reading.start) >= 0) && (reading.end === undefined || Number(reading.end) >= 0)), `sheets[${i}].engineHourCounters is malformed.`);
     sheet.lines.forEach((line, j) => validateLine(line, `sheets[${i}].lines[${j}]`)); totalLines += sheet.lines.length;
     if (totalLines > LOGBOOK_LIMITS.logLines) throw new LogbookValidationError("Too many log lines.", "limit", "too_many_log_lines");
-    if (sheet.share !== undefined) assert(record(sheet.share) && ["masterData", "picture", "logLines", "metrics", "technicalLog", "skipper", "crew"].every(k => ["private", "registered", "public"].includes((sheet.share as Record<string, unknown>)[k] as string)), `sheets[${i}].share is malformed.`);
+    if (sheet.share !== undefined) {
+      assert(record(sheet.share) && ["masterData", "picture", "logLines", "metrics", "technicalLog", "skipper", "crew"].every(k => ["private", "registered", "public"].includes((sheet.share as Record<string, unknown>)[k] as string)), `sheets[${i}].share is malformed.`);
+      assert(isSkipperSharingSufficient(sheet.share as LogSheetShareSettings), `sheets[${i}].share.skipper must be at least as visible as crew.`);
+    }
     if (sheet.metrics !== undefined) assert(record(sheet.metrics) && Object.entries(sheet.metrics).every(([, x]) => x === null || finite(x) || numberRecord(x)), `sheets[${i}].metrics is malformed.`);
     const copyProvenance = sheet.copyProvenance;
     const validCopyProvenance = copyProvenance === undefined || record(copyProvenance)

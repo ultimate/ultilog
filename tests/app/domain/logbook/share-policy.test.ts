@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { copyRequiredSections, sectionVisibility, sharedSheetCapability } from "../../../../app/domain/logbook/share-policy";
+import { copyRequiredSections, enforceSkipperSharing, isSkipperSharingSufficient, sectionVisibility, sharedSheetCapability } from "../../../../app/domain/logbook/share-policy";
 import type { LogSheetSharePrivacy, LogSheetShareSettings } from "../../../../app/models/logbook";
 
 function sharing(required: LogSheetSharePrivacy, overrides: Partial<LogSheetShareSettings> = {}): LogSheetShareSettings {
@@ -16,6 +16,17 @@ function sharing(required: LogSheetSharePrivacy, overrides: Partial<LogSheetShar
 }
 
 describe("shared log sheet copy policy", () => {
+  it("keeps skipper sharing at least as visible as crew sharing", () => {
+    const privateShare = sharing("private");
+    const registeredCrew = { ...privateShare, crew: "registered" as const };
+    const publicCrew = { ...privateShare, skipper: "registered" as const, crew: "public" as const };
+
+    expect(isSkipperSharingSufficient(privateShare)).toBe(true);
+    expect(isSkipperSharingSufficient(registeredCrew)).toBe(false);
+    expect(enforceSkipperSharing(registeredCrew)).toMatchObject({ skipper: "registered", crew: "registered" });
+    expect(enforceSkipperSharing(publicCrew)).toMatchObject({ skipper: "public", crew: "public" });
+  });
+
   it("covers every sharing-settings combination for signed-out, owner, and foreign-user sessions", () => {
     const privacyLevels: LogSheetSharePrivacy[] = ["private", "registered", "public"];
     const sectionNames = ["masterData", "picture", "logLines", "metrics", "technicalLog", "skipper", "crew"] as const;
