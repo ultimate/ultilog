@@ -10,8 +10,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ seg
   const session = await auth();
   const sharedSheet = await readSharedLogSheet(sheetId, Boolean(session?.user?.id), ownerId);
   if (!sharedSheet) return NextResponse.json({ error: "Shared logbook not found" }, { status: 404 });
-  const { sheet, boatName, capability, ownerAvatar, showOwnerAvatarOnPrint } = sharedSheet;
-  return NextResponse.json({ sheet, boatName, capability, ownerAvatar, showOwnerAvatarOnPrint });
+  const { sheet, boatName, capability, ownerName, ownerAvatar, showOwnerAvatarOnPrint } = sharedSheet;
+  return NextResponse.json({ sheet, boatName, capability, ownerName, ownerAvatar, showOwnerAvatarOnPrint });
 }
 
 function parseShareSegments(segments: string[]) {

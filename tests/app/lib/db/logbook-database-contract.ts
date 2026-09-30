@@ -111,6 +111,8 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
         expect(shared?.sheet.lines).toEqual([]);
         expect(shared?.sheet.technicalChecks).toEqual([]);
         expect(shared?.capability).toEqual({ canCopy: true, missingRequiredSections: [], requiresAuthentication: false });
+        expect(shared).toMatchObject({ ownerName: "Contract owner", sourceOwnerId: context.owner });
+        expect(shared?.ownerAvatar).toMatch(/^https:\/\/secure\.gravatar\.com\/avatar\//);
       } finally { await context.cleanup(); }
     });
 

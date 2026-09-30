@@ -5,6 +5,7 @@ import { LogLinesMapView } from "../../components/logbook/OpenSeaMapView";
 import { formatLogSheetDuration } from "../../domain/logbook/sheet-metrics";
 import { formatMiles } from "../../lib/format-number";
 import { SharedLogbookCopy } from "../../components/logbook/SharedLogbookCopy";
+import Image from "next/image";
 
 export default async function SharedLogbookPage({ params }: { params: Promise<{ segments?: string[] }> }) {
   const { segments = [] } = await params;
@@ -34,10 +35,19 @@ export default async function SharedLogbookPage({ params }: { params: Promise<{ 
   const hasMetrics = Boolean(metrics);
   const hasSupportContent = hasCrew || hasTechnicalLog || hasLogLines;
   const returnPath = `/share/${segments.map(encodeURIComponent).join("/")}`;
+  const ownerName = shared.ownerName ?? "Logbook owner";
 
   return (
     <main className="app-shell shared-logbook-page" data-can-copy={capability.canCopy}>
       <section className="app-content">
+        <aside className="shared-owner-banner" aria-label={`Shared by ${ownerName}`}>
+          {shared.ownerAvatar ? <Image className="shared-owner-logo" src={shared.ownerAvatar} alt="" width={64} height={64} unoptimized /> : null}
+          <div>
+            <span>Shared by</span>
+            <strong>{ownerName}</strong>
+          </div>
+        </aside>
+
         <article className="logbook-section sheet-master-header">
           {sheet.image ? <EntityImage image={sheet.image} entityType="sheet" alt={`${sheet.title} image`} variant="header" /> : null}
           <div className="sheet-master-title">

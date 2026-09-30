@@ -10,7 +10,7 @@ import { createHash } from "node:crypto";
 import { referencedBoatDeletionError, sheetBoatMutationError } from "../../domain/boats/boat-policy";
 import { sectionVisibility, sharedSheetCapability, type SectionVisibility, type SharedSheetCapability } from "../../domain/logbook/share-policy";
 
-export type SharedLogSheet = { sheet: LogSheet; boatName: string; capability: SharedSheetCapability; sourceOwnerId?: string; ownerAvatar?: string; showOwnerAvatarOnPrint?: boolean };
+export type SharedLogSheet = { sheet: LogSheet; boatName: string; capability: SharedSheetCapability; sourceOwnerId?: string; ownerName?: string; ownerAvatar?: string; showOwnerAvatarOnPrint?: boolean };
 export type CopySharedLogSheetOptions = { destinationBoatId: string; includeCrew?: boolean; includePicture?: boolean; allowDuplicate?: boolean };
 export type PreviousCopySummary = { id: string; title: string; copiedAt: string };
 
@@ -306,17 +306,17 @@ export abstract class LogbookDatabase implements QueryableDatabase {
     const sheet = logbook.sheets[0];
     if (!sheet) return undefined;
     const boat = logbook.boats.find((candidate) => candidate.id === sheet.boatId);
-    const owner = (await this.query<{ email: string; avatar_data: string | null; avatar_mime_type: string | null; show_avatar_on_print: number | boolean }>(
-      `select email, avatar_data, avatar_mime_type, show_avatar_on_print from users where id = ${this.placeholder(1)}`,
+    const owner = (await this.query<{ name: string; email: string; avatar_data: string | null; avatar_mime_type: string | null; show_avatar_on_print: number | boolean }>(
+      `select name, email, avatar_data, avatar_mime_type, show_avatar_on_print from users where id = ${this.placeholder(1)}`,
       [sharedRow.owner_id],
     )).rows[0];
     const showOwnerAvatarOnPrint = owner ? Boolean(owner.show_avatar_on_print) : false;
-    const ownerAvatar = owner && showOwnerAvatarOnPrint
+    const ownerAvatar = owner
       ? owner.avatar_data && owner.avatar_mime_type
         ? `data:${owner.avatar_mime_type};base64,${owner.avatar_data}`
         : `https://secure.gravatar.com/avatar/${createHash("sha256").update(owner.email.trim().toLowerCase()).digest("hex")}?s=256&d=mp`
       : undefined;
-    return { sheet: filterSharedSheet(sheet, visibility), boatName: visibility.masterData ? boat?.name ?? "" : "", capability, sourceOwnerId: sharedRow.owner_id, ownerAvatar, showOwnerAvatarOnPrint };
+    return { sheet: filterSharedSheet(sheet, visibility), boatName: visibility.masterData ? boat?.name ?? "" : "", capability, sourceOwnerId: sharedRow.owner_id, ownerName: owner?.name, ownerAvatar, showOwnerAvatarOnPrint };
   }
 
   /** Copies a shared sheet into the currently scoped owner's logbook in one transaction. */
