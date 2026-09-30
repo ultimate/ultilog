@@ -732,6 +732,34 @@ td { color: #28384b; line-height: 1.45; }
   width: 100%;
 }
 
+.shared-owner-banner {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  margin-bottom: 1rem;
+  border: 1px solid var(--line, var(--border));
+  border-radius: 1rem;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--blue, var(--primary)) 10%, var(--surface-strong, #fff)), var(--surface-strong, #fff));
+  box-shadow: var(--design-shadow, var(--shadow-soft));
+}
+
+.shared-owner-logo {
+  display: block;
+  flex: 0 0 4rem;
+  width: 4rem;
+  height: 4rem;
+  border: 1px solid color-mix(in srgb, var(--blue, var(--primary)) 25%, transparent);
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.shared-owner-banner div { display: grid; gap: 0.15rem; }
+.shared-owner-banner span { color: var(--subtle, var(--muted)); font-size: 0.78rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.shared-owner-banner strong { color: var(--text, var(--foreground)); font-size: clamp(1.15rem, 2vw, 1.5rem); }
+
 .sheet-title-row.logbook-section {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -1963,6 +1991,7 @@ img.entity-image--preview {
   .pagination-buttons,
   .edit-chip,
   .share-logsheet-modal,
+  .shared-owner-banner,
   .scanner-upload-status,
   .logbook-scanner-actions,
   .logbook-scanner-empty,
