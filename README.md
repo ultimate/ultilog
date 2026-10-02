@@ -128,6 +128,45 @@ Scanned sheets are always created with `Draft` status. Users must review and ver
 
 ## Project structure guidelines
 
+### Changelog entries
+
+Codex and contributors must add exactly one flat entry to
+`app/content/changelog.json` for a user-visible feature, improvement, fix, or
+security change. Tests, refactors, dependency updates, and internal-only changes
+normally do not require an entry. Entry presence is the opt-in mechanism for the
+public changelog: no `changelog:*` label is used. The pull request title and the
+public changelog title are independent, so write the latter for users rather
+than copying repository terminology automatically.
+
+Every entry needs a unique, descriptive, immutable kebab-case `id`, one of the
+`feature`, `improvement`, `fix`, or `security` categories, and a non-empty
+`title.en`. Keep the list ordered by ID. The English title is the authoritative
+historical source text. Non-empty `title.de`, `title.fr`, and `title.it`
+translations are optional and may be supplied with the initial entry or added
+later. Do not silently rewrite historical IDs or English titles; make any
+necessary historical correction explicit in its pull request.
+
+A complete entry with every optional translation looks like this:
+
+```json
+[
+  {
+    "id": "show-tidal-current-on-route-map",
+    "category": "feature",
+    "title": {
+      "en": "Show tidal current on the route map",
+      "de": "Gezeitenstrom auf der Routenkarte anzeigen",
+      "fr": "Afficher le courant de marée sur la carte de route",
+      "it": "Mostra la corrente di marea sulla mappa della rotta"
+    }
+  }
+]
+```
+
+Do not include release versions, timestamps, pull request numbers, pull request
+URLs, or fields outside this schema. The root `AGENTS.md` contains the same
+authoring requirements for automated changes.
+
 ### Database evolution
 
 Database changes must use a versioned migration that converts all existing rows
