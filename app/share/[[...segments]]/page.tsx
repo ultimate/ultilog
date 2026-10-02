@@ -33,7 +33,7 @@ export default async function SharedLogbookPage({ params }: { params: Promise<{ 
   const hasTechnicalLog = sheet.technicalChecks.length > 0;
   const hasLogLines = sheet.lines.length > 0;
   const hasMetrics = Boolean(metrics);
-  const hasSupportContent = hasCrew || hasTechnicalLog || hasLogLines;
+  const hasSupportContent = hasCrew || hasTechnicalLog;
   const returnPath = `/share/${segments.map(encodeURIComponent).join("/")}`;
   const ownerName = shared.ownerName ?? "Logbook owner";
 
@@ -48,20 +48,28 @@ export default async function SharedLogbookPage({ params }: { params: Promise<{ 
           </div>
         </aside>
 
-        <article className="logbook-section sheet-master-header">
-          {sheet.image ? <EntityImage image={sheet.image} entityType="sheet" alt={`${sheet.title} image`} variant="header" /> : null}
-          <div className="sheet-master-title">
-            <p className="eyebrow">Shared logbook</p>
-            <h1>{sheet.title}</h1>
-          </div>
-          {(boatName || sheet.route.from || sheet.route.to) && (
-            <div className="paper-header header-table">
-              {boatName ? <div className="header-table-row"><span>Boat</span><strong>{boatName}</strong></div> : null}
-              {(sheet.route.departed || sheet.route.from) ? <div className="header-table-row"><span>From</span><strong>{sheet.route.departed}</strong><strong>{sheet.route.from}</strong></div> : null}
-              {(sheet.route.arrived || sheet.route.to) ? <div className="header-table-row"><span>To</span><strong>{sheet.route.arrived}</strong><strong>{sheet.route.to}</strong></div> : null}
+        <div className={`sheet-master-map-grid${hasLogLines ? "" : " sheet-master-map-grid--single"}`}>
+          <article className="logbook-section sheet-master-header">
+            {sheet.image ? <EntityImage image={sheet.image} entityType="sheet" alt={`${sheet.title} image`} variant="header" /> : null}
+            <div className="sheet-master-title">
+              <p className="eyebrow">Shared logbook</p>
+              <h1>{sheet.title}</h1>
             </div>
-          )}
-        </article>
+            {(boatName || sheet.route.from || sheet.route.to) && (
+              <div className="paper-header header-table">
+                {boatName ? <div className="header-table-row"><span>Boat</span><strong>{boatName}</strong></div> : null}
+                {(sheet.route.departed || sheet.route.from) ? <div className="header-table-row"><span>From</span><strong>{sheet.route.departed}</strong><strong>{sheet.route.from}</strong></div> : null}
+                {(sheet.route.arrived || sheet.route.to) ? <div className="header-table-row"><span>To</span><strong>{sheet.route.arrived}</strong><strong>{sheet.route.to}</strong></div> : null}
+              </div>
+            )}
+          </article>
+          {hasLogLines ? (
+            <article className="map-card logbook-section logbook-sheet-map-section">
+              <div className="logbook-map-heading"><h3>Positions</h3></div>
+              <LogLinesMapView logLines={sheet.lines} />
+            </article>
+          ) : null}
+        </div>
 
         <SharedLogbookCopy ownerId={shared.sourceOwnerId ?? ownerId ?? ""} sheetId={sheetId!} isAuthenticated={Boolean(session?.user?.id)} canCopy={capability.canCopy} requiresAuthentication={capability.requiresAuthentication} missingRequiredSections={capability.missingRequiredSections} canIncludeCrew={hasCrew} canIncludePicture={Boolean(sheet.image)} returnPath={returnPath} />
 
@@ -113,12 +121,6 @@ export default async function SharedLogbookPage({ params }: { params: Promise<{ 
               </article>
             ) : null}
 
-            {hasLogLines ? (
-              <article className="map-card logbook-section logbook-sheet-map-section">
-                <div className="logbook-map-heading"><h2>Positions</h2></div>
-                <LogLinesMapView logLines={sheet.lines} />
-              </article>
-            ) : null}
           </section>
         ) : null}
       </section>
