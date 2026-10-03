@@ -759,6 +759,11 @@ td { color: #28384b; line-height: 1.45; }
 .shared-owner-banner div { display: grid; gap: 0.15rem; }
 .shared-owner-banner span { color: var(--subtle, var(--muted)); font-size: 0.78rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
 .shared-owner-banner strong { color: var(--text, var(--foreground)); font-size: clamp(1.15rem, 2vw, 1.5rem); }
+.powered-by-ultilog { margin-left: auto; color: var(--primary); font-size: .9rem; font-weight: 700; text-decoration: none; }
+.powered-by-ultilog strong { font-size: inherit; }
+.powered-by-ultilog:hover { text-decoration: underline; }
+.shared-logbook-page--embed { width: 100%; padding: 1rem; background: var(--background); }
+.shared-logbook-page--embed .app-content { max-width: 100%; }
 
 .sheet-title-row.logbook-section {
   display: grid;
@@ -1901,6 +1906,19 @@ img.entity-image--preview {
   font-size: 0.9rem;
   line-height: 1.45;
 }
+
+.embed-builder { display: grid; gap: .85rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+.embed-builder h3, .embed-builder p { margin: 0; }
+.embed-builder p { margin-top: .3rem; color: var(--muted); font-size: .9rem; line-height: 1.45; }
+.embed-color-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .65rem; }
+.embed-color-grid label { display: flex !important; flex-direction: row; align-items: center; justify-content: space-between; padding: .55rem .7rem; border: 1px solid var(--border); border-radius: .7rem; }
+.embed-color-grid input { width: 3rem; min-height: 2rem; padding: .1rem; cursor: pointer; }
+.embed-code-label { font-weight: 900; }
+.embed-builder textarea { width: 100%; resize: vertical; border: 1px solid var(--border); border-radius: .7rem; padding: .75rem; background: color-mix(in srgb, var(--background) 60%, white); color: var(--foreground); font: .8rem/1.45 monospace; }
+.embed-actions { display: flex; align-items: center; gap: 1rem; }
+.embed-actions button { border: 0; border-radius: .7rem; padding: .7rem 1rem; background: var(--primary); color: white; font-weight: 800; }
+.embed-actions button:disabled { opacity: .45; cursor: not-allowed; }
+.embed-actions a { color: var(--primary); font-weight: 800; }
 
 
 /* Print visibility and A4 log sheet defaults */
