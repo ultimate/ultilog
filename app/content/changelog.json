@@ -1,1 +1,9 @@
-[]
+[
+  {
+    "id": "display-build-environment-identity",
+    "category": "improvement",
+    "title": {
+      "en": "Show the deployment environment and source revision"
+    }
+  }
+]
