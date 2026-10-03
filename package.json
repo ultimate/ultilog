@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "build:changelog": "node scripts/build-changelog.mjs",
+    "prebuild": "npm run build:changelog",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",

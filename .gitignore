@@ -9,3 +9,6 @@ out
 .data
 
 coverage/
+
+# Derived from app/content/changelog.json and Git history during builds.
+public/generated/changelog.json
