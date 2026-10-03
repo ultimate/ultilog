@@ -32,6 +32,11 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+        with:
+          # Changelog provenance must be able to inspect the commit that first
+          # introduced each stable ID. A depth-1 checkout makes the checked-out
+          # commit a shallow boundary and cannot prove that history.
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -41,7 +46,7 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-        
+
       - name: Install playwright browsers
         run: npx playwright install --with-deps chromium
 

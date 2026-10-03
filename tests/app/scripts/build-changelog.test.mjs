@@ -131,7 +131,9 @@ describe("changelog build artifact", () => {
       `file://${source}`,
       shallow,
     ]);
-    expect(() => derive(shallow)).toThrow(/shallow Git history/i);
+    expect(() => derive(shallow)).toThrow(
+      /shallow-history boundary.*fetch-depth: 0.*git fetch --unshallow/i,
+    );
   });
 
   it("accepts shallow history when every introduction follows the shallow boundary", () => {
