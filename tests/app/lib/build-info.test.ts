@@ -9,12 +9,14 @@ describe("build info", () => {
       getBuildInfo({
         VERCEL: "1",
         VERCEL_ENV: "production",
-        VERCEL_GIT_COMMIT_SHA: fullSha,
+        BUILD_COMMIT_SHA: fullSha,
+        BUILD_STARTED_AT: "2026-10-03T12:00:00.000Z",
       }),
     ).toMatchObject({
       environment: "production",
       commitSha: fullSha,
       identity: "fedcba9",
+      buildStartedAt: "2026-10-03T12:00:00.000Z",
     });
   });
 

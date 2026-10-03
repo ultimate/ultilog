@@ -67,19 +67,19 @@ describe("build info types", () => {
     expect(
       parseBuildInfo({
         environment: "preview",
-        commitTimestamp: "2026-10-03T12:00:00.000Z",
+        buildStartedAt: "2026-10-03T12:00:00.000Z",
         deploymentUrl: "https://ultilog-topic.vercel.app",
       }),
     ).toMatchObject({
-      commitTimestamp: "2026-10-03T12:00:00.000Z",
+      buildStartedAt: "2026-10-03T12:00:00.000Z",
       deploymentUrl: "https://ultilog-topic.vercel.app",
     });
     expect(() =>
       parseBuildInfo({
         environment: "preview",
-        commitTimestamp: "2026-10-03T12:00:00+02:00",
+        buildStartedAt: "2026-10-03T12:00:00+02:00",
       }),
-    ).toThrow(/commitTimestamp/);
+    ).toThrow(/buildStartedAt/);
     expect(() =>
       parseBuildInfo({
         environment: "preview",

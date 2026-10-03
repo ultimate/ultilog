@@ -37,7 +37,7 @@ export function BuildIdentity({
   className,
 }: BuildIdentityProps) {
   const shortSha = buildInfo.commitSha?.slice(0, 7);
-  const date = localizedDate(buildInfo.commitTimestamp, locale);
+  const date = localizedDate(buildInfo.buildStartedAt, locale);
   const environmentName =
     buildInfo.environment === "staging" && buildInfo.targetEnvironment
       ? `${labels.staging} / ${buildInfo.targetEnvironment.toUpperCase()}`
