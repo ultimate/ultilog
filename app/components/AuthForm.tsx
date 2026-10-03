@@ -172,7 +172,9 @@ export function AuthForm({ mode, footer }: Props) {
           />
         </a>
       </section>
-      <nav className="public-legal-bar" aria-label="Legal information">
+      <nav className="public-legal-bar" aria-label="Public information">
+        <Link href="/changelog">{t("nav.changelog")}</Link>
+        <span aria-hidden="true">·</span>
         <Link href="/legal">Legal notice &amp; contact</Link>
         <span aria-hidden="true">·</span>
         <a href="mailto:ultilog@verkin.de">ultilog@verkin.de</a>

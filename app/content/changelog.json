@@ -8,5 +8,15 @@
       "fr": "Découvrez les nouveautés sur les journaux, les bateaux, les équipages, la numérisation, le partage, la conformité et les déploiements",
       "it": "Scopri le novità su giornali, barche, equipaggi, scansione, condivisione, conformità e distribuzioni"
     }
+  },
+  {
+    "id": "public-changelog-footer-link",
+    "category": "improvement",
+    "title": {
+      "en": "Open What's New from the signed-out footer",
+      "de": "Neuigkeiten über die Fußzeile im abgemeldeten Zustand öffnen",
+      "fr": "Ouvrir les nouveautés depuis le pied de page hors connexion",
+      "it": "Apri le novità dal piè di pagina quando non hai effettuato l’accesso"
+    }
   }
 ]
