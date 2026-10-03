@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { embedThemeDefaults, type EmbedTheme } from "../../domain/logbook/embed-theme";
 
 const fields: { key: keyof EmbedTheme; label: string; parameter: string }[] = [
@@ -10,14 +10,12 @@ const fields: { key: keyof EmbedTheme; label: string; parameter: string }[] = [
   { key: "accent", label: "Accent", parameter: "accent" },
 ];
 
-export function EmbedCodeBuilder({ sharePath, enabled }: { sharePath: string; enabled: boolean }) {
+export function EmbedCodeBuilder({ shareUrl, enabled }: { shareUrl: string; enabled: boolean }) {
   const [theme, setTheme] = useState<EmbedTheme>({ ...embedThemeDefaults });
   const [copied, setCopied] = useState(false);
-  const [origin, setOrigin] = useState("");
-  useEffect(() => setOrigin(window.location.origin), []);
   const query = new URLSearchParams({ embed: "1" });
   fields.forEach(({ key, parameter }) => query.set(parameter, theme[key]));
-  const embedUrl = `${origin}${sharePath}?${query.toString()}`;
+  const embedUrl = `${shareUrl}?${query.toString()}`;
   const code = `<iframe src="${embedUrl}" title="Shared Ultilog logbook" width="100%" height="800" style="border:0;border-radius:16px" loading="lazy"></iframe>`;
 
   const copy = async () => {
@@ -34,7 +32,13 @@ export function EmbedCodeBuilder({ sharePath, enabled }: { sharePath: string; en
       </div>
       <div className="embed-color-grid">
         {fields.map(({ key, label }) => (
-          <label key={key}><span>{label}</span><input type="color" value={theme[key]} onChange={event => setTheme(current => ({ ...current, [key]: event.currentTarget.value }))} /></label>
+          <label key={key}><span>{label}</span><input type="color" value={theme[key]} onChange={event => {
+            // React clears currentTarget after the handler returns. Capture the
+            // color before the state updater runs so concurrent rendering does
+            // not attempt to read from a cleared event.
+            const color = event.currentTarget.value;
+            setTheme(current => ({ ...current, [key]: color }));
+          }} /></label>
         ))}
       </div>
       <label className="embed-code-label" htmlFor="embed-code">Embed code</label>
