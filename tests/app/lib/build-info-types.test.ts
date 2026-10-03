@@ -62,4 +62,29 @@ describe("build info types", () => {
       ).toEqual({ environment });
     },
   );
+
+  it("accepts only normalized UTC timestamps and HTTPS Vercel deployment origins", () => {
+    expect(
+      parseBuildInfo({
+        environment: "preview",
+        commitTimestamp: "2026-10-03T12:00:00.000Z",
+        deploymentUrl: "https://ultilog-topic.vercel.app",
+      }),
+    ).toMatchObject({
+      commitTimestamp: "2026-10-03T12:00:00.000Z",
+      deploymentUrl: "https://ultilog-topic.vercel.app",
+    });
+    expect(() =>
+      parseBuildInfo({
+        environment: "preview",
+        commitTimestamp: "2026-10-03T12:00:00+02:00",
+      }),
+    ).toThrow(/commitTimestamp/);
+    expect(() =>
+      parseBuildInfo({
+        environment: "preview",
+        deploymentUrl: "https://ultilog.vercel.app/path",
+      }),
+    ).toThrow(/deploymentUrl/);
+  });
 });

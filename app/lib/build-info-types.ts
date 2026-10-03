@@ -14,6 +14,10 @@ type DeploymentMetadata = {
   commitSha?: string;
   /** Vercel custom-environment name, when applicable. */
   targetEnvironment?: string;
+  /** UTC commit time used for localized, non-authoritative display. */
+  commitTimestamp?: string;
+  /** Validated HTTPS URL for this deployment. */
+  deploymentUrl?: string;
 };
 
 export type BuildInfo = DeploymentMetadata & {
@@ -30,6 +34,8 @@ const fields = new Set([
   "branch",
   "commitSha",
   "targetEnvironment",
+  "commitTimestamp",
+  "deploymentUrl",
 ]);
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -82,6 +88,8 @@ export function parseBuildInfo(value: unknown): BuildInfo {
   const rawSha = optionalString(value, "commitSha");
   const commitSha = rawSha?.toLowerCase();
   let targetEnvironment = optionalString(value, "targetEnvironment");
+  const commitTimestamp = optionalString(value, "commitTimestamp");
+  const deploymentUrl = optionalString(value, "deploymentUrl");
 
   if (environment === "production") {
     if (commitSha === undefined)
@@ -101,6 +109,19 @@ export function parseBuildInfo(value: unknown): BuildInfo {
     targetEnvironment = undefined;
   }
 
+  if (commitTimestamp !== undefined) {
+    const timestamp = new Date(commitTimestamp);
+    if (
+      Number.isNaN(timestamp.valueOf()) ||
+      timestamp.toISOString() !== commitTimestamp
+    ) {
+      throw new TypeError("Invalid build info commitTimestamp");
+    }
+  }
+  if (deploymentUrl !== undefined && !isAllowedDeploymentUrl(deploymentUrl)) {
+    throw new TypeError("Invalid build info deploymentUrl");
+  }
+
   const identity =
     environment === "production"
       ? commitSha!.slice(0, 7)
@@ -110,6 +131,27 @@ export function parseBuildInfo(value: unknown): BuildInfo {
     ...(branch === undefined ? {} : { branch }),
     ...(commitSha === undefined ? {} : { commitSha }),
     ...(targetEnvironment === undefined ? {} : { targetEnvironment }),
+    ...(commitTimestamp === undefined ? {} : { commitTimestamp }),
+    ...(deploymentUrl === undefined ? {} : { deploymentUrl }),
     ...(identity === undefined ? {} : { identity }),
   };
+}
+
+/** Deployment diagnostics may link only to Vercel's HTTPS deployment hosts. */
+export function isAllowedDeploymentUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return (
+      url.protocol === "https:" &&
+      url.username === "" &&
+      url.password === "" &&
+      url.port === "" &&
+      url.hostname.endsWith(".vercel.app") &&
+      url.pathname === "/" &&
+      url.search === "" &&
+      url.hash === ""
+    );
+  } catch {
+    return false;
+  }
 }
