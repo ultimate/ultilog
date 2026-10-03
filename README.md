@@ -104,6 +104,51 @@ synchronizer or signed double-submit CSRF token before supporting any
 cross-origin cookie-authenticated client—do not solve that use case with broad
 CORS allowances.
 
+## Production deployments and changelog history
+
+Every commit that reaches `main` is automatically verified by the **Production
+Release** GitHub Actions workflow, and every commit that passes those checks is
+automatically deployed. The workflow checks out the immutable triggering commit,
+runs the typecheck, unit tests, application build, and end-to-end checks, then
+builds and deploys that exact prebuilt output through Vercel. Vercel's native Git
+deployment for `main` is disabled, so GitHub Actions is the only production
+deployment authority.
+
+The exact, full 40-character commit SHA is the immutable production identity.
+The application UI uses the first seven characters as its compact display value;
+expanding its build diagnostics exposes the full SHA. This identity is not a
+release number, Git tag, or movable alias.
+
+`app/content/changelog.json` is the authoritative public changelog. Adding one
+stable-ID entry is the opt-in mechanism for a user-visible change. No changelog
+label, release tag, release pull request, pending section, or GitHub Release
+asset participates in publishing it. English source text lives in `title.en`,
+and the optional `title.de`, `title.fr`, and `title.it` translations live beside
+it in the same entry.
+
+Each immutable stable ID associates its entry with the first Git commit that
+contains that ID. At build time, complete Git history is used to derive the full
+introduction SHA, its seven-character display form, and the introducing commit's
+timestamp. Changelog dates shown to users are that Git commit timestamp formatted
+in UTC. They do **not** claim to be the exact time at which Vercel finished
+deploying the commit.
+
+### Deployment failures and rollback
+
+If verification, the production build, or deployment fails, that commit SHA has
+not acquired a reusable release number or reserved tag. The previously successful
+production deployment remains the known-good production identity unless Vercel
+already completed the new deployment. Diagnose and retry the same SHA while it is
+still `main`, or land a corrective commit and allow that new SHA to run through
+the complete workflow. An obsolete workflow run refuses to deploy after `main`
+moves to a newer commit.
+
+To roll back, promote a known-good Vercel deployment identified by its original
+full commit SHA. A rollback changes which immutable build serves production; it
+does not rewrite commit identities, changelog entries, introduction commits, or
+historical UTC dates. Follow the rollback with a corrective commit on `main` so
+the normal verified deployment path produces the next production build.
+
 ## Logbook scanner
 
 The scanner imports photographed or handwritten paper logbook sheets and turns extracted fields into a new digital sheet. It is an assistive import flow, not an automatic source of truth.
