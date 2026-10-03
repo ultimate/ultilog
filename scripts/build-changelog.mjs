@@ -213,8 +213,13 @@ export function deriveChangelogArtifact({
     .map(({ id }) => id)
     .filter((id) => shallowBoundaries.has(introductions.get(id)?.commitSha));
   if (uncertain.length > 0) {
+    const boundaryCommits = [
+      ...new Set(
+        uncertain.map((id) => introductions.get(id)?.commitSha).filter(Boolean),
+      ),
+    ];
     throw new Error(
-      `Cannot prove introduction commits for changelog ID(s) ${uncertain.join(", ")} from shallow Git history; fetch the complete history first`,
+      `Cannot prove introduction commits for changelog ID(s) ${uncertain.join(", ")} because ${boundaryCommits.join(", ")} is a shallow-history boundary; check out with fetch-depth: 0 or run git fetch --unshallow`,
     );
   }
 
