@@ -5,6 +5,7 @@ import type {
   GeneratedChangelogEntry,
   ChangelogCategory,
 } from "../content/changelog";
+import { parseGeneratedChangelog } from "../content/changelog";
 import {
   t as translate,
   useI18n,
@@ -52,7 +53,9 @@ export function ChangelogPage({
           ? response.json()
           : Promise.reject(new Error(String(response.status))),
       )
-      .then((value: GeneratedChangelogEntry[]) => setLoadedEntries(value))
+      .then((value: unknown) =>
+        setLoadedEntries(parseGeneratedChangelog(value)),
+      )
       .catch((error: unknown) => {
         if (!(error instanceof DOMException && error.name === "AbortError"))
           setLoadedEntries([]);

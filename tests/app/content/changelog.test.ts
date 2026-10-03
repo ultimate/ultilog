@@ -3,6 +3,7 @@ import {
   CHANGELOG_CATEGORIES,
   changelog,
   parseChangelog,
+  parseGeneratedChangelog,
 } from "../../../app/content/changelog";
 
 const entry = {
@@ -65,4 +66,61 @@ describe("changelog authoring contract", () => {
   ] as const)("rejects invalid changelog content", (value, error) => {
     expect(() => parseChangelog(value)).toThrow(error);
   });
+});
+
+describe("generated changelog contract", () => {
+  const commitSha = "0123456789abcdef0123456789abcdef01234567";
+  const generated = {
+    ...entry,
+    introduction: {
+      commitSha,
+      shortSha: commitSha.slice(0, 7),
+      introducedAt: "2026-10-03T12:30:00.000Z",
+    },
+  };
+
+  it("accepts normalized metadata derived from a stable source ID", () => {
+    expect(parseGeneratedChangelog([generated])).toEqual([generated]);
+  });
+
+  it.each([
+    [{ ...generated, introduction: undefined }, /missing introduction/i],
+    [
+      {
+        ...generated,
+        introduction: { ...generated.introduction, commitSha: "0123456" },
+      },
+      /commit SHA/i,
+    ],
+    [
+      {
+        ...generated,
+        introduction: { ...generated.introduction, shortSha: "abcdef0" },
+      },
+      /short SHA/i,
+    ],
+    [
+      {
+        ...generated,
+        introduction: {
+          ...generated.introduction,
+          introducedAt: "2026-10-03T14:30:00+02:00",
+        },
+      },
+      /normalized UTC/i,
+    ],
+    [
+      {
+        ...generated,
+        introduction: { ...generated.introduction, pullRequest: 42 },
+      },
+      /unexpected/i,
+    ],
+    [{ ...generated, version: "1.2.3" }, /unexpected/i],
+  ] as const)(
+    "rejects invalid or legacy generated metadata",
+    (candidate, error) => {
+      expect(() => parseGeneratedChangelog([candidate])).toThrow(error);
+    },
+  );
 });

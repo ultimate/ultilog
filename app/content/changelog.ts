@@ -34,6 +34,14 @@ export type GeneratedChangelogEntry = ChangelogEntry & {
 const idPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const categories = new Set<string>(CHANGELOG_CATEGORIES);
 const locales = new Set<string>(CHANGELOG_LOCALES);
+const generatedEntryFields = new Set([
+  "id",
+  "category",
+  "title",
+  "introduction",
+]);
+const introductionFields = new Set(["commitSha", "shortSha", "introducedAt"]);
+const fullCommitShaPattern = /^[0-9a-f]{40}$/;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -106,6 +114,69 @@ export function parseChangelog(value: unknown): ChangelogEntry[] {
       category: category as ChangelogCategory,
       title: parseTitle(candidate.title),
     };
+  });
+}
+
+/** Validate the generated artifact before exposing its Git metadata. */
+export function parseGeneratedChangelog(
+  value: unknown,
+): GeneratedChangelogEntry[] {
+  if (!Array.isArray(value))
+    throw new TypeError("Generated changelog data must be an array");
+
+  const sourceEntries = value.map((candidate) => {
+    if (!isRecord(candidate))
+      throw new TypeError("A generated changelog entry must be an object");
+    requireOnlyFields(
+      candidate,
+      generatedEntryFields,
+      "generated changelog entry",
+    );
+    return {
+      id: candidate.id,
+      category: candidate.category,
+      title: candidate.title,
+    };
+  });
+  const parsedEntries = parseChangelog(sourceEntries);
+
+  return parsedEntries.map((entry, index) => {
+    const candidate = value[index] as Record<string, unknown>;
+    const introduction = candidate.introduction;
+    if (!isRecord(introduction))
+      throw new TypeError(
+        `Missing introduction metadata for changelog ID: ${entry.id}`,
+      );
+    requireOnlyFields(
+      introduction,
+      introductionFields,
+      "changelog introduction",
+    );
+
+    const { commitSha, shortSha, introducedAt } = introduction;
+    if (typeof commitSha !== "string" || !fullCommitShaPattern.test(commitSha))
+      throw new TypeError(
+        `Invalid introduction commit SHA for changelog ID: ${entry.id}`,
+      );
+    if (shortSha !== commitSha.slice(0, 7))
+      throw new TypeError(
+        `Introduction short SHA does not match the full SHA for changelog ID: ${entry.id}`,
+      );
+    if (typeof introducedAt !== "string")
+      throw new TypeError(
+        `Invalid introduction timestamp for changelog ID: ${entry.id}`,
+      );
+    const timestamp = new Date(introducedAt);
+    if (
+      Number.isNaN(timestamp.valueOf()) ||
+      timestamp.toISOString() !== introducedAt
+    ) {
+      throw new TypeError(
+        `Introduction timestamp must be normalized UTC for changelog ID: ${entry.id}`,
+      );
+    }
+
+    return { ...entry, introduction: { commitSha, shortSha, introducedAt } };
   });
 }
 
