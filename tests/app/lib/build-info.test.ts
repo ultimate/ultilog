@@ -4,7 +4,7 @@ import { getBuildInfo } from "../../../app/lib/build-info";
 const fullSha = "fedcba9876543210fedcba9876543210fedcba98";
 
 describe("build info", () => {
-  it("reads a full production SHA without requiring BUILD_VERSION", () => {
+  it("derives a production identity from its full commit SHA", () => {
     expect(
       getBuildInfo({
         VERCEL: "1",
