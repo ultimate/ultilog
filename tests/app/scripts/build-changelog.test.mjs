@@ -134,6 +134,24 @@ describe("changelog build artifact", () => {
     expect(() => derive(shallow)).toThrow(/shallow Git history/i);
   });
 
+  it("accepts shallow history when every introduction follows the shallow boundary", () => {
+    const source = repository();
+    commit(source, []);
+    commit(source, [entry("alpha")]);
+    const shallow = mkdtempSync(
+      join(tmpdir(), "ultilog-changelog-sufficient-shallow-"),
+    );
+    execFileSync("git", [
+      "clone",
+      "--quiet",
+      "--depth",
+      "2",
+      `file://${source}`,
+      shallow,
+    ]);
+    expect(derive(shallow).artifact[0].id).toBe("alpha");
+  });
+
   it("writes byte-for-byte deterministic output", () => {
     const repo = repository();
     commit(repo, [entry("alpha", "Alpha")]);
