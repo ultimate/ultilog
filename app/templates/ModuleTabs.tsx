@@ -2,7 +2,7 @@ import Image from "next/image";
 import { LocaleSelect, MobileLocaleAction, useI18n } from "../lib/i18n";
 import { moduleTabs, type ModuleTab } from "./app-shell";
 
-export type ActiveView = ModuleTab | "profile" | "admin";
+export type ActiveView = ModuleTab | "changelog" | "profile" | "admin";
 
 type ModuleTabsProps = {
   activeModule: ActiveView;
@@ -66,6 +66,7 @@ export function ModuleTabs({ activeModule, onSelectModule, onOpenProfile, theme,
         </nav>
         <div className="sidebar-spacer" />
         <section className="sync-icon-card" aria-label={t("nav.cloudSyncStatus")}><span className="sync-icon" aria-hidden="true" /></section>
+        <button className={`sidebar-control-row changelog-navigation ${activeModule === "changelog" ? "active" : ""}`} type="button" onClick={() => onSelectModule("changelog")} aria-label={t("nav.changelog")}><span aria-hidden="true">◷</span><span>{t("nav.changelog")}</span></button>
         <LocaleSelect className="sidebar-control-row locale-select" />
         <div className="sidebar-control-row"><button className="theme-toggle" type="button" onClick={onToggleTheme}><span className="theme-icon" aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span><span>{theme === "dark" ? t("nav.light") : t("nav.dark")}</span></button></div>
         <button className={`profile-card ${activeModule === "profile" ? "active" : ""}`} type="button" onClick={onOpenProfile}><span>{userAvatar ? <Image unoptimized className="user-avatar" src={userAvatar} alt="" width={32} height={32} /> : <Image className="nav-svg-icon" src="/icons/icon_profile.svg" alt="" width={24} height={24} />}</span><strong>{userName ?? t("nav.profile")}</strong><small>{userEmail ?? t("nav.noEmail")}</small></button>

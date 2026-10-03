@@ -1,5 +1,12 @@
 [
   {
+    "id": "browse-commit-grouped-changelog",
+    "category": "feature",
+    "title": {
+      "en": "Browse public changes grouped by source revision"
+    }
+  },
+  {
     "id": "display-build-environment-identity",
     "category": "improvement",
     "title": {

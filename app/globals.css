@@ -2085,3 +2085,19 @@ img.entity-image--preview {
 .technical-template-options { display: grid; gap: .45rem; margin-bottom: .75rem; }
 .technical-template-options label { display: flex; gap: .5rem; align-items: center; font-weight: 500; }
 .technical-template-options input { width: auto; }
+
+
+/* Commit-oriented public changelog. */
+.changelog-navigation { width: 100%; justify-content: flex-start; gap: .55rem; }
+.changelog-navigation.active { font-weight: 800; }
+.changelog-groups { display: grid; gap: 1rem; }
+.changelog-group { overflow: hidden; border: 1px solid var(--border); border-radius: .85rem; background: var(--surface, #fff); }
+.changelog-group > header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .5rem 1rem; padding: .8rem 1rem; border-bottom: 1px solid var(--border); }
+.changelog-group > header h2 { margin: 0; font-size: 1rem; }
+.changelog-group > header time { color: var(--muted-foreground, #475569); }
+.changelog-category { padding: .7rem 1rem; }
+.changelog-category + .changelog-category { border-top: 1px solid var(--border); }
+.changelog-category h3 { margin: 0 0 .35rem; font-size: .82rem; text-transform: uppercase; letter-spacing: .04em; }
+.changelog-category ul { margin: 0; padding-left: 1.25rem; }
+.changelog-category li { overflow-wrap: anywhere; }
+.changelog-fallback { border-inline-start: .25rem solid currentColor; padding: .55rem .75rem; }

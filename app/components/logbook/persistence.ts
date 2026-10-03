@@ -2,7 +2,7 @@ import { moduleTabs } from "../../templates/app-shell";
 import type { ActiveView } from "../../templates/ModuleTabs";
 import type { Boat, CrewMember, LogLine, LogSheet, PersistedLogbook } from "../../models/logbook";
 
-const routedModules = new Set<ActiveView>([...moduleTabs.map((tab) => tab.id), "profile", "admin"]);
+const routedModules = new Set<ActiveView>([...moduleTabs.map((tab) => tab.id), "changelog", "profile", "admin"]);
 
 export const createId = () => crypto.randomUUID();
 export const numberOrZero = (value: string) => Number.parseFloat(value) || 0;

@@ -68,6 +68,7 @@ import { sortLogLinesByTime } from "../domain/log-lines/log-line-order";
 import { calculateSmartNavigationFields, calculateTrackedMotionFields, previousSheetLogMiles, type TimedCoordinate } from "../domain/log-lines/smart-line";
 import type { MeteoLogLineAutofill, MeteoSourceRemarkPart } from "../domain/meteo";
 import { ModuleTabs, type ActiveView } from "../templates/ModuleTabs";
+import { ChangelogPage } from "../templates/ChangelogPage";
 import { useI18n, type TranslationKey } from "../lib/i18n";
 import { PasswordField } from "./PasswordField";
 import { CompliancePage } from "./logbook/pages/CompliancePage";
@@ -2137,6 +2138,8 @@ export function LogbookApp({
               setDeleteForm={setDeleteForm}
             />
           )}
+
+          {activeModule === "changelog" && <ChangelogPage locale={preferences.language} />}
 
           {activeModule === "admin" && isAdmin && (
             <section className="module-panel" aria-label={t("admin.aria")}>
