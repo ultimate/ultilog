@@ -2167,3 +2167,4 @@ img.entity-image--preview {
 .changelog-category ul { margin: 0; padding-left: 1.25rem; }
 .changelog-category li { overflow-wrap: anywhere; }
 .changelog-fallback { border-inline-start: .25rem solid currentColor; padding: .55rem .75rem; }
+.public-changelog-shell { width: min(100% - 2rem, 64rem); min-height: 100vh; margin: 0 auto; padding: 2rem 0; }
