@@ -21,6 +21,16 @@ export type ChangelogEntry = {
   readonly title: ChangelogTitle;
 };
 
+export type ChangelogIntroduction = {
+  readonly commitSha: string;
+  readonly shortSha: string;
+  readonly introducedAt: string;
+};
+
+export type GeneratedChangelogEntry = ChangelogEntry & {
+  readonly introduction: ChangelogIntroduction;
+};
+
 const idPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const categories = new Set<string>(CHANGELOG_CATEGORIES);
 const locales = new Set<string>(CHANGELOG_LOCALES);

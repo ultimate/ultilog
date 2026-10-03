@@ -210,6 +210,7 @@ export function ProfilePage(props: ProfilePageProps) {
           <p>{t("profile.subtitle")}</p>
         </div>
         <div className="profile-heading-actions">
+          <button className="secondary-action" type="button" onClick={() => navigate("changelog")}>{t("nav.changelog")}</button>
           <Link className="secondary-action" href="/legal">Legal &amp; contact</Link>
           <button className="secondary-action" type="button" onClick={logout} disabled={isLoggingOut}>
             {isLoggingOut ? t("nav.signingOut") : t("nav.logout")}
