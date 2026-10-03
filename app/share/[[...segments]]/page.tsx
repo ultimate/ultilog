@@ -6,9 +6,14 @@ import { formatLogSheetDuration } from "../../domain/logbook/sheet-metrics";
 import { formatMiles } from "../../lib/format-number";
 import { SharedLogbookCopy } from "../../components/logbook/SharedLogbookCopy";
 import Image from "next/image";
+import Link from "next/link";
+import { embedThemeStyle, parseEmbedTheme } from "../../domain/logbook/embed-theme";
 
-export default async function SharedLogbookPage({ params }: { params: Promise<{ segments?: string[] }> }) {
+export default async function SharedLogbookPage({ params, searchParams }: { params: Promise<{ segments?: string[] }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { segments = [] } = await params;
+  const query = await searchParams;
+  const isEmbed = query.embed === "1";
+  const embedTheme = parseEmbedTheme(query);
   const { ownerId, sheetId } = parseShareSegments(segments);
   const session = await auth();
   const shared = sheetId ? await readSharedLogSheet(sheetId, Boolean(session?.user?.id), ownerId) : undefined;
@@ -38,7 +43,7 @@ export default async function SharedLogbookPage({ params }: { params: Promise<{ 
   const ownerName = shared.ownerName ?? "Logbook owner";
 
   return (
-    <main className="app-shell shared-logbook-page" data-can-copy={capability.canCopy}>
+    <main className={`app-shell shared-logbook-page${isEmbed ? " shared-logbook-page--embed" : ""}`} data-can-copy={capability.canCopy} style={isEmbed ? embedThemeStyle(embedTheme) : undefined}>
       <section className="app-content">
         <aside className="shared-owner-banner" aria-label={`Shared by ${ownerName}`}>
           {shared.ownerAvatar ? <Image className="shared-owner-logo" src={shared.ownerAvatar} alt="" width={64} height={64} unoptimized /> : null}
@@ -46,6 +51,7 @@ export default async function SharedLogbookPage({ params }: { params: Promise<{ 
             <span>Shared by</span>
             <strong>{ownerName}</strong>
           </div>
+          <Link className="powered-by-ultilog" href="/" target={isEmbed ? "_blank" : undefined} rel={isEmbed ? "noreferrer" : undefined}>Powered by <strong>Ultilog</strong></Link>
         </aside>
 
         <div className={`sheet-master-map-grid${hasLogLines ? "" : " sheet-master-map-grid--single"}`}>
