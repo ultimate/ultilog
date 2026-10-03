@@ -1045,7 +1045,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                         The skipper is included with the crew. When you share crew information, skipper sharing is automatically raised to the same level.
                       </p>
                     </fieldset>
-                    <EmbedCodeBuilder sharePath={sharePath} enabled={isSharingEnabled} />
+                    <EmbedCodeBuilder shareUrl={shareUrl} enabled={isSharingEnabled} />
                   </div>
                 </div>
               )}
