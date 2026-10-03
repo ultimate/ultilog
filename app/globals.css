@@ -764,6 +764,7 @@ td { color: #28384b; line-height: 1.45; }
 .powered-by-ultilog:hover { text-decoration: underline; }
 .shared-logbook-page--embed { width: 100%; padding: 1rem; background: var(--background); }
 .shared-logbook-page--embed .app-content { max-width: 100%; }
+.shared-logbook-page--embed .sheet-master-title h1 { color: var(--text); }
 .shared-logbook-page--embed table { background: var(--surface-strong); }
 .shared-logbook-page--embed th,
 .shared-logbook-page--embed td { border-bottom-color: var(--line); }
