@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { embedThemeDefaults, parseEmbedTheme } from "../../../../app/domain/logbook/embed-theme";
+import { embedThemeDefaults, embedThemeStyle, parseEmbedTheme } from "../../../../app/domain/logbook/embed-theme";
 
 describe("shared logbook embed theme", () => {
   it("accepts the four supported URL colors", () => {
@@ -13,5 +13,24 @@ describe("shared logbook embed theme", () => {
       ...embedThemeDefaults,
       accent: "#654321",
     });
+  });
+
+  it("applies the theme to both generations of design tokens", () => {
+    const style = embedThemeStyle({ background: "#101820", surface: "#fefefe", text: "#223344", accent: "#aabbcc" }) as Record<string, string>;
+
+    expect(style).toMatchObject({
+      "--app-bg": "#101820",
+      "--background": "#101820",
+      "--surface": "#fefefe",
+      "--surface-strong": "#fefefe",
+      "--card": "#fefefe",
+      "--text": "#223344",
+      "--foreground": "#223344",
+      "--blue": "#aabbcc",
+      "--primary": "#aabbcc",
+    });
+    expect(style["--subtle"]).toContain("#223344");
+    expect(style["--line"]).toContain("#fefefe");
+    expect(style["--blue-soft"]).toContain("#aabbcc");
   });
 });

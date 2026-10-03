@@ -25,14 +25,29 @@ export function parseEmbedTheme(searchParams: Record<string, string | string[] |
 }
 
 export function embedThemeStyle(theme: EmbedTheme): CSSProperties {
+  // The shared sheet still contains components from both the original and the
+  // refreshed design systems. Feed both token sets from the same four public
+  // colors, and derive secondary tokens rather than exposing more controls.
+  const border = `color-mix(in srgb, ${theme.text} 20%, ${theme.surface})`;
+  const subtleText = `color-mix(in srgb, ${theme.text} 72%, ${theme.background})`;
+  const softAccent = `color-mix(in srgb, ${theme.accent} 12%, ${theme.surface})`;
   return {
+    "--app-bg": theme.background,
+    "--bg": theme.background,
     "--background": theme.background,
+    "--surface": theme.surface,
+    "--surface-strong": theme.surface,
     "--card": theme.surface,
+    "--text": theme.text,
     "--foreground": theme.text,
-    "--muted": theme.text,
+    "--subtle": subtleText,
+    "--muted": subtleText,
+    "--blue": theme.accent,
+    "--blue-soft": softAccent,
     "--primary": theme.accent,
     "--primary-dark": theme.accent,
-    "--border": `color-mix(in srgb, ${theme.text} 20%, ${theme.surface})`,
+    "--line": border,
+    "--border": border,
   } as CSSProperties;
 }
 
