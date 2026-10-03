@@ -1,16 +1,12 @@
 [
   {
-    "id": "browse-commit-grouped-changelog",
+    "id": "introduce-public-changelog",
     "category": "feature",
     "title": {
-      "en": "Browse public changes grouped by source revision"
-    }
-  },
-  {
-    "id": "display-build-environment-identity",
-    "category": "improvement",
-    "title": {
-      "en": "Show the deployment environment and source revision"
+      "en": "Introducing What's New for logbooks, boats, crews, scanning, sharing, compliance, and deployment details",
+      "de": "Neu: Neuigkeiten zu Logbüchern, Booten, Crews, Scannen, Teilen, Compliance und Bereitstellungsdetails",
+      "fr": "Découvrez les nouveautés sur les journaux, les bateaux, les équipages, la numérisation, le partage, la conformité et les déploiements",
+      "it": "Scopri le novità su giornali, barche, equipaggi, scansione, condivisione, conformità e distribuzioni"
     }
   }
 ]
