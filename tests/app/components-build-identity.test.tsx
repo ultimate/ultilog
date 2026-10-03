@@ -17,7 +17,7 @@ describe("BuildIdentity", () => {
       environment: "production",
       commitSha: fullSha,
       identity: fullSha.slice(0, 7),
-      commitTimestamp: "2026-10-03T23:30:00.000Z",
+      buildStartedAt: "2026-10-03T23:30:00.000Z",
     };
     const english = render(buildInfo);
     const german = render(buildInfo, "de");

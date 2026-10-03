@@ -14,8 +14,8 @@ type DeploymentMetadata = {
   commitSha?: string;
   /** Vercel custom-environment name, when applicable. */
   targetEnvironment?: string;
-  /** UTC commit time used for localized, non-authoritative display. */
-  commitTimestamp?: string;
+  /** UTC instant at which the application build started. */
+  buildStartedAt?: string;
   /** Validated HTTPS URL for this deployment. */
   deploymentUrl?: string;
 };
@@ -34,7 +34,7 @@ const fields = new Set([
   "branch",
   "commitSha",
   "targetEnvironment",
-  "commitTimestamp",
+  "buildStartedAt",
   "deploymentUrl",
 ]);
 
@@ -88,7 +88,7 @@ export function parseBuildInfo(value: unknown): BuildInfo {
   const rawSha = optionalString(value, "commitSha");
   const commitSha = rawSha?.toLowerCase();
   let targetEnvironment = optionalString(value, "targetEnvironment");
-  const commitTimestamp = optionalString(value, "commitTimestamp");
+  const buildStartedAt = optionalString(value, "buildStartedAt");
   const deploymentUrl = optionalString(value, "deploymentUrl");
 
   if (environment === "production") {
@@ -109,13 +109,13 @@ export function parseBuildInfo(value: unknown): BuildInfo {
     targetEnvironment = undefined;
   }
 
-  if (commitTimestamp !== undefined) {
-    const timestamp = new Date(commitTimestamp);
+  if (buildStartedAt !== undefined) {
+    const timestamp = new Date(buildStartedAt);
     if (
       Number.isNaN(timestamp.valueOf()) ||
-      timestamp.toISOString() !== commitTimestamp
+      timestamp.toISOString() !== buildStartedAt
     ) {
-      throw new TypeError("Invalid build info commitTimestamp");
+      throw new TypeError("Invalid build info buildStartedAt");
     }
   }
   if (deploymentUrl !== undefined && !isAllowedDeploymentUrl(deploymentUrl)) {
@@ -131,7 +131,7 @@ export function parseBuildInfo(value: unknown): BuildInfo {
     ...(branch === undefined ? {} : { branch }),
     ...(commitSha === undefined ? {} : { commitSha }),
     ...(targetEnvironment === undefined ? {} : { targetEnvironment }),
-    ...(commitTimestamp === undefined ? {} : { commitTimestamp }),
+    ...(buildStartedAt === undefined ? {} : { buildStartedAt }),
     ...(deploymentUrl === undefined ? {} : { deploymentUrl }),
     ...(identity === undefined ? {} : { identity }),
   };

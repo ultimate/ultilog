@@ -10,7 +10,8 @@ type BuildEnvironmentVariables = {
   VERCEL_TARGET_ENV?: string;
   VERCEL_GIT_COMMIT_REF?: string;
   VERCEL_GIT_COMMIT_SHA?: string;
-  VERCEL_GIT_COMMIT_TIMESTAMP?: string;
+  BUILD_COMMIT_SHA?: string;
+  BUILD_STARTED_AT?: string;
   VERCEL_URL?: string;
   [key: string]: string | undefined;
 };
@@ -50,10 +51,11 @@ export function getBuildInfo(
 ): BuildInfo {
   const environment = deploymentEnvironment(source);
   const branch = present(source.VERCEL_GIT_COMMIT_REF);
-  const commitSha = present(source.VERCEL_GIT_COMMIT_SHA);
+  const commitSha =
+    present(source.BUILD_COMMIT_SHA) ?? present(source.VERCEL_GIT_COMMIT_SHA);
   const rawTarget = present(source.VERCEL_TARGET_ENV);
   const targetEnvironment = environment === "staging" ? rawTarget : undefined;
-  const commitTimestamp = present(source.VERCEL_GIT_COMMIT_TIMESTAMP);
+  const buildStartedAt = present(source.BUILD_STARTED_AT);
   const deploymentHost = present(source.VERCEL_URL);
   const deploymentUrl =
     deploymentHost === undefined
@@ -65,7 +67,7 @@ export function getBuildInfo(
     ...(branch === undefined ? {} : { branch }),
     ...(commitSha === undefined ? {} : { commitSha }),
     ...(targetEnvironment === undefined ? {} : { targetEnvironment }),
-    ...(commitTimestamp === undefined ? {} : { commitTimestamp }),
+    ...(buildStartedAt === undefined ? {} : { buildStartedAt }),
     ...(deploymentUrl === undefined ? {} : { deploymentUrl }),
   });
 }
