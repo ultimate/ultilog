@@ -102,6 +102,23 @@ function repositoryRelativePath(repositoryPath, sourcePath) {
   return path.split(sep).join("/");
 }
 
+function shallowBoundaryCommits(repositoryPath) {
+  if (
+    git(repositoryPath, ["rev-parse", "--is-shallow-repository"]).trim() !==
+    "true"
+  )
+    return new Set();
+  const gitPath = git(repositoryPath, [
+    "rev-parse",
+    "--git-path",
+    "shallow",
+  ]).trim();
+  const shallowPath = resolve(repositoryPath, gitPath);
+  return new Set(
+    readFileSync(shallowPath, "utf8").split(/\r?\n/).filter(Boolean),
+  );
+}
+
 function idsAtRevision(repositoryPath, commitSha, sourcePath) {
   let contents;
   try {
@@ -157,14 +174,7 @@ export function deriveChangelogArtifact({
   const relativeSource = repositoryRelativePath(repository, source);
 
   const entries = parseJson(readFileSync(source, "utf8"), relativeSource);
-  if (
-    entries.length > 0 &&
-    git(repository, ["rev-parse", "--is-shallow-repository"]).trim() === "true"
-  ) {
-    throw new Error(
-      "Cannot derive changelog introductions from shallow Git history; fetch the complete history first",
-    );
-  }
+  const shallowBoundaries = shallowBoundaryCommits(repository);
   const wantedIds = new Set(entries.map(({ id }) => id));
   const introductions = new Map();
   const commits = git(repository, [
@@ -197,6 +207,14 @@ export function deriveChangelogArtifact({
   if (missing.length > 0) {
     throw new Error(
       `No introduction commit found for changelog ID(s): ${missing.join(", ")}. Commit the entries and ensure complete Git history is available.`,
+    );
+  }
+  const uncertain = entries
+    .map(({ id }) => id)
+    .filter((id) => shallowBoundaries.has(introductions.get(id)?.commitSha));
+  if (uncertain.length > 0) {
+    throw new Error(
+      `Cannot prove introduction commits for changelog ID(s) ${uncertain.join(", ")} from shallow Git history; fetch the complete history first`,
     );
   }
 
