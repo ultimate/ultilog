@@ -44,6 +44,7 @@ export function embedThemeStyle(theme: EmbedTheme): CSSProperties {
     "--muted": subtleText,
     "--blue": theme.accent,
     "--blue-soft": softAccent,
+    "--surface-soft": softAccent,
     "--primary": theme.accent,
     "--primary-dark": theme.accent,
     "--line": border,
