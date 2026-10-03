@@ -32,5 +32,6 @@ describe("shared logbook embed theme", () => {
     expect(style["--subtle"]).toContain("#223344");
     expect(style["--line"]).toContain("#fefefe");
     expect(style["--blue-soft"]).toContain("#aabbcc");
+    expect(style["--surface-soft"]).toBe(style["--blue-soft"]);
   });
 });
