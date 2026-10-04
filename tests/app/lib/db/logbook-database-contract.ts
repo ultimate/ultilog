@@ -116,6 +116,38 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
       } finally { await context.cleanup(); }
     });
 
+    it("lists an owner's visible shared sheets in creation order", async () => {
+      const context = await setup();
+      try {
+        await context.database.upsertLogSheet({
+          ...sheet([]),
+          title: "Visible voyage",
+          share: {
+            masterData: "public",
+            logLines: "private",
+            technicalLog: "private",
+            picture: "private",
+            metrics: "private",
+            skipper: "private",
+            crew: "private",
+          },
+        });
+        await context.database.upsertLogSheet({
+          ...sheet([]),
+          id: "private-sheet",
+          title: "Private voyage",
+        });
+
+        const collection = await context.database.readSharedSheets(context.owner, false);
+
+        expect(collection).toMatchObject({
+          ownerId: context.owner,
+          ownerName: "Contract owner",
+          sheets: [{ sheet: { id: "sheet", title: "Visible voyage" } }],
+        });
+      } finally { await context.cleanup(); }
+    });
+
     it("copies required shared data with regenerated ids, private defaults, and optional visible crew", async () => {
       const context = await setup();
       try {
