@@ -1,5 +1,15 @@
 [
   {
+    "id": "browse-and-embed-shared-user-log-sheets",
+    "category": "feature",
+    "title": {
+      "en": "Browse and embed a user's shared log sheets as a list or map",
+      "de": "Geteilte Logblätter eines Benutzers als Liste oder Karte durchsuchen und einbetten",
+      "fr": "Parcourir et intégrer les feuilles de journal partagées d’un utilisateur sous forme de liste ou de carte",
+      "it": "Sfoglia e incorpora i fogli di giornale condivisi di un utente come elenco o mappa"
+    }
+  },
+  {
     "id": "introduce-public-changelog",
     "category": "feature",
     "title": {
