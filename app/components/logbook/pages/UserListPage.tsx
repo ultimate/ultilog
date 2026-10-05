@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useI18n } from "../../../lib/i18n";
 import { ListPagination, ListSearch, SortableColumnHeader, useSortableList } from "../SortableList";
 
@@ -68,7 +69,7 @@ export function UserListPage({
               {list.pageItems.map((user) => (
                 <tr key={user.id}>
                   <td>
-                    <span className="directory-user"><span className="directory-avatar">{user.avatar ? <Image unoptimized src={user.avatar} alt="" width={36} height={36} /> : user.username.slice(0, 2).toUpperCase()}</span><strong>{user.username}</strong></span>
+                    <Link className="directory-user directory-user-link" href={`/share/${encodeURIComponent(user.id)}`}><span className="directory-avatar">{user.avatar ? <Image unoptimized src={user.avatar} alt="" width={36} height={36} /> : user.username.slice(0, 2).toUpperCase()}</span><strong>{user.username}</strong></Link>
                   </td>
                   <td>{(user.sailMiles + user.motorMiles).toLocaleString()} nm</td>
                   <td>{user.sailMiles.toLocaleString()} nm</td>
