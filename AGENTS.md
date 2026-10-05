@@ -3,9 +3,13 @@
 ## Changelog
 
 Codex and contributors must add exactly one entry to
-`app/content/changelog.json` for each user-visible feature, improvement, fix, or
-security change. Tests, refactors, dependency updates, and internal-only changes
-normally do not require an entry.
+`app/content/changelog.json` for each branch or pull request that contains one
+or more user-visible features, improvements, fixes, or security changes. The
+entry must summarize the overall user-visible outcome of the branch or pull
+request; do not add separate entries for its individual commits or
+implementation steps. Branches and pull requests containing only tests,
+refactors, dependency updates, or internal-only changes normally do not require
+an entry.
 
 Adding an entry is the opt-in mechanism for the public changelog. This project
 does not use a `changelog:*` label, and a pull request title is independent of

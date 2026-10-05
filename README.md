@@ -176,12 +176,15 @@ Scanned sheets are always created with `Draft` status. Users must review and ver
 ### Changelog entries
 
 Codex and contributors must add exactly one flat entry to
-`app/content/changelog.json` for a user-visible feature, improvement, fix, or
-security change. Tests, refactors, dependency updates, and internal-only changes
-normally do not require an entry. Entry presence is the opt-in mechanism for the
-public changelog: no `changelog:*` label is used. The pull request title and the
-public changelog title are independent, so write the latter for users rather
-than copying repository terminology automatically.
+`app/content/changelog.json` for each branch or pull request containing one or
+more user-visible features, improvements, fixes, or security changes. That one
+entry summarizes the overall user-visible outcome; individual commits and
+implementation steps do not receive separate entries. Branches and pull
+requests containing only tests, refactors, dependency updates, or internal-only
+changes normally do not require an entry. Entry presence is the opt-in mechanism
+for the public changelog: no `changelog:*` label is used. The pull request title
+and the public changelog title are independent, so write the latter for users
+rather than copying repository terminology automatically.
 
 Every entry needs a unique, descriptive, immutable kebab-case `id`, one of the
 `feature`, `improvement`, `fix`, or `security` categories, and a non-empty
