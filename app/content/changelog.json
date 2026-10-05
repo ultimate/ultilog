@@ -1,5 +1,25 @@
 [
   {
+    "id": "browse-and-embed-shared-user-log-sheets",
+    "category": "feature",
+    "title": {
+      "en": "Browse and embed a user's shared log sheets as a list or map",
+      "de": "Geteilte Logblätter eines Benutzers als Liste oder Karte durchsuchen und einbetten",
+      "fr": "Parcourir et intégrer les feuilles de journal partagées d’un utilisateur sous forme de liste ou de carte",
+      "it": "Sfoglia e incorpora i fogli di giornale condivisi di un utente come elenco o mappa"
+    }
+  },
+  {
+    "id": "fix-shared-user-log-sheet-collections",
+    "category": "fix",
+    "title": {
+      "en": "Open shared user log sheet collections reliably",
+      "de": "Geteilte Logblatt-Sammlungen von Benutzern zuverlässig öffnen",
+      "fr": "Ouvrir de manière fiable les collections de feuilles de journal partagées des utilisateurs",
+      "it": "Apri in modo affidabile le raccolte di fogli di giornale condivisi degli utenti"
+    }
+  },
+  {
     "id": "introduce-public-changelog",
     "category": "feature",
     "title": {
@@ -7,6 +27,16 @@
       "de": "Neu: Neuigkeiten zu Logbüchern, Booten, Crews, Scannen, Teilen, Compliance und Bereitstellungsdetails",
       "fr": "Découvrez les nouveautés sur les journaux, les bateaux, les équipages, la numérisation, le partage, la conformité et les déploiements",
       "it": "Scopri le novità su giornali, barche, equipaggi, scansione, condivisione, conformità e distribuzioni"
+    }
+  },
+  {
+    "id": "shared-collection-table-and-embed-previews",
+    "category": "improvement",
+    "title": {
+      "en": "Show shared log sheet collections as familiar tables with embed previews",
+      "de": "Geteilte Logblatt-Sammlungen als vertraute Tabellen mit Einbettungsvorschau anzeigen",
+      "fr": "Afficher les collections de feuilles de journal partagées sous forme de tableaux familiers avec aperçu d’intégration",
+      "it": "Mostra le raccolte di fogli di giornale condivisi come tabelle familiari con anteprima di incorporamento"
     }
   }
 ]

@@ -1,5 +1,5 @@
 import { auth } from "../../../auth";
-import { readSharedLogSheet } from "../../lib/logbook-store";
+import { readSharedLogSheet, readSharedLogSheets } from "../../lib/logbook-store";
 import { EntityImage } from "../../components/logbook/EntityImage";
 import { LogLinesMapView } from "../../components/logbook/OpenSeaMapView";
 import { formatLogSheetDuration } from "../../domain/logbook/sheet-metrics";
@@ -8,6 +8,8 @@ import { SharedLogbookCopy } from "../../components/logbook/SharedLogbookCopy";
 import Image from "next/image";
 import Link from "next/link";
 import { embedThemeStyle, parseEmbedTheme } from "../../domain/logbook/embed-theme";
+import { SharedSheetsCollection } from "../../components/logbook/SharedSheetsCollection";
+import { SharedPageNavigation } from "../../components/logbook/SharedPageNavigation";
 
 export default async function SharedLogbookPage({ params, searchParams }: { params: Promise<{ segments?: string[] }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { segments = [] } = await params;
@@ -16,6 +18,29 @@ export default async function SharedLogbookPage({ params, searchParams }: { para
   const embedTheme = parseEmbedTheme(query);
   const { ownerId, sheetId } = parseShareSegments(segments);
   const session = await auth();
+  const collection = segments.length === 1 ? await readSharedLogSheets(segments[0], Boolean(session?.user?.id)) : undefined;
+  if (collection) {
+    const view = query.view === "map" ? "map" : "list";
+    const from = typeof query.from === "string" ? query.from : "";
+    const to = typeof query.to === "string" ? query.to : "";
+    const entries = collection.sheets.filter(({ sheet }) => {
+      const start = (sheet.route.departed || sheet.route.arrived).slice(0, 10);
+      const end = (sheet.route.arrived || sheet.route.departed).slice(0, 10);
+      return (!from || !end || end >= from) && (!to || !start || start <= to);
+    });
+    return <main className={`app-shell shared-logbook-page shared-collection-page${isEmbed ? " shared-logbook-page--embed" : ""}`} style={isEmbed ? embedThemeStyle(embedTheme) : undefined}>
+      {session?.user && !isEmbed ? <SharedPageNavigation user={session.user} /> : null}
+      <section className="app-content">
+        <aside className="shared-owner-banner" aria-label={`Shared by ${collection.ownerName}`}>
+          {collection.ownerAvatar ? <Image className="shared-owner-logo" src={collection.ownerAvatar} alt="" width={64} height={64} unoptimized /> : null}
+          <div><span>Shared log sheets by</span><strong>{collection.ownerName}</strong></div>
+          {!session?.user && <Link className="powered-by-ultilog" href="/" target={isEmbed ? "_blank" : undefined} rel={isEmbed ? "noreferrer" : undefined}>Powered by <strong>Ultilog</strong></Link>}
+        </aside>
+        <div className="page-heading"><div><p className="eyebrow">Community logbook</p><h1>Shared log sheets</h1><p>Select a voyage from the list or map to open its sharing view.</p></div></div>
+        <SharedSheetsCollection ownerId={collection.ownerId} entries={entries} initialView={view} embedded={isEmbed} showEmbedding={session?.user?.id === collection.ownerId} />
+      </section>
+    </main>;
+  }
   const shared = sheetId ? await readSharedLogSheet(sheetId, Boolean(session?.user?.id), ownerId) : undefined;
 
   if (!shared) {
@@ -44,6 +69,7 @@ export default async function SharedLogbookPage({ params, searchParams }: { para
 
   return (
     <main className={`app-shell shared-logbook-page${isEmbed ? " shared-logbook-page--embed" : ""}`} data-can-copy={capability.canCopy} style={isEmbed ? embedThemeStyle(embedTheme) : undefined}>
+      {session?.user && !isEmbed ? <SharedPageNavigation user={session.user} /> : null}
       <section className="app-content">
         <aside className="shared-owner-banner" aria-label={`Shared by ${ownerName}`}>
           {shared.ownerAvatar ? <Image className="shared-owner-logo" src={shared.ownerAvatar} alt="" width={64} height={64} unoptimized /> : null}
@@ -51,7 +77,7 @@ export default async function SharedLogbookPage({ params, searchParams }: { para
             <span>Shared by</span>
             <strong>{ownerName}</strong>
           </div>
-          <Link className="powered-by-ultilog" href="/" target={isEmbed ? "_blank" : undefined} rel={isEmbed ? "noreferrer" : undefined}>Powered by <strong>Ultilog</strong></Link>
+          {!session?.user && <Link className="powered-by-ultilog" href="/" target={isEmbed ? "_blank" : undefined} rel={isEmbed ? "noreferrer" : undefined}>Powered by <strong>Ultilog</strong></Link>}
         </aside>
 
         <div className={`sheet-master-map-grid${hasLogLines ? "" : " sheet-master-map-grid--single"}`}>
