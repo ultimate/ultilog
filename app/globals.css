@@ -762,7 +762,35 @@ td { color: #28384b; line-height: 1.45; }
 .powered-by-ultilog { margin-left: auto; color: var(--primary); font-size: .9rem; font-weight: 700; text-decoration: none; }
 .powered-by-ultilog strong { font-size: inherit; }
 .powered-by-ultilog:hover { text-decoration: underline; }
+.directory-user-link { color: inherit; text-decoration: none; }
+.directory-user-link:hover strong { color: var(--primary); text-decoration: underline; }
+.shared-collection-page .app-content { align-content: start; }
+.shared-collection-controls { display: flex; gap: .5rem; margin-bottom: 1rem; }
+.shared-collection-controls button { border: 1px solid var(--border); border-radius: 999px; padding: .6rem 1rem; background: var(--surface, white); color: var(--foreground); font-weight: 800; cursor: pointer; }
+.shared-collection-controls button.active { border-color: var(--primary); background: var(--primary); color: white; }
+.shared-sheet-list { display: grid; gap: .85rem; }
+.shared-sheet-card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(16rem, 1fr) auto; align-items: center; gap: 1rem; border: 1px solid var(--line, var(--border)); border-radius: 1rem; padding: 1rem 1.25rem; background: var(--surface-strong, white); color: var(--text, var(--foreground)); text-decoration: none; box-shadow: var(--design-shadow, var(--shadow-soft)); }
+.shared-sheet-card:hover { border-color: var(--accent, var(--primary)); transform: translateY(-1px); }
+.shared-sheet-card h2, .shared-sheet-card p, .shared-sheet-card dl, .shared-sheet-card dd { margin: 0; }
+.shared-sheet-card dl { display: grid; gap: .35rem; }
+.shared-sheet-card dl div { display: grid; grid-template-columns: 4rem 1fr; gap: .5rem; }
+.shared-sheet-card dt { color: var(--subtle, var(--muted)); font-weight: 800; }
+.shared-sheet-card > span { color: var(--accent, var(--primary)); font-weight: 900; }
+.shared-empty { border: 1px dashed var(--line, var(--border)); border-radius: 1rem; padding: 2rem; text-align: center; }
+.embed-date-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .65rem; }
+.embed-date-grid label { display: grid; gap: .3rem; font-weight: 800; }
+.embed-date-grid input { min-height: 2.75rem; border: 1px solid var(--border); border-radius: .7rem; padding: .5rem; }
+.embed-legend-option { display: flex; align-items: center; gap: .55rem; font-weight: 800; }
+.embed-legend-option input { width: 1.1rem; height: 1.1rem; }
+.embed-code-block { display: grid; gap: .5rem; }
+.shared-embed-builder { margin-top: 1.5rem; padding: 1.25rem; border: 1px solid var(--border); border-radius: 1rem; }
+@media (max-width: 720px) { .shared-sheet-card { grid-template-columns: 1fr; } .embed-date-grid { grid-template-columns: 1fr; } }
 .shared-logbook-page--embed { width: 100%; padding: 1rem; background: var(--background); }
+.shared-collection-page.shared-logbook-page--embed { display: block; min-height: 0; padding: 0; }
+.shared-collection-page.shared-logbook-page--embed .app-content { gap: 0; max-width: none; padding: 0; }
+.shared-collection-page.shared-logbook-page--embed .table-card,
+.shared-collection-page.shared-logbook-page--embed .map-card { border-radius: 0; box-shadow: none; }
+.shared-embed-attribution { display: block; width: max-content; margin: .45rem .65rem .55rem auto; font-size: .75rem; }
 .shared-logbook-page--embed .app-content { max-width: 100%; }
 .shared-logbook-page--embed .sheet-master-title h1 { color: var(--text); }
 .shared-logbook-page--embed table { background: var(--surface-strong); }

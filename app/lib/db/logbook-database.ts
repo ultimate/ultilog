@@ -11,6 +11,7 @@ import { referencedBoatDeletionError, sheetBoatMutationError } from "../../domai
 import { sectionVisibility, sharedSheetCapability, type SectionVisibility, type SharedSheetCapability } from "../../domain/logbook/share-policy";
 
 export type SharedLogSheet = { sheet: LogSheet; boatName: string; capability: SharedSheetCapability; sourceOwnerId?: string; ownerName?: string; ownerAvatar?: string; showOwnerAvatarOnPrint?: boolean };
+export type SharedLogSheetCollection = { ownerId: string; ownerName: string; ownerAvatar?: string; sheets: SharedLogSheet[] };
 export type CopySharedLogSheetOptions = { destinationBoatId: string; includeCrew?: boolean; includePicture?: boolean; allowDuplicate?: boolean };
 export type PreviousCopySummary = { id: string; title: string; copiedAt: string };
 
@@ -317,6 +318,28 @@ export abstract class LogbookDatabase implements QueryableDatabase {
         : `https://secure.gravatar.com/avatar/${createHash("sha256").update(owner.email.trim().toLowerCase()).digest("hex")}?s=256&d=mp`
       : undefined;
     return { sheet: filterSharedSheet(sheet, visibility), boatName: visibility.masterData ? boat?.name ?? "" : "", capability, sourceOwnerId: sharedRow.owner_id, ownerName: owner?.name, ownerAvatar, showOwnerAvatarOnPrint };
+  }
+
+  async readSharedSheets(ownerId: string, isAuthenticated: boolean): Promise<SharedLogSheetCollection | undefined> {
+    await this.ensureSchemaAndBackfill();
+    const owner = (await this.query<{ name: string; email: string; avatar_data: string | null; avatar_mime_type: string | null }>(
+      `select name, email, avatar_data, avatar_mime_type from users where id = ${this.placeholder(1)} limit 1`,
+      [ownerId],
+    )).rows[0];
+    if (!owner) return undefined;
+    const rows = (await this.query<{ id: string }>(
+      `select id from log_sheets where owner_id = ${this.placeholder(1)} order by created_at, title`,
+      [ownerId],
+    )).rows;
+    const sheets: SharedLogSheet[] = [];
+    for (const row of rows) {
+      const shared = await this.readSharedSheet(unscopedId(row.id), isAuthenticated, ownerId);
+      if (shared) sheets.push(shared);
+    }
+    const ownerAvatar = owner.avatar_data && owner.avatar_mime_type
+      ? `data:${owner.avatar_mime_type};base64,${owner.avatar_data}`
+      : `https://secure.gravatar.com/avatar/${createHash("sha256").update(owner.email.trim().toLowerCase()).digest("hex")}?s=256&d=mp`;
+    return { ownerId, ownerName: owner.name, ownerAvatar, sheets };
   }
 
   /** Copies a shared sheet into the currently scoped owner's logbook in one transaction. */

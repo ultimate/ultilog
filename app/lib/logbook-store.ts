@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import type { Boat, CrewMember, FocusedLogSheet, LogLine, LogSheet, PersistedLogbook } from "../models/logbook";
-import { LogbookDatabase, type CopySharedLogSheetOptions, type SharedLogSheet } from "./db/logbook-database";
+import { LogbookDatabase, type CopySharedLogSheetOptions, type SharedLogSheet, type SharedLogSheetCollection } from "./db/logbook-database";
 import { PostgresLogbookDatabase } from "./db/postgres-logbook-database";
 import { SqliteLogbookDatabase } from "./db/sqlite-logbook-database";
 
@@ -65,6 +65,13 @@ export const deleteStoredImage = (id: string, userId: string) => mutate(userId, 
 export async function readSharedLogSheet(sheetId: string, isAuthenticated: boolean, ownerId?: string): Promise<SharedLogSheet | undefined> {
   const { state } = storeState();
   const operation = state.writeQueue.then(() => getDatabase().readSharedSheet(sheetId, isAuthenticated, ownerId));
+  state.writeQueue = operation.then(() => undefined, () => undefined);
+  return operation;
+}
+
+export async function readSharedLogSheets(ownerId: string, isAuthenticated: boolean): Promise<SharedLogSheetCollection | undefined> {
+  const { state } = storeState();
+  const operation = state.writeQueue.then(() => getDatabase().readSharedSheets(ownerId, isAuthenticated));
   state.writeQueue = operation.then(() => undefined, () => undefined);
   return operation;
 }
