@@ -1,5 +1,15 @@
 [
   {
+    "id": "base-feature-pack-complete",
+    "category": "feature",
+    "title": {
+      "en": "Base feature pack complete: a lifelong logbook for passages across boats; boat details, documents and history; crew management; log sheet scanning and photo import; and weather and nautical services for faster entries. This milestone establishes the baseline for future changelog updates.",
+      "de": "Das Basis-Funktionspaket ist vollständig: ein lebenslanges Logbuch für Fahrten auf verschiedenen Booten; Bootsdaten, Dokumente und Historie; Crewverwaltung; Scannen von Logblättern und Fotoimport; sowie Wetter- und nautische Dienste für schnellere Einträge. Dieser Meilenstein bildet die Grundlage für künftige Changelog-Einträge.",
+      "fr": "Le socle de fonctionnalités est complet : un journal de bord pour toutes vos traversées sur différents bateaux ; les informations, documents et historiques des bateaux ; la gestion des équipages ; la numérisation des feuilles de bord et l’import de photos ; et des services météo et nautiques pour accélérer la saisie. Ce jalon constitue le point de départ des prochaines mises à jour du journal des nouveautés.",
+      "it": "Il pacchetto di funzionalità di base è completo: un registro per tutte le traversate su diverse barche; dati, documenti e cronologia delle imbarcazioni; gestione dell’equipaggio; scansione dei fogli di giornale e importazione di foto; e servizi meteo e nautici per compilare più velocemente. Questo traguardo costituisce il punto di partenza per i futuri aggiornamenti del registro delle novità."
+    }
+  },
+  {
     "id": "browse-and-embed-shared-user-log-sheets",
     "category": "feature",
     "title": {
