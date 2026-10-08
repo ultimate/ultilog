@@ -161,7 +161,9 @@ export function deriveChangelogArtifact({
   repositoryPath = process.cwd(),
   sourcePath,
   outputPath,
+  deploymentEnvironment = process.env.VERCEL_ENV,
 } = {}) {
+  const isPreview = deploymentEnvironment === "preview";
   const repository = resolve(repositoryPath);
   const source = resolve(
     repository,
@@ -204,7 +206,7 @@ export function deriveChangelogArtifact({
   const missing = entries
     .map(({ id }) => id)
     .filter((id) => !introductions.has(id));
-  if (missing.length > 0) {
+  if (missing.length > 0 && !isPreview) {
     throw new Error(
       `No introduction commit found for changelog ID(s): ${missing.join(", ")}. Commit the entries and ensure complete Git history is available.`,
     );
@@ -212,7 +214,7 @@ export function deriveChangelogArtifact({
   const uncertain = entries
     .map(({ id }) => id)
     .filter((id) => shallowBoundaries.has(introductions.get(id)?.commitSha));
-  if (uncertain.length > 0) {
+  if (uncertain.length > 0 && !isPreview) {
     const boundaryCommits = [
       ...new Set(
         uncertain.map((id) => introductions.get(id)?.commitSha).filter(Boolean),
@@ -223,7 +225,10 @@ export function deriveChangelogArtifact({
     );
   }
 
-  const artifact = entries.map((entry) => ({
+  // Previews expose only entries whose introduction can be proven locally.
+  // Never assign a shallow boundary's timestamp to an older entry.
+  const unavailableIds = new Set([...missing, ...uncertain]);
+  const artifact = entries.filter((entry) => !unavailableIds.has(entry.id)).map((entry) => ({
     ...entry,
     introduction: introductions.get(entry.id),
   }));
