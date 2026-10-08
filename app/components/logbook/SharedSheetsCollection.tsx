@@ -30,6 +30,12 @@ export function SharedSheetsCollection({ ownerId, entries, initialView, embedded
     const start = (sheet.route.departed || sheet.route.arrived).slice(0, 10);
     const end = (sheet.route.arrived || sheet.route.departed).slice(0, 10);
     return (!from || !end || end >= from) && (!to || !start || start <= to);
+  }).sort((a, b) => {
+    const aStart = a.sheet.route.departed;
+    const bStart = b.sheet.route.departed;
+    if (!aStart) return bStart ? 1 : a.sheet.id.localeCompare(b.sheet.id);
+    if (!bStart) return -1;
+    return aStart.localeCompare(bStart) || a.sheet.id.localeCompare(b.sheet.id);
   }), [entries, from, to]);
   const href = (sheet: LogSheet) => `/share/${encodeURIComponent(ownerId)}/${encodeURIComponent(sheet.id)}`;
   const embedCode = (mode: "list" | "map") => {

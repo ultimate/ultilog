@@ -48,5 +48,15 @@
       "fr": "Afficher les collections de feuilles de journal partagées sous forme de tableaux familiers avec aperçu d’intégration",
       "it": "Mostra le raccolte di fogli di giornale condivisi come tabelle familiari con anteprima di incorporamento"
     }
+  },
+  {
+    "id": "shared-log-sheets-sorted-and-complete",
+    "category": "improvement",
+    "title": {
+      "en": "Sort shared log sheets by start date and show complete voyage and technical details",
+      "de": "Geteilte Logblätter nach Startdatum sortieren und vollständige Reise- und Technikdetails anzeigen",
+      "fr": "Trier les feuilles de journal partagées par date de départ et afficher tous les détails de navigation et techniques",
+      "it": "Ordina i fogli di giornale condivisi per data di partenza e mostra tutti i dettagli di navigazione e tecnici"
+    }
   }
 ]
