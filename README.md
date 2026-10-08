@@ -133,6 +133,12 @@ timestamp. Changelog dates shown to users are that Git commit timestamp formatte
 in UTC. They do **not** claim to be the exact time at which Vercel finished
 deploying the commit.
 
+Vercel preview builds (`VERCEL_ENV=preview`) use the available Git history and
+omit entries whose introduction is missing or falls on a shallow-history
+boundary. A preview may therefore show a partial or empty changelog. Production
+and other builds retain strict history validation; the production workflow
+checks out complete history to include the entire changelog.
+
 ### Deployment failures and rollback
 
 If verification, the production build, or deployment fails, that commit SHA has
