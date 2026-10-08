@@ -128,7 +128,8 @@ h1 { margin:0 0 .45rem; font-size:1.8rem; line-height:1.1; letter-spacing:-.04em
 @media (max-width: 1100px) { .logbook-overview-layout { grid-template-columns:1fr; } }
 @media (max-width: 620px) { .entry-metrics { grid-template-columns:1fr; }.entry-tabs { overflow:auto; white-space:nowrap; } }
 .table-title-button { all:unset; color:var(--text); font-weight:900; cursor:pointer; }
-.table-vessel { display:flex; align-items:center; gap:.65rem; color:var(--text); font-weight:850; }
+.table-vessel { display:flex; align-items:flex-start; gap:.65rem; color:var(--text); font-weight:850; }
+.table-vessel > [aria-hidden="true"] { display:flex; flex:0 0 auto; }
 .table-vessel .picture-thumb { width:2.35rem; height:2.35rem; border-radius:.45rem; }
 /* Explicit desktop sidebar + mobile bottom icon bar behavior from the supplied design */
 .module-tabs .tab-icon { display:inline-grid; place-items:center; width:1.25rem; }
