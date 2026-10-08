@@ -20,6 +20,16 @@
     }
   },
   {
+    "id": "edit-and-display-logsheet-images",
+    "category": "improvement",
+    "title": {
+      "en": "Edit logsheet images from the sheet view and show thumbnails in the logsheet list",
+      "de": "Logblattbilder in der Blattansicht bearbeiten und Vorschaubilder in der Logblattliste anzeigen",
+      "fr": "Modifier les images depuis la feuille de journal et afficher les miniatures dans la liste",
+      "it": "Modifica le immagini dalla vista del foglio di giornale e mostra le miniature nell’elenco"
+    }
+  },
+  {
     "id": "fix-shared-user-log-sheet-collections",
     "category": "fix",
     "title": {

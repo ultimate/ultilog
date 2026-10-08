@@ -1214,6 +1214,16 @@ export function LogbookApp({
     };
     await saveLogbookNow(nextLogbook, { kind: "sheet", entity: nextLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)! });
   }
+  async function updateSheetImage(sheetId: string, image: LogSheet["image"]) {
+    const current = logbookRef.current;
+    const sheet = current.sheets.find((candidate) => candidate.id === sheetId);
+    if (!sheet || sheet.status !== "Draft" || userGroups.includes("demo")) return;
+    const updatedSheet = { ...sheet, image, imageId: image?.id };
+    await saveLogbookNow({
+      ...current,
+      sheets: current.sheets.map((candidate) => candidate.id === sheetId ? updatedSheet : candidate),
+    }, { kind: "sheet", entity: updatedSheet });
+  }
   function startEditingSheetField(
     field: SheetInlineField,
     value: string,
@@ -2011,6 +2021,7 @@ export function LogbookApp({
               renderInlineTextField={renderInlineTextField}
               isActiveSheetLocked={isActiveSheetLocked}
               updateActiveSheetStatus={updateActiveSheetStatus}
+              updateSheetImage={updateSheetImage}
               updateActiveSheetShare={updateActiveSheetShare}
               deleteActiveSheet={deleteActiveSheet}
               updateScannerWarningAcknowledgment={updateScannerWarningAcknowledgment}

@@ -259,6 +259,8 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     : "";
   const courseConversionSequences = useRef<Record<string, number>>({});
   const sheetImageInputRef = useRef<HTMLInputElement>(null);
+  const activeSheetImageInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingSheetImage, setIsUploadingSheetImage] = useState(false);
 
   async function submitTechnicalCheck(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -814,11 +816,43 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                 className="sheet-title-row logbook-section sheet-master-header"
                 aria-label={t("details.headerAria")}
               >
-                <EntityImage
-                  image={activeSheet.image}
-                  entityType="sheet"
-                  alt={`${activeSheet.title || t("details.untitled")} thumbnail`}
-                  variant="header"
+                <button
+                  type="button"
+                  className="sheet-image-button"
+                  aria-label={activeSheet.image ? "Change logsheet image" : "Upload logsheet image"}
+                  title={activeSheet.image ? "Change logsheet image" : "Upload logsheet image"}
+                  disabled={isActiveSheetLocked || isUploadingSheetImage}
+                  onClick={() => isDemo ? onDemoFeatureBlocked("images") : activeSheetImageInputRef.current?.click()}
+                >
+                  <EntityImage
+                    image={activeSheet.image}
+                    entityType="sheet"
+                    alt={`${activeSheet.title || t("details.untitled")} thumbnail`}
+                    variant="header"
+                  />
+                </button>
+                <input
+                  ref={activeSheetImageInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="visually-hidden-file-input"
+                  aria-label="Choose logsheet image"
+                  disabled={isActiveSheetLocked || isUploadingSheetImage}
+                  onChange={async (event) => {
+                    const file = event.currentTarget.files?.[0];
+                    event.currentTarget.value = "";
+                    if (!file || isDemo || isActiveSheetLocked) return;
+                    const sheetId = activeSheet.id;
+                    setIsUploadingSheetImage(true);
+                    try {
+                      const image = await uploadStoredImage(await fileToStoredImage(file));
+                      await props.updateSheetImage(sheetId, image);
+                    } catch (error) {
+                      alert(error instanceof Error ? error.message : "Image could not be processed.");
+                    } finally {
+                      setIsUploadingSheetImage(false);
+                    }
+                  }}
                 />
                 <div className="sheet-master-title">
                   <h2 id="sheet-title">
