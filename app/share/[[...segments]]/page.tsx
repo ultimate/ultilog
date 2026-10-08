@@ -1,3 +1,4 @@
+import { findUserById } from "../../lib/users";
 import { auth } from "../../../auth";
 import { readSharedLogSheet, readSharedLogSheets } from "../../lib/logbook-store";
 import { EntityImage } from "../../components/logbook/EntityImage";
@@ -9,6 +10,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { embedThemeStyle, parseEmbedTheme } from "../../domain/logbook/embed-theme";
 import { SharedSheetsCollection } from "../../components/logbook/SharedSheetsCollection";
+import { SharedLogSheetDetails, SharedTechnicalLog } from "../../components/logbook/SharedLogSheetDetails";
 import { SharedPageNavigation } from "../../components/logbook/SharedPageNavigation";
 
 export default async function SharedLogbookPage({ params, searchParams }: { params: Promise<{ segments?: string[] }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
@@ -59,10 +61,11 @@ export default async function SharedLogbookPage({ params, searchParams }: { para
     );
   }
 
+  const viewer = session?.user?.id ? await findUserById(session.user.id) : undefined;
   const { sheet, boatName, capability } = shared;
   const metrics = sheet.metrics;
   const hasCrew = sheet.crew.length > 0;
-  const hasTechnicalLog = sheet.technicalChecks.length > 0;
+  const hasTechnicalLog = sheet.technicalChecks.length > 0 || Object.keys(sheet.engineHourCounters ?? {}).length > 0;
   const hasLogLines = sheet.lines.length > 0;
   const hasMetrics = Boolean(metrics);
   const hasSupportContent = hasCrew || hasTechnicalLog;
@@ -89,7 +92,7 @@ export default async function SharedLogbookPage({ params, searchParams }: { para
               <p className="eyebrow">Shared logbook</p>
               <h1>{sheet.title}</h1>
             </div>
-            {(boatName || sheet.route.from || sheet.route.to) && (
+            {(boatName || sheet.route.from || sheet.route.to || sheet.route.departed || sheet.route.arrived) && (
               <div className="paper-header header-table">
                 {boatName ? <div className="header-table-row"><span>Boat</span><strong>{boatName}</strong></div> : null}
                 {(sheet.route.departed || sheet.route.from) ? <div className="header-table-row"><span>From</span><strong>{sheet.route.departed}</strong><strong>{sheet.route.from}</strong></div> : null}
@@ -113,22 +116,14 @@ export default async function SharedLogbookPage({ params, searchParams }: { para
             <article><span>Sail miles</span><strong>{formatMiles(metrics?.sailMiles ?? 0)} nm</strong></article>
             <article><span>Total miles</span><strong>{formatMiles(metrics?.totalMiles ?? 0)} nm</strong></article>
             <article><span>Duration</span><strong>{formatLogSheetDuration(metrics?.durationMinutes)}</strong></article>
+            <article><span>Motion duration</span><strong>{formatLogSheetDuration(metrics?.motionDurationMinutes)}</strong></article>
             <article><span>Total engine-hours</span><strong>{formatLogSheetDuration((metrics?.motorHours ?? 0) * 60)}</strong></article>
             <article><span>Propulsion duration</span><strong>{formatLogSheetDuration(metrics?.propulsionDurationMinutes)}</strong></article>
           </section>
         ) : null}
 
-        {hasLogLines ? (
-          <article className="table-card">
-            <div className="table-header"><h2>Log lines</h2></div>
-            <div className="table-scroll">
-              <table className="log-lines-table">
-                <thead><tr><th scope="col" aria-label="Log line number">#</th><th>Time</th><th>Lat</th><th>Lon</th><th>Weather</th><th>Wind</th><th>Log</th><th>Remarks</th></tr></thead>
-                <tbody>{sheet.lines.map((line, index) => <tr key={`${line.time}-${index}`}><td>{index + 1}</td><td>{line.time}</td><td>{line.latitude}</td><td>{line.longitude}</td><td>{line.weather} {line.weatherRemark}</td><td>{line.windDirection} {line.windStrength} {line.windUnit}</td><td>{line.logNm} nm</td><td>{line.remarks}</td></tr>)}</tbody>
-              </table>
-            </div>
-          </article>
-        ) : null}
+        {sheet.remarks ? <article className="info-card logbook-section"><h3>Log sheet remarks</h3><p className="shared-log-text">{sheet.remarks}</p></article> : null}
+        {hasLogLines ? <SharedLogSheetDetails sheet={sheet} engineLabels={shared.engineLabels} initialCoordinateFormat={viewer?.coordinateFormat ?? "decimal"} initialShowCourseColumns={viewer?.showCourseConversionTable ?? false} /> : null}
 
         {hasSupportContent ? (
           <section className="sheet-support-grid logbook-section" aria-label="Shared logbook support information">
@@ -148,12 +143,7 @@ export default async function SharedLogbookPage({ params, searchParams }: { para
               </article>
             ) : null}
 
-            {hasTechnicalLog ? (
-              <article className="info-card logbook-section">
-                <h2>Technical log</h2>
-                <ul className="stack-list">{sheet.technicalChecks.map((item, index) => <li key={`${item.text}-${index}`}>{item.status} {item.text}</li>)}</ul>
-              </article>
-            ) : null}
+            {hasTechnicalLog ? <SharedTechnicalLog sheet={sheet} engineLabels={shared.engineLabels} /> : null}
 
           </section>
         ) : null}

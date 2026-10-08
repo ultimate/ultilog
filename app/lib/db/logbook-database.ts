@@ -10,7 +10,7 @@ import { createHash } from "node:crypto";
 import { referencedBoatDeletionError, sheetBoatMutationError } from "../../domain/boats/boat-policy";
 import { sectionVisibility, sharedSheetCapability, type SectionVisibility, type SharedSheetCapability } from "../../domain/logbook/share-policy";
 
-export type SharedLogSheet = { sheet: LogSheet; boatName: string; capability: SharedSheetCapability; sourceOwnerId?: string; ownerName?: string; ownerAvatar?: string; showOwnerAvatarOnPrint?: boolean };
+export type SharedLogSheet = { sheet: LogSheet; boatName: string; engineLabels?: Record<string, string>; capability: SharedSheetCapability; sourceOwnerId?: string; ownerName?: string; ownerAvatar?: string; showOwnerAvatarOnPrint?: boolean };
 export type SharedLogSheetCollection = { ownerId: string; ownerName: string; ownerAvatar?: string; sheets: SharedLogSheet[] };
 export type CopySharedLogSheetOptions = { destinationBoatId: string; includeCrew?: boolean; includePicture?: boolean; allowDuplicate?: boolean };
 export type PreviousCopySummary = { id: string; title: string; copiedAt: string };
@@ -317,7 +317,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
         ? `data:${owner.avatar_mime_type};base64,${owner.avatar_data}`
         : `https://secure.gravatar.com/avatar/${createHash("sha256").update(owner.email.trim().toLowerCase()).digest("hex")}?s=256&d=mp`
       : undefined;
-    return { sheet: filterSharedSheet(sheet, visibility), boatName: visibility.masterData ? boat?.name ?? "" : "", capability, sourceOwnerId: sharedRow.owner_id, ownerName: owner?.name, ownerAvatar, showOwnerAvatarOnPrint };
+    return { sheet: filterSharedSheet(sheet, visibility), boatName: visibility.masterData ? boat?.name ?? "" : "", engineLabels: boat ? Object.fromEntries((boat.engines ?? []).map(engine => [engine.id, engine.label])) : undefined, capability, sourceOwnerId: sharedRow.owner_id, ownerName: owner?.name, ownerAvatar, showOwnerAvatarOnPrint };
   }
 
   async readSharedSheets(ownerId: string, isAuthenticated: boolean): Promise<SharedLogSheetCollection | undefined> {
@@ -479,6 +479,8 @@ function filterSharedSheet(sheet: LogSheet, visibility: SectionVisibility): LogS
     lines: visibility.logLines ? sheet.lines : [],
     metrics: visibility.metrics ? sheet.metrics : undefined,
     technicalChecks: visibility.technicalLog ? sheet.technicalChecks : [],
+    engineHourCounters: visibility.technicalLog ? sheet.engineHourCounters : undefined,
+    remarks: visibility.masterData ? sheet.remarks : undefined,
     crew,
   };
 }

@@ -116,6 +116,20 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
       } finally { await context.cleanup(); }
     });
 
+    it("shares engine counters only when the technical log is visible", async () => {
+      const context = await setup();
+      try {
+        const source = { ...sheet([]), engineHourCounters: { main: { start: 12, end: 15 } }, share: { masterData: "public", logLines: "private", technicalLog: "private", picture: "private", metrics: "private", skipper: "private", crew: "private" } as const };
+        await context.database.upsertLogSheet(source);
+        const hidden = await context.database.readSharedSheet("sheet", false, context.owner);
+        expect(hidden?.sheet.engineHourCounters).toBeUndefined();
+        const current = (await context.database.readLogbook()).sheets[0];
+        await context.database.upsertLogSheet({ ...current, share: { ...source.share, technicalLog: "public" } });
+        const visible = await context.database.readSharedSheet("sheet", false, context.owner);
+        expect(visible?.sheet.engineHourCounters).toEqual(source.engineHourCounters);
+      } finally { await context.cleanup(); }
+    });
+
     it("lists an owner's visible shared sheets in creation order", async () => {
       const context = await setup();
       try {

@@ -2208,3 +2208,5 @@ img.entity-image--preview {
 .changelog-category li { overflow-wrap: anywhere; }
 .changelog-fallback { border-inline-start: .25rem solid currentColor; padding: .55rem .75rem; }
 .public-changelog-shell { width: min(100% - 2rem, 64rem); min-height: 100vh; margin: 0 auto; padding: 2rem 0; }
+
+.shared-log-text { white-space: pre-wrap; overflow-wrap: anywhere; }
