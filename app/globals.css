@@ -1829,6 +1829,18 @@ img.entity-image--preview {
   font-size: 1.8rem;
 }
 
+.sheet-image-button {
+  display: inline-flex;
+  padding: 0;
+  border: 0;
+  border-radius: 0.85rem;
+  background: transparent;
+  cursor: pointer;
+}
+
+.sheet-image-button:disabled { cursor: default; }
+.sheet-image-button:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+
 .entity-image--fallback span {
   transform: translateY(-1px);
 }

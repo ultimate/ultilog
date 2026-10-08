@@ -339,7 +339,15 @@ export function LogbookListPage({
                           }}
                           type="button"
                         >
-                          {sheet.title}
+                          <span className="table-vessel">
+                            <EntityImage
+                              image={sheet.image}
+                              entityType="sheet"
+                              alt={`${sheet.title} thumbnail`}
+                              variant="thumb"
+                            />
+                            {sheet.title}
+                          </span>
                         </button>
                       </td>
                       <td>
