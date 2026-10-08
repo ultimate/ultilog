@@ -34,10 +34,11 @@ function commit(repo, entries, message = "update changelog", commitDate) {
   }).trim();
 }
 
-function derive(repo) {
+function derive(repo, deploymentEnvironment = "production") {
   return deriveChangelogArtifact({
     repositoryPath: repo,
     outputPath: "artifact/changelog.json",
+    deploymentEnvironment,
   });
 }
 
@@ -152,6 +153,49 @@ describe("changelog build artifact", () => {
       shallow,
     ]);
     expect(derive(shallow).artifact[0].id).toBe("alpha");
+  });
+
+  it("previews omit boundary entries but retain proven introductions", () => {
+    const source = repository();
+    commit(source, [entry("alpha")]);
+    commit(source, [entry("alpha"), entry("beta")]);
+    const latest = commit(source, [entry("alpha"), entry("beta"), entry("gamma")]);
+    const shallow = mkdtempSync(join(tmpdir(), "ultilog-changelog-preview-"));
+    execFileSync("git", ["clone", "--quiet", "--depth", "2", `file://${source}`, shallow]);
+
+    expect(derive(shallow, "preview").artifact).toEqual([
+      expect.objectContaining({
+        id: "gamma",
+        introduction: expect.objectContaining({ commitSha: latest }),
+      }),
+    ]);
+    expect(() => derive(shallow, "production")).toThrow(/shallow-history boundary/i);
+  });
+
+  it("previews can generate an empty changelog from a depth-one checkout", () => {
+    const source = repository();
+    commit(source, [entry("alpha")]);
+    commit(source, [entry("alpha"), entry("beta")]);
+    const shallow = mkdtempSync(join(tmpdir(), "ultilog-changelog-preview-empty-"));
+    execFileSync("git", ["clone", "--quiet", "--depth", "1", `file://${source}`, shallow]);
+    expect(derive(shallow, "preview").artifact).toEqual([]);
+  });
+
+  it("previews omit missing introductions and still validate source content", () => {
+    const repo = repository();
+    commit(repo, [entry("alpha")]);
+    writeFileSync(join(repo, "app/content/changelog.json"), JSON.stringify([entry("alpha"), entry("beta")]));
+    expect(derive(repo, "preview").artifact.map(({ id }) => id)).toEqual(["alpha"]);
+    expect(() => derive(repo, "production")).toThrow(/No introduction commit found.*beta/i);
+    writeFileSync(join(repo, "app/content/changelog.json"), "not JSON");
+    expect(() => derive(repo, "preview")).toThrow(/malformed JSON/i);
+  });
+
+  it("previews with complete history include the entire changelog", () => {
+    const repo = repository();
+    commit(repo, [entry("alpha")]);
+    commit(repo, [entry("alpha"), entry("beta")]);
+    expect(derive(repo, "preview").artifact).toEqual(derive(repo, "production").artifact);
   });
 
   it("writes byte-for-byte deterministic output", () => {
