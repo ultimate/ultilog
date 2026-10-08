@@ -36,6 +36,7 @@ describe("production release workflow", () => {
     expect(workflow).toContain("BUILD_STARTED_AT");
     expect(workflow).toContain("commit_sha=$GITHUB_SHA");
     expect(workflow).toContain("date -u +'%Y-%m-%dT%H:%M:%S.000Z'");
+    expect(workflow).not.toContain("--build-env");
   });
 
   it("prevents obsolete runs and uses Actions as the sole deployment authority", () => {

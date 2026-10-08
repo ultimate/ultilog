@@ -94,10 +94,7 @@ jobs:
         env:
           BUILD_COMMIT_SHA: ${{ steps.build_metadata.outputs.commit_sha }}
           BUILD_STARTED_AT: ${{ steps.build_metadata.outputs.started_at }}
-        run: >-
-          npx vercel@latest build --prod --token="$VERCEL_TOKEN"
-          --build-env BUILD_COMMIT_SHA="$BUILD_COMMIT_SHA"
-          --build-env BUILD_STARTED_AT="$BUILD_STARTED_AT"
+        run: npx vercel@latest build --prod --token="$VERCEL_TOKEN"
 
       - name: Deploy the exact prebuilt output to production
         id: deploy
