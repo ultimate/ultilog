@@ -7,6 +7,7 @@ import { LogSheetsRepository } from "../repositories/log-sheets-repository";
 import { StoredImagesRepository } from "../repositories/stored-images-repository";
 import { backfillCrewMemberEncryption } from "./encryption-backfill";
 import { createHash } from "node:crypto";
+import { canAccessRegisteredShares } from "../registered-share-access";
 import { referencedBoatDeletionError, sheetBoatMutationError } from "../../domain/boats/boat-policy";
 import { sectionVisibility, sharedSheetCapability, type SectionVisibility, type SharedSheetCapability } from "../../domain/logbook/share-policy";
 
@@ -361,7 +362,8 @@ export abstract class LogbookDatabase implements QueryableDatabase {
       }
 
       const sourceShell = LogSheetsRepository.toLogbook([], [sourceRow], [], []).sheets[0];
-      const visibility = sectionVisibility(sourceShell.share ?? defaultLogSheetShareSettings, true);
+      const registeredAccess = await canAccessRegisteredShares(database, recipientId);
+      const visibility = sectionVisibility(sourceShell.share ?? defaultLogSheetShareSettings, registeredAccess);
       if (!visibility.masterData || !visibility.logLines || !visibility.technicalLog) {
         throw Object.assign(new Error("The required shared sections are not visible."), { code: "shared_sections_not_visible" });
       }
