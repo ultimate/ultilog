@@ -40,6 +40,16 @@
     }
   },
   {
+    "id": "filter-log-sheets-by-date-range",
+    "category": "fix",
+    "title": {
+      "en": "Filter log sheets and their overview map by from and to dates",
+      "de": "Logblätter und ihre Übersichtskarte nach Von- und Bis-Datum filtern",
+      "fr": "Filtrer les feuilles de journal et leur carte avec des dates de début et de fin",
+      "it": "Filtra i fogli di giornale e la mappa panoramica per data iniziale e finale"
+    }
+  },
+  {
     "id": "fix-shared-user-log-sheet-collections",
     "category": "fix",
     "title": {
