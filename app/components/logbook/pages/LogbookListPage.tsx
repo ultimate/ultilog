@@ -2,7 +2,7 @@ import { EntityImage } from "../EntityImage";
 import { useI18n } from "../../../lib/i18n";
 import { useDateTimeFormat } from "../../../lib/DateTimeFormatProvider";
 import { formatMiles } from "../../../lib/format-number";
-import { useMemo, useRef, type Dispatch, type SetStateAction } from "react";
+import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import type {
   Boat,
   LogSheet,
@@ -82,9 +82,22 @@ export function LogbookListPage({
   const availableBoats = useMemo(() => logbook.boats.filter((boat) => !boat.archived), [logbook.boats]);
   const hasBoats = availableBoats.length > 0;
   const hasMultipleBoats = availableBoats.length > 1;
+  const [isMapExpanded, setIsMapExpanded] = useState(false);
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const invalidDateRange = Boolean(fromDate && toDate && fromDate > toDate);
   const filteredSheets = useMemo(
-    () => boatFilterId ? logbook.sheets.filter((sheet) => sheet.boatId === boatFilterId) : logbook.sheets,
-    [boatFilterId, logbook.sheets],
+    () => logbook.sheets.filter((sheet) => {
+      if (boatFilterId && sheet.boatId !== boatFilterId) return false;
+      if (!fromDate && !toDate) return true;
+      if (invalidDateRange) return false;
+      // Compare voyage calendar dates without shifting their stored timezone.
+      const departed = sheet.route.departed.slice(0, 10);
+      const arrived = sheet.route.arrived.slice(0, 10) || departed;
+      if (!departed) return false;
+      return (!fromDate || arrived >= fromDate) && (!toDate || departed <= toDate);
+    }),
+    [boatFilterId, fromDate, toDate, invalidDateRange, logbook.sheets],
   );
   const rows = useMemo(() => filteredSheets.map((sheet) => ({
     sheet,
@@ -107,6 +120,15 @@ export function LogbookListPage({
   const list = useSortableList(rows, columns, defaultPageSize);
   const header = (key: string, label: string) => <SortableColumnHeader columnKey={key} activeKey={list.sort.key} direction={list.sort.direction} onSort={list.setSortKey}>{label}</SortableColumnHeader>;
 
+  useEffect(() => {
+    if (!isMapExpanded) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isMapExpanded]);
+
   function handleScannerFilesSelected(files: FileList | null) {
     if (!files?.length) return;
     onScanFilesSelected(files, scannerBoatId);
@@ -118,6 +140,7 @@ export function LogbookListPage({
   }
 
   function openSheet(sheet: LogSheet) {
+    setIsMapExpanded(false);
     setActiveSheetId(sheet.id);
     setSheetForm(sheetToForm(sheet));
     navigate("details", sheet.id);
@@ -298,10 +321,21 @@ export function LogbookListPage({
           <option value="">{t("logbooks.allVessels")}</option>
           {logbook.boats.map((boat) => <option key={boat.id} value={boat.id}>{boat.name}</option>)}
         </select>
-        <select aria-label={t("logbooks.timeFilter")} defaultValue={t("logbooks.allTime")}>
-          <option>{t("logbooks.allTime")}</option>
-        </select>
+        <div className="logbook-date-filter" role="group" aria-label={t("logbooks.timeFilter")}>
+          <label>
+            <span>{t("logbooks.fromDate")}</span>
+            <input type="date" value={fromDate} max={toDate || undefined} aria-invalid={invalidDateRange} aria-describedby={invalidDateRange ? "logbook-date-range-error" : undefined} onChange={(event) => { setFromDate(event.currentTarget.value); list.setPage(1); }} />
+          </label>
+          <label>
+            <span>{t("logbooks.toDate")}</span>
+            <input type="date" value={toDate} min={fromDate || undefined} aria-invalid={invalidDateRange} aria-describedby={invalidDateRange ? "logbook-date-range-error" : undefined} onChange={(event) => { setToDate(event.currentTarget.value); list.setPage(1); }} />
+          </label>
+          <button type="button" className="ghost-button" disabled={!fromDate && !toDate} onClick={() => { setFromDate(""); setToDate(""); list.setPage(1); }}>
+            {t("logbooks.allTime")}
+          </button>
+        </div>
       </div>
+      {invalidDateRange && <p id="logbook-date-range-error" className="save-error" role="alert">{t("logbooks.invalidDateRange")}</p>}
       <div className="logbook-overview-layout">
         <article className="table-card logbook-list-card">
           <div className="logbook-list-heading">
@@ -403,6 +437,9 @@ export function LogbookListPage({
         <article className="map-card logbook-overview-map-card">
           <div className="logbook-overview-map-heading">
             <p>{t("logbooks.mapHelp")}</p>
+            <button className="edit-chip" type="button" onClick={() => setIsMapExpanded(true)}>
+              {t("details.fullMap")}
+            </button>
           </div>
           <LogSheetsMapView
             sheets={filteredSheets}
@@ -412,6 +449,25 @@ export function LogbookListPage({
           />
         </article>
       </div>
+      {isMapExpanded && (
+        <div className="logbook-map-modal" role="dialog" aria-modal="true" aria-labelledby="logbook-overview-map-modal-title">
+          <div className="logbook-map-modal-panel">
+            <div className="logbook-map-modal-heading">
+              <h2 id="logbook-overview-map-modal-title">{t("logbooks.overviewMap")}</h2>
+              <button className="edit-chip" type="button" onClick={() => setIsMapExpanded(false)}>
+                {t("details.closeMap")}
+              </button>
+            </div>
+            <LogSheetsMapView
+              className="open-seamap-expanded"
+              sheets={filteredSheets}
+              onSheetClick={openSheet}
+              ariaLabel={t("logbooks.mapAria")}
+              showRouteTargets={false}
+            />
+          </div>
+        </div>
+      )}
     </section>
   );
 }

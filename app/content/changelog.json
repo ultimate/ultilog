@@ -40,6 +40,16 @@
     }
   },
   {
+    "id": "filter-log-sheets-by-date-range",
+    "category": "fix",
+    "title": {
+      "en": "Filter log sheets by date range and expand their overview map to full screen",
+      "de": "Logblätter nach Datumsbereich filtern und ihre Übersichtskarte im Vollbild anzeigen",
+      "fr": "Filtrer les feuilles de journal par dates et afficher leur carte en plein écran",
+      "it": "Filtra i fogli di giornale per intervallo di date e mostra la mappa panoramica a schermo intero"
+    }
+  },
+  {
     "id": "fix-shared-user-log-sheet-collections",
     "category": "fix",
     "title": {
