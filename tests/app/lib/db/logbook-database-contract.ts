@@ -1,3 +1,4 @@
+import { canAccessRegisteredShares } from "../../../../app/lib/registered-share-access";
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { calculateLogSheetMetrics } from "../../../../app/domain/logbook/sheet-metrics";
@@ -159,6 +160,53 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
           ownerName: "Contract owner",
           sheets: [{ sheet: { id: "sheet", title: "Visible voyage" } }],
         });
+      } finally { await context.cleanup(); }
+    });
+
+    it("limits demo viewers and copies to public shared sections", async () => {
+      const context = await setup();
+      try {
+        const db = context.database;
+        const p = (index: number) => db.placeholder(index);
+        await expect(canAccessRegisteredShares(db, context.owner)).resolves.toBe(true);
+        await expect(canAccessRegisteredShares(db, "missing-user")).resolves.toBe(false);
+        await expect(canAccessRegisteredShares(db)).resolves.toBe(false);
+        await db.query(`insert into user_groups (user_id, name) values (${p(1)}, 'demo')`, [context.owner]);
+        await expect(canAccessRegisteredShares(db, context.owner)).resolves.toBe(false);
+        // A sandbox remains a demo even if its group is removed or it has expired.
+        await db.query(`insert into demo_sandboxes (user_id, template_version, expires_at, last_accessed_at) values (${p(1)}, 1, '2000-01-01T00:00:00Z', '2000-01-01T00:00:00Z')`, [context.owner]);
+        await db.query(`delete from user_groups where user_id = ${p(1)}`, [context.owner]);
+        const access = await canAccessRegisteredShares(db, context.owner);
+        expect(access).toBe(false);
+
+        db.forUser(context.other);
+        await db.upsertBoat({ ...context.boat, id: "source-boat", revision: undefined });
+        const registeredShare = { masterData: "registered", logLines: "registered", technicalLog: "registered", picture: "registered", metrics: "registered", skipper: "registered", crew: "registered" } as const;
+        await db.upsertCrewMember({ id: "sailor", name: "Registered-only sailor", nationality: "GB", role: "Crew" });
+        const sourceImageId = randomUUID();
+        await db.createStoredImage(sourceImageId, { data: "data:image/png;base64,Y29weQ==", mimeType: "image/png", width: 2, height: 3 });
+        await db.upsertLogSheet({ ...sheet([]), boatId: "source-boat", share: registeredShare, imageId: sourceImageId,
+          crew: [{ id: "sailor", embarkationDateTime: "", embarkationPosition: "", disembarkationDateTime: "", disembarkationPosition: "" }] });
+        const registeredView = await db.readSharedSheet("sheet", true, context.other);
+        expect(registeredView?.sheet.crew).toHaveLength(1);
+        expect(registeredView?.sheet.image).toBeDefined();
+        await expect(db.readSharedSheet("sheet", access, context.other)).resolves.toBeUndefined();
+        await expect(db.readSharedSheet("sheet", access)).resolves.toBeUndefined();
+        await expect(db.readSharedSheets(context.other, access)).resolves.toMatchObject({ sheets: [] });
+        db.forUser(context.owner);
+        await expect(db.copySharedSheet(context.other, "sheet", { destinationBoatId: "boat", includeCrew: true, includePicture: true })).rejects.toMatchObject({ code: "shared_sections_not_visible" });
+
+        db.forUser(context.other);
+        const source = (await db.readLogbook()).sheets[0];
+        await db.upsertLogSheet({ ...source, share: { ...registeredShare, masterData: "public", logLines: "public", technicalLog: "public" } });
+        const visible = await db.readSharedSheet("sheet", access, context.other);
+        expect(visible?.capability.canCopy).toBe(true);
+        expect(visible?.sheet).toMatchObject({ crew: [], image: undefined, metrics: undefined });
+        await expect(db.readSharedSheets(context.other, access)).resolves.toMatchObject({ sheets: [{ sheet: { id: "sheet" } }] });
+        db.forUser(context.owner);
+        const copied = await db.copySharedSheet(context.other, "sheet", { destinationBoatId: "boat", includeCrew: true, includePicture: true });
+        expect(copied?.crew).toEqual([]);
+        expect(copied?.imageId).toBeUndefined();
       } finally { await context.cleanup(); }
     });
 

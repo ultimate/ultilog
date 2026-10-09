@@ -5,11 +5,15 @@ vi.mock("../../../auth", () => ({
   auth: vi.fn(),
 }));
 
+vi.mock("../../../app/lib/authorization", () => ({ userCanAccessRegisteredShares: vi.fn() }));
+
 vi.mock("../../../app/lib/logbook-store", () => ({
   readSharedLogSheet: vi.fn(),
 }));
 
 const { auth } = await import("../../../auth");
+const { userCanAccessRegisteredShares } = await import("../../../app/lib/authorization");
+const mockedRegisteredAccess = vi.mocked(userCanAccessRegisteredShares);
 const store = await import("../../../app/lib/logbook-store");
 const { GET } = await import("../../../app/api/shared/logbooks/[[...segments]]/route");
 
@@ -27,6 +31,7 @@ async function getWithSegments(segments?: string[]) {
 describe("shared logbooks endpoint", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockedRegisteredAccess.mockResolvedValue(true);
   });
 
   it("returns not found when no sheet id is present", async () => {
@@ -40,6 +45,7 @@ describe("shared logbooks endpoint", () => {
 
   it("reads a public shared sheet by sheet id", async () => {
     mockedAuth.mockResolvedValueOnce(null);
+    mockedRegisteredAccess.mockResolvedValueOnce(false);
     mockedReadSharedLogSheet.mockResolvedValueOnce(sharedSheet);
 
     const response = await getWithSegments(["sheet-1"]);
@@ -58,6 +64,18 @@ describe("shared logbooks endpoint", () => {
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual(sharedSheet);
     expect(mockedReadSharedLogSheet).toHaveBeenCalledWith("sheet-1", true, "owner-1");
+  });
+
+  it("uses public-only visibility for demo sessions, including owner-scoped URLs", async () => {
+    mockedAuth.mockResolvedValueOnce({ ...session, user: { ...session.user, id: "demo-viewer", groups: ["demo"] } });
+    mockedRegisteredAccess.mockResolvedValueOnce(false);
+    mockedReadSharedLogSheet.mockResolvedValueOnce(sharedSheet);
+
+    const response = await getWithSegments(["owner-1", "sheet-1"]);
+
+    expect(response.status).toBe(200);
+    expect(mockedRegisteredAccess).toHaveBeenCalledWith("demo-viewer");
+    expect(mockedReadSharedLogSheet).toHaveBeenCalledWith("sheet-1", false, "owner-1");
   });
 
   it("returns not found for unknown shares", async () => {

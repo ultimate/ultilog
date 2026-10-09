@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "../../../../../auth";
 import { readSharedLogSheet } from "../../../../lib/logbook-store";
+import { userCanAccessRegisteredShares } from "../../../../lib/authorization";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ segments?: string[] }> }) {
   const { segments = [] } = await params;
@@ -8,7 +9,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ seg
   if (!sheetId) return NextResponse.json({ error: "Shared logbook not found" }, { status: 404 });
 
   const session = await auth();
-  const sharedSheet = await readSharedLogSheet(sheetId, Boolean(session?.user?.id), ownerId);
+  const registeredAccess = await userCanAccessRegisteredShares(session?.user?.id);
+  const sharedSheet = await readSharedLogSheet(sheetId, registeredAccess, ownerId);
   if (!sharedSheet) return NextResponse.json({ error: "Shared logbook not found" }, { status: 404 });
   const { sheet, boatName, capability, ownerName, ownerAvatar, showOwnerAvatarOnPrint } = sharedSheet;
   return NextResponse.json({ sheet, boatName, capability, ownerName, ownerAvatar, showOwnerAvatarOnPrint });
