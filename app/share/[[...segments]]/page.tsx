@@ -1,5 +1,6 @@
 import { findUserById } from "../../lib/users";
 import { auth } from "../../../auth";
+import { userCanAccessRegisteredShares } from "../../lib/authorization";
 import { readSharedLogSheet, readSharedLogSheets } from "../../lib/logbook-store";
 import { EntityImage } from "../../components/logbook/EntityImage";
 import { LogLinesMapView } from "../../components/logbook/OpenSeaMapView";
@@ -20,7 +21,8 @@ export default async function SharedLogbookPage({ params, searchParams }: { para
   const embedTheme = parseEmbedTheme(query);
   const { ownerId, sheetId } = parseShareSegments(segments);
   const session = await auth();
-  const collection = segments.length === 1 ? await readSharedLogSheets(segments[0], Boolean(session?.user?.id)) : undefined;
+  const registeredAccess = await userCanAccessRegisteredShares(session?.user?.id);
+  const collection = segments.length === 1 ? await readSharedLogSheets(segments[0], registeredAccess) : undefined;
   if (collection) {
     const view = query.view === "map" ? "map" : "list";
     const from = typeof query.from === "string" ? query.from : "";
@@ -45,7 +47,7 @@ export default async function SharedLogbookPage({ params, searchParams }: { para
       </section>
     </main>;
   }
-  const shared = sheetId ? await readSharedLogSheet(sheetId, Boolean(session?.user?.id), ownerId) : undefined;
+  const shared = sheetId ? await readSharedLogSheet(sheetId, registeredAccess, ownerId) : undefined;
 
   if (!shared) {
     return (

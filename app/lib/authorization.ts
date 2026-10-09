@@ -1,4 +1,13 @@
 import { userHasGroup } from "./users";
+import { getDatabase } from "./logbook-store";
+import { canAccessRegisteredShares } from "./registered-share-access";
+
+export async function userCanAccessRegisteredShares(userId?: string) {
+  if (!userId) return false;
+  const database = getDatabase();
+  await database.migrate();
+  return canAccessRegisteredShares(database, userId);
+}
 
 /**
  * Stable capabilities used at server-side authorization boundaries.
