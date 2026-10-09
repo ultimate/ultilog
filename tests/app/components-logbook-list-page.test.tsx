@@ -25,7 +25,7 @@ const sheets = [
 
 describe("logsheet date filter", () => {
   let renderer: ReactTestRenderer;
-  afterEach(async () => { await act(async () => renderer?.unmount()); });
+  afterEach(async () => { await act(async () => renderer?.unmount()); vi.unstubAllGlobals(); });
   async function render(boatFilterId = "") {
     await act(async () => {
       renderer = create(<LogbookListPage
@@ -72,6 +72,30 @@ describe("logsheet date filter", () => {
     expect(mapIds()).toEqual(["spanning", "end-boundary", "after"]);
     await act(async () => renderer.root.findByProps({ type: "search" }).props.onChange({ target: { value: "after" } }));
     expect(tableIds()).toEqual(["after"]);
+  });
+
+  it("expands the filtered overview map, closes it, and restores scrolling when opening a sheet", async () => {
+    const body = { style: { overflow: "auto" } };
+    vi.stubGlobal("document", { body });
+    await render("boat-1");
+    await changeDate(0, "2026-05-20");
+    const fullMapButton = () => renderer.root.findAllByType("button").find((button) => button.children.includes("details.fullMap"))!;
+    await act(async () => fullMapButton().props.onClick());
+    expect(body.style.overflow).toBe("hidden");
+    const dialog = renderer.root.findByProps({ role: "dialog" });
+    expect(dialog.props["aria-modal"]).toBe("true");
+    const expandedMap = dialog.findByType(LogSheetsMapView);
+    expect(expandedMap.props.className).toBe("open-seamap-expanded");
+    expect(expandedMap.props.sheets.map((item: LogSheet) => item.id)).toEqual(["spanning", "end-boundary", "after"]);
+    expect(expandedMap.props.showRouteTargets).toBe(false);
+    await act(async () => dialog.findByType("button").props.onClick());
+    expect(renderer.root.findAllByProps({ role: "dialog" })).toHaveLength(0);
+    expect(body.style.overflow).toBe("auto");
+    await act(async () => fullMapButton().props.onClick());
+    await act(async () => renderer.root.findByProps({ role: "dialog" }).findByType(LogSheetsMapView).props.onSheetClick(sheets[1]));
+    expect(renderer.root.findAllByProps({ role: "dialog" })).toHaveLength(0);
+    expect(body.style.overflow).toBe("auto");
+    expect(renderer.root.findByType(LogbookListPage).props.navigate).toHaveBeenCalledWith("details", "spanning");
   });
 
   it("shows a validation message for reversed dates", async () => {

@@ -2,7 +2,7 @@ import { EntityImage } from "../EntityImage";
 import { useI18n } from "../../../lib/i18n";
 import { useDateTimeFormat } from "../../../lib/DateTimeFormatProvider";
 import { formatMiles } from "../../../lib/format-number";
-import { useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import type {
   Boat,
   LogSheet,
@@ -82,6 +82,7 @@ export function LogbookListPage({
   const availableBoats = useMemo(() => logbook.boats.filter((boat) => !boat.archived), [logbook.boats]);
   const hasBoats = availableBoats.length > 0;
   const hasMultipleBoats = availableBoats.length > 1;
+  const [isMapExpanded, setIsMapExpanded] = useState(false);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
   const invalidDateRange = Boolean(fromDate && toDate && fromDate > toDate);
@@ -119,6 +120,15 @@ export function LogbookListPage({
   const list = useSortableList(rows, columns, defaultPageSize);
   const header = (key: string, label: string) => <SortableColumnHeader columnKey={key} activeKey={list.sort.key} direction={list.sort.direction} onSort={list.setSortKey}>{label}</SortableColumnHeader>;
 
+  useEffect(() => {
+    if (!isMapExpanded) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isMapExpanded]);
+
   function handleScannerFilesSelected(files: FileList | null) {
     if (!files?.length) return;
     onScanFilesSelected(files, scannerBoatId);
@@ -130,6 +140,7 @@ export function LogbookListPage({
   }
 
   function openSheet(sheet: LogSheet) {
+    setIsMapExpanded(false);
     setActiveSheetId(sheet.id);
     setSheetForm(sheetToForm(sheet));
     navigate("details", sheet.id);
@@ -426,6 +437,9 @@ export function LogbookListPage({
         <article className="map-card logbook-overview-map-card">
           <div className="logbook-overview-map-heading">
             <p>{t("logbooks.mapHelp")}</p>
+            <button className="edit-chip" type="button" onClick={() => setIsMapExpanded(true)}>
+              {t("details.fullMap")}
+            </button>
           </div>
           <LogSheetsMapView
             sheets={filteredSheets}
@@ -435,6 +449,25 @@ export function LogbookListPage({
           />
         </article>
       </div>
+      {isMapExpanded && (
+        <div className="logbook-map-modal" role="dialog" aria-modal="true" aria-labelledby="logbook-overview-map-modal-title">
+          <div className="logbook-map-modal-panel">
+            <div className="logbook-map-modal-heading">
+              <h2 id="logbook-overview-map-modal-title">{t("logbooks.overviewMap")}</h2>
+              <button className="edit-chip" type="button" onClick={() => setIsMapExpanded(false)}>
+                {t("details.closeMap")}
+              </button>
+            </div>
+            <LogSheetsMapView
+              className="open-seamap-expanded"
+              sheets={filteredSheets}
+              onSheetClick={openSheet}
+              ariaLabel={t("logbooks.mapAria")}
+              showRouteTargets={false}
+            />
+          </div>
+        </div>
+      )}
     </section>
   );
 }
