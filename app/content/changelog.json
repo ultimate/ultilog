@@ -60,6 +60,16 @@
     }
   },
   {
+    "id": "restrict-demo-shared-log-sheets-to-public-access",
+    "category": "security",
+    "title": {
+      "en": "Limit demo accounts to publicly shared log sheet sections",
+      "de": "Demokonten auf öffentlich geteilte Logblattbereiche beschränken",
+      "fr": "Limiter les comptes de démonstration aux sections de feuilles de journal partagées publiquement",
+      "it": "Limita gli account demo alle sezioni dei fogli di giornale condivise pubblicamente"
+    }
+  },
+  {
     "id": "shared-collection-table-and-embed-previews",
     "category": "improvement",
     "title": {
