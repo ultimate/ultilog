@@ -9,21 +9,7 @@ permissions:
 jobs:
   test:
     name: Typecheck, test, build, and e2e
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:17
-        env:
-          POSTGRES_USER: ultilog
-          POSTGRES_PASSWORD: ultilog
-          POSTGRES_DB: ultilog_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U ultilog -d ultilog_test"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+    runs-on: ubuntu-24.04
     environment: Preview
     env:
       CREW_ENCRYPTION_MASTER_KEY: ${{ secrets.CREW_ENCRYPTION_MASTER_KEY }}
@@ -37,6 +23,37 @@ jobs:
           # introduced each stable ID. A depth-1 checkout makes the checked-out
           # commit a shallow boundary and cannot prove that history.
           fetch-depth: 0
+
+      - name: Install and start PostgreSQL 17
+        shell: bash
+        run: |
+          # Match Neon's major version without pulling a Docker Hub image.
+          sudo install -d /usr/share/postgresql-common/pgdg
+          curl --fail --silent --show-error --retry 3 \
+            https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+            | sudo tee /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc > /dev/null
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt noble-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends postgresql-17
+
+          # Free port 5432 if the runner has another PostgreSQL version installed.
+          sudo systemctl stop postgresql
+          if ! sudo test -d /etc/postgresql/17/main; then
+            sudo pg_createcluster 17 main
+          fi
+          sudo pg_conftool 17 main set port 5432
+          sudo pg_ctlcluster 17 main start
+
+          sudo -u postgres /usr/lib/postgresql/17/bin/psql --set ON_ERROR_STOP=1 \
+            --command "CREATE USER ultilog WITH PASSWORD 'ultilog';"
+          sudo -u postgres /usr/lib/postgresql/17/bin/createdb --owner=ultilog ultilog_test
+
+          # Verify readiness, application credentials, and the actual server version.
+          server_version=$(/usr/lib/postgresql/17/bin/psql "$TEST_POSTGRES_URL" \
+            --set ON_ERROR_STOP=1 --tuples-only --no-align --command "SHOW server_version;")
+          echo "Connected to PostgreSQL $server_version"
+          [[ "$server_version" == 17.* ]]
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
