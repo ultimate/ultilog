@@ -1,5 +1,5 @@
 import { TECHNICAL_CHECK_STATUSES } from "../../../domain/logbook/technical-log";
-import { enforceSkipperSharing, isPrivacyAtLeast } from "../../../domain/logbook/share-policy";
+import { enforceMasterDataSharing, enforceSkipperSharing, isPrivacyAtLeast } from "../../../domain/logbook/share-policy";
 import { EntityImage } from "../EntityImage";
 import { useI18n } from "../../../lib/i18n";
 import { useDateTimeFormat } from "../../../lib/DateTimeFormatProvider";
@@ -235,13 +235,14 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const sharePath = sharingOwnerId ? `/share/${encodeURIComponent(sharingOwnerId)}/${encodeURIComponent(activeSheet.id)}` : `/share/${encodeURIComponent(activeSheet.id)}`;
   const shareUrl = typeof window === "undefined" ? sharePath : `${window.location.origin}${sharePath}`;
   const setShare = (patch: Partial<LogSheetShareSettings>) => {
-    const nextShare = enforceSkipperSharing({ ...shareDraft, ...patch });
+    const nextShare = enforceMasterDataSharing(enforceSkipperSharing({ ...shareDraft, ...patch }));
     setShareDraftState({ sheetId: activeSheet.id, share: nextShare });
     void updateShare(nextShare);
   };
   const isSharingEnabled = Object.values(shareDraft).some((privacy) => privacy !== "private");
   const shareOptions = [
     ["masterData", "Master data (from/to/boat)"],
+    ["remarks", "Logsheet remarks"],
     ["picture", "Picture"],
     ["logLines", "Loglines"],
     ["metrics", "Metrics (time and miles)"],
@@ -1067,14 +1068,17 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                           <select
                             value={shareDraft[field]}
                             onChange={(event) => setShare({ [field]: event.currentTarget.value } as Partial<LogSheetShareSettings>)}
-                            aria-describedby={field === "skipper" || field === "crew" ? "crew-sharing-explanation" : undefined}
+                            aria-describedby={field === "skipper" || field === "crew" ? "master-sharing-explanation crew-sharing-explanation" : "master-sharing-explanation"}
                           >
                             <option value="private" disabled={field === "skipper" && !isPrivacyAtLeast("private", shareDraft.crew)}>Private</option>
-                            <option value="registered" disabled={field === "skipper" && !isPrivacyAtLeast("registered", shareDraft.crew)}>Registered users only</option>
-                            <option value="public">Public to everyone</option>
+                            <option value="registered" disabled={(field !== "masterData" && !isPrivacyAtLeast(shareDraft.masterData, "registered")) || (field === "skipper" && !isPrivacyAtLeast("registered", shareDraft.crew))}>Registered users only</option>
+                            <option value="public" disabled={field !== "masterData" && !isPrivacyAtLeast(shareDraft.masterData, "public")}>Public to everyone</option>
                           </select>
                         </label>
                       ))}
+                      <p id="master-sharing-explanation" className="share-logsheet-explanation">
+                        Master data sets the maximum sharing level for all other parts. Making master data more private also reduces sharing for those parts.
+                      </p>
                       <p id="crew-sharing-explanation" className="share-logsheet-explanation">
                         The skipper is included with the crew. When you share crew information, skipper sharing is automatically raised to the same level.
                       </p>

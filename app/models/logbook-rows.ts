@@ -51,6 +51,7 @@ export type LogSheetRow = ImageRowFields & {
   motion_duration_minutes?: number | null;
   share_privacy?: LogSheetSharePrivacy | null;
   share_master_data: LogSheetSharePrivacy;
+  share_remarks: LogSheetSharePrivacy;
   share_picture: LogSheetSharePrivacy;
   share_loglines: LogSheetSharePrivacy;
   share_metrics: LogSheetSharePrivacy;

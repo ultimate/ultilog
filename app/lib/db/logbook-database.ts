@@ -407,7 +407,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
         boatId: options.destinationBoatId,
         route: { ...source.route },
         crew,
-        remarks: source.remarks ?? "",
+        remarks: visibility.remarks ? source.remarks ?? "" : "",
         technicalChecks: source.technicalChecks.map(check => ({ ...check })),
         ...(imageId ? { imageId } : {}),
         lines: [],
@@ -482,7 +482,7 @@ function filterSharedSheet(sheet: LogSheet, visibility: SectionVisibility): LogS
     metrics: visibility.metrics ? sheet.metrics : undefined,
     technicalChecks: visibility.technicalLog ? sheet.technicalChecks : [],
     engineHourCounters: visibility.technicalLog ? sheet.engineHourCounters : undefined,
-    remarks: visibility.masterData ? sheet.remarks : undefined,
+    remarks: visibility.remarks ? sheet.remarks : undefined,
     crew,
   };
 }

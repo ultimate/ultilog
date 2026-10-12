@@ -73,10 +73,10 @@
     "id": "restrict-demo-shared-log-sheets-to-public-access",
     "category": "security",
     "title": {
-      "en": "Limit demo accounts to publicly shared log sheet sections",
-      "de": "Demokonten auf öffentlich geteilte Logblattbereiche beschränken",
-      "fr": "Limiter les comptes de démonstration aux sections de feuilles de journal partagées publiquement",
-      "it": "Limita gli account demo alle sezioni dei fogli di giornale condivise pubblicamente"
+      "en": "Strengthen logsheet sharing with public-only demo access, independent remarks privacy, and master data visibility limits",
+      "de": "Logblattfreigaben mit ausschließlich öffentlichem Demozugriff, unabhängiger Privatsphäre für Bemerkungen und Sichtbarkeitsgrenzen durch Stammdaten verbessern",
+      "fr": "Renforcer le partage des feuilles de journal avec un accès démo limité aux données publiques, une confidentialité indépendante des remarques et des limites de visibilité définies par les données principales",
+      "it": "Rafforza la condivisione dei fogli di giornale con accesso demo solo ai dati pubblici, privacy indipendente per le note e limiti di visibilità definiti dai dati principali"
     }
   },
   {

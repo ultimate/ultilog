@@ -231,7 +231,7 @@ describe("logbook endpoint", () => {
     const demoLogbook: PersistedLogbook = {
       boats: [{ id: "boat-1", name: "Aurora", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, deviationTable: [], image }],
       crewMembers: [{ id: "crew-1", name: "Luca", nationality: "CH", role: "Skipper", image }],
-      sheets: [{ id: "sheet-1", title: "Trip", status: "Draft", boatId: "boat-1", route: { from: "", to: "", departed: "", arrived: "" }, crew: [{ id: "crew-1", name: "Luca", nationality: "CH", role: "Skipper", embarkationDateTime: "", embarkationPosition: "", disembarkationDateTime: "", disembarkationPosition: "", image }], technicalChecks: [], image, lines: [], share: { masterData: "public", picture: "public", logLines: "public", metrics: "public", technicalLog: "public", skipper: "public", crew: "public" } }],
+      sheets: [{ id: "sheet-1", title: "Trip", status: "Draft", boatId: "boat-1", route: { from: "", to: "", departed: "", arrived: "" }, crew: [{ id: "crew-1", name: "Luca", nationality: "CH", role: "Skipper", embarkationDateTime: "", embarkationPosition: "", disembarkationDateTime: "", disembarkationPosition: "", image }], technicalChecks: [], image, lines: [], share: { masterData: "public", remarks: "public", picture: "public", logLines: "public", metrics: "public", technicalLog: "public", skipper: "public", crew: "public" } }],
     };
     mockedAuth.mockResolvedValueOnce(session);
     mockedIsActiveDemoSandbox.mockResolvedValueOnce(true);
@@ -244,6 +244,6 @@ describe("logbook endpoint", () => {
     expect(saved.crewMembers[0].image).toBeUndefined();
     expect(saved.sheets[0].image).toBeUndefined();
     expect(saved.sheets[0].crew[0].image).toBeUndefined();
-    expect(Object.values(saved.sheets[0].share ?? {})).toEqual(Array(7).fill("private"));
+    expect(Object.values(saved.sheets[0].share ?? {})).toEqual(Array(8).fill("private"));
   });
 });

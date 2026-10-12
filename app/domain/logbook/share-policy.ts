@@ -27,12 +27,31 @@ export function enforceSkipperSharing(share: LogSheetShareSettings): LogSheetSha
   return isSkipperSharingSufficient(share) ? share : { ...share, skipper: share.crew };
 }
 
+/** Master data sets the maximum audience for every other section. */
+export function isMasterDataSharingSufficient(share: LogSheetShareSettings) {
+  return Object.values(share).every(privacy => isPrivacyAtLeast(share.masterData, privacy));
+}
+
+/** Reduces dependent visibility without broadening master data access. */
+export function enforceMasterDataSharing(share: LogSheetShareSettings): LogSheetShareSettings {
+  return Object.fromEntries(Object.entries(share).map(([section, privacy]) => [
+    section, isPrivacyAtLeast(share.masterData, privacy) ? privacy : share.masterData,
+  ])) as LogSheetShareSettings;
+}
+
+/** Older exports tied remarks to master data and allowed independent section audiences. */
+export function normalizeLegacySharing(share: Omit<LogSheetShareSettings, "remarks"> & { remarks?: LogSheetSharePrivacy }): LogSheetShareSettings {
+  return enforceMasterDataSharing({ ...share, remarks: share.remarks ?? share.masterData });
+}
+
 export function isPrivacyAtLeast(privacy: LogSheetSharePrivacy, minimum: LogSheetSharePrivacy) {
   return privacyLevel[privacy] >= privacyLevel[minimum];
 }
 
 export function sectionVisibility(share: LogSheetShareSettings, isAuthenticated: boolean): SectionVisibility {
+  share = enforceMasterDataSharing(share);
   return {
+    remarks: canViewSection(share.remarks, isAuthenticated),
     masterData: canViewSection(share.masterData, isAuthenticated),
     picture: canViewSection(share.picture, isAuthenticated),
     logLines: canViewSection(share.logLines, isAuthenticated),
@@ -44,6 +63,7 @@ export function sectionVisibility(share: LogSheetShareSettings, isAuthenticated:
 }
 
 export function sharedSheetCapability(share: LogSheetShareSettings, isAuthenticated: boolean): SharedSheetCapability {
+  share = enforceMasterDataSharing(share);
   const visibility = sectionVisibility(share, isAuthenticated);
   const missingRequiredSections = copyRequiredSections.filter(section => !visibility[section]);
   const requiresAuthentication = !isAuthenticated

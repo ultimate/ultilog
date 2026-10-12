@@ -1,3 +1,4 @@
+import { normalizeLegacySharing } from "../../domain/logbook/share-policy";
 import { calculateLogSheetMetrics } from "../../domain/logbook/sheet-metrics";
 import { defaultLogSheetShareSettings, normalizeDeviationTable, type Boat, type BoatRow, type CrewMemberRow, type LogLine, type LogLineRow, type LogSheet, type LogSheetRow, type PersistedLogbook, type ScannerWarning, type StoredLogSheet } from "../../models/logbook";
 import type { QueryableDatabase } from "../db/logbook-database";
@@ -23,6 +24,7 @@ export class LogSheetsRepository {
     const existing = await this.findById(sheet.id, ownerId);
     if (!existing) return this.insert(sheet, ownerId, motionStationaryThresholdNm);
 
+    sheet = { ...sheet, share: normalizeLegacySharing(sheet.share ?? defaultLogSheetShareSettings) };
     const metrics = calculateLogSheetMetrics(sheet.lines, sheet.route, { stationaryDistanceThresholdNm: motionStationaryThresholdNm });
     const revision = expectedRevision(sheet.revision);
     const source = existing.source === "shared" ? existing.source : sheet.source;
@@ -35,18 +37,18 @@ export class LogSheetsRepository {
       metrics.motorHours, metrics.overallDurationMinutes, metrics.motionDurationMinutes,
       overallPrivacy(sheet.share), privacyFor(sheet.share?.masterData), privacyFor(sheet.share?.picture),
       privacyFor(sheet.share?.logLines), privacyFor(sheet.share?.metrics), privacyFor(sheet.share?.technicalLog),
-      privacyFor(sheet.share?.skipper), privacyFor(sheet.share?.crew),
+      privacyFor(sheet.share?.skipper), privacyFor(sheet.share?.crew), privacyFor(sheet.share?.remarks),
       scopedId(ownerId, sheet.id), ownerId, revision,
     ];
     const columns = [
       "title", "status", "source", "verification_note", "scanner_warnings", "boat_id", "skipper", "route",
       "remarks", "technical_checks", "engine_hour_counters", "image_id",
       "motor_miles", "sail_miles", "total_miles", "duration_minutes", "motor_hours", "overall_duration_minutes", "motion_duration_minutes",
-      "share_privacy", "share_master_data", "share_picture", "share_loglines", "share_metrics", "share_technical_log", "share_skipper", "share_crew",
+      "share_privacy", "share_master_data", "share_picture", "share_loglines", "share_metrics", "share_technical_log", "share_skipper", "share_crew", "share_remarks",
     ];
     const assignments = columns.map((column, index) => `${column} = ${this.db.placeholder(index + 1)}`).join(", ");
     const result = await this.db.query<{ revision: number }>(
-      `update log_sheets set ${assignments}, revision = revision + 1, updated_at = ${this.now()} where id = ${this.db.placeholder(28)} and owner_id = ${this.db.placeholder(29)} and revision = ${this.db.placeholder(30)} returning revision`,
+      `update log_sheets set ${assignments}, revision = revision + 1, updated_at = ${this.now()} where id = ${this.db.placeholder(29)} and owner_id = ${this.db.placeholder(30)} and revision = ${this.db.placeholder(31)} returning revision`,
       values,
     );
     if (!result.rows.length) throw Object.assign(new Error("The log sheet was changed by another request."), { code: "revision_conflict" });
@@ -71,11 +73,12 @@ export class LogSheetsRepository {
   }
 
   async insert(sheet: LogSheet, ownerId: string, motionStationaryThresholdNm = 0.1) {
+    sheet = { ...sheet, share: normalizeLegacySharing(sheet.share ?? defaultLogSheetShareSettings) };
     const metrics = calculateLogSheetMetrics(sheet.lines, sheet.route, { stationaryDistanceThresholdNm: motionStationaryThresholdNm });
     const provenance = sheet.copyProvenance;
     await this.db.query(
-      `insert into log_sheets (id, title, status, source, source_owner_id, source_owner_name, source_sheet_id, source_revision, copied_at, source_title, verification_note, scanner_warnings, boat_id, skipper, route, remarks, technical_checks, engine_hour_counters, image_id, owner_id, motor_miles, sail_miles, total_miles, duration_minutes, motor_hours, overall_duration_minutes, motion_duration_minutes, share_privacy, share_master_data, share_picture, share_loglines, share_metrics, share_technical_log, share_skipper, share_crew) values (${this.values(35)})`,
-      [scopedId(ownerId, sheet.id), sheet.title, sheet.status, sheet.source ?? null, provenance?.sourceOwnerId ?? null, provenance?.sourceOwnerName ?? null, provenance?.sourceSheetId ?? null, provenance?.sourceRevision ?? null, provenance?.copiedAt ?? null, provenance?.sourceTitle ?? null, sheet.verificationNote ?? null, sheet.scannerWarnings ? JSON.stringify(sheet.scannerWarnings) : null, scopedId(ownerId, sheet.boatId), JSON.stringify({}), JSON.stringify(sheet.route), sheet.remarks ?? "", JSON.stringify(sheet.technicalChecks), JSON.stringify(sheet.engineHourCounters ?? {}), sheet.imageId ?? sheet.image?.id ?? null, ownerId, metrics.motorMiles, metrics.sailMiles, metrics.totalMiles, metrics.durationMinutes, metrics.motorHours, metrics.overallDurationMinutes, metrics.motionDurationMinutes, overallPrivacy(sheet.share), privacyFor(sheet.share?.masterData), privacyFor(sheet.share?.picture), privacyFor(sheet.share?.logLines), privacyFor(sheet.share?.metrics), privacyFor(sheet.share?.technicalLog), privacyFor(sheet.share?.skipper), privacyFor(sheet.share?.crew)],
+      `insert into log_sheets (id, title, status, source, source_owner_id, source_owner_name, source_sheet_id, source_revision, copied_at, source_title, verification_note, scanner_warnings, boat_id, skipper, route, remarks, technical_checks, engine_hour_counters, image_id, owner_id, motor_miles, sail_miles, total_miles, duration_minutes, motor_hours, overall_duration_minutes, motion_duration_minutes, share_privacy, share_master_data, share_picture, share_loglines, share_metrics, share_technical_log, share_skipper, share_crew, share_remarks) values (${this.values(36)})`,
+      [scopedId(ownerId, sheet.id), sheet.title, sheet.status, sheet.source ?? null, provenance?.sourceOwnerId ?? null, provenance?.sourceOwnerName ?? null, provenance?.sourceSheetId ?? null, provenance?.sourceRevision ?? null, provenance?.copiedAt ?? null, provenance?.sourceTitle ?? null, sheet.verificationNote ?? null, sheet.scannerWarnings ? JSON.stringify(sheet.scannerWarnings) : null, scopedId(ownerId, sheet.boatId), JSON.stringify({}), JSON.stringify(sheet.route), sheet.remarks ?? "", JSON.stringify(sheet.technicalChecks), JSON.stringify(sheet.engineHourCounters ?? {}), sheet.imageId ?? sheet.image?.id ?? null, ownerId, metrics.motorMiles, metrics.sailMiles, metrics.totalMiles, metrics.durationMinutes, metrics.motorHours, metrics.overallDurationMinutes, metrics.motionDurationMinutes, overallPrivacy(sheet.share), privacyFor(sheet.share?.masterData), privacyFor(sheet.share?.picture), privacyFor(sheet.share?.logLines), privacyFor(sheet.share?.metrics), privacyFor(sheet.share?.technicalLog), privacyFor(sheet.share?.skipper), privacyFor(sheet.share?.crew), privacyFor(sheet.share?.remarks)],
     );
     return this.findById(sheet.id, ownerId);
   }
@@ -205,7 +208,7 @@ function mapStoredSheet(sheet: LogSheetRow): StoredLogSheet {
       overallDurationMinutes: sheet.overall_duration_minutes == null ? (sheet.duration_minutes == null ? null : Number(sheet.duration_minutes)) : Number(sheet.overall_duration_minutes),
       motionDurationMinutes: Number(sheet.motion_duration_minutes) || 0,
     },
-    share: {
+    share: normalizeLegacySharing({
       masterData: privacyFromRow(sheet.share_master_data),
       picture: privacyFromRow(sheet.share_picture),
       logLines: privacyFromRow(sheet.share_loglines),
@@ -213,7 +216,8 @@ function mapStoredSheet(sheet: LogSheetRow): StoredLogSheet {
       technicalLog: privacyFromRow(sheet.share_technical_log),
       skipper: privacyFromRow(sheet.share_skipper),
       crew: privacyFromRow(sheet.share_crew),
-    },
+      remarks: sheet.share_remarks ?? privacyFromRow(sheet.share_master_data),
+    }),
   };
 }
 

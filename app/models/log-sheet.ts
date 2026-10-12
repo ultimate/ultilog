@@ -8,6 +8,7 @@ export type LogSheetSharePrivacy = "private" | "registered" | "public";
 
 export type LogSheetShareSettings = {
   masterData: LogSheetSharePrivacy;
+  remarks: LogSheetSharePrivacy;
   picture: LogSheetSharePrivacy;
   logLines: LogSheetSharePrivacy;
   metrics: LogSheetSharePrivacy;
@@ -18,6 +19,7 @@ export type LogSheetShareSettings = {
 
 export const defaultLogSheetShareSettings: LogSheetShareSettings = {
   masterData: "private",
+  remarks: "private",
   picture: "private",
   logLines: "private",
   metrics: "private",
