@@ -8,7 +8,7 @@ const demoSheet = {
 
 test("opens a seeded logsheet detail page from the overview log sheet list", async ({ page }) => {
   await loginWithSeededDemoData(page);
-  await openModule(page, "Logbook list", "+ New sheet");
+  await openModule(page, "Logsheet list", "+ New sheet");
 
   const overviewMap = page.getByLabel("Overview map of all log sheets");
   await expect(overviewMap).toBeVisible();

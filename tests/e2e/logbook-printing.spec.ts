@@ -5,7 +5,7 @@ const demoSheet = sampleLogSheets[0];
 
 test("exposes print actions in the logsheet list and detail view", async ({ page }) => {
   await loginWithSeededDemoData(page);
-  await openModule(page, "Logbook list", "+ New sheet");
+  await openModule(page, "Logsheet list", "+ New sheet");
 
   await expect(page.getByRole("button", { name: "Print empty" })).toBeVisible();
   const sheetRow = page.locator("tr", { has: page.getByRole("button", { name: demoSheet.title, exact: true }) });
@@ -19,7 +19,7 @@ test("exposes print actions in the logsheet list and detail view", async ({ page
 test("prints empty sheets with fixed blank rows and print-only layout", async ({ page }) => {
   await mockPrint(page);
   await loginWithSeededDemoData(page);
-  await openModule(page, "Logbook list", "+ New sheet");
+  await openModule(page, "Logsheet list", "+ New sheet");
 
   await page.getByRole("button", { name: "Print empty", exact: true }).click();
   await expect.poll(() => page.evaluate(() => window.__printCalls ?? 0)).toBe(1);
@@ -43,7 +43,7 @@ test("prints empty sheets with fixed blank rows and print-only layout", async ({
 test("prints filled sheets with filler rows, repeated header/footer, and page numbers", async ({ page }) => {
   await mockPrint(page);
   await loginWithSeededDemoData(page);
-  await openModule(page, "Logbook list", "+ New sheet");
+  await openModule(page, "Logsheet list", "+ New sheet");
 
   const sheetRow = page.locator("tr", { has: page.getByRole("button", { name: demoSheet.title, exact: true }) });
   await sheetRow.getByRole("button", { name: "Print", exact: true }).click();
@@ -79,7 +79,7 @@ test("splits filled sheets that exceed one A4 landscape page", async ({ page }) 
   };
 
   await loginWithSeededDemoData(page, [longSheet]);
-  await openModule(page, "Logbook list", "+ New sheet");
+  await openModule(page, "Logsheet list", "+ New sheet");
 
   const sheetRow = page.locator("tr", { has: page.getByRole("button", { name: longSheet.title, exact: true }) });
   await sheetRow.getByRole("button", { name: "Print", exact: true }).click();
