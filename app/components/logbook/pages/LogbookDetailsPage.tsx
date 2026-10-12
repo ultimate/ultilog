@@ -242,13 +242,13 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const isSharingEnabled = Object.values(shareDraft).some((privacy) => privacy !== "private");
   const shareOptions = [
     ["masterData", "Master data (from/to/boat)"],
-    ["remarks", "Logsheet remarks"],
     ["picture", "Picture"],
-    ["logLines", "Loglines"],
     ["metrics", "Metrics (time and miles)"],
-    ["technicalLog", "Technical log"],
+    ["logLines", "Loglines"],
     ["skipper", "Skipper"],
     ["crew", "Crew information"],
+    ["technicalLog", "Technical log"],
+    ["remarks", "Logsheet remarks"],
   ] as const;
   const showScannerDraftNotice = activeSheet.source === "scanner";
   const sharedSourceNotice = activeSheet.copyProvenance
