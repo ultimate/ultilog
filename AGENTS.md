@@ -1,5 +1,32 @@
 # Repository instructions
 
+## Pull requests
+
+Agents must include issue links in the pull request description whenever the
+work corresponds to one or more GitHub issues. Use a supported closing keyword
+for each issue on its own line, for example:
+
+```text
+Fixes #123
+Resolves #456
+```
+
+Use `Fixes` for bugs and `Resolves` or `Closes` where appropriate. GitHub also
+supports `fix`, `fixed`, `resolve`, `resolved`, `close`, and `closed`. Put these
+lines in the PR description; comments alone do not establish the same link.
+For issues in another repository, use `Resolves owner/repository#123`.
+
+If the agent does not know the issue number, it must ask the user before
+creating the PR. If the user confirms that there is no matching issue, the PR
+may proceed without an issue link. Do not invent an issue number. Closing
+keywords are interpreted only when the PR targets the default branch.
+
+Agents must also add a label identifying the agent to every PR they create
+(for example, `codex` for Codex) and assign the PR to the GitHub user who started
+the conversation. Use the user's known GitHub identity from the conversation
+or authenticated account; if that identity is unclear, ask the user for their
+GitHub username. Preserve any existing labels and assignees when updating a PR.
+
 ## Changelog
 
 Codex and contributors must add exactly one entry to
