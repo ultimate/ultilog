@@ -25,7 +25,7 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   await expect(page.getByRole("heading", { name: "Onboarding checklist" })).toBeVisible();
   await expect(page.getByText("Read the compliance information for your country")).toBeVisible();
   await expect(page.getByText("Create your first boat")).toBeVisible();
-  await openModule(page, "Logbook list", "+ New sheet");
+  await openModule(page, "Logsheet list", "+ New sheet");
   await expect(page.getByRole("button", { name: "Ionian training passage · Day 3", exact: true })).toHaveCount(0);
 
   await openModule(page, "Crew manager", "New crew");
@@ -68,7 +68,7 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
     return persisted.boats.find((boat) => boat.name === boatName);
   }).toMatchObject({ owner: "Updated E2E Owner", flagState: "DE" });
 
-  await openModule(page, "Logbook list", "+ New sheet");
+  await openModule(page, "Logsheet list", "+ New sheet");
   await clickButton(page, "+ New sheet");
   const sheetForm = page.locator("form").filter({ hasText: "New sheet" });
   await sheetForm.getByLabel("Title").fill(sheetTitle);
@@ -103,7 +103,7 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
 });
 
 async function assertCreatedItemsVisible(page: Page, items: { crewName: string; boatName: string; sheetTitle: string }) {
-  await openModule(page, "Logbook list", "+ New sheet");
+  await openModule(page, "Logsheet list", "+ New sheet");
   await expect(page.getByRole("button", { name: items.sheetTitle, exact: true })).toBeVisible();
 
   await openModule(page, "Boat manager", "New boat");

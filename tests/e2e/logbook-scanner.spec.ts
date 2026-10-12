@@ -8,11 +8,11 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
   let scannerRequestReceived = false;
 
   await loginWithSeededRegisteredData(page);
-  await openModule(page, "Logbook list", "+ New sheet");
+  await openModule(page, "Logsheet list", "+ New sheet");
   // Reproduce a stale manual-create state before starting the background scan.
   await page.getByRole("button", { name: "+ New sheet" }).click();
   await expect(page.getByRole("button", { name: "Save" })).toBeVisible();
-  await openModule(page, "Logbook list", "+ New sheet");
+  await openModule(page, "Logsheet list", "+ New sheet");
 
   const currentLogbookResponse = await page.request.get("/api/logbook");
   expect(currentLogbookResponse.ok()).toBeTruthy();
