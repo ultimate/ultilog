@@ -60,6 +60,16 @@
     }
   },
   {
+    "id": "improve-logsheet-line-editing",
+    "category": "improvement",
+    "title": {
+      "en": "Improve logsheet labels, weather choices, column widths and time editing",
+      "de": "Logblattbezeichnungen, Wetterauswahl, Spaltenbreiten und Zeitbearbeitung verbessern",
+      "fr": "Améliorer les libellés, la météo, les colonnes et la saisie des heures des feuilles de journal",
+      "it": "Migliorare etichette, meteo, colonne e modifica degli orari nei fogli di giornale"
+    }
+  },
+  {
     "id": "introduce-public-changelog",
     "category": "feature",
     "title": {

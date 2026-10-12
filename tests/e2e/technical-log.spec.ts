@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
+import { defaultWindDriftTable } from "../../app/models/boat";
 import { sampleBoats, sampleLogSheets } from "../fixtures/logbook";
 
 const targetSheet = sampleLogSheets[0];
@@ -63,6 +64,44 @@ test("edits technical log entries and suggests previous checks", async ({ page }
   await expect(page.getByText("Unable to save the latest changes. Please try again.")).toHaveCount(0);
 });
 
+test("edits two minute digits without resetting the browser segment", async ({ page }) => {
+  await loginWithSeededDemoData(page);
+  await page.goto(`/details/${targetSheet.id}`);
+  const row = page.locator(".log-lines-table tbody tr").first();
+  await row.getByRole("button", { name: "✏️" }).click();
+  const time = row.locator('input[type="datetime-local"]');
+  await time.fill("2026-10-12T10:00");
+  // Chromium starts with the month segment; tab through day, year and hour to minutes.
+  await time.focus();
+  await time.press("ArrowLeft");
+  await time.press("ArrowLeft");
+  await time.press("ArrowLeft");
+  await time.press("ArrowLeft");
+  await time.press("Tab");
+  await time.press("Tab");
+  await time.press("Tab");
+  await time.press("Tab");
+  await time.pressSequentially("45", { delay: 150 });
+  await expect(time).toHaveValue("2026-10-12T10:45");
+  const weather = row.locator("td").nth(4).locator("option");
+  await expect(weather).toHaveText(["—", "☀️", "🌤️", "⛅", "🌥️", "☁️", "🌫️", "🌦️", "🌧️", "⛈️", "🌩️", "🌨️", "❄️", "🌪️", "⭐"]);
+  await expect(row.locator('input[data-line-field="temperature"]')).toHaveAttribute("step", "1");
+  await expect(page.locator(".course-tooltip-trigger")).toHaveCount(1);
+  await page.locator(".course-tooltip-trigger").focus();
+  await page.locator(".course-tooltip-trigger").press("Enter");
+  await expect(page.getByRole("tooltip")).toContainText("Compass course");
+  await expect(page.getByRole("tooltip")).toContainText("Course over ground");
+  await row.getByRole("button", { name: "💾" }).click();
+  await expect.poll(async () => {
+    const stored = await (await page.request.get("/api/logbook")).json();
+    return stored.sheets.find((sheet: { id: string }) => sheet.id === targetSheet.id)?.lines.find((line: { id: string }) => line.id === targetSheet.lines[0].id)?.time;
+  }).toContain("2026-10-12T10:45");
+  await page.reload();
+  const savedRow = page.locator(".log-lines-table tbody tr").filter({ hasText: targetSheet.lines[0].weatherRemark });
+  await savedRow.getByRole("button", { name: "✏️" }).click();
+  await expect(page.locator('.inline-line-row input[type="datetime-local"]')).toHaveValue("2026-10-12T10:45");
+});
+
 async function loginWithSeededDemoData(page: Page) {
   await page.goto("/login");
   const demoLogin = page.getByRole("button", { name: "Try the demo" });
@@ -73,7 +112,7 @@ async function loginWithSeededDemoData(page: Page) {
   await page.waitForLoadState("networkidle");
   await removeDemoLogsheets(page);
   const seedResponse = await page.request.put("/api/logbook/import", { headers: { Origin: "http://127.0.0.1:3000", "X-Ultilog-Confirm-Replace": "replace-my-entire-logbook" },
-    data: { boats: sampleBoats, crewMembers: crewProfilesFromSheets(sampleLogSheets), sheets: sampleLogSheets },
+    data: { boats: sampleBoats.map(boat => ({ ...boat, windDriftTable: defaultWindDriftTable() })), crewMembers: crewProfilesFromSheets(sampleLogSheets), sheets: sampleLogSheets },
   });
   expect(seedResponse.ok(), await seedResponse.text()).toBeTruthy();
   await page.reload();

@@ -1,5 +1,7 @@
 "use client";
 
+import { translatedWindDirection } from "./wind-directions";
+
 import dynamic from "next/dynamic";
 import { useMemo } from "react";
 import { useI18n } from "../../lib/i18n";
@@ -50,18 +52,18 @@ function isValidCoordinate(line: LogLine) {
   );
 }
 
-function lineDescription(line: LogLine, labels: { weather: string; wind: string }) {
+function lineDescription(line: LogLine, labels: { weather: string; wind: string; direction: (value: string) => string | undefined }) {
   const details = [
     line.position,
     line.remarks,
     line.weather ? `${labels.weather}: ${line.weather}` : undefined,
-    line.windDirection || line.windStrength ? `${labels.wind}: ${[line.windDirection, line.windStrength, line.windUnit].filter(Boolean).join(" ")}` : undefined,
+    line.windDirection || line.windStrength ? `${labels.wind}: ${[labels.direction(line.windDirection), line.windStrength, line.windUnit].filter(Boolean).join(" ")}` : undefined,
   ].filter(Boolean);
 
   return details.join(" · ");
 }
 
-function lineToPoint(line: LogLine, index: number, routeId: string, labels: { weather: string; wind: string }, formatTime: (value?: string | null) => string) {
+function lineToPoint(line: LogLine, index: number, routeId: string, labels: { weather: string; wind: string; direction: (value: string) => string | undefined }, formatTime: (value?: string | null) => string) {
   return {
     id: `${routeId}-${line.time || "line"}-${index}`,
     latitude: line.latitude,
@@ -74,7 +76,7 @@ function lineToPoint(line: LogLine, index: number, routeId: string, labels: { we
   };
 }
 
-function logLinesToRoute(logLines: LogLine[], labels: { weather: string; wind: string; logLinePositions: string }, formatTime: (value?: string | null) => string): MapRoute {
+function logLinesToRoute(logLines: LogLine[], labels: { weather: string; wind: string; logLinePositions: string; direction: (value: string) => string | undefined }, formatTime: (value?: string | null) => string): MapRoute {
   const points = logLines
     .map((line, index) => ({ line, index }))
     .filter(({ line }) => isValidCoordinate(line))
@@ -88,7 +90,7 @@ function logLinesToRoute(logLines: LogLine[], labels: { weather: string; wind: s
   };
 }
 
-function logSheetToRoute(sheet: LogSheet, labels: { weather: string; wind: string }, formatDateRange: (from?: string | null, to?: string | null) => string, formatTime: (value?: string | null) => string): MapRoute {
+function logSheetToRoute(sheet: LogSheet, labels: { weather: string; wind: string; direction: (value: string) => string | undefined }, formatDateRange: (from?: string | null, to?: string | null) => string, formatTime: (value?: string | null) => string): MapRoute {
   const points = sheet.lines
     .map((line, index) => ({ line, index }))
     .filter(({ line }) => isValidCoordinate(line))
@@ -113,7 +115,7 @@ export function LogLinesMapView({
 }: LogLinesMapViewProps) {
   const { t } = useI18n();
   const { formatTime } = useDateTimeFormat();
-  const mapLabels = useMemo(() => ({ weather: t("details.weather"), wind: t("details.wind"), logLinePositions: t("map.logLinePositions") }), [t]);
+  const mapLabels = useMemo(() => ({ weather: t("details.weather"), wind: t("details.wind"), direction: (value: string) => translatedWindDirection(value, t), logLinePositions: t("map.logLinePositions") }), [t]);
   const routes = useMemo(() => [logLinesToRoute(logLines, mapLabels, formatTime)], [formatTime, logLines, mapLabels]);
   return (
     <OpenSeaMapLeaflet
@@ -136,7 +138,7 @@ export function LogSheetsMapView({
 }: LogSheetsMapViewProps) {
   const { t } = useI18n();
   const { formatDateRange, formatTime } = useDateTimeFormat();
-  const mapLabels = useMemo(() => ({ weather: t("details.weather"), wind: t("details.wind") }), [t]);
+  const mapLabels = useMemo(() => ({ weather: t("details.weather"), wind: t("details.wind"), direction: (value: string) => translatedWindDirection(value, t) }), [t]);
   const routes = useMemo(() => sheets.map((sheet) => logSheetToRoute(sheet, mapLabels, formatDateRange, formatTime)), [formatDateRange, formatTime, mapLabels, sheets]);
   const mappedRoutes = routes.filter(
     (route) => route.sheet && route.points.length > 0,
