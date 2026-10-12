@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { copyRequiredSections, enforceSkipperSharing, isSkipperSharingSufficient, sectionVisibility, sharedSheetCapability } from "../../../../app/domain/logbook/share-policy";
+import { enforceMasterDataSharing, isMasterDataSharingSufficient, copyRequiredSections, enforceSkipperSharing, isSkipperSharingSufficient, sectionVisibility, sharedSheetCapability } from "../../../../app/domain/logbook/share-policy";
 import type { LogSheetSharePrivacy, LogSheetShareSettings } from "../../../../app/models/logbook";
 
 function sharing(required: LogSheetSharePrivacy, overrides: Partial<LogSheetShareSettings> = {}): LogSheetShareSettings {
   return {
     masterData: required,
+    remarks: "private",
     logLines: required,
     technicalLog: required,
     picture: "private",
@@ -27,9 +28,18 @@ describe("shared log sheet copy policy", () => {
     expect(enforceSkipperSharing(publicCrew)).toMatchObject({ skipper: "public", crew: "public" });
   });
 
+  it("caps every section at master data while preserving more restrictive choices", () => {
+    const share = sharing("public", { remarks: "public", picture: "public", skipper: "public", crew: "registered" });
+    expect(isMasterDataSharingSufficient(share)).toBe(true);
+    const limited = enforceMasterDataSharing({ ...share, masterData: "registered" });
+    expect(limited).toMatchObject({ masterData: "registered", remarks: "registered", picture: "registered", skipper: "registered", crew: "registered", metrics: "private" });
+    expect(isMasterDataSharingSufficient(limited)).toBe(true);
+    expect(Object.values(enforceMasterDataSharing({ ...share, masterData: "private" }))).toEqual(Array(8).fill("private"));
+  });
+
   it("covers every sharing-settings combination for signed-out, owner, and foreign-user sessions", () => {
     const privacyLevels: LogSheetSharePrivacy[] = ["private", "registered", "public"];
-    const sectionNames = ["masterData", "picture", "logLines", "metrics", "technicalLog", "skipper", "crew"] as const;
+    const sectionNames = ["masterData", "remarks", "picture", "logLines", "metrics", "technicalLog", "skipper", "crew"] as const;
     const sessions = [
       { name: "signed-out", authenticated: false },
       { name: "source-owner", authenticated: true },
@@ -37,7 +47,7 @@ describe("shared log sheet copy policy", () => {
     ] as const;
     let checked = 0;
 
-    // Generate all 3^7 configurations rather than sampling a handful of presets.
+    // Generate all 3^8 configurations rather than sampling a handful of presets.
     for (let encoded = 0; encoded < privacyLevels.length ** sectionNames.length; encoded += 1) {
       let cursor = encoded;
       const share = {} as LogSheetShareSettings;
@@ -49,7 +59,8 @@ describe("shared log sheet copy policy", () => {
       for (const session of sessions) {
         const expectedVisibility = Object.fromEntries(sectionNames.map(section => [
           section,
-          share[section] === "public" || (share[section] === "registered" && session.authenticated),
+          (share.masterData === "public" || (share.masterData === "registered" && session.authenticated))
+            && (share[section] === "public" || (share[section] === "registered" && session.authenticated)),
         ])) as Record<(typeof sectionNames)[number], boolean>;
         const missingRequiredSections = copyRequiredSections.filter(section => !expectedVisibility[section]);
         const capability = sharedSheetCapability(share, session.authenticated);
@@ -60,7 +71,7 @@ describe("shared log sheet copy policy", () => {
           missingRequiredSections,
           requiresAuthentication: !session.authenticated
             && missingRequiredSections.length > 0
-            && missingRequiredSections.every(section => share[section] === "registered"),
+            && missingRequiredSections.every(section => share.masterData !== "private" && share[section] !== "private" && (share.masterData === "registered" || share[section] === "registered")),
         });
         checked += 1;
       }
@@ -97,7 +108,7 @@ describe("shared log sheet copy policy", () => {
   it("does not allow private required sections for authenticated viewers", () => {
     expect(sharedSheetCapability(sharing("public", { masterData: "private" }), true)).toMatchObject({
       canCopy: false,
-      missingRequiredSections: ["masterData"],
+      missingRequiredSections: ["masterData", "logLines", "technicalLog"],
       requiresAuthentication: false,
     });
   });

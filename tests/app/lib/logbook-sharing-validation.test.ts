@@ -13,7 +13,8 @@ const baseSheet = {
 };
 
 const baseShare = {
-  masterData: "private",
+  masterData: "public",
+  remarks: "private",
   picture: "private",
   logLines: "private",
   metrics: "private",
@@ -39,4 +40,19 @@ describe("log sheet sharing validation", () => {
     expect(() => validateLogSheet({ ...baseSheet, share: { ...baseShare, skipper, crew } }))
       .toThrow("share.skipper must be at least as visible as crew");
   });
+  it.each(["remarks", "picture", "logLines", "metrics", "technicalLog", "skipper", "crew"])("rejects %s sharing beyond the master data audience", section => {
+    expect(() => validateLogSheet({ ...baseSheet, share: { ...baseShare, masterData: "registered", skipper: section === "crew" ? "public" : "private", crew: "private", [section]: "public" } }))
+      .toThrow("share.masterData must be at least as visible as every other section");
+  });
+
+  it("rejects invalid remarks privacy", () => {
+    expect(() => validateLogSheet({ ...baseSheet, share: { ...baseShare, skipper: "private", crew: "private", remarks: "invalid" } })).toThrow("share.remarks is malformed");
+  });
+
+  it("imports legacy sharing with remarks inheriting master data and caps other audiences", () => {
+    const { remarks: _remarks, ...legacy } = baseShare;
+    const result = validateLogSheet({ ...baseSheet, share: { ...legacy, masterData: "registered", picture: "public", skipper: "private", crew: "private" } });
+    expect(result.share).toMatchObject({ remarks: "registered", picture: "registered", masterData: "registered" });
+  });
+
 });

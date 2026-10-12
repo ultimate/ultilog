@@ -3,7 +3,7 @@ import { StoredImageValidationError, validateStoredImage } from "./stored-image"
 import { scannerWarningCodes } from "../logbook-scanner/warning-codes";
 import { scannerFieldAliases } from "../logbook-scanner/field-aliases";
 import { isSupportedCountryCode } from "../flags";
-import { isSkipperSharingSufficient } from "../../domain/logbook/share-policy";
+import { isMasterDataSharingSufficient, isSkipperSharingSufficient, normalizeLegacySharing } from "../../domain/logbook/share-policy";
 
 export const LOGBOOK_LIMITS = {
   requestBytes: 8 * 1024 * 1024,
@@ -95,7 +95,11 @@ export function validatePersistedLogbook(value: unknown): PersistedLogbook {
     if (totalLines > LOGBOOK_LIMITS.logLines) throw new LogbookValidationError("Too many log lines.", "limit", "too_many_log_lines");
     if (sheet.share !== undefined) {
       assert(record(sheet.share) && ["masterData", "picture", "logLines", "metrics", "technicalLog", "skipper", "crew"].every(k => ["private", "registered", "public"].includes((sheet.share as Record<string, unknown>)[k] as string)), `sheets[${i}].share is malformed.`);
+      const sharing = sheet.share as LogSheetShareSettings;
+      assert(sharing.remarks === undefined || ["private", "registered", "public"].includes(sharing.remarks), `sheets[${i}].share.remarks is malformed.`);
       assert(isSkipperSharingSufficient(sheet.share as LogSheetShareSettings), `sheets[${i}].share.skipper must be at least as visible as crew.`);
+      if (sharing.remarks === undefined) sheet.share = normalizeLegacySharing(sharing);
+      assert(isMasterDataSharingSufficient(sheet.share as LogSheetShareSettings), `sheets[${i}].share.masterData must be at least as visible as every other section.`);
     }
     if (sheet.metrics !== undefined) assert(record(sheet.metrics) && Object.entries(sheet.metrics).every(([, x]) => x === null || finite(x) || numberRecord(x)), `sheets[${i}].metrics is malformed.`);
     const copyProvenance = sheet.copyProvenance;

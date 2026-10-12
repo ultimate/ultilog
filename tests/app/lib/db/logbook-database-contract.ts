@@ -90,6 +90,58 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
       } finally { await context.cleanup(); }
     });
 
+    it.each(["private", "registered", "public"] as const)("shares and copies %s sheet remarks independently of public master data", async privacy => {
+      const context = await setup();
+      try {
+        const db = context.database.forUser(context.other);
+        await db.upsertBoat({ ...context.boat, id: "source-boat", revision: undefined });
+        await db.upsertLogSheet({ ...sheet([sampleLogSheets[0].lines[0]]), boatId: "source-boat", remarks: "Whole-sheet note",
+          share: { masterData: "public", remarks: privacy, logLines: "public", technicalLog: "public", picture: "private", metrics: "private", skipper: "private", crew: "private" } });
+        for (const authenticated of [false, true]) {
+          const expected = privacy === "public" || (privacy === "registered" && authenticated) ? "Whole-sheet note" : undefined;
+          const shared = await db.readSharedSheet("sheet", authenticated, context.other);
+          expect(shared?.sheet.remarks).toBe(expected);
+          expect(shared?.sheet.lines[0].remarks).toBe(sampleLogSheets[0].lines[0].remarks);
+          expect(shared?.capability.canCopy).toBe(true);
+          const collection = await db.readSharedSheets(context.other, authenticated);
+          expect(collection?.sheets[0].sheet.remarks).toBe(expected);
+        }
+        db.forUser(context.owner);
+        const copy = await db.copySharedSheet(context.other, "sheet", { destinationBoatId: "boat" });
+        expect(copy?.remarks).toBe(privacy === "private" ? "" : "Whole-sheet note");
+        await db.query(`insert into user_groups (user_id, name) values (${db.placeholder(1)}, 'demo')`, [context.owner]);
+        const demoCopy = await db.copySharedSheet(context.other, "sheet", { destinationBoatId: "boat", allowDuplicate: true });
+        expect(demoCopy?.remarks).toBe(privacy === "public" ? "Whole-sheet note" : "");
+      } finally { await context.cleanup(); }
+    });
+
+    it("migrates legacy remarks audiences and caps every section without broadening master data", async () => {
+      const context = await setup();
+      try {
+        const db = context.database;
+        const levels = ["private", "registered", "public"] as const;
+        for (const privacy of levels) await db.upsertLogSheet({ ...sheet([]), id: privacy, remarks: "Legacy note" });
+        await db.query("alter table log_sheets drop column share_remarks");
+        await db.query(`delete from schema_migrations where id = ${db.placeholder(1)}`, ["053_log_sheet_sharing_controls"]);
+        for (const privacy of levels) {
+          await db.query(`update log_sheets set share_master_data = ${db.placeholder(1)}, share_picture = 'public', share_loglines = 'public', share_metrics = 'public', share_technical_log = 'public', share_skipper = 'public', share_crew = 'public', share_privacy = 'public' where id = ${db.placeholder(2)}`, [privacy, `${context.owner}:${privacy}`]);
+        }
+        await db.migrate();
+        const sheets = (await db.readLogbook()).sheets;
+        for (const privacy of levels) {
+          const migrated = sheets.find(candidate => candidate.id === privacy)!;
+          expect(Object.values(migrated.share!)).toEqual(Array(8).fill(privacy));
+          expect(migrated.remarks).toBe("Legacy note");
+          expect(migrated.revision).toBe(2);
+        }
+        await db.migrate();
+        expect((await db.readLogbook()).sheets).toEqual(sheets);
+        await expect(db.readSharedSheet("private", true, context.owner)).resolves.toBeUndefined();
+        await expect(db.readSharedSheet("registered", false, context.owner)).resolves.toBeUndefined();
+        await expect(db.readSharedSheet("public", false, context.owner)).resolves.toMatchObject({ sheet: { remarks: "Legacy note" } });
+      } finally { await context.cleanup(); }
+    });
+
     it("returns copy capability from source sharing even when visible collections are empty", async () => {
       const context = await setup();
       try {
@@ -97,7 +149,7 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
           ...sheet([]),
           technicalChecks: [],
           share: {
-            masterData: "public",
+            masterData: "public", remarks: "public",
             logLines: "public",
             technicalLog: "public",
             picture: "private",
@@ -120,7 +172,7 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
     it("shares engine counters only when the technical log is visible", async () => {
       const context = await setup();
       try {
-        const source = { ...sheet([]), engineHourCounters: { main: { start: 12, end: 15 } }, share: { masterData: "public", logLines: "private", technicalLog: "private", picture: "private", metrics: "private", skipper: "private", crew: "private" } as const };
+        const source = { ...sheet([]), engineHourCounters: { main: { start: 12, end: 15 } }, share: { masterData: "public", remarks: "public", logLines: "private", technicalLog: "private", picture: "private", metrics: "private", skipper: "private", crew: "private" } as const };
         await context.database.upsertLogSheet(source);
         const hidden = await context.database.readSharedSheet("sheet", false, context.owner);
         expect(hidden?.sheet.engineHourCounters).toBeUndefined();
@@ -138,7 +190,7 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
           ...sheet([]),
           title: "Visible voyage",
           share: {
-            masterData: "public",
+            masterData: "public", remarks: "public",
             logLines: "private",
             technicalLog: "private",
             picture: "private",
@@ -181,7 +233,7 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
 
         db.forUser(context.other);
         await db.upsertBoat({ ...context.boat, id: "source-boat", revision: undefined });
-        const registeredShare = { masterData: "registered", logLines: "registered", technicalLog: "registered", picture: "registered", metrics: "registered", skipper: "registered", crew: "registered" } as const;
+        const registeredShare = { masterData: "registered", remarks: "registered", logLines: "registered", technicalLog: "registered", picture: "registered", metrics: "registered", skipper: "registered", crew: "registered" } as const;
         await db.upsertCrewMember({ id: "sailor", name: "Registered-only sailor", nationality: "GB", role: "Crew" });
         const sourceImageId = randomUUID();
         await db.createStoredImage(sourceImageId, { data: "data:image/png;base64,Y29weQ==", mimeType: "image/png", width: 2, height: 3 });
@@ -198,7 +250,7 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
 
         db.forUser(context.other);
         const source = (await db.readLogbook()).sheets[0];
-        await db.upsertLogSheet({ ...source, share: { ...registeredShare, masterData: "public", logLines: "public", technicalLog: "public" } });
+        await db.upsertLogSheet({ ...source, share: { ...registeredShare, masterData: "public", remarks: "public", logLines: "public", technicalLog: "public" } });
         const visible = await db.readSharedSheet("sheet", access, context.other);
         expect(visible?.capability.canCopy).toBe(true);
         expect(visible?.sheet).toMatchObject({ crew: [], image: undefined, metrics: undefined });
@@ -223,11 +275,11 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
           ...sheet([sourceLine]), boatId: "source-boat", title: "Shared voyage", remarks: "A smooth crossing.", technicalChecks: [{ status: "ok", text: "Rig" }],
           crew: [{ id: "sailor", embarkationDateTime: "", embarkationPosition: "", disembarkationDateTime: "", disembarkationPosition: "" }],
           imageId: sourceImageId,
-          share: { masterData: "registered", logLines: "registered", technicalLog: "registered", picture: "registered", metrics: "private", skipper: "registered", crew: "private" },
+          share: { masterData: "registered", remarks: "registered", logLines: "registered", technicalLog: "registered", picture: "registered", metrics: "private", skipper: "registered", crew: "private" },
         });
         context.database.forUser(context.owner);
         const copied = await context.database.copySharedSheet(context.other, "sheet", { destinationBoatId: "boat", includeCrew: true, includePicture: true });
-        expect(copied).toMatchObject({ title: "Shared voyage", status: "Draft", source: "shared", copyProvenance: { sourceOwnerId: context.other, sourceOwnerName: "Other owner", sourceSheetId: "sheet", sourceRevision: expect.any(Number), copiedAt: expect.any(String), sourceTitle: "Shared voyage" }, boatId: "boat", remarks: "A smooth crossing.", technicalChecks: [{ status: "ok", text: "Rig" }], share: { masterData: "private", logLines: "private", technicalLog: "private", picture: "private", metrics: "private", skipper: "private", crew: "private" } });
+        expect(copied).toMatchObject({ title: "Shared voyage", status: "Draft", source: "shared", copyProvenance: { sourceOwnerId: context.other, sourceOwnerName: "Other owner", sourceSheetId: "sheet", sourceRevision: expect.any(Number), copiedAt: expect.any(String), sourceTitle: "Shared voyage" }, boatId: "boat", remarks: "A smooth crossing.", technicalChecks: [{ status: "ok", text: "Rig" }], share: { masterData: "private", remarks: "private", logLines: "private", technicalLog: "private", picture: "private", metrics: "private", skipper: "private", crew: "private" } });
         expect(new Date(copied!.copyProvenance!.copiedAt).toISOString()).toBe(copied!.copyProvenance!.copiedAt);
         expect(copied!.id).not.toBe("sheet");
         expect(copied!.lines[0].id).not.toBe("source-line");
@@ -269,7 +321,7 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
           ...sheet(sourceLines),
           boatId: "source-boat",
           route: { from: "A", to: "B", departed: "2026-09-10T08:00:00Z", arrived: "2026-09-12T08:00:00Z" },
-          share: { masterData: "registered", logLines: "registered", technicalLog: "registered", picture: "private", metrics: "private", skipper: "private", crew: "private" } as const,
+          share: { masterData: "registered", remarks: "registered", logLines: "registered", technicalLog: "registered", picture: "private", metrics: "private", skipper: "private", crew: "private" } as const,
         };
         await sourceDb.upsertLogSheet(voyage);
 
@@ -317,7 +369,7 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
         await sourceDb.upsertBoat({ ...context.boat, id: "source-boat", revision: undefined });
         await sourceDb.upsertLogSheet({
           ...sheet([]), boatId: "source-boat",
-          share: { masterData: "public", logLines: "public", technicalLog: "public", picture: "private", metrics: "private", skipper: "private", crew: "private" },
+          share: { masterData: "public", remarks: "public", logLines: "public", technicalLog: "public", picture: "private", metrics: "private", skipper: "private", crew: "private" },
         });
 
         context.database.forUser(context.owner);
@@ -336,7 +388,7 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
       try {
         const sourceDb = context.database.forUser(context.other);
         await sourceDb.upsertBoat({ ...context.boat, id: "source-boat", revision: undefined });
-        await sourceDb.upsertLogSheet({ ...sheet([]), boatId: "source-boat", share: { masterData: "public", logLines: "private", technicalLog: "public", picture: "private", metrics: "private", skipper: "private", crew: "private" } });
+        await sourceDb.upsertLogSheet({ ...sheet([]), boatId: "source-boat", share: { masterData: "public", remarks: "public", logLines: "private", technicalLog: "public", picture: "private", metrics: "private", skipper: "private", crew: "private" } });
         context.database.forUser(context.owner);
         await expect(context.database.copySharedSheet(context.other, "sheet", { destinationBoatId: "boat" })).rejects.toMatchObject({ code: "shared_sections_not_visible" });
         await expect(context.database.copySharedSheet(context.other, "missing", { destinationBoatId: "boat" })).resolves.toBeUndefined();
@@ -348,7 +400,7 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
       try {
         const sourceDb = context.database.forUser(context.other);
         await sourceDb.upsertBoat({ ...context.boat, id: "source-boat", revision: undefined });
-        await sourceDb.upsertLogSheet({ ...sheet([]), boatId: "source-boat", share: { masterData: "public", logLines: "public", technicalLog: "public", picture: "private", metrics: "private", skipper: "private", crew: "private" } });
+        await sourceDb.upsertLogSheet({ ...sheet([]), boatId: "source-boat", share: { masterData: "public", remarks: "public", logLines: "public", technicalLog: "public", picture: "private", metrics: "private", skipper: "private", crew: "private" } });
         context.database.forUser(context.owner);
         await expect(context.database.copySharedSheet(context.other, "sheet", { destinationBoatId: "missing" })).rejects.toMatchObject({ code: "missing_boat" });
         const archived = await context.database.upsertBoat({ ...context.boat, id: "archived", archived: true, revision: undefined });
@@ -361,7 +413,7 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
       try {
         const sourceDb = context.database.forUser(context.other);
         await sourceDb.upsertBoat({ ...context.boat, id: "source-boat", revision: undefined });
-        await sourceDb.upsertLogSheet({ ...sheet([sampleLogSheets[0].lines[0]]), boatId: "source-boat", share: { masterData: "public", logLines: "public", technicalLog: "public", picture: "private", metrics: "private", skipper: "private", crew: "private" } });
+        await sourceDb.upsertLogSheet({ ...sheet([sampleLogSheets[0].lines[0]]), boatId: "source-boat", share: { masterData: "public", remarks: "public", logLines: "public", technicalLog: "public", picture: "private", metrics: "private", skipper: "private", crew: "private" } });
         context.database.forUser(context.owner);
         await harness.installMetricFailure(context.database);
         await expect(context.database.copySharedSheet(context.other, "sheet", { destinationBoatId: "boat" })).rejects.toThrow(/metric/i);
