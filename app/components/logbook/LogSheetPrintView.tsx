@@ -1,6 +1,7 @@
+import { translatedWindDirection } from "./wind-directions";
 import type { Boat, LogLine, LogSheet } from "../../models/logbook";
 import Image from "next/image";
-import { useI18n } from "../../lib/i18n";
+import { type TranslationKey, useI18n } from "../../lib/i18n";
 import { useDateTimeFormat } from "../../lib/DateTimeFormatProvider";
 import { paginatePrintLogLines, PRINT_LOG_ROWS_PER_PAGE } from "./print-pagination";
 import type { LogSheetMetrics } from "../../domain/logbook/sheet-metrics";
@@ -108,7 +109,7 @@ export function LogSheetPrintView(props: LogSheetPrintViewProps) {
               </tr>
             </thead>
             <tbody>
-              {page.lines.map((line, index) => renderLogRow(line, index, logColumns, props.boat, formatTime))}
+              {page.lines.map((line, index) => renderLogRow(line, index, logColumns, props.boat, formatTime, t))}
             </tbody>
           </table>
 
@@ -137,15 +138,15 @@ function getSummary(summary: LogSheetPrintSummary | undefined, sheet: LogSheet |
   };
 }
 
-function renderLogRow(line: LogLine | undefined, index: number, columns: readonly PrintLogColumn[], boat: Boat | undefined, formatTime: (value?: string | null) => string) {
+function renderLogRow(line: LogLine | undefined, index: number, columns: readonly PrintLogColumn[], boat: Boat | undefined, formatTime: (value?: string | null) => string, t: (key: TranslationKey) => string) {
   return (
     <tr key={index}>
-      {columns.map((column) => renderLogCell(column, line, boat, formatTime))}
+      {columns.map((column) => renderLogCell(column, line, boat, formatTime, t))}
     </tr>
   );
 }
 
-function renderLogCell(column: PrintLogColumn, line: LogLine | undefined, boat: Boat | undefined, formatTime: (value?: string | null) => string) {
+function renderLogCell(column: PrintLogColumn, line: LogLine | undefined, boat: Boat | undefined, formatTime: (value?: string | null) => string, t: (key: TranslationKey) => string) {
   const value = (() => {
     switch (column.id) {
       case "time": return formatTime(line?.time);
@@ -153,7 +154,7 @@ function renderLogCell(column: PrintLogColumn, line: LogLine | undefined, boat: 
       case "weather": return joinValues(line?.weather, line?.weatherRemark);
       case "temperature": return formatNumber(line?.temperature, line?.temperatureUnit);
       case "barometer": return formatNumber(line?.barometer);
-      case "wind": return joinValues(line?.windDirection, formatNumber(line?.windStrength, line?.windUnit));
+      case "wind": return joinValues(translatedWindDirection(line?.windDirection, t), formatNumber(line?.windStrength, line?.windUnit));
       case "waves": return formatNumber(line?.waves, line?.seaUnit);
       case "tide": return formatNumber(line?.tide, line?.tideUnit);
       case "compassCourse": return formatDegrees(line?.compassCourse);

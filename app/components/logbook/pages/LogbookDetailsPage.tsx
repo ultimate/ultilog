@@ -1,3 +1,5 @@
+import { compassDirections, translatedWindDirection } from "../wind-directions";
+import { LogLineDateTimeInput } from "../LogLineDateTimeInput";
 import { TECHNICAL_CHECK_STATUSES } from "../../../domain/logbook/technical-log";
 import { enforceMasterDataSharing, enforceSkipperSharing, isPrivacyAtLeast } from "../../../domain/logbook/share-policy";
 import { EntityImage } from "../EntityImage";
@@ -336,7 +338,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
 
   const renderNumberInput = (draftId: string, field: Exclude<keyof LineForm, "engineHours" | "id">, options?: { min?: number; max?: number; step?: string }) => {
     const lineForm = lineForms[draftId].form;
-    return <input type="number" min={options?.min} max={options?.max} step={options?.step ?? "1"} value={lineForm[field]} onChange={(e) => setDraftLineForm(draftId, { ...lineForm, [field]: e.target.value })} />;
+    return <input data-line-field={field} type="number" min={options?.min} max={options?.max} step={options?.step ?? "1"} value={lineForm[field]} onChange={(e) => setDraftLineForm(draftId, { ...lineForm, [field]: e.target.value })} />;
   };
   const renderTextInput = (draftId: string, field: Exclude<keyof LineForm, "engineHours" | "id">, label?: string) => {
     const lineForm = lineForms[draftId].form;
@@ -387,25 +389,25 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     setOpenCourseTooltip(descriptionKey);
   };
 
-  const renderCourseHeader = (column: CourseColumn) => {
-    const isOpen = openCourseTooltip === column.descriptionKey;
+  const renderCourseHeader = () => {
+    const isOpen = openCourseTooltip === "details.course";
     return (
-      <th key={column.labelKey} className="course-tooltip-header">
+      <th colSpan={showCourseColumns ? 9 : 2} className="course-tooltip-header">
         <span className="course-tooltip">
           <button
             type="button"
             className="course-tooltip-trigger"
-            aria-label={t(column.descriptionKey)}
-            aria-describedby={isOpen ? `${column.descriptionKey}-tooltip` : undefined}
+            aria-label={t("details.course")}
+            aria-describedby={isOpen ? "course-abbreviations-tooltip" : undefined}
             aria-expanded={isOpen}
-            onClick={(event) => toggleCourseTooltip(column.descriptionKey, event)}
+            onClick={(event) => toggleCourseTooltip("details.course", event)}
           >
-            {t(column.labelKey)}
-            <span aria-hidden="true" className="course-tooltip-icon">?</span>
+            {t("details.course")}
+            <span aria-hidden="true" className="course-tooltip-icon">i</span>
           </button>
           {isOpen && (
             <span
-              id={`${column.descriptionKey}-tooltip`}
+              id="course-abbreviations-tooltip"
               role="tooltip"
               className="course-tooltip-bubble"
               style={{
@@ -413,7 +415,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                 "--course-tooltip-top": `${courseTooltipPosition.top}px`,
               } as CSSProperties}
             >
-              {t(column.descriptionKey)}
+              {courseConversionColumns.map(column => <div key={column.field}>{t(column.labelKey)}: {t(column.descriptionKey)}</div>)}
             </span>
           )}
         </span>
@@ -556,12 +558,12 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     return (
     <tr key={draftId} className="inline-line-row">
       <td>{lineNumber}</td>
-      <td><div className="compound-inputs"><input type="datetime-local" value={dateTimeLocalFromStamp(lineForm.time)} onChange={(e) => updateLineFormField(draftId, "time", isoDateTimeWithTimezone(e.target.value, timezoneOffsetFromStamp(lineForm.time)))} /><select aria-label="Line time zone" value={timezoneOffsetFromStamp(lineForm.time)} onChange={(e) => updateLineFormField(draftId, "time", isoDateTimeWithTimezone(dateTimeLocalFromStamp(lineForm.time), e.target.value))}>{timeZoneOffsetOptions.map((offset) => <option key={offset} value={offset}>UTC{offset}</option>)}</select></div></td><td>{renderCoordinateInput(draftId, "latitude", t("details.lat"))}</td><td>{renderCoordinateInput(draftId, "longitude", t("details.lon"))}</td>
+      <td><div className="compound-inputs"><LogLineDateTimeInput value={dateTimeLocalFromStamp(lineForm.time)} onChange={(value) => updateLineFormField(draftId, "time", isoDateTimeWithTimezone(value, timezoneOffsetFromStamp(lineForm.time)))} /><select aria-label="Line time zone" value={timezoneOffsetFromStamp(lineForm.time)} onChange={(e) => updateLineFormField(draftId, "time", isoDateTimeWithTimezone(dateTimeLocalFromStamp(lineForm.time), e.target.value))}>{timeZoneOffsetOptions.map((offset) => <option key={offset} value={offset}>UTC{offset}</option>)}</select></div></td><td>{renderCoordinateInput(draftId, "latitude", t("details.lat"))}</td><td>{renderCoordinateInput(draftId, "longitude", t("details.lon"))}</td>
       <td><select value={lineForm.weather} onChange={(e) => setLineForm({ ...lineForm, weather: e.target.value })}><option value="">—</option>{weatherEmojis.map((emoji) => <option key={emoji} value={emoji}>{emoji}</option>)}</select></td>
       <td>{renderTextInput(draftId, "weatherRemark", t("details.weatherRemark"))}</td>
-      <td><div className="compound-inputs">{renderNumberInput(draftId, "temperature", { step: "0.1" })}<select value={lineForm.temperatureUnit} onChange={(e) => setLineForm({ ...lineForm, temperatureUnit: e.target.value })}><option value="°C">°C</option><option value="°F">°F</option></select></div></td>
+      <td><div className="compound-inputs">{renderNumberInput(draftId, "temperature")}<select value={lineForm.temperatureUnit} onChange={(e) => setLineForm({ ...lineForm, temperatureUnit: e.target.value })}><option value="°C">°C</option><option value="°F">°F</option></select></div></td>
       <td>{renderNumberInput(draftId, "barometer", { min: 800, max: 1200 })}</td>
-      <td><div className="compound-inputs"><select aria-label={t("details.windDirection")} value={lineForm.windDirection} onChange={(e) => setLineForm({ ...lineForm, windDirection: e.target.value })}><option value="">—</option>{compassDirections.map((direction) => <option key={direction} value={direction}>{direction}</option>)}</select>{renderNumberInput(draftId, "windStrength")}<select value={lineForm.windUnit} onChange={(e) => setLineForm({ ...lineForm, windUnit: e.target.value })}><option value="bft">bft</option><option value="kn">kn</option><option value="km/h">km/h</option><option value="mp/h">mp/h</option><option value="m/s">m/s</option></select></div></td>
+      <td><div className="compound-inputs"><select aria-label={t("details.windDirection")} value={lineForm.windDirection} onChange={(e) => setLineForm({ ...lineForm, windDirection: e.target.value })}><option value="">—</option>{compassDirections.map((direction) => <option key={direction} value={direction}>{translatedWindDirection(direction, t)}</option>)}</select>{renderNumberInput(draftId, "windStrength")}<select value={lineForm.windUnit} onChange={(e) => setLineForm({ ...lineForm, windUnit: e.target.value })}><option value="bft">bft</option><option value="kn">kn</option><option value="km/h">km/h</option><option value="mp/h">mp/h</option><option value="m/s">m/s</option></select></div></td>
       <td><div className="compound-inputs">{renderNumberInput(draftId, "waves", { step: "0.1" })}<select value={lineForm.seaUnit} onChange={(e) => setLineForm({ ...lineForm, seaUnit: e.target.value })}><option value="m">m</option><option value="ft">ft</option></select></div></td>
       <td><div className="compound-inputs">{renderNumberInput(draftId, "tide", { step: "0.1" })}<select value={lineForm.tideUnit} onChange={(e) => setLineForm({ ...lineForm, tideUnit: e.target.value })}><option value="m">m</option><option value="ft">ft</option></select></div></td>
       <td><select value={lineForm.moon} onChange={(e) => setLineForm({ ...lineForm, moon: e.target.value })}><option value="">—</option>{moonEmojis.map((emoji) => <option key={emoji} value={emoji}>{emoji}</option>)}</select></td>
@@ -1156,16 +1158,16 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                   <table className={showCourseColumns ? "log-lines-table with-course-columns" : "log-lines-table"}>
                     <thead>
                       <tr className="column-groups">
-                        <th colSpan={4}>{t("details.timePos")}</th><th colSpan={8}>{t("details.weatherSea")}</th><th colSpan={showCourseColumns ? 9 : 2}>{t("details.course")}</th><th colSpan={4}>{t("details.travel")}</th><th>{t("details.remarks")}</th><th colSpan={2}>{t("details.actions")}</th>
+                        <th colSpan={4}>{t("details.timePos")}</th><th colSpan={8}>{t("details.weatherSea")}</th>{renderCourseHeader()}<th colSpan={4}>{t("details.travel")}</th><th>{t("details.remarks")}</th><th colSpan={2}>{t("details.actions")}</th>
                       </tr>
                       <tr>
-                        <th scope="col" aria-label="Log line number">#</th><th>{t("details.time")}</th><th>{t("details.lat")}</th><th>{t("details.lon")}</th><th>{t("details.weather")}</th><th>{t("details.weatherRemark")}</th><th>{t("details.temperature")}</th><th>{t("details.baro")}</th><th>{t("details.wind")}</th><th>{t("details.sea")}</th><th>{t("details.tide")}</th><th>{t("details.moon")}</th>{courseConversionColumns.map((column) => (!column.isOptional || showCourseColumns) && renderCourseHeader(column))}<th>{t("details.speed")}</th><th>{t("details.log")}</th><th>{t("details.sail")}</th><th>{t("details.motor")}</th><th>{t("details.remarksEvent")}</th><th>{t("details.edit")}</th><th>{t("common.delete")}</th>
+                        <th scope="col" aria-label="Log line number">#</th><th>{t("details.time")}</th><th>{t("details.lat")}</th><th>{t("details.lon")}</th><th>{t("details.weather")}</th><th>{t("details.weatherRemark")}</th><th>{t("details.temperature")}</th><th>{t("details.baro")}</th><th>{t("details.wind")}</th><th>{t("details.sea")}</th><th>{t("details.tide")}</th><th>{t("details.moon")}</th>{courseConversionColumns.map((column) => (!column.isOptional || showCourseColumns) && <th key={column.field}>{t(column.labelKey)}</th>)}<th>{t("details.speed")}</th><th>{t("details.log")}</th><th>{t("details.sail")}</th><th>{t("details.motor")}</th><th>{t("details.remarksEvent")}</th><th>{t("details.edit")}</th><th>{t("common.delete")}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {activeSheet.lines.map((line, index) => lineForms[line.id] ? renderLineEditor(line.id, index + 1) : (
                         <tr key={line.id}>
-                          <td>{index + 1}</td><td {...scannerWarningCellProps(index + 1, ["time"])}>{formatTime(line.time)}</td><td {...scannerWarningCellProps(index + 1, ["latitude", "position"])}>{coordinateToInput(line.latitude, "lat", coordinateFormat)}</td><td {...scannerWarningCellProps(index + 1, ["longitude", "position"])}>{coordinateToInput(line.longitude, "lon", coordinateFormat)}</td><td {...scannerWarningCellProps(index + 1, ["weather"])}>{line.weather}</td><td {...scannerWarningCellProps(index + 1, ["weatherRemark"])}>{renderClampedLogText(t("details.weatherRemark"), line.weatherRemark)}</td><td {...scannerWarningCellProps(index + 1, ["temperature", "temperatureUnit"])}>{line.temperature} {line.temperatureUnit}</td><td {...scannerWarningCellProps(index + 1, ["barometer"])}>{line.barometer}</td><td {...scannerWarningCellProps(index + 1, ["windDirection", "windStrength", "windUnit"])}>{line.windDirection} {line.windStrength} {line.windUnit}</td><td {...scannerWarningCellProps(index + 1, ["waves", "seaUnit"])}>{line.waves} {line.seaUnit}</td><td {...scannerWarningCellProps(index + 1, ["tide", "tideUnit"])}>{line.tide} {line.tideUnit}</td><td {...scannerWarningCellProps(index + 1, ["moon"])}>{line.moon}</td>
+                          <td>{index + 1}</td><td {...scannerWarningCellProps(index + 1, ["time"])}>{formatTime(line.time)}</td><td {...scannerWarningCellProps(index + 1, ["latitude", "position"])}>{coordinateToInput(line.latitude, "lat", coordinateFormat)}</td><td {...scannerWarningCellProps(index + 1, ["longitude", "position"])}>{coordinateToInput(line.longitude, "lon", coordinateFormat)}</td><td {...scannerWarningCellProps(index + 1, ["weather"])}>{line.weather}</td><td {...scannerWarningCellProps(index + 1, ["weatherRemark"])}>{renderClampedLogText(t("details.weatherRemark"), line.weatherRemark)}</td><td {...scannerWarningCellProps(index + 1, ["temperature", "temperatureUnit"])}>{line.temperature} {line.temperatureUnit}</td><td {...scannerWarningCellProps(index + 1, ["barometer"])}>{line.barometer}</td><td {...scannerWarningCellProps(index + 1, ["windDirection", "windStrength", "windUnit"])}>{translatedWindDirection(line.windDirection, t)} {line.windStrength} {line.windUnit}</td><td {...scannerWarningCellProps(index + 1, ["waves", "seaUnit"])}>{line.waves} {line.seaUnit}</td><td {...scannerWarningCellProps(index + 1, ["tide", "tideUnit"])}>{line.tide} {line.tideUnit}</td><td {...scannerWarningCellProps(index + 1, ["moon"])}>{line.moon}</td>
                           {courseConversionColumns.map((column) => (!column.isOptional || showCourseColumns) && (
                             <td {...scannerWarningCellProps(index + 1, [column.field], column.isOptional ? "optional-course-cell" : undefined)} key={`${line.id}-${column.field}`}>{line[column.field]}</td>
                           ))}
@@ -1480,8 +1482,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   );
 }
 
-const compassDirections = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
-const weatherEmojis = ["☁️", "⛅", "⛈️", "🌤️", "🌥️", "🌦️", "🌧️", "🌨️", "🌩️", "🌪️", "🌫️", "☀️", "❄️", "⭐"];
+const weatherEmojis = ["☀️", "🌤️", "⛅", "🌥️", "☁️", "🌫️", "🌦️", "🌧️", "⛈️", "🌩️", "🌨️", "❄️", "🌪️", "⭐"];
 const moonEmojis = ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌘"];
 
 function dmsInputValue(container: HTMLElement, part: keyof DmsParts) {

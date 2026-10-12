@@ -2210,3 +2210,22 @@ img.entity-image--preview {
 .public-changelog-shell { width: min(100% - 2rem, 64rem); min-height: 100vh; margin: 0 auto; padding: 2rem 0; }
 
 .shared-log-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* Reserve room for each log-line value without oversized native controls. */
+.log-lines-table .inline-line-row input[type="number"] {
+  min-width: 0;
+  width: 4.5rem;
+  padding-inline: 0.25rem;
+}
+.log-lines-table .inline-line-row input[type="number"]::-webkit-inner-spin-button {
+  width: 10px;
+  margin-left: 2px;
+}
+.log-lines-table .inline-line-row input[data-line-field="windStrength"] { width: 3.5rem; }
+.log-lines-table .inline-line-row input[data-line-field="temperature"] { width: 3.5rem; }
+.log-lines-table .inline-line-row input[data-line-field="barometer"] { width: 4.75rem; }
+.log-lines-table .inline-line-row input[data-line-field="logNm"] { width: 6rem; }
+.log-lines-table .inline-line-row input[data-line-field="speedKn"] { width: 4rem; }
+.log-lines-table .inline-line-row input[type="datetime-local"] { width: 11.5rem; padding-inline: 0.25rem; }
+.log-lines-table .inline-line-row select { width: auto; min-width: 0; padding-inline: 0.25rem; }
+.course-tooltip-bubble { max-width: min(24rem, 85vw); text-align: left; }
