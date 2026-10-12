@@ -1,5 +1,6 @@
-import { translatedWindDirection } from "./wind-directions";
 "use client";
+
+import { translatedWindDirection } from "./wind-directions";
 
 import { useState } from "react";
 import type { LogSheet } from "../../models/logbook";
