@@ -91,6 +91,11 @@ test("edits two minute digits without resetting the browser segment", async ({ p
   await page.locator(".course-tooltip-trigger").press("Enter");
   await expect(page.getByRole("tooltip")).toContainText("Compass course");
   await expect(page.getByRole("tooltip")).toContainText("Course over ground");
+  // A delayed focus scroll must reposition the tooltip, not dismiss it.
+  await page.evaluate(() => window.dispatchEvent(new Event("scroll")));
+  await expect(page.getByRole("tooltip")).toBeVisible();
+  await page.locator(".course-tooltip-trigger").press("Escape");
+  await expect(page.getByRole("tooltip")).toHaveCount(0);
   await row.getByRole("button", { name: "💾" }).click();
   await expect.poll(async () => {
     const stored = await (await page.request.get("/api/logbook")).json();

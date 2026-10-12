@@ -152,6 +152,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const [newTechnicalCheck, setNewTechnicalCheck] = useState("");
   const [technicalCheckDraftState, setTechnicalCheckDraftState] = useState<{ sheetId: string; drafts: Record<number, string> }>({ sheetId: "", drafts: {} });
   const [openCourseTooltip, setOpenCourseTooltip] = useState<TranslationKey | null>(null);
+  const courseTooltipTriggerRef = useRef<HTMLButtonElement>(null);
   const [courseTooltipPosition, setCourseTooltipPosition] = useState({ left: 0, top: 0 });
   const [openScannerWarning, setOpenScannerWarning] = useState<{ key: string; warnings: ScannerWarning[]; left: number; top: number; above: boolean } | null>(null);
   const scannerWarningTriggerRef = useRef<HTMLTableCellElement>(null);
@@ -309,13 +310,20 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   useEffect(() => {
     if (!openCourseTooltip) return;
 
-    const closeTooltip = () => setOpenCourseTooltip(null);
-    window.addEventListener("resize", closeTooltip);
-    window.addEventListener("scroll", closeTooltip, true);
+    // Focus can queue a scroll event after the tooltip opens. Keep it anchored
+    // to its trigger instead of dismissing it on that delayed event.
+    const positionTooltip = () => {
+      const trigger = courseTooltipTriggerRef.current;
+      if (!trigger) return;
+      const { bottom, left, width } = trigger.getBoundingClientRect();
+      setCourseTooltipPosition({ left: left + width / 2, top: bottom + 8 });
+    };
+    window.addEventListener("resize", positionTooltip);
+    window.addEventListener("scroll", positionTooltip, true);
 
     return () => {
-      window.removeEventListener("resize", closeTooltip);
-      window.removeEventListener("scroll", closeTooltip, true);
+      window.removeEventListener("resize", positionTooltip);
+      window.removeEventListener("scroll", positionTooltip, true);
     };
   }, [openCourseTooltip]);
 
@@ -396,7 +404,9 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
         <span className="course-tooltip">
           <button
             type="button"
+            ref={courseTooltipTriggerRef}
             className="course-tooltip-trigger"
+            onKeyDown={event => { if (event.key === "Escape") setOpenCourseTooltip(null); }}
             aria-label={t("details.course")}
             aria-describedby={isOpen ? "course-abbreviations-tooltip" : undefined}
             aria-expanded={isOpen}
