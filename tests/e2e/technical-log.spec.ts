@@ -70,6 +70,10 @@ test("edits two minute digits without resetting the browser segment", async ({ p
   const row = page.locator(".log-lines-table tbody tr").first();
   await row.getByRole("button", { name: "✏️" }).click();
   const time = row.locator('input[type="datetime-local"]');
+  await page.setViewportSize({ width: 2560, height: 1440 });
+  const showCourses = page.getByRole("button", { name: "Show course conversion columns", exact: true });
+  if (await showCourses.count()) await showCourses.click();
+  await expect.poll(() => page.locator(".log-lines-table").evaluate(table => table.parentElement!.scrollWidth - table.parentElement!.clientWidth)).toBeLessThanOrEqual(1);
   await time.fill("2026-10-12T10:00");
   // Chromium starts with the month segment; tab through day, year and hour to minutes.
   await time.focus();
@@ -91,9 +95,19 @@ test("edits two minute digits without resetting the browser segment", async ({ p
   await page.locator(".course-tooltip-trigger").press("Enter");
   await expect(page.getByRole("tooltip")).toContainText("Compass course");
   await expect(page.getByRole("tooltip")).toContainText("Course over ground");
+  const checkTooltipAnchor = async () => {
+    const icon = await page.locator(".course-tooltip-icon").boundingBox();
+    const tooltip = await page.getByRole("tooltip").boundingBox();
+    expect(icon).not.toBeNull();
+    expect(tooltip).not.toBeNull();
+    expect(Math.abs(tooltip!.y - (icon!.y + icon!.height + 8))).toBeLessThan(2);
+    expect(Math.abs(tooltip!.x + tooltip!.width / 2 - (icon!.x + icon!.width / 2))).toBeLessThan(2);
+  };
+  await checkTooltipAnchor();
   // A delayed focus scroll must reposition the tooltip, not dismiss it.
   await page.evaluate(() => window.dispatchEvent(new Event("scroll")));
   await expect(page.getByRole("tooltip")).toBeVisible();
+  await checkTooltipAnchor();
   await page.locator(".course-tooltip-trigger").press("Escape");
   await expect(page.getByRole("tooltip")).toHaveCount(0);
   await row.getByRole("button", { name: "💾" }).click();
@@ -103,6 +117,7 @@ test("edits two minute digits without resetting the browser segment", async ({ p
   }).toContain("2026-10-12T10:45");
   await page.reload();
   const savedRow = page.locator(".log-lines-table tbody tr").filter({ hasText: targetSheet.lines[0].weatherRemark });
+  await expect.poll(() => page.locator(".log-lines-table").evaluate(table => table.parentElement!.scrollWidth - table.parentElement!.clientWidth)).toBeLessThanOrEqual(1);
   await savedRow.getByRole("button", { name: "✏️" }).click();
   await expect(page.locator('.inline-line-row input[type="datetime-local"]')).toHaveValue("2026-10-12T10:45");
 });

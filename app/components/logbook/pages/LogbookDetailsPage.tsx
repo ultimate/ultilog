@@ -315,7 +315,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     const positionTooltip = () => {
       const trigger = courseTooltipTriggerRef.current;
       if (!trigger) return;
-      const { bottom, left, width } = trigger.getBoundingClientRect();
+      const { bottom, left, width } = (trigger.querySelector(".course-tooltip-icon") ?? trigger).getBoundingClientRect();
       setCourseTooltipPosition({ left: left + width / 2, top: bottom + 8 });
     };
     window.addEventListener("resize", positionTooltip);
@@ -389,7 +389,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
       return;
     }
 
-    const { bottom, left, width } = event.currentTarget.getBoundingClientRect();
+    const { bottom, left, width } = (event.currentTarget.querySelector(".course-tooltip-icon") ?? event.currentTarget).getBoundingClientRect();
     setCourseTooltipPosition({
       left: left + width / 2,
       top: bottom + 8,
@@ -415,8 +415,8 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
             {t("details.course")}
             <span aria-hidden="true" className="course-tooltip-icon">i</span>
           </button>
-          {isOpen && (
-            <span
+          {isOpen && typeof document !== "undefined" && createPortal(
+            <div
               id="course-abbreviations-tooltip"
               role="tooltip"
               className="course-tooltip-bubble"
@@ -426,7 +426,8 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
               } as CSSProperties}
             >
               {courseConversionColumns.map(column => <div key={column.field}>{t(column.labelKey)}: {t(column.descriptionKey)}</div>)}
-            </span>
+            </div>,
+            document.body,
           )}
         </span>
       </th>

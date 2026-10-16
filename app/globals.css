@@ -471,7 +471,7 @@ td { color: #28384b; line-height: 1.45; }
   position: fixed;
   z-index: 1000;
   top: var(--course-tooltip-top);
-  left: clamp(7rem, var(--course-tooltip-left), calc(100vw - 7rem));
+  left: clamp(min(12rem, 42.5vw), var(--course-tooltip-left), calc(100vw - min(12rem, 42.5vw)));
   width: max-content;
   max-width: min(14rem, 72vw);
   transform: translateX(-50%);
@@ -1270,8 +1270,10 @@ td { color: #28384b; line-height: 1.45; }
 
 .log-lines-table th,
 .log-lines-table td {
-  padding: 0.45rem 0.5rem;
+  padding: 0.45rem 0.3rem;
 }
+
+.log-lines-table th { font-size: 0.74rem; letter-spacing: 0.025em; }
 
 .log-lines-table input,
 .log-lines-table select {
@@ -2214,7 +2216,7 @@ img.entity-image--preview {
 /* Reserve room for each log-line value without oversized native controls. */
 .log-lines-table .inline-line-row input[type="number"] {
   min-width: 0;
-  width: 4.5rem;
+  width: 4.25rem;
   padding-inline: 0.25rem;
 }
 .log-lines-table .inline-line-row input[type="number"]::-webkit-inner-spin-button {
