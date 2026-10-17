@@ -1876,6 +1876,30 @@ img.entity-image--preview {
   background: rgba(12, 24, 38, 0.72);
 }
 
+/* Portaled overlays share viewport bounds; only their panels scroll. */
+.logbook-map-modal,
+.scanner-privacy-modal,
+.share-logsheet-modal,
+.avatar-crop-backdrop {
+  box-sizing: border-box;
+  place-items: center;
+  overflow: hidden;
+}
+
+.logbook-map-modal-panel,
+.scanner-privacy-panel,
+.share-logsheet-panel,
+.avatar-crop-dialog {
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 0;
+  max-width: 100%;
+  max-height: calc(100dvh - 2rem);
+  overflow: auto;
+  overscroll-behavior: contain;
+  overflow-wrap: anywhere;
+}
+
 .shared-copy-action { display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
 .shared-copy-action > p, .share-logsheet-panel p { margin:0; }
 .shared-copy-action .button-link { display:inline-flex; align-items:center; min-height:2.75rem; padding:.65rem 1rem; border-radius:.75rem; background:var(--primary); color:white; font-weight:800; text-decoration:none; }

@@ -1,5 +1,6 @@
 "use client";
 
+import { ModalLayer } from "./logbook/ModalLayer";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState, type MouseEventHandler } from "react";
 import { signOut } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
@@ -2315,7 +2316,7 @@ export function LogbookApp({
       </section>
       </main>
       {demoRestrictedFeature && (
-        <div className="share-logsheet-modal" role="dialog" aria-modal="true" aria-labelledby="demo-feature-title">
+        <ModalLayer className="share-logsheet-modal" role="dialog" aria-modal="true" aria-labelledby="demo-feature-title">
           <div className="share-logsheet-panel">
             <div className="share-logsheet-heading">
               <h2 id="demo-feature-title">{t("demoLimits.title")}</h2>
@@ -2327,7 +2328,7 @@ export function LogbookApp({
               <button type="button" className="primary-action" onClick={() => window.location.assign("/register")}>{t("demoLimits.createAccount")}</button>
             </div>
           </div>
-        </div>
+        </ModalLayer>
       )}
       <div className="print-only print-root" aria-hidden={!printTarget}>
         {printTarget?.mode === "empty" ? (
