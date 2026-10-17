@@ -1,3 +1,4 @@
+import { ModalLayer } from "../ModalLayer";
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -189,7 +190,7 @@ export function ProfilePage(props: ProfilePageProps) {
     <section className="profile-page module-panel" aria-label={t("profile.aria")}>
       {avatarCrop && (() => {
         const preview = cropGeometry(avatarCrop.width, avatarCrop.height, 288, avatarCrop.zoom, avatarCrop.x, avatarCrop.y);
-        return <div className="avatar-crop-backdrop" role="presentation">
+        return <ModalLayer className="avatar-crop-backdrop" role="presentation">
           <section className="avatar-crop-dialog" role="dialog" aria-modal="true" aria-labelledby="avatar-crop-title">
             <header><h2 id="avatar-crop-title">{t("profile.cropTitle")}</h2><button type="button" onClick={closeAvatarCrop} aria-label={t("profile.cropCancel")}>×</button></header>
             <div className="avatar-crop-content">
@@ -202,7 +203,7 @@ export function ProfilePage(props: ProfilePageProps) {
             </div>
             <footer><button className="secondary-action" type="button" onClick={closeAvatarCrop}>{t("profile.cropCancel")}</button><button className="primary-action" type="button" onClick={uploadAvatar} disabled={isUploadingAvatar}>{isUploadingAvatar ? t("profile.cropSaving") : t("profile.cropSave")}</button></footer>
           </section>
-        </div>;
+        </ModalLayer>;
       })()}
       <div className="page-heading">
         <div>

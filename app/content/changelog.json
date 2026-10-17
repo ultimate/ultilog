@@ -20,6 +20,16 @@
     }
   },
   {
+    "id": "center-modals-within-viewport",
+    "category": "fix",
+    "title": {
+      "en": "Keep dialogs centered within the screen and scroll overflowing content inside them",
+      "de": "Dialoge mittig im Bildschirm halten und überlange Inhalte darin scrollen",
+      "fr": "Centrer les fenêtres dans l’écran et faire défiler leur contenu excédentaire à l’intérieur",
+      "it": "Mantieni le finestre centrate nello schermo e scorri al loro interno i contenuti in eccesso"
+    }
+  },
+  {
     "id": "compact-shared-collection-embeds",
     "category": "improvement",
     "title": {

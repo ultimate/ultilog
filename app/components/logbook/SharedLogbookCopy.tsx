@@ -1,5 +1,6 @@
 "use client";
 
+import { ModalLayer } from "./ModalLayer";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
@@ -119,7 +120,7 @@ export function SharedLogbookCopy(props: Props) {
 
   return <section className="logbook-section shared-copy-action">
     <button type="button" disabled={isDisabled} onClick={() => setIsOpen(true)}>{t("sharedCopy.action")}</button>
-    {isOpen ? <div className="share-logsheet-modal" role="dialog" aria-modal="true" aria-labelledby="shared-copy-title">
+    {isOpen ? <ModalLayer className="share-logsheet-modal" role="dialog" aria-modal="true" aria-labelledby="shared-copy-title">
       <form className="share-logsheet-panel" onSubmit={submit}>
         <div className="share-logsheet-heading"><div><p className="eyebrow">{t("sharedCopy.eyebrow")}</p><h2 id="shared-copy-title">{t("sharedCopy.title")}</h2></div><button type="button" aria-label={t("sharedCopy.close")} onClick={() => setIsOpen(false)}>×</button></div>
         <p>{t("sharedCopy.independent")}</p><p>{t("sharedCopy.deletion")}</p><p><strong>{t("sharedCopy.emptyCrew")}</strong></p>
@@ -130,6 +131,6 @@ export function SharedLogbookCopy(props: Props) {
         {error ? <p className="auth-error" role="alert">{error}</p> : null}
         <div className="modal-actions"><button type="button" disabled={isSubmitting} onClick={() => setIsOpen(false)}>{t("sharedCopy.cancel")}</button><button type="submit" disabled={isSubmitting || !destinationBoatId}>{isSubmitting ? t("sharedCopy.copying") : previousCopy ? t("sharedCopy.confirmDuplicate") : t("sharedCopy.confirm")}</button></div>
       </form>
-    </div> : null}
+    </ModalLayer> : null}
   </section>;
 }

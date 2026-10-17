@@ -1,3 +1,4 @@
+import { ModalLayer } from "../ModalLayer";
 import { EntityImage } from "../EntityImage";
 import { useI18n } from "../../../lib/i18n";
 import { useDateTimeFormat } from "../../../lib/DateTimeFormatProvider";
@@ -274,7 +275,7 @@ export function LogbookListPage({
       )}
 
       {selectedScannerFiles.length > 0 && !isScannerPrivacyConfirmed && (
-        <div
+        <ModalLayer
           className="scanner-privacy-modal"
           role="dialog"
           aria-modal="true"
@@ -313,7 +314,7 @@ export function LogbookListPage({
               </button>
             </div>
           </div>
-        </div>
+        </ModalLayer>
       )}
       <div className="logbook-toolbar">
         <ListSearch value={list.query} onChange={list.setQuery} label={t("logbooks.search")} />
@@ -450,7 +451,7 @@ export function LogbookListPage({
         </article>
       </div>
       {isMapExpanded && (
-        <div className="logbook-map-modal" role="dialog" aria-modal="true" aria-labelledby="logbook-overview-map-modal-title">
+        <ModalLayer className="logbook-map-modal" role="dialog" aria-modal="true" aria-labelledby="logbook-overview-map-modal-title">
           <div className="logbook-map-modal-panel">
             <div className="logbook-map-modal-heading">
               <h2 id="logbook-overview-map-modal-title">{t("logbooks.overviewMap")}</h2>
@@ -466,7 +467,7 @@ export function LogbookListPage({
               showRouteTargets={false}
             />
           </div>
-        </div>
+        </ModalLayer>
       )}
     </section>
   );
