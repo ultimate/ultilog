@@ -1,3 +1,4 @@
+import { createElement, type ComponentProps } from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { LogbookListPage } from "../../app/components/logbook/pages/LogbookListPage";
@@ -5,6 +6,10 @@ import { LogSheetsMapView } from "../../app/components/logbook/OpenSeaMapView";
 import { ListPagination } from "../../app/components/logbook/SortableList";
 import type { LogSheet } from "../../app/models/logbook";
 
+// React's test renderer does not support DOM portals; exercise dialog contents inline.
+vi.mock("../../app/components/logbook/ModalLayer", () => ({
+  ModalLayer: (props: ComponentProps<"div">) => createElement("div", props),
+}));
 vi.mock("../../app/lib/i18n", () => ({ useI18n: () => ({ t: (key: string) => key, locale: "en" }) }));
 vi.mock("../../app/components/logbook/OpenSeaMapView", () => ({ LogSheetsMapView: () => null }));
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

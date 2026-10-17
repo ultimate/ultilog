@@ -14,6 +14,26 @@ test("opens a seeded logsheet detail page from the overview log sheet list", asy
   await expect(overviewMap).toBeVisible();
   await expect(overviewMap.locator(".leaflet-container")).toBeVisible();
 
+  // Open after scrolling without Playwright scrolling the trigger back into view.
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+  await page.getByRole("button", { name: "Full view" }).evaluate((button: HTMLButtonElement) => button.click());
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  for (const viewport of [{ width: 1280, height: 720 }, { width: 375, height: 320 }]) {
+    await page.setViewportSize(viewport);
+    await expect(async () => {
+      const bounds = await dialog.locator(".logbook-map-modal-panel").boundingBox();
+      expect(bounds).not.toBeNull();
+      expect(bounds!.x).toBeGreaterThanOrEqual(0);
+      expect(bounds!.y).toBeGreaterThanOrEqual(0);
+      expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(viewport.width);
+      expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(viewport.height);
+      expect(Math.abs(bounds!.y + bounds!.height / 2 - viewport.height / 2)).toBeLessThan(2);
+    }).toPass();
+  }
+  await dialog.getByRole("button", { name: "Close map" }).click();
+  await page.setViewportSize({ width: 1280, height: 720 });
+
   const sheetLink = page.getByRole("button", { name: demoSheet.title });
   await expect(sheetLink).toBeVisible();
   await sheetLink.click();

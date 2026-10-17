@@ -1,3 +1,4 @@
+import { ModalLayer } from "../ModalLayer";
 import { compassDirections, translatedWindDirection } from "../wind-directions";
 import { LogLineDateTimeInput } from "../LogLineDateTimeInput";
 import { TECHNICAL_CHECK_STATUSES } from "../../../domain/logbook/technical-log";
@@ -1057,7 +1058,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
 
 
               {isShareDialogOpen && (
-                <div className="share-logsheet-modal" role="dialog" aria-modal="true" aria-labelledby="share-logsheet-title">
+                <ModalLayer className="share-logsheet-modal" role="dialog" aria-modal="true" aria-labelledby="share-logsheet-title">
                   <div className="share-logsheet-panel">
                     <div className="share-logsheet-heading">
                       <h2 id="share-logsheet-title">Share logsheet</h2>
@@ -1098,11 +1099,11 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                     </fieldset>
                     <EmbedCodeBuilder shareUrl={shareUrl} enabled={isSharingEnabled} />
                   </div>
-                </div>
+                </ModalLayer>
               )}
 
               {isDeleteDialogOpen && (
-                <div className="share-logsheet-modal" role="dialog" aria-modal="true" aria-labelledby="delete-logsheet-title">
+                <ModalLayer className="share-logsheet-modal" role="dialog" aria-modal="true" aria-labelledby="delete-logsheet-title">
                   <form className="share-logsheet-panel" onSubmit={async event => {
                     event.preventDefault(); setIsDeleting(true); setDeleteError("");
                     const deleted = await (deleteActiveSheet as (password: string) => Promise<boolean>)(deletePassword);
@@ -1118,7 +1119,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                       <button type="submit" className="danger-button" disabled={isDeleting || !deletePassword}>{isDeleting ? "Deleting…" : "Delete logsheet"}</button>
                     </div>
                   </form>
-                </div>
+                </ModalLayer>
               )}
 
               <section
@@ -1458,7 +1459,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                 </article>
               </section>
               {isMapExpanded && (
-                <div
+                <ModalLayer
                   className="logbook-map-modal"
                   role="dialog"
                   aria-modal="true"
@@ -1483,7 +1484,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                       onAddLogLineAt={isActiveSheetLocked ? undefined : startAddingLineAtCoordinates}
                     />
                   </div>
-                </div>
+                </ModalLayer>
               )}
             </>
           )}
