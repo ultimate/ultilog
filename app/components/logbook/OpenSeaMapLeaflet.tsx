@@ -42,6 +42,8 @@ export type MapRoute = {
 
 type OpenSeaMapLeafletProps = {
   routes: MapRoute[];
+  showEndpointMarkers?: boolean;
+  highlightedRouteId?: string | null;
   ariaLabel?: string;
   className?: string;
   emptyMessage?: string;
@@ -78,7 +80,7 @@ function toLatLng(point: Coordinate): LatLngExpression {
 }
 
 function makeMarkerIcon(point: MapPoint, variant: "detail" | "start" | "end") {
-  const course = markerCourse(point);
+  const course = variant === "detail" ? markerCourse(point) : null;
   const shape = course === null ? "circle" : "arrow";
   const style = course === null ? "" : ` style="--marker-course: ${course}deg"`;
 
@@ -97,6 +99,12 @@ function FitMapToRoutes({ routes }: { routes: MapRoute[] }) {
     () => routes.flatMap((route) => route.points),
     [routes],
   );
+
+  useEffect(() => {
+    const observer = new ResizeObserver(() => map.invalidateSize());
+    observer.observe(map.getContainer());
+    return () => observer.disconnect();
+  }, [map]);
 
   useEffect(() => {
     if (points.length === 0) return;
@@ -205,10 +213,10 @@ function markerPointsForRoute(route: MapRoute) {
   if (route.points.length <= 1) return route.points;
 
   return [
-    { ...route.points[0], label: "S", title: `Start · ${route.title}` },
+    { ...route.points[0], label: "▶", title: `Start · ${route.title}` },
     {
       ...route.points[route.points.length - 1],
-      label: "E",
+      label: "🏁",
       title: `End · ${route.title}`,
     },
   ];
@@ -227,6 +235,8 @@ export function OpenSeaMapLeaflet({
   emptyMessage,
   onRouteClick,
   onAddLogLineAt,
+  showEndpointMarkers = true,
+  highlightedRouteId,
 }: OpenSeaMapLeafletProps) {
   const { t } = useI18n();
   const mapAriaLabel = ariaLabel ?? t("map.routeMapAria");
@@ -275,6 +285,8 @@ export function OpenSeaMapLeaflet({
                   ? detailRouteOptions
                   : {
                       ...summaryRouteOptions,
+                      weight: route.id === highlightedRouteId ? 9 : 5,
+                      opacity: highlightedRouteId ? (route.id === highlightedRouteId ? 1 : 0.3) : 0.76,
                       color: summaryRouteColor(route, routeIndex),
                       className: isClickable
                         ? "open-seamap-clickable-route"
@@ -301,7 +313,7 @@ export function OpenSeaMapLeaflet({
         })}
 
         {visibleRoutes.flatMap((route) =>
-          markerPointsForRoute(route).map((point, markerIndex) => {
+          (showEndpointMarkers || route.detailLevel === "full" ? markerPointsForRoute(route) : []).map((point, markerIndex) => {
             const variant = markerVariant(route, point, markerIndex);
             return (
               <Marker

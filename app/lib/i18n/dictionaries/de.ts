@@ -2,6 +2,14 @@ import { type Dictionary } from "./en";
 
 // Keep one translation key per line so locale files stay easy to diff and edit side by side.
 export const de: Dictionary = {
+  "logbooks.scanImport": "Scannen / Importieren",
+  "logbooks.scannerSettingsTitle": "Scan konfigurieren",
+  "logbooks.scannerPrivacyAccept": "Ich habe den Datenschutzhinweis gelesen und stimme zu.",
+  "logbooks.scannerDraftTitle": "Entwurf und Überprüfung",
+  "logbooks.pageTotals": "Seitensumme",
+  "map.start": "Start",
+  "map.end": "Ziel",
+  "map.showEndpoints": "Start-/Zielmarkierungen anzeigen",
   "wind.direction.N": "N",
   "wind.direction.NNE": "NNO",
   "wind.direction.NE": "NO",

@@ -35,7 +35,7 @@ describe("logsheet date filter", () => {
     await act(async () => {
       renderer = create(<LogbookListPage
         scannerBoatId="" selectedScannerFiles={[]} isScanning={false} scannerError={null} isScannerPrivacyConfirmed={false}
-        calculateSheetSummary={() => ({ motorMiles: 0, sailMiles: 0, totalMiles: 0, duration: "", motionDuration: "", motorHours: 0, motorHoursDuration: "", propulsionDuration: "" })}
+        calculateSheetSummary={() => ({ motorMiles: 2, sailMiles: 3, totalMiles: 5, duration: "1h 30m", motionDuration: "1h 00m", durationMinutes: 90, motionDurationMinutes: 60, motorHours: 0.5, motorHoursDuration: "", propulsionDuration: "" })}
         logbook={{ boats: [], crewMembers: [], sheets }} boatFilterId={boatFilterId} onBoatFilterChange={vi.fn()} navigate={vi.fn()}
         onScanFilesSelected={vi.fn()} onScannerUploadConfirmed={vi.fn()} onScannerUploadCanceled={vi.fn()} onScannerBoatChange={vi.fn()} onCreateBoatRequested={vi.fn()}
         setActiveSheetId={vi.fn()} setEditingSheetId={vi.fn()} setSheetForm={vi.fn()} setShowNewSheet={vi.fn()} createDefaultSheetForm={vi.fn()}
@@ -101,6 +101,43 @@ describe("logsheet date filter", () => {
     expect(renderer.root.findAllByProps({ role: "dialog" })).toHaveLength(0);
     expect(body.style.overflow).toBe("auto");
     expect(renderer.root.findByType(LogbookListPage).props.navigate).toHaveBeenCalledWith("details", "spanning");
+  });
+
+  it("totals only the filtered current page and highlights hovered routes", async () => {
+    await render();
+    const totalCells = () => renderer.root.findByType("tfoot").findAllByType("td").map((cell) => cell.children.join(""));
+    expect(totalCells()).toEqual(["15 nm", "10 nm", "25 nm", "7h 30m", "5h 00m", "2h 30m", ""]);
+    await act(async () => renderer.root.findByType(ListPagination).props.list.setPage(2));
+    expect(totalCells()).toEqual(["9 nm", "6 nm", "15 nm", "4h 30m", "3h 00m", "1h 30m", ""]);
+    await act(async () => renderer.root.findByProps({ type: "search" }).props.onChange({ target: { value: "after" } }));
+    expect(totalCells()).toEqual(["3 nm", "2 nm", "5 nm", "1h 30m", "1h 00m", "0h 30m", ""]);
+    const row = renderer.root.findByProps({ className: "logbook-sheet-title" });
+    await act(async () => row.props.onMouseEnter());
+    expect(renderer.root.findByType(LogSheetsMapView).props.highlightedRouteId).toBe("after");
+    await act(async () => row.props.onMouseLeave());
+    expect(renderer.root.findByType(LogSheetsMapView).props.highlightedRouteId).toBeNull();
+    await act(async () => renderer.root.findByProps({ type: "checkbox" }).props.onChange({ currentTarget: { checked: false } }));
+    expect(renderer.root.findByType(LogSheetsMapView).props.showEndpointMarkers).toBe(false);
+    const link = renderer.root.findAllByType("a")[0];
+    expect(link.props.href).toMatch(/details\/after$/);
+    const preventDefault = vi.fn();
+    await act(async () => link.props.onClick({ button: 0, ctrlKey: true, preventDefault }));
+    expect(preventDefault).not.toHaveBeenCalled();
+  });
+
+  it("requires explicit privacy consent before uploading selected photos", async () => {
+    await render();
+    const upload = vi.fn();
+    await act(async () => renderer.update(<LogbookListPage {...(renderer.root.findByType(LogbookListPage).props as ComponentProps<typeof LogbookListPage>)}
+      scannerBoatId="boat-1" selectedScannerFiles={[{} as File]} onScannerUploadConfirmed={upload} />));
+    const confirm = () => renderer.root.findAllByType("button").find((button) => button.children.includes("logbooks.continueAndUpload"))!;
+    expect(confirm().props.disabled).toBe(true);
+    await act(async () => confirm().props.onClick());
+    expect(upload).not.toHaveBeenCalled();
+    await act(async () => renderer.root.findByProps({ className: "scanner-privacy-confirmation" }).findByType("input").props.onChange({ currentTarget: { checked: true } }));
+    expect(confirm().props.disabled).toBe(false);
+    await act(async () => confirm().props.onClick());
+    expect(upload).toHaveBeenCalledWith([{}], "boat-1");
   });
 
   it("shows a validation message for reversed dates", async () => {

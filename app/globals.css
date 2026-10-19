@@ -2255,3 +2255,14 @@ img.entity-image--preview {
 .log-lines-table .inline-line-row input[type="datetime-local"] { width: 11.5rem; padding-inline: 0.25rem; }
 .log-lines-table .inline-line-row select { width: auto; min-width: 0; padding-inline: 0.25rem; }
 .course-tooltip-bubble { max-width: min(24rem, 85vw); text-align: left; }
+
+.logbook-overview-map-card { grid-template-columns: minmax(0, 1fr); min-width: 0; }
+.logbook-sheet-title td { border-bottom: 0; padding-bottom: 0.25rem; }
+.logbook-list-card .table-row-actions { flex-wrap: nowrap; }
+.logbook-list-card .table-row-actions .edit-chip { padding: 0.3rem 0.45rem; text-decoration: none; }
+.logbook-table tfoot { background: var(--surface); font-weight: 700; }
+.map-marker-legend { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; font-size: 0.85rem; }
+.map-marker-legend label, .scanner-privacy-confirmation { display: flex; align-items: center; gap: 0.5rem; }
+.map-marker-legend input, .scanner-privacy-confirmation input { width: auto; }
+.scanner-privacy-panel { max-height: calc(100dvh - 2rem); overflow-y: auto; }
+.scanner-privacy-panel h3 { margin: 0; }

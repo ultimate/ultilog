@@ -24,6 +24,8 @@ type LogSheetsMapViewProps = {
   emptyMessage?: string;
   onSheetClick?: (sheet: LogSheet) => void;
   showRouteTargets?: boolean;
+  showEndpointMarkers?: boolean;
+  highlightedRouteId?: string | null;
 };
 
 function OpenSeaMapLoading() {
@@ -135,6 +137,8 @@ export function LogSheetsMapView({
   emptyMessage,
   onSheetClick,
   showRouteTargets = true,
+  showEndpointMarkers = true,
+  highlightedRouteId,
 }: LogSheetsMapViewProps) {
   const { t } = useI18n();
   const { formatDateRange, formatTime } = useDateTimeFormat();
@@ -151,6 +155,8 @@ export function LogSheetsMapView({
         className={className}
         emptyMessage={emptyMessage ?? t("map.noLogSheetPositions")}
         routes={routes}
+        showEndpointMarkers={showEndpointMarkers}
+        highlightedRouteId={highlightedRouteId}
         onRouteClick={(route) => {
           if (route.sheet) onSheetClick?.(route.sheet);
         }}
