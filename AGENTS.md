@@ -1,5 +1,11 @@
 # Repository instructions
 
+## Branches
+
+Unless stated otherwise or asked to work on an existing branch, agents must 
+name newly created branches with a prefix identifying the agent and a "/" (e.g.
+"codex/..." for Codex).
+
 ## Pull requests
 
 Agents must include issue links in the pull request description whenever the
