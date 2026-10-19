@@ -82,7 +82,7 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
   });
 
   const fileChooserPromise = page.waitForEvent("filechooser");
-  await page.getByRole("button", { name: "Import photos" }).click();
+  await page.getByRole("button", { name: "Scan / Import" }).click();
   const fileChooser = await fileChooserPromise;
   await fileChooser.setFiles({
     name: "sample-logbook-scan.png",
@@ -90,7 +90,9 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
     buffer: Buffer.from(samplePngBase64, "base64"),
   });
 
-  await expect(page.getByRole("dialog", { name: "Privacy notice before upload" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Configure scan" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Continue and upload" })).toBeDisabled();
+  await page.getByRole("checkbox", { name: "I have read and agree to the privacy notice." }).check();
   await page.getByRole("button", { name: "Continue and upload" }).click();
   await expect(page.locator(".scanner-upload-status")).toContainText("Scanning logbook photo");
   await expect(page.getByRole("progressbar", { name: "Scanning logbook photo…" })).toBeVisible();

@@ -80,6 +80,16 @@
     }
   },
   {
+    "id": "improve-logsheet-list-scanning-and-route-overview",
+    "category": "improvement",
+    "title": {
+      "en": "Improve logsheet layout, page totals, scan setup and interactive route maps",
+      "de": "Logblattlayout, Seitensummen, Scan-Einstellungen und interaktive Routenkarten verbessern",
+      "fr": "Améliorer la liste des feuilles de bord, les totaux, la numérisation et les cartes interactives",
+      "it": "Migliora elenco dei giornali di bordo, totali, scansione e mappe interattive"
+    }
+  },
+  {
     "id": "introduce-public-changelog",
     "category": "feature",
     "title": {

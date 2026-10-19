@@ -1,4 +1,7 @@
 import { ModalLayer } from "../ModalLayer";
+import { Fragment } from "react";
+import { modulePath } from "../persistence";
+import { formatLogSheetDuration } from "../../../domain/logbook/sheet-metrics";
 import { EntityImage } from "../EntityImage";
 import { useI18n } from "../../../lib/i18n";
 import { useDateTimeFormat } from "../../../lib/DateTimeFormatProvider";
@@ -18,7 +21,7 @@ type Navigate = (
   module: "details" | "logbooks",
   itemId?: string | number,
 ) => void;
-type SheetSummary = { motorMiles: number; sailMiles: number; totalMiles: number; duration: string; motionDuration: string; motorHours: number; motorHoursDuration: string; propulsionDuration: string };
+type SheetSummary = { motorMiles: number; sailMiles: number; totalMiles: number; duration: string; motionDuration: string; durationMinutes: number | null; motionDurationMinutes: number; motorHours: number; motorHoursDuration: string; propulsionDuration: string };
 type SheetListRow = { sheet: LogSheet; boat?: Boat; summary: SheetSummary };
 
 export function LogbookListPage({
@@ -78,11 +81,13 @@ export function LogbookListPage({
 }) {
   const { t } = useI18n();
   const { formatDate } = useDateTimeFormat();
-  const cameraInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
   const availableBoats = useMemo(() => logbook.boats.filter((boat) => !boat.archived), [logbook.boats]);
   const hasBoats = availableBoats.length > 0;
   const hasMultipleBoats = availableBoats.length > 1;
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [showEndpointMarkers, setShowEndpointMarkers] = useState(true);
+  const [highlightedRouteId, setHighlightedRouteId] = useState<string | null>(null);
   const [isMapExpanded, setIsMapExpanded] = useState(false);
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
@@ -119,6 +124,18 @@ export function LogbookListPage({
     { key: "motorHours", value: (row: SheetListRow) => row.summary.motorHours },
   ], []);
   const list = useSortableList(rows, columns, defaultPageSize);
+  const totals = list.pageItems.reduce((sum, { summary }) => ({
+    sailMiles: sum.sailMiles + summary.sailMiles,
+    motorMiles: sum.motorMiles + summary.motorMiles,
+    totalMiles: sum.totalMiles + summary.totalMiles,
+    durationMinutes: sum.durationMinutes + (summary.durationMinutes ?? 0),
+    motionDurationMinutes: sum.motionDurationMinutes + (summary.motionDurationMinutes ?? 0),
+    motorHours: sum.motorHours + summary.motorHours,
+  }), { sailMiles: 0, motorMiles: 0, totalMiles: 0, durationMinutes: 0, motionDurationMinutes: 0, motorHours: 0 });
+  const markerLegend = <div className="map-marker-legend">
+    <span>▶ {t("map.start")}</span><span>🏁 {t("map.end")}</span>
+    <label><input type="checkbox" checked={showEndpointMarkers} onChange={(event) => setShowEndpointMarkers(event.currentTarget.checked)} /> {t("map.showEndpoints")}</label>
+  </div>;
   const header = (key: string, label: string) => <SortableColumnHeader columnKey={key} activeKey={list.sort.key} direction={list.sort.direction} onSort={list.setSortKey}>{label}</SortableColumnHeader>;
 
   useEffect(() => {
@@ -132,11 +149,12 @@ export function LogbookListPage({
 
   function handleScannerFilesSelected(files: FileList | null) {
     if (!files?.length) return;
+    setPrivacyAccepted(false);
     onScanFilesSelected(files, scannerBoatId);
   }
 
   function confirmScannerUpload() {
-    if (!selectedScannerFiles.length) return;
+    if (!selectedScannerFiles.length || !privacyAccepted || !scannerBoatId) return;
     onScannerUploadConfirmed(selectedScannerFiles, scannerBoatId);
   }
 
@@ -157,13 +175,6 @@ export function LogbookListPage({
         <div className="page-heading-actions">
           <button
             type="button"
-            className="secondary-action"
-            onClick={onPrintEmptySheet}
-          >
-            {t("logbooks.printEmptySheet")}
-          </button>
-          <button
-            type="button"
             className="primary-action"
             onClick={() => {
               setEditingSheetId(null);
@@ -175,70 +186,22 @@ export function LogbookListPage({
           >
             {t("logbooks.newSheet")}
           </button>
+          {hasBoats && <button type="button" className="secondary-action" disabled={isScanning}
+            onClick={() => isDemo ? onDemoFeatureBlocked("scanner") : importInputRef.current?.click()}>
+            {isScanning ? t("logbooks.uploadingScan") : t("logbooks.scanImport")}
+          </button>}
+          <button
+            type="button"
+            className="secondary-action"
+            onClick={onPrintEmptySheet}
+          >
+            {t("logbooks.printEmptySheet")}
+          </button>
         </div>
       </div>
-      {hasBoats ? (
-        <div className="logbook-scanner-actions" aria-label={t("logbooks.scannerActions")}>
-          <input
-            ref={cameraInputRef}
-            type="file"
-            accept="image/*"
-            capture="environment"
-            hidden
-            onChange={(event) => {
-              handleScannerFilesSelected(event.currentTarget.files);
-              event.currentTarget.value = "";
-            }}
-          />
-          {hasMultipleBoats && (
-            <label className="scanner-boat-selector">
-              <span>{t("logbooks.scannerBoat")}</span>
-              <select
-                value={scannerBoatId}
-                onChange={(event) =>
-                  onScannerBoatChange(event.currentTarget.value)
-                }
-                aria-label={t("logbooks.scannerBoat")}
-              >
-                {availableBoats.map((boat) => (
-                  <option key={boat.id} value={boat.id}>
-                    {boat.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          <button
-            type="button"
-            className="secondary-action"
-            disabled={isScanning}
-            onClick={() => isDemo ? onDemoFeatureBlocked("scanner") : cameraInputRef.current?.click()}
-          >
-            {t("logbooks.scanWithCamera")}
-          </button>
-          <input
-            ref={importInputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            hidden
-            onChange={(event) => {
-              handleScannerFilesSelected(event.currentTarget.files);
-              event.currentTarget.value = "";
-            }}
-          />
-          <button
-            type="button"
-            className="secondary-action"
-            disabled={isScanning}
-            onClick={() => isDemo ? onDemoFeatureBlocked("scanner") : importInputRef.current?.click()}
-          >
-            {isScanning
-              ? t("logbooks.uploadingScan")
-              : t("logbooks.importPhotos")}
-          </button>
-        </div>
-      ) : (
+      <input ref={importInputRef} type="file" accept="image/*" multiple hidden
+        onChange={(event) => { handleScannerFilesSelected(event.currentTarget.files); event.currentTarget.value = ""; }} />
+      {!hasBoats && (
         <div className="logbook-scanner-empty" role="status">
           <p>{t("logbooks.createBoatBeforeScan")}</p>
           <button
@@ -284,17 +247,26 @@ export function LogbookListPage({
           <div className="scanner-privacy-panel">
             <div className="scanner-privacy-heading">
               <h2 id="scanner-privacy-title">
-                {t("logbooks.scannerPrivacyTitle")}
+                {t("logbooks.scannerSettingsTitle")}
               </h2>
               <p>{t("logbooks.scannerPrivacyIntro")}</p>
             </div>
+            {hasMultipleBoats && <label className="scanner-boat-selector">
+              <span>{t("logbooks.scannerBoat")}</span>
+              <select value={scannerBoatId} onChange={(event) => onScannerBoatChange(event.currentTarget.value)}>
+                {availableBoats.map((boat) => <option key={boat.id} value={boat.id}>{boat.name}</option>)}
+              </select>
+            </label>}
+            <h3>{t("logbooks.scannerPrivacyTitle")}</h3>
             <ul className="scanner-privacy-list">
               <li>{t("logbooks.scannerPrivacyPersonalInfo")}</li>
               <li>{t("logbooks.scannerPrivacyCloudProvider")}</li>
               <li>{t("logbooks.scannerPrivacyNoPermanentStorage")}</li>
-              <li>{t("logbooks.scannerPrivacyDraftSaved")}</li>
-              <li>{t("logbooks.scannerPrivacyVerifyBeforeLock")}</li>
             </ul>
+            <label className="scanner-privacy-confirmation"><input type="checkbox" checked={privacyAccepted} onChange={(event) => setPrivacyAccepted(event.currentTarget.checked)} /> {t("logbooks.scannerPrivacyAccept")}</label>
+            <section><h3>{t("logbooks.scannerDraftTitle")}</h3>
+              <p>{t("logbooks.scannerPrivacyDraftSaved")} {t("logbooks.scannerPrivacyVerifyBeforeLock")}</p>
+            </section>
             <div className="scanner-privacy-actions">
               <button
                 type="button"
@@ -307,7 +279,7 @@ export function LogbookListPage({
               <button
                 type="button"
                 className="primary-action"
-                disabled={isScanning}
+                disabled={isScanning || !privacyAccepted || !scannerBoatId}
                 onClick={confirmScannerUpload}
               >
                 {t("logbooks.continueAndUpload")}
@@ -346,9 +318,9 @@ export function LogbookListPage({
             <table className="logbook-table">
               <thead>
                 <tr>
+                  {header("entry", t("logbooks.entry"))}
                   {header("startDate", t("logbooks.startDate"))}
                   {header("endDate", t("logbooks.endDate"))}
-                  {header("entry", t("logbooks.entry"))}
                   {header("vessel", t("logbooks.vessel"))}
                   {header("route", t("logbooks.fromTo"))}
                   {header("sailMiles", t("compliance.sailMiles"))}
@@ -363,30 +335,14 @@ export function LogbookListPage({
               <tbody>
                 {list.pageItems.map(({ sheet, boat, summary: sheetSummary }) => {
                   return (
-                    <tr key={sheet.id}>
+                    <Fragment key={sheet.id}>
+                    <tr className="logbook-sheet-title" onMouseEnter={() => setHighlightedRouteId(sheet.id)} onMouseLeave={() => setHighlightedRouteId(null)}>
+                      <td rowSpan={2}><EntityImage image={sheet.image} entityType="sheet" alt="" variant="thumb" /></td>
+                      <td colSpan={11}><button className="table-title-button" type="button" onClick={() => openSheet(sheet)}><span className="table-vessel">{sheet.title}</span></button></td>
+                    </tr>
+                    <tr onMouseEnter={() => setHighlightedRouteId(sheet.id)} onMouseLeave={() => setHighlightedRouteId(null)} onFocus={() => setHighlightedRouteId(sheet.id)} onBlur={() => setHighlightedRouteId(null)}>
                       <td>{formatDate(sheet.route.departed)}</td>
                       <td>{formatDate(sheet.route.arrived)}</td>
-                      <td>
-                        <button
-                          className="table-title-button"
-                          onClick={() => {
-                            openSheet(sheet);
-                          }}
-                          type="button"
-                        >
-                          <span className="table-vessel">
-                            <span aria-hidden="true">
-                              <EntityImage
-                                image={sheet.image}
-                                entityType="sheet"
-                                alt=""
-                                variant="thumb"
-                              />
-                            </span>
-                            {sheet.title}
-                          </span>
-                        </button>
-                      </td>
                       <td>
                         <span className="table-vessel">
                           <EntityImage
@@ -409,28 +365,31 @@ export function LogbookListPage({
                       <td>{sheetSummary.motorHoursDuration}</td>
                       <td>
                         <div className="table-row-actions">
+                          <a className="edit-chip" href={modulePath("details", sheet.id)} aria-label={t("common.open")} title={t("common.open")}
+                            onClick={(event) => { if (event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) { event.preventDefault(); openSheet(sheet); } }}>
+                            <span aria-hidden="true">📂</span>
+                          </a>
                           <button
                             className="edit-chip"
-                            onClick={() => {
-                              openSheet(sheet);
-                            }}
-                            type="button"
-                          >
-                            Open
-                          </button>
-                          <button
-                            className="edit-chip"
+                            aria-label={t("logbooks.printSheet")} title={t("logbooks.printSheet")}
                             onClick={() => onPrintSheet(sheet.id)}
                             type="button"
                           >
-                            {t("logbooks.printSheet")}
+                            <span aria-hidden="true">🖨️</span>
                           </button>
                         </div>
                       </td>
                     </tr>
+                    </Fragment>
                   );
                 })}
               </tbody>
+              <tfoot><tr>
+                <th colSpan={5} scope="row">{t("logbooks.pageTotals")}</th>
+                <td>{formatMiles(totals.sailMiles)} nm</td><td>{formatMiles(totals.motorMiles)} nm</td><td>{formatMiles(totals.totalMiles)} nm</td>
+                <td>{formatLogSheetDuration(totals.durationMinutes)}</td><td>{formatLogSheetDuration(totals.motionDurationMinutes)}</td>
+                <td>{formatLogSheetDuration(totals.motorHours * 60)}</td><td />
+              </tr></tfoot>
             </table>
           </div>
           <ListPagination list={list} />
@@ -447,7 +406,10 @@ export function LogbookListPage({
             onSheetClick={openSheet}
             ariaLabel={t("logbooks.mapAria")}
             showRouteTargets={false}
+            showEndpointMarkers={showEndpointMarkers}
+            highlightedRouteId={highlightedRouteId}
           />
+          {markerLegend}
         </article>
       </div>
       {isMapExpanded && (
@@ -465,7 +427,10 @@ export function LogbookListPage({
               onSheetClick={openSheet}
               ariaLabel={t("logbooks.mapAria")}
               showRouteTargets={false}
+            showEndpointMarkers={showEndpointMarkers}
+            highlightedRouteId={highlightedRouteId}
             />
+            {markerLegend}
           </div>
         </ModalLayer>
       )}

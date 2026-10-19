@@ -1,5 +1,13 @@
 // Keep one translation key per line so locale files stay easy to diff and edit side by side.
 export const en = {
+  "logbooks.scanImport": "Scan / Import",
+  "logbooks.scannerSettingsTitle": "Configure scan",
+  "logbooks.scannerPrivacyAccept": "I have read and agree to the privacy notice.",
+  "logbooks.scannerDraftTitle": "Draft and verification",
+  "logbooks.pageTotals": "Page totals",
+  "map.start": "Start",
+  "map.end": "End",
+  "map.showEndpoints": "Show start/end markers",
   "wind.direction.N": "N",
   "wind.direction.NNE": "NNE",
   "wind.direction.NE": "NE",

@@ -180,6 +180,8 @@ function calculateSheetSummary(sheet: LogSheet, motionStationaryThresholdNm: num
     motorMiles: metrics.motorMiles,
     sailMiles: metrics.sailMiles,
     totalMiles: metrics.totalMiles,
+    durationMinutes: metrics.overallDurationMinutes ?? metrics.durationMinutes,
+    motionDurationMinutes: metrics.motionDurationMinutes,
     duration: formatLogSheetDuration(metrics.overallDurationMinutes ?? metrics.durationMinutes),
     motionDuration: formatLogSheetDuration(metrics.motionDurationMinutes),
     motorHours: metrics.motorHours,
