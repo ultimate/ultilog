@@ -81,8 +81,10 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(persistedSheet) });
   });
 
-  const fileChooserPromise = page.waitForEvent("filechooser");
   await page.getByRole("button", { name: "Scan / Import" }).click();
+  await expect(page.getByRole("button", { name: "Scan with camera" })).toBeVisible();
+  const fileChooserPromise = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: "Import photos" }).click();
   const fileChooser = await fileChooserPromise;
   await fileChooser.setFiles({
     name: "sample-logbook-scan.png",

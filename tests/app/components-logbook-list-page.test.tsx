@@ -153,6 +153,21 @@ describe("logsheet date filter", () => {
     expect(detailsRow.findAllByType("td").slice(0, 2).map((cell) => cell.children.join(""))).toEqual(["12/31/2026", "12/31/2026"]);
   });
 
+  it("offers camera capture and existing photos from the single scan action", async () => {
+    await render();
+    const props = renderer.root.findByType(LogbookListPage).props as ComponentProps<typeof LogbookListPage>;
+    await act(async () => renderer.update(<LogbookListPage {...props} logbook={{ ...props.logbook, boats: [{ id: "boat-1", name: "Boat" } as NonNullable<typeof props.activeBoat>] }} />));
+    const button = (key: string) => renderer.root.findAllByType("button").find((item) => item.children.includes(key))!;
+    await act(async () => button("logbooks.scanImport").props.onClick());
+    const dialog = renderer.root.findByProps({ role: "dialog" });
+    expect(dialog.findAllByType("button").map((item) => item.children.join(""))).toEqual(["logbooks.scanWithCamera", "logbooks.importPhotos", "common.cancel"]);
+    const inputs = renderer.root.findAllByProps({ type: "file" });
+    expect(inputs.find((input) => input.props.capture === "environment")?.props.multiple).toBeUndefined();
+    expect(inputs.find((input) => input.props.multiple)?.props.capture).toBeUndefined();
+    await act(async () => button("common.cancel").props.onClick());
+    expect(renderer.root.findAllByProps({ role: "dialog" })).toHaveLength(0);
+  });
+
   it("shows a validation message for reversed dates", async () => {
     await render();
     await changeDate(0, "2026-05-20");

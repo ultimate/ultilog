@@ -82,6 +82,8 @@ export function LogbookListPage({
 }) {
   const { t } = useI18n();
   const { formatDate } = useDateTimeFormat();
+  const [showScanSource, setShowScanSource] = useState(false);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
   const availableBoats = useMemo(() => logbook.boats.filter((boat) => !boat.archived), [logbook.boats]);
   const hasBoats = availableBoats.length > 0;
@@ -188,7 +190,7 @@ export function LogbookListPage({
             {t("logbooks.newSheet")}
           </button>
           {hasBoats && <button type="button" className="secondary-action" disabled={isScanning}
-            onClick={() => isDemo ? onDemoFeatureBlocked("scanner") : importInputRef.current?.click()}>
+            onClick={() => isDemo ? onDemoFeatureBlocked("scanner") : setShowScanSource(true)}>
             {isScanning ? t("logbooks.uploadingScan") : t("logbooks.scanImport")}
           </button>}
           <button
@@ -200,6 +202,22 @@ export function LogbookListPage({
           </button>
         </div>
       </div>
+      {showScanSource && (
+        <ModalLayer className="scanner-privacy-modal" role="dialog" aria-modal="true" aria-labelledby="scanner-source-title">
+          <div className="scanner-privacy-panel">
+            <h2 id="scanner-source-title">{t("logbooks.scanImport")}</h2>
+            <button type="button" className="secondary-action" onClick={() => { setShowScanSource(false); cameraInputRef.current?.click(); }}>
+              {t("logbooks.scanWithCamera")}
+            </button>
+            <button type="button" className="secondary-action" onClick={() => { setShowScanSource(false); importInputRef.current?.click(); }}>
+              {t("logbooks.importPhotos")}
+            </button>
+            <button type="button" className="ghost-button" onClick={() => setShowScanSource(false)}>{t("common.cancel")}</button>
+          </div>
+        </ModalLayer>
+      )}
+      <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" hidden
+        onChange={(event) => { handleScannerFilesSelected(event.currentTarget.files); event.currentTarget.value = ""; }} />
       <input ref={importInputRef} type="file" accept="image/*" multiple hidden
         onChange={(event) => { handleScannerFilesSelected(event.currentTarget.files); event.currentTarget.value = ""; }} />
       {!hasBoats && (
