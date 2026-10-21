@@ -1,3 +1,5 @@
+import { normalizeIsoDate } from "../../lib/iso-date";
+
 const offsetPattern = /(Z|[+-]\d{2}:\d{2})$/;
 
 export const timeZoneOffsetOptions = ["-12:00", "-11:00", "-10:00", "-09:30", "-09:00", "-08:00", "-07:00", "-06:00", "-05:00", "-04:00", "-03:30", "-03:00", "-02:00", "-01:00", "+00:00", "+01:00", "+02:00", "+03:00", "+03:30", "+04:00", "+04:30", "+05:00", "+05:30", "+05:45", "+06:00", "+06:30", "+07:00", "+08:00", "+08:45", "+09:00", "+09:30", "+10:00", "+10:30", "+11:00", "+12:00", "+12:45", "+13:00", "+14:00"] as const;
@@ -53,4 +55,16 @@ export function routeStampFromDateTimeLocal(dateTimeLocal: string, timezoneOffse
 function normalizeTimezoneOffset(value: string) {
   if (value === "Z") return "+00:00";
   return /^[+-]\d{2}:\d{2}$/.test(value) ? value : localTimezoneOffset();
+}
+
+/** Calendar date for list columns, preserving the voyage's stored timezone. */
+export function sheetListDate(stamp: string, isEndDate = false) {
+  const date = normalizeIsoDate(stamp);
+  if (!date) return "";
+  // Only explicit, exact midnight ends are exclusive; date-only values stay as stored.
+  const midnight = /^\d{4}-\d{2}-\d{2}(?:T|,? )00:00(?::00(?:\.0+)?)?(?:Z|[+-]\d{2}:\d{2})?$/.test(stamp.trim());
+  if (!isEndDate || !midnight) return date;
+  const previousDay = new Date(`${date}T00:00:00Z`);
+  previousDay.setUTCDate(previousDay.getUTCDate() - 1);
+  return previousDay.toISOString().slice(0, 10);
 }
