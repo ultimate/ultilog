@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import L, { type LatLngBoundsExpression, type LatLngExpression } from "leaflet";
 import {
   MapContainer,
@@ -95,10 +95,9 @@ function makeMarkerIcon(point: MapPoint, variant: "detail" | "start" | "end") {
 
 function FitMapToRoutes({ routes }: { routes: MapRoute[] }) {
   const map = useMap();
-  const points = useMemo(
-    () => routes.flatMap((route) => route.points),
-    [routes],
-  );
+  // Route objects can be rebuilt by presentation changes (markers, hover, locale).
+  // Refit only when the actual route coordinates change.
+  const coordinates = JSON.stringify(routes.flatMap((route) => route.points.map(toLatLng)));
 
   useEffect(() => {
     const observer = new ResizeObserver(() => map.invalidateSize());
@@ -107,20 +106,21 @@ function FitMapToRoutes({ routes }: { routes: MapRoute[] }) {
   }, [map]);
 
   useEffect(() => {
-    if (points.length === 0) return;
-    if (points.length === 1) {
-      map.setView(toLatLng(points[0]), 11, { animate: false });
+    const positions = JSON.parse(coordinates) as LatLngExpression[];
+    if (positions.length === 0) return;
+    if (positions.length === 1) {
+      map.setView(positions[0], 11, { animate: false });
       return;
     }
 
-    const bounds = points.map(toLatLng) as LatLngBoundsExpression;
+    const bounds = positions as LatLngBoundsExpression;
     map.fitBounds(bounds, {
       animate: false,
       paddingTopLeft: [56, 56],
       paddingBottomRight: [56, 56],
       maxZoom: 13,
     });
-  }, [map, points]);
+  }, [map, coordinates]);
 
   return null;
 }
