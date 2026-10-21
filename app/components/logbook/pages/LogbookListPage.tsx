@@ -323,7 +323,6 @@ export function LogbookListPage({
                   {header("startDate", t("logbooks.startDate"))}
                   {header("endDate", t("logbooks.endDate"))}
                   {header("vessel", t("logbooks.vessel"))}
-                  {header("route", t("logbooks.fromTo"))}
                   {header("sailMiles", t("compliance.sailMiles"))}
                   {header("motorMiles", t("compliance.motorMiles"))}
                   {header("totalMiles", t("logbooks.totalMiles"))}
@@ -339,7 +338,9 @@ export function LogbookListPage({
                     <Fragment key={sheet.id}>
                     <tr className="logbook-sheet-title" onMouseEnter={() => setHighlightedRouteId(sheet.id)} onMouseLeave={() => setHighlightedRouteId(null)}>
                       <td rowSpan={2}><EntityImage image={sheet.image} entityType="sheet" alt="" variant="thumb" /></td>
-                      <td colSpan={11}><button className="table-title-button" type="button" onClick={() => openSheet(sheet)}><span className="table-vessel">{sheet.title}</span></button></td>
+                      <td colSpan={10}><button className="table-title-button" type="button" onClick={() => openSheet(sheet)}><span className="table-vessel">{sheet.title}</span></button>
+                        <span className="logbook-sheet-route">{sheet.route.from} → {sheet.route.to}</span>
+                      </td>
                     </tr>
                     <tr onMouseEnter={() => setHighlightedRouteId(sheet.id)} onMouseLeave={() => setHighlightedRouteId(null)} onFocus={() => setHighlightedRouteId(sheet.id)} onBlur={() => setHighlightedRouteId(null)}>
                       <td>{formatDate(sheetListDate(sheet.route.departed))}</td>
@@ -354,9 +355,6 @@ export function LogbookListPage({
                           />
                           {boat?.name}
                         </span>
-                      </td>
-                      <td>
-                        {sheet.route.from} → {sheet.route.to}
                       </td>
                       <td>{formatMiles(sheetSummary.sailMiles)} nm</td>
                       <td>{formatMiles(sheetSummary.motorMiles)} nm</td>
@@ -386,7 +384,7 @@ export function LogbookListPage({
                 })}
               </tbody>
               <tfoot><tr>
-                <th colSpan={5} scope="row">{t("logbooks.pageTotals")}</th>
+                <th colSpan={4} scope="row">{t("logbooks.pageTotals")}</th>
                 <td>{formatMiles(totals.sailMiles)} nm</td><td>{formatMiles(totals.motorMiles)} nm</td><td>{formatMiles(totals.totalMiles)} nm</td>
                 <td>{formatLogSheetDuration(totals.durationMinutes)}</td><td>{formatLogSheetDuration(totals.motionDurationMinutes)}</td>
                 <td>{formatLogSheetDuration(totals.motorHours * 60)}</td><td />
