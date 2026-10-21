@@ -34,7 +34,7 @@ test("opens a seeded logsheet detail page from the overview log sheet list", asy
   await dialog.getByRole("button", { name: "Close map" }).click();
   await page.setViewportSize({ width: 1280, height: 720 });
 
-  const sheetLink = page.getByRole("button", { name: demoSheet.title });
+  const sheetLink = page.getByRole("link", { name: demoSheet.title });
   await expect(sheetLink).toBeVisible();
   await sheetLink.click();
 

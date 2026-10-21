@@ -119,11 +119,20 @@ describe("logsheet date filter", () => {
     expect(renderer.root.findByType(LogSheetsMapView).props.highlightedRouteId).toBeNull();
     await act(async () => renderer.root.findByProps({ type: "checkbox" }).props.onChange({ currentTarget: { checked: false } }));
     expect(renderer.root.findByType(LogSheetsMapView).props.showEndpointMarkers).toBe(false);
-    const link = renderer.root.findAllByType("a")[0];
-    expect(link.props.href).toMatch(/details\/after$/);
-    const preventDefault = vi.fn();
-    await act(async () => link.props.onClick({ button: 0, ctrlKey: true, preventDefault }));
-    expect(preventDefault).not.toHaveBeenCalled();
+    const links = renderer.root.findAllByType("a");
+    expect(links).toHaveLength(2); // Title and compact Open action.
+    for (const link of links) {
+      expect(link.props.href).toMatch(/details\/after$/);
+      for (const click of [{ button: 1 }, { button: 0, ctrlKey: true }, { button: 0, metaKey: true }]) {
+        const preventDefault = vi.fn();
+        await act(async () => link.props.onClick({ ...click, preventDefault }));
+        expect(preventDefault).not.toHaveBeenCalled();
+      }
+      const preventDefault = vi.fn();
+      await act(async () => link.props.onClick({ button: 0, preventDefault }));
+      expect(preventDefault).toHaveBeenCalled();
+      expect(renderer.root.findByType(LogbookListPage).props.navigate).toHaveBeenCalledWith("details", "after");
+    }
   });
 
   it("requires explicit privacy consent before uploading selected photos", async () => {
