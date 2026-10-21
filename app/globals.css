@@ -2266,3 +2266,5 @@ img.entity-image--preview {
 .map-marker-legend input, .scanner-privacy-confirmation input { width: auto; }
 .scanner-privacy-panel { max-height: calc(100dvh - 2rem); overflow-y: auto; }
 .scanner-privacy-panel h3 { margin: 0; }
+
+.logbook-sheet-route { display: inline-block; margin-inline-start: 1rem; color: var(--muted); font-size: 0.9rem; }
