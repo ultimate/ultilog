@@ -8,7 +8,7 @@ test("exposes print actions in the logsheet list and detail view", async ({ page
   await openModule(page, "Logsheet list", "+ New sheet");
 
   await expect(page.getByRole("button", { name: "Print empty" })).toBeVisible();
-  const sheetRow = page.locator("tr", { has: page.getByRole("button", { name: demoSheet.title, exact: true }) });
+  const sheetRow = sheetDetailsRow(page, demoSheet.title);
   await expect(sheetRow.getByRole("button", { name: "Print", exact: true })).toBeVisible();
 
   await page.getByRole("button", { name: demoSheet.title, exact: true }).click();
@@ -45,7 +45,7 @@ test("prints filled sheets with filler rows, repeated header/footer, and page nu
   await loginWithSeededDemoData(page);
   await openModule(page, "Logsheet list", "+ New sheet");
 
-  const sheetRow = page.locator("tr", { has: page.getByRole("button", { name: demoSheet.title, exact: true }) });
+  const sheetRow = sheetDetailsRow(page, demoSheet.title);
   await sheetRow.getByRole("button", { name: "Print", exact: true }).click();
   await expect.poll(() => page.evaluate(() => window.__printCalls ?? 0)).toBe(1);
   await page.emulateMedia({ media: "print" });
@@ -81,7 +81,7 @@ test("splits filled sheets that exceed one A4 landscape page", async ({ page }) 
   await loginWithSeededDemoData(page, [longSheet]);
   await openModule(page, "Logsheet list", "+ New sheet");
 
-  const sheetRow = page.locator("tr", { has: page.getByRole("button", { name: longSheet.title, exact: true }) });
+  const sheetRow = sheetDetailsRow(page, longSheet.title);
   await sheetRow.getByRole("button", { name: "Print", exact: true }).click();
   await expect.poll(() => page.evaluate(() => window.__printCalls ?? 0)).toBe(1);
   await page.emulateMedia({ media: "print" });
@@ -101,6 +101,13 @@ test("splits filled sheets that exceed one A4 landscape page", async ({ page }) 
     longSheet.remarks,
   ]);
 });
+
+function sheetDetailsRow(page: Page, title: string) {
+  // Each sheet has a title row followed by its details and action row.
+  return page.locator(".logbook-table tbody tr", {
+    has: page.getByRole("button", { name: title, exact: true }),
+  }).locator("xpath=following-sibling::tr[1]");
+}
 
 async function expectPrintContentWithinPage(printPage: Locator) {
   const bounds = await printPage.evaluate((pageElement) => {
