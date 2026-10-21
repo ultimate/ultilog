@@ -1,3 +1,4 @@
+import { DateTimeFormatProvider } from "../../app/lib/DateTimeFormatProvider";
 import { createElement, type ComponentProps } from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -138,6 +139,18 @@ describe("logsheet date filter", () => {
     expect(confirm().props.disabled).toBe(false);
     await act(async () => confirm().props.onClick());
     expect(upload).toHaveBeenCalledWith([{}], "boat-1");
+  });
+
+  it("shows configured calendar dates only and treats midnight end as the previous day", async () => {
+    await render();
+    const props = renderer.root.findByType(LogbookListPage).props as ComponentProps<typeof LogbookListPage>;
+    await act(async () => renderer.update(
+      <DateTimeFormatProvider dateFormat="MM/dd/yyyy" timeFormat="HH:mm">
+        <LogbookListPage {...props} logbook={{ ...props.logbook, sheets: [sheet("midnight", "2026-12-31T08:30:00+14:00", "2027-01-01T00:00:00+14:00")] }} />
+      </DateTimeFormatProvider>,
+    ));
+    const detailsRow = renderer.root.findByType("tbody").findAllByType("tr")[1];
+    expect(detailsRow.findAllByType("td").slice(0, 2).map((cell) => cell.children.join(""))).toEqual(["12/31/2026", "12/31/2026"]);
   });
 
   it("shows a validation message for reversed dates", async () => {

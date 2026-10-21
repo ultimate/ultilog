@@ -13,6 +13,7 @@ import type {
   PersistedLogbook,
   SheetForm,
 } from "../../../models/logbook";
+import { sheetListDate } from "../date-utils";
 import { sheetToForm } from "../forms";
 import { LogSheetsMapView } from "../OpenSeaMapView";
 import { ListPagination, ListSearch, SortableColumnHeader, useSortableList } from "../SortableList";
@@ -341,8 +342,8 @@ export function LogbookListPage({
                       <td colSpan={11}><button className="table-title-button" type="button" onClick={() => openSheet(sheet)}><span className="table-vessel">{sheet.title}</span></button></td>
                     </tr>
                     <tr onMouseEnter={() => setHighlightedRouteId(sheet.id)} onMouseLeave={() => setHighlightedRouteId(null)} onFocus={() => setHighlightedRouteId(sheet.id)} onBlur={() => setHighlightedRouteId(null)}>
-                      <td>{formatDate(sheet.route.departed)}</td>
-                      <td>{formatDate(sheet.route.arrived)}</td>
+                      <td>{formatDate(sheetListDate(sheet.route.departed))}</td>
+                      <td>{formatDate(sheetListDate(sheet.route.arrived, true))}</td>
                       <td>
                         <span className="table-vessel">
                           <EntityImage
