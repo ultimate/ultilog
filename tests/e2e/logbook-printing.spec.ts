@@ -11,7 +11,7 @@ test("exposes print actions in the logsheet list and detail view", async ({ page
   const sheetRow = sheetDetailsRow(page, demoSheet.title);
   await expect(sheetRow.getByRole("button", { name: "Print", exact: true })).toBeVisible();
 
-  await page.getByRole("button", { name: demoSheet.title, exact: true }).click();
+  await page.getByRole("link", { name: demoSheet.title, exact: true }).click();
   await expect(page.getByRole("heading", { name: demoSheet.title })).toBeVisible();
   await expect(page.getByRole("button", { name: "Print", exact: true })).toBeVisible();
 });
@@ -105,7 +105,7 @@ test("splits filled sheets that exceed one A4 landscape page", async ({ page }) 
 function sheetDetailsRow(page: Page, title: string) {
   // Each sheet has a title row followed by its details and action row.
   return page.locator(".logbook-table tbody tr", {
-    has: page.getByRole("button", { name: title, exact: true }),
+    has: page.getByRole("link", { name: title, exact: true }),
   }).locator("xpath=following-sibling::tr[1]");
 }
 

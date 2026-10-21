@@ -356,7 +356,8 @@ export function LogbookListPage({
                     <Fragment key={sheet.id}>
                     <tr className="logbook-sheet-title" onMouseEnter={() => setHighlightedRouteId(sheet.id)} onMouseLeave={() => setHighlightedRouteId(null)}>
                       <td rowSpan={2}><EntityImage image={sheet.image} entityType="sheet" alt="" variant="thumb" /></td>
-                      <td colSpan={10}><button className="table-title-button" type="button" onClick={() => openSheet(sheet)}><span className="table-vessel">{sheet.title}</span></button>
+                      <td colSpan={10}><a className="table-title-button" href={modulePath("details", sheet.id)}
+                        onClick={(event) => { if (event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) { event.preventDefault(); openSheet(sheet); } }}><span className="table-vessel">{sheet.title}</span></a>
                         <span className="logbook-sheet-route">{sheet.route.from} → {sheet.route.to}</span>
                       </td>
                     </tr>
