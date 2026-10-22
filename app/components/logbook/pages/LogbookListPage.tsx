@@ -358,7 +358,7 @@ export function LogbookListPage({
                       <td rowSpan={2}><EntityImage image={sheet.image} entityType="sheet" alt="" variant="thumb" /></td>
                       <td colSpan={10}><a className="table-title-button" href={modulePath("details", sheet.id)}
                         onClick={(event) => { if (event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) { event.preventDefault(); openSheet(sheet); } }}><span className="table-vessel">{sheet.title}</span></a>
-                        <span className="logbook-sheet-route">{sheet.route.from} → {sheet.route.to}</span>
+                        <span className="logbook-sheet-route">({sheet.route.from} → {sheet.route.to})</span>
                       </td>
                     </tr>
                     <tr onMouseEnter={() => setHighlightedRouteId(sheet.id)} onMouseLeave={() => setHighlightedRouteId(null)} onFocus={() => setHighlightedRouteId(sheet.id)} onBlur={() => setHighlightedRouteId(null)}>

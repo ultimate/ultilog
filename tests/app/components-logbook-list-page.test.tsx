@@ -177,6 +177,19 @@ describe("logsheet date filter", () => {
     expect(renderer.root.findAllByProps({ role: "dialog" })).toHaveLength(0);
   });
 
+  it("displays legacy voyage dates in the configured format and brackets the route", async () => {
+    await render();
+    const props = renderer.root.findByType(LogbookListPage).props as ComponentProps<typeof LogbookListPage>;
+    await act(async () => renderer.update(
+      <DateTimeFormatProvider dateFormat="dd.MM.yyyy" timeFormat="HH:mm">
+        <LogbookListPage {...props} logbook={{ ...props.logbook, sheets: [sheet("legacy", "14 May 2026, 07:35", "15 May 2026, 00:00")] }} />
+      </DateTimeFormatProvider>,
+    ));
+    const detailsRow = renderer.root.findByType("tbody").findAllByType("tr")[1];
+    expect(detailsRow.findAllByType("td").slice(0, 2).map((cell) => cell.children.join(""))).toEqual(["14.05.2026", "14.05.2026"]);
+    expect(renderer.root.findByProps({ className: "logbook-sheet-route" }).children.join("")).toBe("(A → B)");
+  });
+
   it("shows a validation message for reversed dates", async () => {
     await render();
     await changeDate(0, "2026-05-20");
