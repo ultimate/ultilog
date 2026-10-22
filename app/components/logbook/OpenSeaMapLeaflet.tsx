@@ -79,10 +79,14 @@ function toLatLng(point: Coordinate): LatLngExpression {
   return [point.latitude, point.longitude];
 }
 
-function makeMarkerIcon(point: MapPoint, variant: "detail" | "start" | "end") {
+function makeMarkerIcon(point: MapPoint, variant: "detail" | "start" | "end", routeColor?: string) {
   const course = variant === "detail" ? markerCourse(point) : null;
   const shape = course === null ? "circle" : "arrow";
-  const style = course === null ? "" : ` style="--marker-course: ${course}deg"`;
+  const styles = [
+    course === null ? "" : `--marker-course: ${course}deg`,
+    routeColor ? `--marker-fill: ${routeColor}; color: white` : "",
+  ].filter(Boolean).join("; ");
+  const style = styles ? ` style="${styles}"` : "";
 
   return L.divIcon({
     className: `open-seamap-marker open-seamap-marker-${variant} open-seamap-marker-${shape}`,
@@ -312,13 +316,13 @@ export function OpenSeaMapLeaflet({
           );
         })}
 
-        {visibleRoutes.flatMap((route) =>
+        {visibleRoutes.flatMap((route, routeIndex) =>
           (showEndpointMarkers || route.detailLevel === "full" ? markerPointsForRoute(route) : []).map((point, markerIndex) => {
             const variant = markerVariant(route, point, markerIndex);
             return (
               <Marker
                 key={`${route.id}-${point.id}-${markerIndex}`}
-                icon={makeMarkerIcon(point, variant)}
+                icon={makeMarkerIcon(point, variant, route.detailLevel === "summary" ? summaryRouteColor(route, routeIndex) : undefined)}
                 position={toLatLng(point)}
               >
                 <Popup>
