@@ -323,6 +323,7 @@ export function OpenSeaMapLeaflet({
               <Marker
                 key={`${route.id}-${point.id}-${markerIndex}`}
                 icon={makeMarkerIcon(point, variant, route.detailLevel === "summary" ? summaryRouteColor(route, routeIndex) : undefined)}
+                zIndexOffset={variant === "end" ? 1000 : 0}
                 position={toLatLng(point)}
               >
                 <Popup>
