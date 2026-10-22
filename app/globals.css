@@ -2258,6 +2258,7 @@ img.entity-image--preview {
 
 .logbook-overview-map-card { grid-template-columns: minmax(0, 1fr); min-width: 0; }
 .logbook-sheet-title td { border-bottom: 0; padding-bottom: 0.25rem; }
+.logbook-sheet-title td[colspan] { white-space: nowrap; }
 .logbook-list-card .table-row-actions { flex-wrap: nowrap; }
 .logbook-list-card .table-row-actions .edit-chip { padding: 0.3rem 0.45rem; text-decoration: none; }
 .logbook-table tfoot { background: var(--surface); font-weight: 700; }
