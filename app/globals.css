@@ -2270,3 +2270,10 @@ img.entity-image--preview {
 
 .logbook-sheet-title .table-title-button .table-vessel { display: inline; }
 .logbook-sheet-route { display: inline; margin-inline-start: 0.5rem; color: var(--muted); font-size: 0.9rem; }
+
+.logbook-list-card .logbook-date-cell { white-space: nowrap; }
+.logbook-list-card .logbook-metric-cell {
+  min-width: 9rem;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}

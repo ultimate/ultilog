@@ -378,8 +378,8 @@ export function LogbookListPage({
                       </td>
                     </tr>
                     <tr onMouseEnter={() => setHighlightedRouteId(sheet.id)} onMouseLeave={() => setHighlightedRouteId(null)} onFocus={() => setHighlightedRouteId(sheet.id)} onBlur={() => setHighlightedRouteId(null)}>
-                      <td>{formatDate(sheetListDate(sheet.route.departed))}</td>
-                      <td>{formatDate(sheetListDate(sheet.route.arrived, true))}</td>
+                      <td className="logbook-date-cell">{formatDate(sheetListDate(sheet.route.departed))}</td>
+                      <td className="logbook-date-cell">{formatDate(sheetListDate(sheet.route.arrived, true))}</td>
                       <td>
                         <span className="table-vessel">
                           <EntityImage
@@ -391,12 +391,12 @@ export function LogbookListPage({
                           {boat?.name}
                         </span>
                       </td>
-                      <td>{formatMiles(sheetSummary.sailMiles)} nm</td>
-                      <td>{formatMiles(sheetSummary.motorMiles)} nm</td>
-                      <td>{formatMiles(sheetSummary.totalMiles)} nm</td>
-                      <td>{sheetSummary.duration}</td>
-                      <td>{sheetSummary.motionDuration}</td>
-                      <td>{sheetSummary.motorHoursDuration}</td>
+                      <td className="logbook-metric-cell">{formatMiles(sheetSummary.sailMiles)} nm</td>
+                      <td className="logbook-metric-cell">{formatMiles(sheetSummary.motorMiles)} nm</td>
+                      <td className="logbook-metric-cell">{formatMiles(sheetSummary.totalMiles)} nm</td>
+                      <td className="logbook-metric-cell">{sheetSummary.duration}</td>
+                      <td className="logbook-metric-cell">{sheetSummary.motionDuration}</td>
+                      <td className="logbook-metric-cell">{sheetSummary.motorHoursDuration}</td>
 
                     </tr>
                     </Fragment>
@@ -405,9 +405,9 @@ export function LogbookListPage({
               </tbody>
               <tfoot><tr>
                 <th colSpan={4} scope="row">{t("logbooks.pageTotals")}</th>
-                <td>{formatMiles(totals.sailMiles)} nm</td><td>{formatMiles(totals.motorMiles)} nm</td><td>{formatMiles(totals.totalMiles)} nm</td>
-                <td>{formatLogSheetDuration(totals.durationMinutes)}</td><td>{formatLogSheetDuration(totals.motionDurationMinutes)}</td>
-                <td>{formatLogSheetDuration(totals.motorHours * 60)}</td><td />
+                <td className="logbook-metric-cell">{formatMiles(totals.sailMiles)} nm</td><td className="logbook-metric-cell">{formatMiles(totals.motorMiles)} nm</td><td className="logbook-metric-cell">{formatMiles(totals.totalMiles)} nm</td>
+                <td className="logbook-metric-cell">{formatLogSheetDuration(totals.durationMinutes)}</td><td className="logbook-metric-cell">{formatLogSheetDuration(totals.motionDurationMinutes)}</td>
+                <td className="logbook-metric-cell">{formatLogSheetDuration(totals.motorHours * 60)}</td><td />
               </tr></tfoot>
             </table>
           </div>
