@@ -356,9 +356,25 @@ export function LogbookListPage({
                     <Fragment key={sheet.id}>
                     <tr className="logbook-sheet-title" onMouseEnter={() => setHighlightedRouteId(sheet.id)} onMouseLeave={() => setHighlightedRouteId(null)}>
                       <td rowSpan={2}><EntityImage image={sheet.image} entityType="sheet" alt="" variant="thumb" /></td>
-                      <td colSpan={10}><a className="table-title-button" href={modulePath("details", sheet.id)}
+                      <td colSpan={9}><a className="table-title-button" href={modulePath("details", sheet.id)}
                         onClick={(event) => { if (event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) { event.preventDefault(); openSheet(sheet); } }}><span className="table-vessel">{sheet.title}</span></a>
                         <span className="logbook-sheet-route">({sheet.route.from} → {sheet.route.to})</span>
+                      </td>
+                      <td rowSpan={2}>
+                        <div className="table-row-actions">
+                          <a className="edit-chip" href={modulePath("details", sheet.id)} aria-label={t("common.open")} title={t("common.open")}
+                            onClick={(event) => { if (event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) { event.preventDefault(); openSheet(sheet); } }}>
+                            <span aria-hidden="true">📂</span>
+                          </a>
+                          <button
+                            className="edit-chip"
+                            aria-label={t("logbooks.printSheet")} title={t("logbooks.printSheet")}
+                            onClick={() => onPrintSheet(sheet.id)}
+                            type="button"
+                          >
+                            <span aria-hidden="true">🖨️</span>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                     <tr onMouseEnter={() => setHighlightedRouteId(sheet.id)} onMouseLeave={() => setHighlightedRouteId(null)} onFocus={() => setHighlightedRouteId(sheet.id)} onBlur={() => setHighlightedRouteId(null)}>
@@ -381,22 +397,7 @@ export function LogbookListPage({
                       <td>{sheetSummary.duration}</td>
                       <td>{sheetSummary.motionDuration}</td>
                       <td>{sheetSummary.motorHoursDuration}</td>
-                      <td>
-                        <div className="table-row-actions">
-                          <a className="edit-chip" href={modulePath("details", sheet.id)} aria-label={t("common.open")} title={t("common.open")}
-                            onClick={(event) => { if (event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) { event.preventDefault(); openSheet(sheet); } }}>
-                            <span aria-hidden="true">📂</span>
-                          </a>
-                          <button
-                            className="edit-chip"
-                            aria-label={t("logbooks.printSheet")} title={t("logbooks.printSheet")}
-                            onClick={() => onPrintSheet(sheet.id)}
-                            type="button"
-                          >
-                            <span aria-hidden="true">🖨️</span>
-                          </button>
-                        </div>
-                      </td>
+
                     </tr>
                     </Fragment>
                   );
