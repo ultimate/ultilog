@@ -60,3 +60,28 @@ export function formatStoredDateRange(from: string | undefined | null, to: strin
   if (!end || end === start) return start;
   return `${start} – ${end}`;
 }
+
+/** Parse only the configured format; never guess ambiguous day/month order. */
+export function parseFormattedDate(value: string, format: DateFormat, locale = "en"): string | undefined {
+  const escaped = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const tokens: string[] = [];
+  const pattern = format.split(/(yyyy|MMM|MM|dd|d)/).map((part) => {
+    if (!["yyyy", "MMM", "MM", "dd", "d"].includes(part)) return escaped(part);
+    tokens.push(part);
+    return part === "yyyy" ? "(\\d{4})" : part === "MMM" ? "(.+?)" : "(\\d{1,2})";
+  }).join("");
+  const match = value.trim().match(new RegExp(`^${pattern}$`, "iu"));
+  if (!match) return undefined;
+  let year = "", month = "", day = "";
+  tokens.forEach((token, index) => {
+    const part = match[index + 1];
+    if (token === "yyyy") year = part;
+    else if (token === "MMM") {
+      const formatter = new Intl.DateTimeFormat(locale, { month: "short", timeZone: "UTC" });
+      const monthIndex = Array.from({ length: 12 }, (_, i) => formatter.format(new Date(Date.UTC(2026, i, 1))).toLocaleLowerCase(locale)).indexOf(part.toLocaleLowerCase(locale));
+      if (monthIndex >= 0) month = String(monthIndex + 1).padStart(2, "0");
+    } else if (token === "MM") month = part.padStart(2, "0");
+    else day = part.padStart(2, "0");
+  });
+  return normalizeIsoDate(`${year}-${month}-${day}`);
+}

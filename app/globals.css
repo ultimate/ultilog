@@ -2277,3 +2277,10 @@ img.entity-image--preview {
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
+
+.formatted-date-filter { display: flex; align-items: center; gap: 0.25rem; }
+.formatted-date-filter input[type="text"] { width: 11rem; }
+.formatted-date-calendar { position: relative; display: grid; place-items: center; width: 2.5rem; height: 2.5rem; flex-shrink: 0; border: 1px solid var(--border); border-radius: 0.5rem; }
+.formatted-date-calendar input[type="date"] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; min-width: 0; }
+.formatted-date-calendar input::-webkit-calendar-picker-indicator { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; }
+.formatted-date-calendar:focus-within { outline: 2px solid var(--primary); outline-offset: 2px; }

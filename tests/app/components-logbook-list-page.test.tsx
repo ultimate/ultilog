@@ -190,6 +190,24 @@ describe("logsheet date filter", () => {
     expect(renderer.root.findByProps({ className: "logbook-sheet-route" }).children.join("")).toBe("(A → B)");
   });
 
+  it("formats calendar selections and parses typed filters using the date preference", async () => {
+    await render();
+    const props = renderer.root.findByType(LogbookListPage).props as ComponentProps<typeof LogbookListPage>;
+    await act(async () => renderer.update(
+      <DateTimeFormatProvider dateFormat="MM/dd/yyyy" timeFormat="HH:mm"><LogbookListPage {...props} /></DateTimeFormatProvider>,
+    ));
+    await changeDate(0, "2026-05-20");
+    const from = () => renderer.root.findAllByProps({ type: "text" }).find((input) => input.props["aria-label"] === "logbooks.fromDate")!;
+    expect(from().props.value).toBe("05/20/2026");
+    await act(async () => from().props.onChange({ currentTarget: { value: "05/21/2026" } }));
+    expect(mapIds()).toEqual(["spanning", "after"]);
+    expect(renderer.root.findAllByProps({ type: "date" })[0].props.value).toBe("2026-05-21");
+    await act(async () => from().props.onChange({ currentTarget: { value: "02/31/2026" } }));
+    expect(from().props["aria-invalid"]).toBe(true);
+    await act(async () => from().props.onChange({ currentTarget: { value: "" } }));
+    expect(mapIds()).toHaveLength(8);
+  });
+
   it("shows a validation message for reversed dates", async () => {
     await render();
     await changeDate(0, "2026-05-20");
