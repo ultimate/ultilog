@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatStoredDate, formatStoredDateRange, formatStoredDateTime, formatStoredTime } from "../../../app/lib/date-time-format";
+import { dateFormats, parseFormattedDate, formatStoredDate, formatStoredDateRange, formatStoredDateTime, formatStoredTime } from "../../../app/lib/date-time-format";
 
 describe("date and time display formatting", () => {
   it("offers common numeric and localized month date layouts", () => {
@@ -23,5 +23,24 @@ describe("date and time display formatting", () => {
   it("leaves invalid non-ISO values unchanged", () => {
     expect(formatStoredDate("Summer cruise", "yyyy-MM-dd")).toBe("Summer cruise");
     expect(formatStoredTime("time open", "HH:mm")).toBe("time open");
+  });
+});
+
+describe("configured date input", () => {
+  for (const locale of ["en", "de", "fr", "it"]) {
+    it(`round trips every configured format and month in ${locale}`, () => {
+      for (const format of dateFormats) {
+        for (let month = 1; month <= 12; month++) {
+          const iso = `2026-${String(month).padStart(2, "0")}-07`;
+          expect(parseFormattedDate(formatStoredDate(iso, format, locale), format, locale)).toBe(iso);
+        }
+      }
+    });
+  }
+  it("does not guess ambiguous dates or accept impossible dates", () => {
+    expect(parseFormattedDate("05/06/2026", "dd/MM/yyyy")).toBe("2026-06-05");
+    expect(parseFormattedDate("05/06/2026", "MM/dd/yyyy")).toBe("2026-05-06");
+    expect(parseFormattedDate("31.02.2026", "dd.MM.yyyy")).toBeUndefined();
+    expect(parseFormattedDate("07/08/2026", "dd.MM.yyyy")).toBeUndefined();
   });
 });

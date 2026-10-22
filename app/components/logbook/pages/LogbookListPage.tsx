@@ -1,3 +1,4 @@
+import { DateFilterInput } from "../DateFilterInput";
 import { ModalLayer } from "../ModalLayer";
 import { Fragment } from "react";
 import { modulePath } from "../persistence";
@@ -314,14 +315,8 @@ export function LogbookListPage({
           {logbook.boats.map((boat) => <option key={boat.id} value={boat.id}>{boat.name}</option>)}
         </select>
         <div className="logbook-date-filter" role="group" aria-label={t("logbooks.timeFilter")}>
-          <label>
-            <span>{t("logbooks.fromDate")}</span>
-            <input type="date" value={fromDate} max={toDate || undefined} aria-invalid={invalidDateRange} aria-describedby={invalidDateRange ? "logbook-date-range-error" : undefined} onChange={(event) => { setFromDate(event.currentTarget.value); list.setPage(1); }} />
-          </label>
-          <label>
-            <span>{t("logbooks.toDate")}</span>
-            <input type="date" value={toDate} min={fromDate || undefined} aria-invalid={invalidDateRange} aria-describedby={invalidDateRange ? "logbook-date-range-error" : undefined} onChange={(event) => { setToDate(event.currentTarget.value); list.setPage(1); }} />
-          </label>
+          <DateFilterInput label={t("logbooks.fromDate")} value={fromDate} max={toDate || undefined} invalid={invalidDateRange} describedBy={invalidDateRange ? "logbook-date-range-error" : undefined} onChange={(value) => { setFromDate(value); list.setPage(1); }} />
+          <DateFilterInput label={t("logbooks.toDate")} value={toDate} min={fromDate || undefined} invalid={invalidDateRange} describedBy={invalidDateRange ? "logbook-date-range-error" : undefined} onChange={(value) => { setToDate(value); list.setPage(1); }} />
           <button type="button" className="ghost-button" disabled={!fromDate && !toDate} onClick={() => { setFromDate(""); setToDate(""); list.setPage(1); }}>
             {t("logbooks.allTime")}
           </button>

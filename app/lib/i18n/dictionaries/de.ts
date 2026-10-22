@@ -2,6 +2,7 @@ import { type Dictionary } from "./en";
 
 // Keep one translation key per line so locale files stay easy to diff and edit side by side.
 export const de: Dictionary = {
+  "logbooks.chooseDate": "Datum auswählen",
   "logbooks.scanImport": "Scannen / Importieren",
   "logbooks.scannerSettingsTitle": "Scan konfigurieren",
   "logbooks.scannerPrivacyAccept": "Ich habe den Datenschutzhinweis gelesen und stimme zu.",

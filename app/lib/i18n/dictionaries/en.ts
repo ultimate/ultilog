@@ -1,5 +1,6 @@
 // Keep one translation key per line so locale files stay easy to diff and edit side by side.
 export const en = {
+  "logbooks.chooseDate": "Choose date",
   "logbooks.scanImport": "Scan / Import",
   "logbooks.scannerSettingsTitle": "Configure scan",
   "logbooks.scannerPrivacyAccept": "I have read and agree to the privacy notice.",
