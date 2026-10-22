@@ -59,10 +59,13 @@ function normalizeTimezoneOffset(value: string) {
 
 /** Calendar date for list columns, preserving the voyage's stored timezone. */
 export function sheetListDate(stamp: string, isEndDate = false) {
-  const date = normalizeIsoDate(stamp);
-  if (!date) return "";
+  const value = stamp.trim();
+  const timeSuffix = value.match(/(?:T|,?\s)(\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?)(?:Z|[+-]\d{2}:\d{2})?$/);
+  const datePart = timeSuffix ? value.slice(0, timeSuffix.index).trim() : value;
+  const date = normalizeIsoDate(datePart);
+  if (!date) return datePart;
   // Only explicit, exact midnight ends are exclusive; date-only values stay as stored.
-  const midnight = /^\d{4}-\d{2}-\d{2}(?:T|,? )00:00(?::00(?:\.0+)?)?(?:Z|[+-]\d{2}:\d{2})?$/.test(stamp.trim());
+  const midnight = Boolean(timeSuffix && /^00:00(?::00(?:\.0+)?)?$/.test(timeSuffix[1]));
   if (!isEndDate || !midnight) return date;
   const previousDay = new Date(`${date}T00:00:00Z`);
   previousDay.setUTCDate(previousDay.getUTCDate() - 1);
