@@ -350,12 +350,17 @@ export function LogbookListPage({
                   return (
                     <Fragment key={sheet.id}>
                     <tr className="logbook-sheet-title" onMouseEnter={() => setHighlightedRouteId(sheet.id)} onMouseLeave={() => setHighlightedRouteId(null)}>
-                      <td rowSpan={2}><EntityImage image={sheet.image} entityType="sheet" alt="" variant="thumb" /></td>
+                      <td rowSpan={2} className="logbook-sheet-image-cell">
+                        <div className="logbook-sheet-images">
+                          <EntityImage image={sheet.image} entityType="sheet" alt="" variant="thumb" className="logbook-sheet-thumbnail" />
+                          {boat?.image?.data && <EntityImage image={boat.image} entityType="boat" alt={boat.name} variant="thumb" className="logbook-boat-badge" />}
+                        </div>
+                      </td>
                       <td colSpan={9}><a className="table-title-button" href={modulePath("details", sheet.id)}
                         onClick={(event) => { if (event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) { event.preventDefault(); openSheet(sheet); } }}><span className="table-vessel">{sheet.title}</span></a>
                         <span className="logbook-sheet-route">({sheet.route.from} → {sheet.route.to})</span>
                       </td>
-                      <td rowSpan={2}>
+                      <td rowSpan={2} className="logbook-sheet-actions-cell">
                         <div className="table-row-actions">
                           <a className="edit-chip" href={modulePath("details", sheet.id)} aria-label={t("common.open")} title={t("common.open")}
                             onClick={(event) => { if (event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) { event.preventDefault(); openSheet(sheet); } }}>
@@ -375,17 +380,7 @@ export function LogbookListPage({
                     <tr onMouseEnter={() => setHighlightedRouteId(sheet.id)} onMouseLeave={() => setHighlightedRouteId(null)} onFocus={() => setHighlightedRouteId(sheet.id)} onBlur={() => setHighlightedRouteId(null)}>
                       <td className="logbook-date-cell">{formatDate(sheetListDate(sheet.route.departed))}</td>
                       <td className="logbook-date-cell">{formatDate(sheetListDate(sheet.route.arrived, true))}</td>
-                      <td>
-                        <span className="table-vessel">
-                          <EntityImage
-                            image={boat?.image}
-                            entityType="boat"
-                            alt={boat ? `${boat.name} thumbnail` : t("common.boat")}
-                            variant="thumb"
-                          />
-                          {boat?.name}
-                        </span>
-                      </td>
+                      <td>{boat?.name}</td>
                       <td className="logbook-metric-cell">{formatMiles(sheetSummary.sailMiles)} nm</td>
                       <td className="logbook-metric-cell">{formatMiles(sheetSummary.motorMiles)} nm</td>
                       <td className="logbook-metric-cell">{formatMiles(sheetSummary.totalMiles)} nm</td>
