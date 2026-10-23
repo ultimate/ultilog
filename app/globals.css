@@ -2310,3 +2310,5 @@ img.entity-image--preview {
   border: 2px solid var(--surface-strong, white);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
+
+.logbook-list-card .logbook-boat-name-cell { min-width: calc(12ch + 1.2rem); white-space: nowrap; }

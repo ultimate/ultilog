@@ -380,7 +380,7 @@ export function LogbookListPage({
                     <tr onMouseEnter={() => setHighlightedRouteId(sheet.id)} onMouseLeave={() => setHighlightedRouteId(null)} onFocus={() => setHighlightedRouteId(sheet.id)} onBlur={() => setHighlightedRouteId(null)}>
                       <td className="logbook-date-cell">{formatDate(sheetListDate(sheet.route.departed))}</td>
                       <td className="logbook-date-cell">{formatDate(sheetListDate(sheet.route.arrived, true))}</td>
-                      <td>{boat?.name}</td>
+                      <td className="logbook-boat-name-cell">{boat?.name}</td>
                       <td className="logbook-metric-cell">{formatMiles(sheetSummary.sailMiles)} nm</td>
                       <td className="logbook-metric-cell">{formatMiles(sheetSummary.motorMiles)} nm</td>
                       <td className="logbook-metric-cell">{formatMiles(sheetSummary.totalMiles)} nm</td>
