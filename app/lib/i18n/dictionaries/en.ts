@@ -1,5 +1,22 @@
 // Keep one translation key per line so locale files stay easy to diff and edit side by side.
 export const en = {
+  "details.lineDateTime": "Log line date and time",
+  "details.invalidNumber": "Invalid number",
+  "details.invalidHours": "Enter hours as HH:mm or decimal hours",
+  "details.invalidDateTime": "Enter a valid date and time in the selected format",
+  "details.requiredLineFields": "Date, time with timezone, latitude and longitude are required",
+  "details.noCrewResults": "No matching crew members",
+  "details.shareSheet": "Share log sheet",
+  "details.lockSheet": "Lock log sheet",
+  "details.unlockSheet": "Unlock log sheet",
+  "details.collapseActions": "Collapse actions",
+  "details.expandActions": "Expand actions",
+  "details.previousSheet": "Previous log sheet",
+  "details.nextSheet": "Next log sheet",
+  "details.dismissWarnings": "Do not show again",
+  "details.warningHistory": "Show import warning history",
+  "details.unsavedEdits": "Save or cancel your edits before changing sheets",
+
   "logbooks.chooseDate": "Choose date",
   "logbooks.scanImport": "Scan / Import",
   "logbooks.scannerSettingsTitle": "Configure scan",

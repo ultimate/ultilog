@@ -40,6 +40,13 @@ export async function runMigrations(db: QueryableDatabase) {
 }
 
 async function applyMigration(db: QueryableDatabase, id: string, sql: string) {
+  if (id === "054_log_sheet_editor") {
+    await makeLogLineNumbersNullable(db);
+    await db.query(sql);
+    // Existing metrics must use interval duration rather than summed engine wear.
+    await db.query(`update log_sheets set motor_hours = coalesce((select sum(runtime) from (select h.sheet_id, h.line_sort_order, max(h.runtime_hours) as runtime from log_line_engine_hours h group by h.sheet_id, h.line_sort_order) intervals where intervals.sheet_id = log_sheets.id), 0)`);
+    return;
+  }
   if (id === "047_normalize_boat_master_data") {
     await normalizeBoatMasterData(db);
     return;
@@ -409,4 +416,28 @@ function normalizeDateTimeStamp(value: string) {
   if (dateOnly) return `${dateOnly[1]}T00:00:00+00:00`;
 
   return trimmed;
+}
+
+async function makeLogLineNumbersNullable(db: QueryableDatabase) {
+  const columns = ["latitude", "longitude", "log_nm", "compass_course", "waves", "barometer", "temperature", "wind_strength", "tide", "deviation", "magnetic_course", "variation", "true_course", "wind_drift", "course_through_water", "current_drift", "course_over_ground", "speed_kn", "sail_miles", "motor_miles"];
+  if (db.placeholder(1) === "$1") {
+    for (const column of columns) await db.query(`alter table log_lines alter column ${column} drop not null, alter column ${column} drop default`);
+    return;
+  }
+  // Rebuild the SQLite table transactionally, preserving child rows and indexes.
+  const schema = (await db.query<{ sql: string }>("select sql from sqlite_master where type = 'table' and name = 'log_lines'")).rows[0]?.sql;
+  if (!schema) throw new Error("Missing log_lines schema");
+  const indexes = (await db.query<{ sql: string }>("select sql from sqlite_master where type = 'index' and tbl_name = 'log_lines' and sql is not null")).rows;
+  await db.query("create temporary table saved_engine_hours as select * from log_line_engine_hours");
+  let nullableSchema = schema.replace(/create table (?:if not exists )?["`]?log_lines["`]?/i, "create table log_lines_nullable");
+  for (const column of columns) {
+    nullableSchema = nullableSchema.replace(new RegExp(`(\\b${column}\\s+\\w+)\\s+not null(?:\\s+default\\s+(?:'[^']*'|[\\d.-]+))?`, "i"), "$1");
+  }
+  await db.query(nullableSchema);
+  await db.query("insert into log_lines_nullable select * from log_lines");
+  await db.query("drop table log_lines");
+  await db.query("alter table log_lines_nullable rename to log_lines");
+  for (const index of indexes) await db.query(index.sql);
+  await db.query("insert into log_line_engine_hours select * from saved_engine_hours");
+  await db.query("drop table saved_engine_hours");
 }

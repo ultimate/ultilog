@@ -13,19 +13,19 @@ test("edits technical log entries and suggests previous checks", async ({ page }
   await expect(page.getByRole("combobox", { name: "Technical log entry 1" })).toHaveValue("Engine oil checked");
   await expect(page.locator('datalist#technical-log-suggestions option[value="Fuel valves open"]')).toHaveCount(1);
   await expect(page.getByRole("combobox", { name: "Check status 1" })).toHaveValue("⌛");
-  await page.getByRole("spinbutton", { name: "Main engine Beginning of sheet" }).fill("120.5");
-  await page.getByRole("spinbutton", { name: "Main engine End of sheet" }).fill("121.5");
-  await page.getByRole("spinbutton", { name: "Main engine End of sheet" }).blur();
-  await expect(page.getByRole("row", { name: /Counter difference/ })).toContainText("1.0 h");
-  await expect(page.getByRole("row", { name: /Runtime tracked on sheet/ })).toContainText("1.0 h");
+  await page.getByRole("textbox", { name: "Main engine Beginning of sheet" }).fill("120.5");
+  await page.getByRole("textbox", { name: "Main engine End of sheet" }).fill("121.5");
+  await page.getByRole("textbox", { name: "Main engine End of sheet" }).blur();
+  await expect(page.getByRole("row", { name: /Counter difference/ })).toContainText("01:00");
+  await expect(page.getByRole("row", { name: /Runtime tracked on sheet/ })).toContainText("01:00");
   await expect.poll(async () => {
     const stored = await (await page.request.get("/api/logbook")).json();
     return stored.sheets.find((sheet: { id: string }) => sheet.id === targetSheet.id)?.engineHourCounters?.["main-engine"];
   }).toEqual({ start: 120.5, end: 121.5 });
   await expect(page.getByText("Unable to save the latest changes. Please try again.")).toHaveCount(0);
   await page.reload();
-  await expect(page.getByRole("spinbutton", { name: "Main engine Beginning of sheet" })).toHaveValue("120.5");
-  await expect(page.getByRole("spinbutton", { name: "Main engine End of sheet" })).toHaveValue("121.5");
+  await expect(page.getByRole("textbox", { name: "Main engine Beginning of sheet" })).toHaveValue("120:30");
+  await expect(page.getByRole("textbox", { name: "Main engine End of sheet" })).toHaveValue("121:30");
   await page.setViewportSize({ width: 375, height: 812 });
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.locator(".engine-hour-counter-section .table-scroll").scrollIntoViewIfNeeded();
@@ -45,7 +45,7 @@ test("edits technical log entries and suggests previous checks", async ({ page }
   await page.getByRole("button", { name: "Delete technical log entry 6" }).click();
   await expect(page.getByRole("combobox", { name: "Technical log entry 6" })).toHaveCount(0);
 
-  await page.getByRole("button", { name: "Lock" }).click();
+  await page.getByRole("button", { name: "Lock log sheet" }).click();
   await expect(page.getByRole("combobox", { name: "Technical log entry 1" })).toBeDisabled();
   await expect(page.getByRole("combobox", { name: "New technical log entry" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Delete technical log entry 1" })).toBeDisabled();
@@ -54,8 +54,8 @@ test("edits technical log entries and suggests previous checks", async ({ page }
   await page.goto(`/details/${motorSheet.id}`);
   const firstLine = page.locator(".log-lines-table tbody tr").first();
   await firstLine.getByRole("button", { name: "✏️" }).click();
-  await page.getByRole("spinbutton", { name: "Port engine Engine runtime increment" }).fill("0.5");
-  await page.getByRole("spinbutton", { name: "Starboard engine Engine runtime increment" }).fill("0.6");
+  await page.getByRole("textbox", { name: "Port engine Engine runtime increment" }).fill("0.5");
+  await page.getByRole("textbox", { name: "Starboard engine Engine runtime increment" }).fill("0.6");
   await firstLine.getByRole("button", { name: "💾" }).click();
   await expect.poll(async () => {
     const stored = await (await page.request.get("/api/logbook")).json();
@@ -64,29 +64,19 @@ test("edits technical log entries and suggests previous checks", async ({ page }
   await expect(page.getByText("Unable to save the latest changes. Please try again.")).toHaveCount(0);
 });
 
-test("edits two minute digits without resetting the browser segment", async ({ page }) => {
+test("preserves partially typed preference-formatted date and time", async ({ page }) => {
   await loginWithSeededDemoData(page);
   await page.goto(`/details/${targetSheet.id}`);
   const row = page.locator(".log-lines-table tbody tr").first();
   await row.getByRole("button", { name: "✏️" }).click();
-  const time = row.locator('input[type="datetime-local"]');
+  const time = row.getByRole("textbox", { name: "Log line date and time" });
   await page.setViewportSize({ width: 2560, height: 1440 });
   const showCourses = page.getByRole("button", { name: "Show course conversion columns", exact: true });
   if (await showCourses.count()) await showCourses.click();
   await expect.poll(() => page.locator(".log-lines-table").evaluate(table => table.parentElement!.scrollWidth - table.parentElement!.clientWidth)).toBeLessThanOrEqual(1);
-  await time.fill("2026-10-12T10:00");
-  // Chromium starts with the month segment; tab through day, year and hour to minutes.
-  await time.focus();
-  await time.press("ArrowLeft");
-  await time.press("ArrowLeft");
-  await time.press("ArrowLeft");
-  await time.press("ArrowLeft");
-  await time.press("Tab");
-  await time.press("Tab");
-  await time.press("Tab");
-  await time.press("Tab");
+  await time.fill("12/10/2026, 10:");
   await time.pressSequentially("45", { delay: 150 });
-  await expect(time).toHaveValue("2026-10-12T10:45");
+  await expect(time).toHaveValue("12/10/2026, 10:45");
   const weather = row.locator("td").nth(4).locator("option");
   await expect(weather).toHaveText(["—", "☀️", "🌤️", "⛅", "🌥️", "☁️", "🌫️", "🌦️", "🌧️", "⛈️", "🌩️", "🌨️", "❄️", "🌪️", "⭐"]);
   await expect(row.locator('input[data-line-field="temperature"]')).toHaveAttribute("step", "1");
@@ -119,7 +109,7 @@ test("edits two minute digits without resetting the browser segment", async ({ p
   const savedRow = page.locator(".log-lines-table tbody tr").filter({ hasText: targetSheet.lines[0].weatherRemark });
   await expect.poll(() => page.locator(".log-lines-table").evaluate(table => table.parentElement!.scrollWidth - table.parentElement!.clientWidth)).toBeLessThanOrEqual(1);
   await savedRow.getByRole("button", { name: "✏️" }).click();
-  await expect(page.locator('.inline-line-row input[type="datetime-local"]')).toHaveValue("2026-10-12T10:45");
+  await expect(page.locator(".inline-line-row").getByRole("textbox", { name: "Log line date and time" })).toHaveValue("12/10/2026, 10:45");
 });
 
 async function loginWithSeededDemoData(page: Page) {
@@ -132,7 +122,7 @@ async function loginWithSeededDemoData(page: Page) {
   await page.waitForLoadState("networkidle");
   await removeDemoLogsheets(page);
   const seedResponse = await page.request.put("/api/logbook/import", { headers: { Origin: "http://127.0.0.1:3000", "X-Ultilog-Confirm-Replace": "replace-my-entire-logbook" },
-    data: { boats: sampleBoats.map(boat => ({ ...boat, windDriftTable: defaultWindDriftTable() })), crewMembers: crewProfilesFromSheets(sampleLogSheets), sheets: sampleLogSheets },
+    data: { boats: sampleBoats.map(boat => ({ ...boat, windDriftTable: defaultWindDriftTable() })), crewMembers: crewProfilesFromSheets(sampleLogSheets), sheets: sampleLogSheets.map(sheet => ({ ...sheet, lines: sheet.lines.map(line => ({ ...line, time: `${line.time}+00:00` })) })) },
   });
   expect(seedResponse.ok(), await seedResponse.text()).toBeTruthy();
   await page.reload();

@@ -12,7 +12,7 @@ describe("immutable demo logbook template", () => {
       const sheets = DEMO_LOGBOOK_TEMPLATE.sheets.filter((sheet) => sheet.boatId === boat.id);
       expect(sheets).toHaveLength(4);
       expect(sheets.every((sheet) => sheet.lines.length >= 5 && sheet.lines.length <= 10)).toBe(true);
-      expect(sheets.every((sheet) => sheet.lines.slice(0, -1).every((line) => line.speedKn > 0) && sheet.lines.at(-1)?.speedKn === 0)).toBe(true);
+      expect(sheets.every((sheet) => sheet.lines.slice(0, -1).every((line) => (line.speedKn ?? 0) > 0) && sheet.lines.at(-1)?.speedKn === 0)).toBe(true);
     }
   });
 

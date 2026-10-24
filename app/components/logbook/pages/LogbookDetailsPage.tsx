@@ -1,3 +1,9 @@
+import { CrewSearchSelect } from "../CrewSearchSelect";
+import { SheetAction } from "../SheetAction";
+import { LogNumberInput } from "../LogNumberInput";
+import { PreferenceDateTimeInput } from "../PreferenceDateTimeInput";
+import { formatEngineHours, parseHourInput, parseDecimalInput } from "../../../lib/log-input";
+import { hasRequiredLogLineFields } from "../../../domain/log-lines/required-fields";
 import { ModalLayer } from "../ModalLayer";
 import { compassDirections, translatedWindDirection } from "../wind-directions";
 import { LogLineDateTimeInput } from "../LogLineDateTimeInput";
@@ -7,7 +13,7 @@ import { EntityImage } from "../EntityImage";
 import { useI18n } from "../../../lib/i18n";
 import { useDateTimeFormat } from "../../../lib/DateTimeFormatProvider";
 import { formatMiles } from "../../../lib/format-number";
-import { useEffect, useRef, useState, type CSSProperties, type FocusEvent, type FormEvent, type KeyboardEvent, type MouseEvent } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type FocusEvent, type FormEvent, type KeyboardEvent, type MouseEvent } from "react";
 import { createPortal } from "react-dom";
 import type {
   Boat,
@@ -19,7 +25,7 @@ import type {
   PersistedLogbook,
   ScannerWarning,
 } from "../../../models/logbook";
-import { coordinateToInput, decimalToDdmParts, decimalToDmsParts, ddmPartsToDecimal, dmsPartsToDecimal, nextCoordinateFormat, parseCoordinate, type CoordinateFormat, type DmsParts } from "../../../domain/nautical/coordinates";
+import { coordinateToInput, decimalToDdmParts, decimalToDmsParts, dmsPartsToDecimal, nextCoordinateFormat, parseCoordinate, type CoordinateFormat, type DmsParts } from "../../../domain/nautical/coordinates";
 import { boatToForm, sheetToForm } from "../forms";
 import { dateTimeLocalFromParts, isoDateTimeWithTimezone, splitDateTimeLocal, timeZoneOffsetOptions, timezoneOffsetFromStamp, dateTimeLocalFromStamp } from "../date-utils";
 import { updateLogLineFormForInput } from "../../../domain/log-lines/log-line-editor";
@@ -53,11 +59,6 @@ type CourseColumn = {
   isOptional: boolean;
 };
 
-function nonNegativeInputValue(value: string) {
-  const parsed = Number.parseFloat(value);
-  return Number.isFinite(parsed) && parsed < 0 ? "0" : value;
-}
-
 const signedCourseInput = { min: -180, max: 180 } as const;
 const unsignedCourseInput = { min: 0, max: 359 } as const;
 
@@ -83,7 +84,8 @@ const scannerWarningFieldOrder: LineFormField[] = [
 type LogbookDetailsPageProps = Record<string, any>;
 
 export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const displayNumber = (value: number | null, unit = "") => value == null ? "" : `${value.toLocaleString(locale)}${unit ? ` ${unit}` : ""}`;
   const { formatTime, formatDateTime } = useDateTimeFormat();
   const {
     isBackendReady,
@@ -144,6 +146,18 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const defaultCoordinateFormat = props.coordinateFormat as CoordinateFormat;
   const onShowCourseColumnsChange = props.onShowCourseColumnsChange as (show: boolean) => void;
   const [isMapExpanded, setIsMapExpanded] = useState(false);
+  const storedActionPreference = useSyncExternalStore(subscribeActionPreference, actionPreferenceSnapshot, () => false);
+  const [localActionPreference, setLocalActionPreference] = useState<boolean | null>(null);
+  const actionsCollapsed = localActionPreference ?? storedActionPreference;
+  const [warningHistorySheetId, setWarningHistorySheetId] = useState<string | null>(null);
+  const showWarningHistory = warningHistorySheetId === activeSheet.id;
+  const toggleActions = () => {
+    setLocalActionPreference(!actionsCollapsed);
+    try {
+      localStorage.setItem("ultilog.sheetActionsCollapsed", String(!actionsCollapsed));
+      window.dispatchEvent(new Event("ultilog-sheet-actions"));
+    } catch { /* Keep actions accessible when storage is unavailable. */ }
+  };
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletePassword, setDeletePassword] = useState("");
@@ -151,6 +165,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [shareDraftState, setShareDraftState] = useState<{ sheetId: string; share: LogSheetShareSettings }>({ sheetId: "", share: defaultLogSheetShareSettings });
   const [newTechnicalCheck, setNewTechnicalCheck] = useState("");
+  const [sheetNavigationError, setSheetNavigationError] = useState("");
   const [technicalCheckDraftState, setTechnicalCheckDraftState] = useState<{ sheetId: string; drafts: Record<number, string> }>({ sheetId: "", drafts: {} });
   const [openCourseTooltip, setOpenCourseTooltip] = useState<TranslationKey | null>(null);
   const courseTooltipTriggerRef = useRef<HTMLButtonElement>(null);
@@ -161,12 +176,23 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const scannerWarningFirstActionRef = useRef<HTMLButtonElement>(null);
   const focusScannerWarningActionOnOpenRef = useRef(false);
   const scannerWarningTargetsRef = useRef(new Map<string, HTMLElement>());
+  const scannerWarningCellTargetsRef = useRef(new Map<string, HTMLElement>());
   const pendingScannerWarningIndexRef = useRef<number | null>(null);
   const [reviewedScannerWarningId, setReviewedScannerWarningId] = useState<string | null>(null);
   const [acknowledgedWarningVisibility, setAcknowledgedWarningVisibility] = useState({ sheetId: "", show: false });
   const [coordinateFormatOverride, setCoordinateFormatOverride] = useState<{ sheetId: string; format: CoordinateFormat } | null>(null);
   const coordinateFormat = coordinateFormatOverride?.sheetId === activeSheet.id ? coordinateFormatOverride.format : defaultCoordinateFormat;
   const technicalCheckDrafts = technicalCheckDraftState.sheetId === activeSheet.id ? technicalCheckDraftState.drafts : {};
+  const navigateSheet = (id: string | undefined, event?: MouseEvent<HTMLButtonElement>) => {
+    if (newTechnicalCheck.trim() || Object.keys(technicalCheckDrafts).length) {
+      setSheetNavigationError(t("details.unsavedEdits"));
+      return;
+    }
+    const invalid = event?.currentTarget.closest(".sheet-detail")?.querySelector<HTMLInputElement>("input:invalid");
+    if (invalid) { invalid.reportValidity(); return; }
+    setSheetNavigationError("");
+    void props.onNavigateSheet(id);
+  };
   const scannerWarnings = activeSheet.scannerWarnings ?? [];
   const scannerWarningText = (warning: ScannerWarning) => formatScannerWarning(warning, t);
   const activeScannerWarningCount = scannerWarnings.filter((warning) => !warning.acknowledgedAt).length;
@@ -193,13 +219,11 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     ? scannerWarnings
     : scannerWarnings.filter((warning) => !warning.acknowledgedAt);
   const indexedScannerWarnings = indexScannerWarnings(visibleScannerWarnings);
-  const noticeScannerWarnings = [
-    ...indexedScannerWarnings.unmatched,
-    ...[...indexedScannerWarnings.lineWarnings.values()].flatMap((warnings) => warnings),
-  ];
+  const noticeScannerWarnings = visibleScannerWarnings;
 
   const focusScannerWarning = (warning: ScannerWarning) => {
-    const target = scannerWarningTargetsRef.current.get(warning.id);
+    const cell = scannerWarningCellTargetsRef.current.get(warning.id);
+    const target = cell?.isConnected ? cell : scannerWarningTargetsRef.current.get(warning.id);
     if (!target) return;
     setReviewedScannerWarningId(warning.id);
     target.scrollIntoView({ behavior: "smooth", block: "center", inline: "center" });
@@ -254,7 +278,8 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     ["technicalLog", "Technical log"],
     ["remarks", "Logsheet remarks"],
   ] as const;
-  const showScannerDraftNotice = activeSheet.source === "scanner";
+  const showScannerDraftNotice = activeSheet.source === "scanner" && (activeScannerWarningCount > 0 || !activeSheet.scannerWarningsDismissed || showWarningHistory);
+  const incompleteLines = activeSheet.lines.some(line => !hasRequiredLogLineFields(line));
   const sharedSourceNotice = activeSheet.copyProvenance
     ? t("details.sharedSource.provenance")
       .replace("{owner}", activeSheet.copyProvenance.sourceOwnerName)
@@ -347,7 +372,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
 
   const renderNumberInput = (draftId: string, field: Exclude<keyof LineForm, "engineHours" | "id">, options?: { min?: number; max?: number; step?: string }) => {
     const lineForm = lineForms[draftId].form;
-    return <input data-line-field={field} type="number" min={options?.min} max={options?.max} step={options?.step ?? "1"} value={lineForm[field]} onChange={(e) => setDraftLineForm(draftId, { ...lineForm, [field]: e.target.value })} />;
+    return <LogNumberInput data-line-field={field} min={options?.min} max={options?.max} step={options?.step ?? "1"} value={lineForm[field]} onChange={(e) => setDraftLineForm(draftId, { ...lineForm, [field]: e.target.value })} />;
   };
   const renderTextInput = (draftId: string, field: Exclude<keyof LineForm, "engineHours" | "id">, label?: string) => {
     const lineForm = lineForms[draftId].form;
@@ -359,20 +384,20 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     const lineForm = lineForms[draftId].form;
     const sequence = (courseConversionSequences.current[draftId] ?? 0) + 1;
     courseConversionSequences.current[draftId] = sequence;
+    setDraftLineForm(draftId, { ...lineForm, [field]: value });
     const updated = updateLogLineFormForInput(lineForm, { field, value }, { boat: activeBoat });
     Promise.resolve(updated)
       .then((result) => {
         if (courseConversionSequences.current[draftId] !== sequence) return;
-        setDraftLineForm(draftId, result);
+        setDraftLineForm(draftId, current => ({ ...current, [field]: result[field], ...Object.fromEntries(courseConversionColumns.map(column => [column.field, result[column.field]])) }));
       })
-      .catch(() => setDraftLineForm(draftId, { ...lineForm, [field]: value }));
+      .catch(() => setDraftLineForm(draftId, current => ({ ...current, [field]: value })));
   };
 
   const renderCourseInput = (draftId: string, field: Exclude<keyof LineForm, "engineHours" | "id">, options: { min?: number; max?: number }) => {
     const lineForm = lineForms[draftId].form;
     return <span className="smart-field-wrap">
-    <input
-      type="number"
+    <LogNumberInput
       min={options.min}
       max={options.max}
       step="1"
@@ -444,21 +469,34 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     updateLineFormField(draftId, field, value);
   };
 
+  const commitCoordinateParts = (container: HTMLDivElement, draftId: string, field: "latitude" | "longitude") => {
+    const inputs = [...container.querySelectorAll<HTMLInputElement>("input")];
+    inputs.forEach(input => input.setCustomValidity(""));
+    if (inputs.every(input => !input.value.trim())) { updateCoordinateField(draftId, field, ""); return; }
+    try {
+      const degrees = dmsInputValue(container, "degrees");
+      const minutes = dmsInputValue(container, "minutes");
+      const seconds = dmsInputValue(container, "seconds");
+      const minuteValue = parseDecimalInput(minutes) ?? 0, secondValue = parseDecimalInput(seconds) ?? 0;
+      if (!degrees.trim() || minuteValue < 0 || minuteValue >= 60 || secondValue < 0 || secondValue >= 60) throw new Error();
+      const value = dmsPartsToDecimal({ degrees, minutes, seconds });
+      if (Math.abs(value) > (field === "latitude" ? 90 : 180)) throw new Error();
+      updateCoordinateField(draftId, field, String(value));
+    } catch { inputs[0]?.setCustomValidity(t("details.invalidNumber")); }
+  };
+
   const renderCoordinateInput = (draftId: string, field: "latitude" | "longitude", label: string) => {
     const lineForm = lineForms[draftId].form;
-    if (coordinateFormat === "decimal") return <input aria-label={label} value={lineForm[field]} onChange={(e) => updateCoordinateField(draftId, field, e.target.value)} />;
+    if (coordinateFormat === "decimal") return <LogNumberInput aria-label={label} min={field === "latitude" ? -90 : -180} max={field === "latitude" ? 90 : 180} value={lineForm[field]} onChange={(e) => setDraftLineForm(draftId, { ...lineForm, [field]: e.target.value })} onBlur={(event) => { if (event.currentTarget.validity.valid) updateCoordinateField(draftId, field, event.currentTarget.value); }} />;
     if (coordinateFormat === "ddm") {
-      const parts = decimalToDdmParts(parseCoordinate(lineForm[field]));
+      const parts = decimalToDdmParts(lineForm[field].trim() ? parseCoordinate(lineForm[field]) : Number.NaN);
       return (
         <div
           className="compound-inputs dms-inputs"
           aria-label={label}
           onBlur={(event) => {
             if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) return;
-            updateCoordinateField(draftId, field, String(ddmPartsToDecimal({
-              degrees: dmsInputValue(event.currentTarget, "degrees"),
-              minutes: dmsInputValue(event.currentTarget, "minutes"),
-            })));
+            commitCoordinateParts(event.currentTarget, draftId, field);
           }}
         >
           <label><span>[°]</span><input aria-label={`${label} degrees`} type="text" inputMode="decimal" data-dms-part="degrees" defaultValue={parts.degrees} /></label>
@@ -466,21 +504,14 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
         </div>
       );
     }
-    const parts = decimalToDmsParts(parseCoordinate(lineForm[field]));
-    const commitDmsInput = (container: HTMLDivElement) => {
-      updateCoordinateField(draftId, field, String(dmsPartsToDecimal({
-        degrees: dmsInputValue(container, "degrees"),
-        minutes: dmsInputValue(container, "minutes"),
-        seconds: dmsInputValue(container, "seconds"),
-      })));
-    };
+    const parts = decimalToDmsParts(lineForm[field].trim() ? parseCoordinate(lineForm[field]) : Number.NaN);
     return (
       <div
         className="compound-inputs dms-inputs"
         aria-label={label}
         onBlur={(event) => {
           if (event.relatedTarget instanceof Node && event.currentTarget.contains(event.relatedTarget)) return;
-          commitDmsInput(event.currentTarget);
+          commitCoordinateParts(event.currentTarget, draftId, field);
         }}
       >
         <label><span>[°]</span><input aria-label={`${label} degrees`} type="text" inputMode="decimal" data-dms-part="degrees" defaultValue={parts.degrees} /></label>
@@ -530,12 +561,10 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     };
     return {
       id: `scanner-warning-row-${lineNumber}-${fields.join("-")}`,
-      ref: (cell: HTMLTableCellElement | null) => {
-        if (!cell) return;
-        warnings.forEach(warning => {
-          scannerWarningTargetsRef.current.set(warning.id, cell);
-        });
-      },
+      ref: (cell: HTMLTableCellElement | null) => warnings.forEach(warning => {
+        if (cell) scannerWarningCellTargetsRef.current.set(warning.id, cell);
+        else scannerWarningCellTargetsRef.current.delete(warning.id);
+      }),
       className: [className, "scanner-warning-field", hasActiveWarning ? null : "acknowledged"].filter(Boolean).join(" "),
       title,
       tabIndex: 0,
@@ -585,8 +614,12 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
         </td>
       ))}<td><span className="smart-field-wrap">{renderNumberInput(draftId, "speedKn", { step: "0.1" })}{smartMotionStatus === "tracking" ? <span className="smart-field-spinner" role="status" aria-label={t("details.trackingMotion")} /> : null}</span></td><td>{renderNumberInput(draftId, "logNm", { step: "0.1" })}</td>
       <td><div className="compound-inputs labeled-inputs"><label><span>[nm]</span>{renderNumberInput(draftId, "sailMiles", { step: "0.1" })}</label><label><span>[note]</span>{renderTextInput(draftId, "sailNote", t("details.sailNote"))}</label></div></td>
-      <td><div className="compound-inputs labeled-inputs"><label><span>[nm]</span>{renderNumberInput(draftId, "motorMiles", { step: "0.1" })}</label>{logLineEngines.map((engine) => <label key={engine.id}><span>{engine.label} [h]</span><input aria-label={`${engine.name} ${t("details.engineRuntime")}`} type="number" min="0" step="0.1" value={lineForm.engineHours?.[engine.id] ?? ""} onChange={(event) => setLineForm({ ...lineForm, engineHours: { ...lineForm.engineHours, [engine.id]: nonNegativeInputValue(event.target.value) } })} /></label>)}<label><span>[note]</span>{renderTextInput(draftId, "motorNote", t("details.motorNote"))}</label></div></td>
-      <td>{renderTextInput(draftId, "remarks")}</td><td colSpan={2}><div className="table-actions"><button type="button" onClick={() => saveLineFromFields(draftId)}>{isNew ? t("details.saveLine") : "💾"}</button><button type="button" className="ghost-button" onClick={() => cancelLineEdit(draftId)}>{t("common.cancel")}</button></div></td>
+      <td><div className="compound-inputs labeled-inputs"><label><span>[nm]</span>{renderNumberInput(draftId, "motorMiles", { step: "0.1" })}</label>{logLineEngines.map((engine) => <label key={engine.id}><span>{engine.label} [HH:mm]</span><LogNumberInput hours aria-label={`${engine.name} ${t("details.engineRuntime")}`} min="0" value={lineForm.engineHours?.[engine.id] ?? ""} onChange={(event) => setLineForm({ ...lineForm, engineHours: { ...lineForm.engineHours, [engine.id]: event.target.value } })} /></label>)}<label><span>[note]</span>{renderTextInput(draftId, "motorNote", t("details.motorNote"))}</label></div></td>
+      <td>{renderTextInput(draftId, "remarks")}</td><td colSpan={2}><div className="table-actions"><button type="button" onClick={(event) => {
+        const invalid = event.currentTarget.closest("tr")?.querySelector<HTMLInputElement>("input:invalid");
+        if (invalid) { invalid.reportValidity(); return; }
+        void saveLineFromFields(draftId);
+      }}>{isNew ? t("details.saveLine") : "💾"}</button><button type="button" className="ghost-button" onClick={() => cancelLineEdit(draftId)}>{t("common.cancel")}</button></div></td>
     </tr>
     );
   };
@@ -613,9 +646,9 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
               </div>
               <div className="header-edit-row">
                 <span>{t("common.from")}</span>
-                <input
+                <PreferenceDateTimeInput
                   aria-label={t("details.fromDateTime")}
-                  type="datetime-local"
+
                   disabled
                   value=""
                   readOnly
@@ -624,9 +657,9 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
               </div>
               <div className="header-edit-row">
                 <span>{t("common.to")}</span>
-                <input
+                <PreferenceDateTimeInput
                   aria-label={t("details.toDateTime")}
-                  type="datetime-local"
+
                   disabled
                   value=""
                   readOnly
@@ -701,9 +734,9 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                 </div>
                 <div className="header-edit-row route-edit-row">
                   <span>{t("common.from")}</span>
-                  <input
+                  <PreferenceDateTimeInput
                     aria-label={t("details.fromDateTime")}
-                    type="datetime-local"
+
                     value={dateTimeLocalFromParts(
                       sheetForm.fromDate,
                       sheetForm.fromTime,
@@ -731,9 +764,9 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                 </div>
                 <div className="header-edit-row route-edit-row">
                   <span>{t("common.to")}</span>
-                  <input
+                  <PreferenceDateTimeInput
                     aria-label={t("details.toDateTime")}
-                    type="datetime-local"
+
                     value={dateTimeLocalFromParts(
                       sheetForm.toDate,
                       sheetForm.toTime,
@@ -878,46 +911,17 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                     )}
                   </h2>
                 </div>
-                <div className="inline-edit-actions sheet-master-actions">
+                <div className="inline-edit-actions sheet-master-actions" role="group" aria-label={t("details.edit")}>
                   <span className="status-pill">{activeSheet.status}</span>
-                  <button
-                    type="button"
-                    className="edit-chip compact-chip"
-                    aria-label={t("details.printSheet")}
-                    title={t("details.printSheet")}
-                    onClick={printActiveSheet}
-                  >
-                    {t("details.printSheet")}
-                  </button>
-                  <button
-                    type="button"
-                    className="edit-chip compact-chip"
-                    aria-label="Share logsheet"
-                    title="Share"
-                    onClick={() => isDemo ? onDemoFeatureBlocked("sharing") : setIsShareDialogOpen(true)}
-                  >
-                    <span aria-hidden="true">↗</span> Share
-                  </button>
-                  <button type="button" className="edit-chip compact-chip danger-chip" onClick={() => setIsDeleteDialogOpen(true)}>
-                    {t("common.delete")}
-                  </button>
-                  {isActiveSheetLocked ? (
-                    <button
-                      type="button"
-                      className="edit-chip compact-chip"
-                      onClick={() => updateActiveSheetStatus("Draft")}
-                    >
-                      Unlock
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className="edit-chip compact-chip"
-                      onClick={() => updateActiveSheetStatus("Locked")}
-                    >
-                      Lock
-                    </button>
-                  )}
+                  <SheetAction className="edit-chip compact-chip" label={t(actionsCollapsed ? "details.expandActions" : "details.collapseActions")} aria-expanded={!actionsCollapsed} aria-controls="sheet-action-buttons" onClick={toggleActions}>{actionsCollapsed ? "⋯" : "⌃"}</SheetAction>
+                  <div id="sheet-action-buttons" className="sheet-action-buttons" hidden={actionsCollapsed}>
+                    <SheetAction className="edit-chip compact-chip" label={t("details.previousSheet")} disabled={!props.previousSheetId} onClick={(event) => navigateSheet(props.previousSheetId, event)}>←</SheetAction>
+                    <SheetAction className="edit-chip compact-chip" label={t("details.nextSheet")} disabled={!props.nextSheetId} onClick={(event) => navigateSheet(props.nextSheetId, event)}>→</SheetAction>
+                    <SheetAction className="edit-chip compact-chip" label={t("details.printSheet")} onClick={printActiveSheet}>⎙</SheetAction>
+                    <SheetAction className="edit-chip compact-chip" label={t("details.shareSheet")} onClick={() => isDemo ? onDemoFeatureBlocked("sharing") : setIsShareDialogOpen(true)}>↗</SheetAction>
+                    <SheetAction className="edit-chip compact-chip danger-chip" label={t("common.delete")} onClick={() => setIsDeleteDialogOpen(true)}>🗑</SheetAction>
+                    <SheetAction className="edit-chip compact-chip" label={t(isActiveSheetLocked ? "details.unlockSheet" : "details.lockSheet")} onClick={() => updateActiveSheetStatus(isActiveSheetLocked ? "Draft" : "Locked")}>{isActiveSheetLocked ? "🔓" : "🔒"}</SheetAction>
+                  </div>
                 </div>
                 <div className="paper-header header-table">
                   <div className="header-table-row">
@@ -988,6 +992,9 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                   <div><h3>{t("details.sharedSource.heading")}</h3><p>{sharedSourceNotice}</p></div>
                 </aside>
               )}
+              {sheetNavigationError && <p role="alert" className="save-error">{sheetNavigationError}</p>}
+              {incompleteLines && <p role="alert" className="save-error">{t("details.requiredLineFields")}</p>}
+              {activeSheet.source === "scanner" && !showScannerDraftNotice && <button type="button" className="edit-chip" onClick={() => setWarningHistorySheetId(activeSheet.id)}>{t("details.warningHistory")}</button>}
               {showScannerDraftNotice && (
                 <aside
                   className="scanner-draft-notice logbook-section"
@@ -998,6 +1005,10 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                   </div>
                   <div>
                     <h3>{activeSheet.status === "Draft" ? t("details.scanner.verificationDraftHeading") : t("details.scanner.verificationHeading")}</h3>
+                    {activeScannerWarningCount === 0 && <button type="button" className="edit-chip" onClick={async () => {
+                      const saved = await props.updateScannerWarningDismissal(true);
+                      if (saved) setWarningHistorySheetId(null);
+                    }}>{t("details.dismissWarnings")}</button>}
                     <p className="scanner-warning-progress">
                       {activeScannerWarningCount} {t("details.scanner.activeWarnings")} {t("details.scanner.ofWarnings")} {scannerWarnings.length} {t("details.scanner.totalWarnings")}
                     </p>
@@ -1038,6 +1049,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                             id={`scanner-warning-notice-${warning.id}`}
                             ref={(item) => {
                               if (item) scannerWarningTargetsRef.current.set(warning.id, item);
+                              else scannerWarningTargetsRef.current.delete(warning.id);
                             }}
                             tabIndex={-1}
                             className={warning.acknowledgedAt ? "acknowledged" : undefined}
@@ -1179,11 +1191,11 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                     <tbody>
                       {activeSheet.lines.map((line, index) => lineForms[line.id] ? renderLineEditor(line.id, index + 1) : (
                         <tr key={line.id}>
-                          <td>{index + 1}</td><td {...scannerWarningCellProps(index + 1, ["time"])}>{formatTime(line.time)}</td><td {...scannerWarningCellProps(index + 1, ["latitude", "position"])}>{coordinateToInput(line.latitude, "lat", coordinateFormat)}</td><td {...scannerWarningCellProps(index + 1, ["longitude", "position"])}>{coordinateToInput(line.longitude, "lon", coordinateFormat)}</td><td {...scannerWarningCellProps(index + 1, ["weather"])}>{line.weather}</td><td {...scannerWarningCellProps(index + 1, ["weatherRemark"])}>{renderClampedLogText(t("details.weatherRemark"), line.weatherRemark)}</td><td {...scannerWarningCellProps(index + 1, ["temperature", "temperatureUnit"])}>{line.temperature} {line.temperatureUnit}</td><td {...scannerWarningCellProps(index + 1, ["barometer"])}>{line.barometer}</td><td {...scannerWarningCellProps(index + 1, ["windDirection", "windStrength", "windUnit"])}>{translatedWindDirection(line.windDirection, t)} {line.windStrength} {line.windUnit}</td><td {...scannerWarningCellProps(index + 1, ["waves", "seaUnit"])}>{line.waves} {line.seaUnit}</td><td {...scannerWarningCellProps(index + 1, ["tide", "tideUnit"])}>{line.tide} {line.tideUnit}</td><td {...scannerWarningCellProps(index + 1, ["moon"])}>{line.moon}</td>
+                          <td>{index + 1}</td><td {...scannerWarningCellProps(index + 1, ["time"])}>{formatTime(line.time)}</td><td {...scannerWarningCellProps(index + 1, ["latitude", "position"])}>{coordinateToInput(line.latitude, "lat", coordinateFormat)}</td><td {...scannerWarningCellProps(index + 1, ["longitude", "position"])}>{coordinateToInput(line.longitude, "lon", coordinateFormat)}</td><td {...scannerWarningCellProps(index + 1, ["weather"])}>{line.weather}</td><td {...scannerWarningCellProps(index + 1, ["weatherRemark"])}>{renderClampedLogText(t("details.weatherRemark"), line.weatherRemark)}</td><td {...scannerWarningCellProps(index + 1, ["temperature", "temperatureUnit"])}>{displayNumber(line.temperature, line.temperatureUnit)}</td><td {...scannerWarningCellProps(index + 1, ["barometer"])}>{displayNumber(line.barometer)}</td><td {...scannerWarningCellProps(index + 1, ["windDirection", "windStrength", "windUnit"])}>{translatedWindDirection(line.windDirection, t)} {displayNumber(line.windStrength, line.windUnit)}</td><td {...scannerWarningCellProps(index + 1, ["waves", "seaUnit"])}>{displayNumber(line.waves, line.seaUnit)}</td><td {...scannerWarningCellProps(index + 1, ["tide", "tideUnit"])}>{displayNumber(line.tide, line.tideUnit)}</td><td {...scannerWarningCellProps(index + 1, ["moon"])}>{line.moon}</td>
                           {courseConversionColumns.map((column) => (!column.isOptional || showCourseColumns) && (
-                            <td {...scannerWarningCellProps(index + 1, [column.field], column.isOptional ? "optional-course-cell" : undefined)} key={`${line.id}-${column.field}`}>{line[column.field]}</td>
+                            <td {...scannerWarningCellProps(index + 1, [column.field], column.isOptional ? "optional-course-cell" : undefined)} key={`${line.id}-${column.field}`}>{displayNumber(line[column.field])}</td>
                           ))}
-                          <td {...scannerWarningCellProps(index + 1, ["speedKn"])}>{line.speedKn}</td><td {...scannerWarningCellProps(index + 1, ["logNm"])}>{line.logNm}</td><td {...scannerWarningCellProps(index + 1, ["sailMiles", "sailNote"])}><span className="log-line-distance-summary">{line.sailMiles} nm</span>{renderClampedLogText(t("details.sailNote"), line.sailNote)}</td><td {...scannerWarningCellProps(index + 1, ["motorMiles", "motorHours", "motorNote"])}><span className="log-line-distance-summary">{line.motorMiles} nm · {Object.entries(line.engineHours ?? {}).map(([id, hours]) => `${activeBoat.engines?.find((engine) => engine.id === id)?.label ?? id} ${hours} h`).join(" · ")}</span>{renderClampedLogText(t("details.motorNote"), line.motorNote)}</td><td {...scannerWarningCellProps(index + 1, ["remarks"])}>{renderClampedLogText(t("details.remarksEvent"), line.remarks)}</td>
+                          <td {...scannerWarningCellProps(index + 1, ["speedKn"])}>{displayNumber(line.speedKn)}</td><td {...scannerWarningCellProps(index + 1, ["logNm"])}>{displayNumber(line.logNm)}</td><td {...scannerWarningCellProps(index + 1, ["sailMiles", "sailNote"])}><span className="log-line-distance-summary">{displayNumber(line.sailMiles, "nm")}</span>{renderClampedLogText(t("details.sailNote"), line.sailNote)}</td><td {...scannerWarningCellProps(index + 1, ["motorMiles", "motorHours", "motorNote"])}><span className="log-line-distance-summary">{displayNumber(line.motorMiles, "nm")} {Object.entries(line.engineHours ?? {}).map(([id, hours]) => `${activeBoat.engines?.find((engine) => engine.id === id)?.label ?? id} ${formatEngineHours(hours)}`).join(" · ")}</span>{renderClampedLogText(t("details.motorNote"), line.motorNote)}</td><td {...scannerWarningCellProps(index + 1, ["remarks"])}>{renderClampedLogText(t("details.remarksEvent"), line.remarks)}</td>
                           <td><button type="button" className="edit-chip" disabled={isActiveSheetLocked} onClick={() => startEditingLine(line)}>✏️</button></td>
                           <td><button type="button" className="edit-chip" disabled={isActiveSheetLocked} onClick={() => deleteLine(line.id)}>🗑️</button></td>
                         </tr>
@@ -1253,16 +1265,16 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                             </span>
                             <div className="crew-assignment-fields">
                               <span>{t("common.from")}</span>
-                              <input
+                              <PreferenceDateTimeInput
                                 aria-label={`${t("crew.label")} ${index + 1} ${t("details.fromDateTime")}`}
-                                type="datetime-local"
+
                                 disabled={isActiveSheetLocked}
-                                value={person.embarkationDateTime}
+                                value={dateTimeLocalFromStamp(person.embarkationDateTime)}
                                 onChange={(e) =>
                                   updateCrewAssignment(
                                     index,
                                     "embarkationDateTime",
-                                    e.target.value,
+                                    isoDateTimeWithTimezone(e.target.value, timezoneOffsetFromStamp(person.embarkationDateTime)),
                                   )
                                 }
                               />
@@ -1279,16 +1291,16 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                                 }
                               />
                               <span>{t("common.to")}</span>
-                              <input
+                              <PreferenceDateTimeInput
                                 aria-label={`${t("crew.label")} ${index + 1} ${t("details.toDateTime")}`}
-                                type="datetime-local"
+
                                 disabled={isActiveSheetLocked}
-                                value={person.disembarkationDateTime}
+                                value={dateTimeLocalFromStamp(person.disembarkationDateTime)}
                                 onChange={(e) =>
                                   updateCrewAssignment(
                                     index,
                                     "disembarkationDateTime",
-                                    e.target.value,
+                                    isoDateTimeWithTimezone(e.target.value, timezoneOffsetFromStamp(person.disembarkationDateTime)),
                                   )
                                 }
                               />
@@ -1342,29 +1354,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                   </ul>
                   <label>
                     {t("crew.addMember")}
-                    <select
-                      disabled={isActiveSheetLocked}
-                      defaultValue=""
-                      onChange={(e) => {
-                        if (e.target.value)
-                          addCrewToActiveSheet(e.target.value);
-                        e.currentTarget.value = "";
-                      }}
-                    >
-                      <option value="">{t("crew.select")}</option>
-                      {logbook.crewMembers
-                        .filter(
-                          (member) =>
-                            !activeSheet.crew.some(
-                              (crew) => crew.id === member.id,
-                            ),
-                        )
-                        .map((member) => (
-                          <option key={member.id} value={member.id}>
-                            {member.name}
-                          </option>
-                        ))}
-                    </select>
+                    <CrewSearchSelect disabled={isActiveSheetLocked} members={logbook.crewMembers.filter(member => !activeSheet.crew.some(crew => crew.id === member.id))} onSelect={addCrewToActiveSheet} />
                   </label>
                 </article>
                 <article className="info-card logbook-section">
@@ -1375,9 +1365,9 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                       <div className="table-scroll"><table className="engine-hour-counter-table">
                         <thead><tr><th scope="col">{t("details.counterReading")}</th>{counterEngines.map((engine) => <th scope="col" key={engine.id}>{engine.label}</th>)}</tr></thead>
                         <tbody>
-                          {(["start", "end"] as const).map((boundary) => <tr key={boundary}><th scope="row">{t(boundary === "start" ? "details.counterStart" : "details.counterEnd")}</th>{counterEngines.map((engine) => <td key={engine.id}><input aria-label={`${engine.name} ${t(boundary === "start" ? "details.counterStart" : "details.counterEnd")}`} type="number" min="0" step="0.1" disabled={isActiveSheetLocked} defaultValue={activeSheet.engineHourCounters?.[engine.id]?.[boundary] ?? ""} onBlur={(event) => { const value = event.currentTarget.value === "" ? undefined : Number(event.currentTarget.value); if (value === undefined || Number.isFinite(value)) updateEngineHourCounter(engine.id, boundary, value); }} /></td>)}</tr>)}
-                          <tr><th scope="row">{t("details.counterDifference")}</th>{counterEngines.map((engine) => { const reading = activeSheet.engineHourCounters?.[engine.id]; const difference = reading?.start === undefined || reading.end === undefined ? undefined : reading.end - reading.start; return <td key={engine.id} className={difference !== undefined && difference < 0 ? "counter-mismatch" : ""}>{difference === undefined ? "—" : `${difference.toFixed(1)} h`}</td>; })}</tr>
-                          <tr><th scope="row">{t("details.trackedOnSheet")}</th>{counterEngines.map((engine) => <td key={engine.id}>{(activeSheetSummary.engineHours?.[engine.id] ?? 0).toFixed(1)} h</td>)}</tr>
+                          {(["start", "end"] as const).map((boundary) => <tr key={boundary}><th scope="row">{t(boundary === "start" ? "details.counterStart" : "details.counterEnd")}</th>{counterEngines.map((engine) => <td key={engine.id}><LogNumberInput hours key={`${activeSheet.id}-${engine.id}-${boundary}`} aria-label={`${engine.name} ${t(boundary === "start" ? "details.counterStart" : "details.counterEnd")}`} min="0" disabled={isActiveSheetLocked} defaultValue={formatEngineHours(activeSheet.engineHourCounters?.[engine.id]?.[boundary])} onBlur={(event) => { if (!event.currentTarget.validity.valid) return; const value = parseHourInput(event.currentTarget.value); updateEngineHourCounter(engine.id, boundary, value ?? undefined); }} /></td>)}</tr>)}
+                          <tr><th scope="row">{t("details.counterDifference")}</th>{counterEngines.map((engine) => { const reading = activeSheet.engineHourCounters?.[engine.id]; const difference = reading?.start === undefined || reading.end === undefined ? undefined : reading.end - reading.start; return <td key={engine.id} className={difference !== undefined && difference < 0 ? "counter-mismatch" : ""}>{difference === undefined ? "—" : formatEngineHours(difference)}</td>; })}</tr>
+                          <tr><th scope="row">{t("details.trackedOnSheet")}</th>{counterEngines.map((engine) => <td key={engine.id}>{formatEngineHours(activeSheetSummary.engineHours?.[engine.id] ?? 0)}</td>)}</tr>
                         </tbody>
                       </table></div>
                     </section>
@@ -1500,4 +1490,16 @@ const moonEmojis = ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌘"];
 function dmsInputValue(container: HTMLElement, part: keyof DmsParts) {
   const input = container.querySelector<HTMLInputElement>(`[data-dms-part="${part}"]`);
   return input?.value.trim().replace(",", ".") ?? "";
+}
+
+function actionPreferenceSnapshot() {
+  try { return localStorage.getItem("ultilog.sheetActionsCollapsed") === "true"; } catch { return false; }
+}
+function subscribeActionPreference(callback: () => void) {
+  window.addEventListener("storage", callback);
+  window.addEventListener("ultilog-sheet-actions", callback);
+  return () => {
+    window.removeEventListener("storage", callback);
+    window.removeEventListener("ultilog-sheet-actions", callback);
+  };
 }

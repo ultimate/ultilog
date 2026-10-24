@@ -2,6 +2,22 @@ import { type Dictionary } from "./en";
 
 // Keep one translation key per line so locale files stay easy to diff and edit side by side.
 export const de: Dictionary = {
+  "details.lineDateTime": "Datum und Uhrzeit der Logzeile",
+  "details.invalidNumber": "Ungültige Zahl",
+  "details.invalidHours": "Stunden als HH:mm oder Dezimalstunden eingeben",
+  "details.invalidDateTime": "Gültiges Datum und Uhrzeit im gewählten Format eingeben",
+  "details.requiredLineFields": "Datum, Uhrzeit mit Zeitzone, Breiten- und Längengrad sind erforderlich",
+  "details.noCrewResults": "Keine passenden Crewmitglieder",
+  "details.shareSheet": "Logblatt teilen",
+  "details.lockSheet": "Logblatt sperren",
+  "details.unlockSheet": "Logblatt entsperren",
+  "details.collapseActions": "Aktionen einklappen",
+  "details.expandActions": "Aktionen ausklappen",
+  "details.previousSheet": "Vorheriges Logblatt",
+  "details.nextSheet": "Nächstes Logblatt",
+  "details.dismissWarnings": "Nicht erneut anzeigen",
+  "details.warningHistory": "Importwarnungsverlauf anzeigen",
+  "details.unsavedEdits": "Änderungen vor dem Blattwechsel speichern oder abbrechen",
   "logbooks.chooseDate": "Datum auswählen",
   "logbooks.scanImport": "Scannen / Importieren",
   "logbooks.scannerSettingsTitle": "Scan konfigurieren",

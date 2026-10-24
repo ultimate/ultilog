@@ -38,7 +38,7 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
     },
     crew: [],
     technicalChecks: [],
-    lines: sampleLogSheets[0].lines.slice(0, 1),
+    lines: sampleLogSheets[0].lines.slice(0, 1).map(line => ({ ...line, time: `${line.time}+00:00` })),
   };
 
   await page.route("**/api/logbook/scanner", async (route) => {
@@ -172,8 +172,8 @@ test("imports a scanned logbook image and opens the created draft sheet", async 
   // Warning review is metadata and remains available after the sheet is locked.
   await page.keyboard.press("Escape");
   await page.setViewportSize({ width: 1280, height: 900 });
-  await page.getByRole("button", { name: "Lock", exact: true }).click();
-  await expect(page.getByRole("button", { name: "Unlock", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Lock log sheet", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Unlock log sheet", exact: true })).toBeVisible();
   await acknowledgedLatitude.tap();
   await page.getByRole("dialog").getByRole("button", { name: "Restore warning" }).click();
   await expect(page.getByLabel("Scanned draft verification notice")).toContainText("1 active of 3 total warnings");

@@ -65,7 +65,7 @@ function validateCrew(v: unknown, path: string, sheet = false) {
 const lineStringFields = ["time", "position", "weather", "weatherRemark", "temperatureUnit", "windDirection", "windUnit", "seaUnit", "tideUnit", "moon", "sailNote", "motorNote", "remarks"];
 const lineNumberFields = ["latitude", "longitude", "temperature", "barometer", "windStrength", "waves", "tide", "compassCourse", "deviation", "magneticCourse", "variation", "trueCourse", "windDrift", "courseThroughWater", "currentDrift", "courseOverGround", "speedKn", "logNm", "sailMiles", "motorMiles"];
 export function validateLine(v: unknown, path = "line") {
-  assert(record(v) && lineStringFields.every(k => string(v[k])) && lineNumberFields.every(k => finite(v[k])) && optional(v.engineHours, numberRecord), `${path} is malformed.`);
+  assert(record(v) && lineStringFields.every(k => string(v[k])) && lineNumberFields.every(k => v[k] === null || finite(v[k])) && optional(v.engineHours, value => numberRecord(value) && Object.values(value as Record<string, number>).every(hours => hours >= 0)), `${path} is malformed.`);
 }
 
 export function validatePersistedLogbook(value: unknown): PersistedLogbook {
@@ -109,7 +109,7 @@ export function validatePersistedLogbook(value: unknown): PersistedLogbook {
       && isoTimestamp(copyProvenance.copiedAt) && optional(copyProvenance.sourceTitle, string);
     assert(optional(sheet.source, x => x === "manual" || x === "scanner" || x === "shared")
       && validCopyProvenance && (sheet.source === "shared" || copyProvenance === undefined)
-      && optional(sheet.verificationNote, string) && optional(sheet.scannerWarnings, scannerWarnings), `sheets[${i}] optional values are malformed.`);
+      && optional(sheet.verificationNote, string) && optional(sheet.scannerWarnings, scannerWarnings) && optional(sheet.scannerWarningsDismissed, boolean), `sheets[${i}] optional values are malformed.`);
     if (sheet.scannerWarnings !== undefined) {
       const warningIds = (sheet.scannerWarnings as Array<{ id: string }>).map(warning => warning.id);
       assert(new Set(warningIds).size === warningIds.length, `sheets[${i}].scannerWarnings IDs must be unique.`);

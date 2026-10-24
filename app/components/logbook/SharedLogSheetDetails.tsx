@@ -1,5 +1,7 @@
 "use client";
 
+import { formatEngineHours } from "../../lib/log-input";
+
 import { translatedWindDirection } from "./wind-directions";
 
 import { useState } from "react";
@@ -35,10 +37,10 @@ export function SharedLogSheetDetails({ sheet, engineLabels = {}, initialCoordin
         </tr></thead>
       <tbody>{sheet.lines.map((line, index) => <tr key={line.id}>
         <td>{index + 1}</td><td>{formatTime(line.time)}</td><td>{coordinateToInput(line.latitude, "lat", coordinateFormat)}{line.position ? <div className="shared-log-text">{line.position}</div> : null}</td><td>{coordinateToInput(line.longitude, "lon", coordinateFormat)}</td>
-        <td>{line.weather}</td><td className="shared-log-text">{line.weatherRemark}</td><td>{line.temperature} {line.temperatureUnit}</td><td>{line.barometer}</td><td>{translatedWindDirection(line.windDirection, t)} {line.windStrength} {line.windUnit}</td><td>{line.waves} {line.seaUnit}</td><td>{line.tide} {line.tideUnit}</td><td>{line.moon}</td>
+        <td>{line.weather}</td><td className="shared-log-text">{line.weatherRemark}</td><td>{line.temperature == null ? "" : `${line.temperature} ${line.temperatureUnit}`}</td><td>{line.barometer}</td><td>{translatedWindDirection(line.windDirection, t)} {line.windStrength == null ? "" : `${line.windStrength} ${line.windUnit}`}</td><td>{line.waves == null ? "" : `${line.waves} ${line.seaUnit}`}</td><td>{line.tide == null ? "" : `${line.tide} ${line.tideUnit}`}</td><td>{line.moon}</td>
         {columns.map(([field]) => <td key={field} className={field !== "compassCourse" && field !== "courseOverGround" ? "optional-course-cell" : undefined}>{line[field]}</td>)}
-        <td>{line.speedKn}</td><td>{line.logNm}</td><td><span className="log-line-distance-summary">{line.sailMiles} nm</span><div className="shared-log-text">{line.sailNote}</div></td>
-        <td><span className="log-line-distance-summary">{line.motorMiles} nm{Object.entries(line.engineHours ?? {}).map(([id, hours]) => ` · ${engineLabels[id] ?? id} ${hours} h`)}</span><div className="shared-log-text">{line.motorNote}</div></td><td className="shared-log-text">{line.remarks}</td>
+        <td>{line.speedKn}</td><td>{line.logNm}</td><td><span className="log-line-distance-summary">{line.sailMiles == null ? "" : `${line.sailMiles} nm`}</span><div className="shared-log-text">{line.sailNote}</div></td>
+        <td><span className="log-line-distance-summary">{line.motorMiles == null ? "" : `${line.motorMiles} nm`}{Object.entries(line.engineHours ?? {}).map(([id, hours]) => ` · ${engineLabels[id] ?? id} ${formatEngineHours(hours)}`)}</span><div className="shared-log-text">{line.motorNote}</div></td><td className="shared-log-text">{line.remarks}</td>
       </tr>)}</tbody>
     </table></div>
   </article>;
@@ -50,9 +52,9 @@ export function SharedTechnicalLog({ sheet, engineLabels = {} }: Props) {
   return <article className="info-card logbook-section"><h3>{t("details.technicalLog")}</h3>
     {counters.length > 0 ? <section className="engine-hour-counter-section"><h4>{t("details.engineHourCounters")}</h4><div className="table-scroll"><table className="engine-hour-counter-table">
       <thead><tr><th scope="col">{t("details.counterReading")}</th>{counters.map(([id]) => <th scope="col" key={id}>{engineLabels[id] ?? id}</th>)}</tr></thead>
-      <tbody>{(["start", "end"] as const).map(boundary => <tr key={boundary}><th scope="row">{t(boundary === "start" ? "details.counterStart" : "details.counterEnd")}</th>{counters.map(([id, reading]) => <td key={id}>{reading[boundary] === undefined ? "—" : `${reading[boundary]} h`}</td>)}</tr>)}
-        <tr><th scope="row">{t("details.counterDifference")}</th>{counters.map(([id, reading]) => <td key={id}>{reading.start === undefined || reading.end === undefined ? "—" : `${(reading.end - reading.start).toFixed(1)} h`}</td>)}</tr>
-        {sheet.lines.length > 0 ? <tr><th scope="row">{t("details.trackedOnSheet")}</th>{counters.map(([id]) => <td key={id}>{sheet.lines.reduce((total, line) => total + (line.engineHours?.[id] ?? 0), 0).toFixed(1)} h</td>)}</tr> : null}
+      <tbody>{(["start", "end"] as const).map(boundary => <tr key={boundary}><th scope="row">{t(boundary === "start" ? "details.counterStart" : "details.counterEnd")}</th>{counters.map(([id, reading]) => <td key={id}>{reading[boundary] === undefined ? "—" : formatEngineHours(reading[boundary])}</td>)}</tr>)}
+        <tr><th scope="row">{t("details.counterDifference")}</th>{counters.map(([id, reading]) => <td key={id}>{reading.start === undefined || reading.end === undefined ? "—" : formatEngineHours(reading.end - reading.start)}</td>)}</tr>
+        {sheet.lines.length > 0 ? <tr><th scope="row">{t("details.trackedOnSheet")}</th>{counters.map(([id]) => <td key={id}>{formatEngineHours(sheet.lines.reduce((total, line) => total + (line.engineHours?.[id] ?? 0), 0))}</td>)}</tr> : null}
       </tbody></table></div></section> : null}
     <h4>{t("details.checks")}</h4><ul className="stack-list">{sheet.technicalChecks.map((item, index) => <li key={index}><span aria-label={`Check status ${index + 1}`}>{item.status}</span><span className="shared-log-text">{item.text}</span></li>)}</ul>
   </article>;

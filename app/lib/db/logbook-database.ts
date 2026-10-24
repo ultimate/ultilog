@@ -1,3 +1,5 @@
+import { hasRequiredLogLineFields } from "../../domain/log-lines/required-fields";
+import { LogbookValidationError } from "../validation/logbook";
 import { defaultLogSheetShareSettings, type Boat, type CrewMember, type FocusedLogSheet, type LogLine, type LogSheet, type PersistedLogbook } from "../../models/logbook";
 import { BoatsRepository } from "../repositories/boats-repository";
 import { CrewRepository } from "../repositories/crew-repository";
@@ -184,6 +186,9 @@ export abstract class LogbookDatabase implements QueryableDatabase {
       const submittedLines = "lines" in sheet ? sheet.lines : [];
       const persistedLineRows = prior ? await database.lines.findForSheet(prior.id) : [];
       const persistedLines = prior ? LogSheetsRepository.toLogbook([], [prior], [], persistedLineRows).sheets[0].lines : [];
+      const effectiveLines = prior ? persistedLines : submittedLines;
+      if (sheet.status === "Locked" && prior?.status !== "Locked" && effectiveLines.some(line => !hasRequiredLogLineFields(line))) throw new LogbookValidationError("Date, time with timezone, latitude and longitude are required before locking.");
+      if (sheet.scannerWarnings?.some(warning => !warning.acknowledgedAt)) sheet = { ...sheet, scannerWarningsDismissed: false };
       await database.sheets.upsert({ ...sheet, crew: [], lines: persistedLines }, ownerId, threshold);
       await database.crew.replaceAssignments(sheet.id, sheet.crew, ownerId);
       // Focused sheet writes own metadata and assignments only. Log lines are
@@ -468,13 +473,14 @@ function withoutImageBytes<T extends Boat | CrewMember | LogSheet>(entity: T): T
 }
 
 function filterSharedSheet(sheet: LogSheet, visibility: SectionVisibility): LogSheet {
+  const { scannerWarnings: _warnings, scannerWarningsDismissed: _dismissed, verificationNote: _note, ...sharedSheet } = sheet;
   const crew = visibility.crew
     ? sheet.crew.filter((_, index) => visibility.skipper || index !== 0)
     : visibility.skipper && sheet.crew[0]
       ? [sheet.crew[0]]
       : [];
   return {
-    ...sheet,
+    ...sharedSheet,
     boatId: visibility.masterData ? sheet.boatId : "",
     route: visibility.masterData ? sheet.route : { from: "", to: "", departed: "", arrived: "" },
     image: visibility.picture ? sheet.image : undefined,

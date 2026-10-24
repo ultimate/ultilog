@@ -1,4 +1,8 @@
 "use client";
+import { PreferenceDateTimeInput } from "./logbook/PreferenceDateTimeInput";
+import { formatEngineHours } from "../lib/log-input";
+import { hasRequiredLogLineFields } from "../domain/log-lines/required-fields";
+import type { SheetOverviewState } from "./logbook/pages/LogbookListPage";
 
 import { NotificationBanner } from "./NotificationBanner";
 import { ModalLayer } from "./logbook/ModalLayer";
@@ -187,7 +191,7 @@ function calculateSheetSummary(sheet: LogSheet, motionStationaryThresholdNm: num
     motionDuration: formatLogSheetDuration(metrics.motionDurationMinutes),
     motorHours: metrics.motorHours,
     engineHours: metrics.engineHours ?? {},
-    motorHoursDuration: formatLogSheetDuration(metrics.motorHours * 60),
+    motorHoursDuration: formatEngineHours(metrics.motorHours),
     propulsionDuration: formatLogSheetDuration(metrics.propulsionDurationMinutes ?? 0),
   };
 }
@@ -209,6 +213,8 @@ export function LogbookApp({
   const pathname = usePathname();
   const [logbook, setLogbook] = useState<PersistedLogbook>(defaultLogbook);
   const [activeSheetId, setActiveSheetId] = useState("");
+  const [sheetOverviewState, setSheetOverviewState] = useState<SheetOverviewState | undefined>();
+  const [sheetNavigationIds, setSheetNavigationIds] = useState<string[] | null>(null);
   const [isBackendReady, setIsBackendReady] = useState(false);
   const [routePath, setRoutePath] = useState(pathname);
   const [activeModule, setActiveModule] = useState<ActiveView>("dashboard");
@@ -801,7 +807,11 @@ export function LogbookApp({
       <button
         type="button"
         aria-label={t("details.approveChange")}
-        onClick={saveSheetInlineField as MouseEventHandler<HTMLButtonElement>}
+        onClick={(event) => {
+          const invalid = event.currentTarget.closest(".inline-value-editor")?.querySelector<HTMLInputElement>("input:invalid");
+          if (invalid) { invalid.reportValidity(); return; }
+          void saveSheetInlineField();
+        }}
       >
         ✅
       </button>
@@ -881,8 +891,8 @@ export function LogbookApp({
   const renderInlineDateField = (field: SheetInlineField, stamp: string) =>
     editingSheetField === field ? (
       <span className={`inline-value-editor inline-value-editor-${field}`}>
-        <input
-          type="datetime-local"
+        <PreferenceDateTimeInput
+
           aria-label={`${t("details.edit")} ${field}`}
           value={sheetInlineDraft}
           onChange={(event) => setSheetInlineDraft(event.target.value)}
@@ -917,6 +927,17 @@ export function LogbookApp({
         {stamp ? formatStoredDateTime(stamp, preferences.dateFormat, preferences.timeFormat, locale) : "—"}
       </button>
     );
+  const navigationIds = (sheetNavigationIds ?? logbook.sheets.map(sheet => sheet.id)).filter(id => logbook.sheets.some(sheet => sheet.id === id));
+  const sheetNavigationIndex = navigationIds.indexOf(activeSheet.id);
+  async function navigateAdjacentSheet(id?: string) {
+    if (!id) return;
+    if (Object.keys(lineForms).length || editingSheetField || editingSheetId) { setSaveError(t("details.unsavedEdits")); return; }
+    await Promise.all([...mutationQueuesRef.current.values(), lineMutationQueueRef.current.drain()]);
+    if (failedMutationsRef.current.size || pendingMutationsRef.current.size) return;
+    setActiveSheetId(id);
+    navigate("details", id);
+  }
+
   const technicalCheckSuggestions = useMemo(() => {
     const seen = new Set<string>();
     const suggestions: string[] = [];
@@ -1194,6 +1215,7 @@ export function LogbookApp({
         if (sheet.id !== activeSheet.id) return sheet;
         return {
           ...sheet,
+          scannerWarningsDismissed: acknowledged ? sheet.scannerWarningsDismissed : false,
           scannerWarnings: (sheet.scannerWarnings ?? []).map((warning) => {
             if (warning.id !== warningId) return warning;
             if (acknowledgedAt) return { ...warning, acknowledgedAt };
@@ -1208,7 +1230,18 @@ export function LogbookApp({
     await saveLogbookNow(nextLogbook, { kind: "sheet", entity: nextSheet });
   }
 
+  async function updateScannerWarningDismissal(dismissed: boolean) {
+    const sheet = logbookRef.current.sheets.find(sheet => sheet.id === activeSheet.id);
+    if (!sheet || (dismissed && sheet.scannerWarnings?.some(warning => !warning.acknowledgedAt))) return false;
+    const nextSheet = { ...sheet, scannerWarningsDismissed: dismissed };
+    return saveLogbookNow({ ...logbookRef.current, sheets: logbookRef.current.sheets.map(candidate => candidate.id === sheet.id ? nextSheet : candidate) }, { kind: "sheet", entity: nextSheet });
+  }
+
   async function updateActiveSheetStatus(status: LogSheet["status"]) {
+    if (status === "Locked" && (Object.keys(lineForms).length || activeSheet.lines.some(line => !hasRequiredLogLineFields(line)))) {
+      setSaveError(t("details.requiredLineFields"));
+      return;
+    }
     if (status === "Locked") cancelSheetInlineEdit();
     const nextLogbook = {
       ...logbookRef.current,
@@ -1297,16 +1330,20 @@ export function LogbookApp({
     if (!draft) return;
     const currentLogbook = logbookRef.current;
     const previousLine = currentLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)?.lines.find((candidate) => candidate.id === draftId);
-    const line = {
-      ...lineFormToLogLine({ ...draft.form, time: isoDateTimeWithTimezone(dateTimeLocalFromStamp(draft.form.time), timezoneOffsetFromStamp(draft.form.time)) }),
-      ...(draft.isNew ? {} : concurrencyMetadata(previousLine)),
-    };
+    let line: LogLine;
+    try {
+      line = {
+        ...lineFormToLogLine({ ...draft.form, time: isoDateTimeWithTimezone(dateTimeLocalFromStamp(draft.form.time), timezoneOffsetFromStamp(draft.form.time)) }),
+        ...(draft.isNew ? {} : concurrencyMetadata(previousLine)),
+      };
+      if (!hasRequiredLogLineFields(line)) { setSaveError(t("details.requiredLineFields")); return false; }
+    } catch { setSaveError(t("details.invalidNumber")); return false; }
     const nextLogbook = {
       ...currentLogbook,
       sheets: currentLogbook.sheets.map((sheet) => {
         if (sheet.id !== activeSheet.id) return sheet;
         const lines =
-          draft.isNew
+          draft.isNew && !previousLine
             ? [...sheet.lines, line]
             : sheet.lines.map((candidate) =>
                 candidate.id === draftId ? line : candidate,
@@ -1316,9 +1353,9 @@ export function LogbookApp({
     };
     const nextSheet = nextLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)!;
     const previousLineIds = currentLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)?.lines.map((candidate) => candidate.id) ?? [];
-    // Close this editor in the same optimistic update that reveals the saved row.
-    setLineForms((current) => Object.fromEntries(Object.entries(current).filter(([id]) => id !== draftId)));
-    await saveLogbookNow(nextLogbook, { kind: "line", sheetId: activeSheet.id, entity: line, isNew: draft.isNew, previousLineIds, lineIds: nextSheet.lines.map(candidate => candidate.id) });
+    const saved = await saveLogbookNow(nextLogbook, { kind: "line", sheetId: activeSheet.id, entity: line, isNew: draft.isNew && !previousLine?.revision, previousLineIds, lineIds: nextSheet.lines.map(candidate => candidate.id) });
+    if (saved) setLineForms((current) => Object.fromEntries(Object.entries(current).filter(([id]) => id !== draftId)));
+    return saved;
   }
 
   function startEditingLine(line: LogLine) {
@@ -1969,6 +2006,8 @@ export function LogbookApp({
         <section className="workspace module-workspace">
           {activeModule === "logbooks" && (
             <LogbookListPage
+              overviewState={sheetOverviewState}
+              onOpenSequence={(ids, state) => { setSheetNavigationIds(ids); setSheetOverviewState(state); }}
               isDemo={userGroups.includes("demo")}
               onDemoFeatureBlocked={setDemoRestrictedFeature}
               activeBoat={activeBoat}
@@ -2005,6 +2044,10 @@ export function LogbookApp({
 
           {activeModule === "details" && (
             <LogbookDetailsPage
+              previousSheetId={sheetNavigationIndex > 0 ? navigationIds[sheetNavigationIndex - 1] : undefined}
+              nextSheetId={sheetNavigationIndex >= 0 ? navigationIds[sheetNavigationIndex + 1] : undefined}
+              onNavigateSheet={navigateAdjacentSheet}
+              updateScannerWarningDismissal={updateScannerWarningDismissal}
               isDemo={userGroups.includes("demo")}
               onDemoFeatureBlocked={setDemoRestrictedFeature}
               isBackendReady={isBackendReady}

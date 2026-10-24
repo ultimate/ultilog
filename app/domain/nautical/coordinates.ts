@@ -1,3 +1,4 @@
+import { parseDecimalInput } from "../../lib/log-input";
 export type CoordinateFormat = "decimal" | "ddm" | "dms";
 export type CoordinateAxis = "lat" | "lon";
 export type DmsParts = { degrees: string; minutes: string; seconds: string };
@@ -59,10 +60,10 @@ export function decimalToDmsParts(value: number): DmsParts {
 }
 
 export function dmsPartsToDecimal({ degrees, minutes, seconds }: DmsParts) {
-  const parsedDegrees = Number.parseFloat(degrees) || 0;
+  const parsedDegrees = parseDecimalInput(degrees) ?? 0;
   const sign = degrees.trim().startsWith("-") ? -1 : 1;
   const absoluteDegrees = Math.abs(parsedDegrees);
-  return sign * (absoluteDegrees + (Number.parseFloat(minutes) || 0) / 60 + (Number.parseFloat(seconds) || 0) / 3600);
+  return sign * (absoluteDegrees + (parseDecimalInput(minutes) ?? 0) / 60 + (parseDecimalInput(seconds) ?? 0) / 3600);
 }
 
 export function ddmPartsToDecimal({ degrees, minutes }: DdmParts) {
@@ -84,21 +85,25 @@ export function normalizeLongitude(value: number) {
   return ((((value + 180) % 360) + 360) % 360) - 180;
 }
 
-export function coordinateToInput(value: number, axis: CoordinateAxis, format: CoordinateFormat) {
+export function coordinateToInput(value: number | null, axis: CoordinateAxis, format: CoordinateFormat) {
+  if (value === null) return "";
   const normalized = normalizeCoordinate(value, axis);
   if (format === "ddm") return decimalToDdm(normalized, axis);
   return format === "dms" ? decimalToDms(normalized, axis) : normalized.toFixed(5);
 }
 
 export function parseCoordinate(value: string) {
-  const trimmed = value.trim();
+  const trimmed = value.trim().replace(/,/g, ".");
   if (!trimmed) return 0;
-  const decimal = Number.parseFloat(trimmed);
-  if (Number.isFinite(decimal) && /^\s*[+-]?\d+(?:\.\d+)?\s*$/.test(trimmed)) return decimal;
+  try {
+    const decimal = parseDecimalInput(trimmed);
+    if (decimal !== null) return decimal;
+  } catch { /* Try a coordinate with degree/minute/second notation below. */ }
   const match = trimmed.match(dmsPattern);
-  if (!match) return 0;
+  if (!match) return Number.NaN;
   const [, leadingHemisphere, sign, deg, min = "0", sec = "0", trailingHemisphere] = match;
   const hemisphere = leadingHemisphere || trailingHemisphere;
+  if (Number(min) >= 60 || Number(sec) >= 60) return Number.NaN;
   const absolute = Number(deg) + Number(min) / 60 + Number(sec) / 3600;
   const negative = sign === "-" || /[SW]/i.test(hemisphere ?? "");
   return negative ? -absolute : absolute;

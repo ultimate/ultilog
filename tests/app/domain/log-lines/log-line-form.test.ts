@@ -25,7 +25,7 @@ const baseLineForm: LineForm = {
   deviation: "-181",
   magneticCourse: "44.6",
   variation: "181",
-  trueCourse: "bad",
+  trueCourse: "0",
   windDrift: "7.4",
   courseThroughWater: "183.5",
   currentDrift: "-2.6",
@@ -81,14 +81,14 @@ describe("lineFormToLogLine", () => {
     });
   });
 
-  it("falls back to default units and zeroed numeric values for invalid optional values", () => {
+  it("falls back to default units and preserves missing optional numbers", () => {
     expect(lineFormToLogLine({ ...baseLineForm, windUnit: "mph" as LineForm["windUnit"], temperatureUnit: "kelvin" as LineForm["temperatureUnit"], seaUnit: "yd" as LineForm["seaUnit"], tideUnit: "yd" as LineForm["tideUnit"], speedKn: "", barometer: "" })).toMatchObject({
-      barometer: 800,
+      barometer: null,
       windUnit: "bft",
       temperatureUnit: "°C",
       seaUnit: "m",
       tideUnit: "m",
-      speedKn: 0,
+      speedKn: null,
     });
   });
 });

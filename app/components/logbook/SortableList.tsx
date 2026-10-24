@@ -43,14 +43,14 @@ export function filterAndSortItems<T>(
   }).map(({ item }) => item);
 }
 
-export function useSortableList<T>(items: T[], columns: SortableListColumn<T>[], defaultPageSize: number, defaultSortKey = "") {
-  const [query, setQuery] = useState("");
-  const [sort, setSort] = useState<{ key: string; direction: SortDirection }>(() => ({ key: defaultSortKey, direction: "ascending" }));
+export function useSortableList<T>(items: T[], columns: SortableListColumn<T>[], defaultPageSize: number, defaultSortKey = "", initial?: { query: string; sort: { key: string; direction: SortDirection }; page: number; pageSize: number }) {
+  const [query, setQuery] = useState(initial?.query ?? "");
+  const [sort, setSort] = useState<{ key: string; direction: SortDirection }>(() => (initial?.sort ?? { key: defaultSortKey, direction: "ascending" }));
   const processedItems = useMemo(
     () => filterAndSortItems(items, columns, query, sort.key, sort.direction),
     [items, columns, query, sort],
   );
-  const pagination = usePagination(processedItems, defaultPageSize);
+  const pagination = usePagination(processedItems, defaultPageSize, initial);
 
   return {
     query,
@@ -66,6 +66,7 @@ export function useSortableList<T>(items: T[], columns: SortableListColumn<T>[],
       pagination.setPage(1);
     },
     ...pagination,
+    processedItems,
     totalItems: processedItems.length,
   };
 }

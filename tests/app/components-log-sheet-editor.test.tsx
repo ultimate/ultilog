@@ -1,0 +1,107 @@
+import { act, create, type ReactTestRenderer } from "react-test-renderer";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { CrewSearchSelect } from "../../app/components/logbook/CrewSearchSelect";
+import { PreferenceDateTimeInput } from "../../app/components/logbook/PreferenceDateTimeInput";
+import { DateTimeFormatProvider } from "../../app/lib/DateTimeFormatProvider";
+import { LogbookDetailsPage } from "../../app/components/logbook/pages/LogbookDetailsPage";
+import { sampleBoats, sampleLogSheets } from "../fixtures/logbook";
+
+vi.mock("../../app/lib/i18n", async () => {
+  const { t } = await import("../../app/lib/i18n/translations");
+  return { useI18n: () => ({ locale: "en", t: (key: Parameters<typeof t>[1]) => t("en", key) }) };
+});
+vi.mock("../../app/components/logbook/OpenSeaMapView", () => ({ LogLinesMapView: () => null }));
+(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+let root: ReactTestRenderer;
+afterEach(async () => { await act(async () => root?.unmount()); vi.unstubAllGlobals(); });
+
+describe("crew search", () => {
+  it("filters by name, selects with the keyboard, resets and excludes removed results", async () => {
+    const onSelect = vi.fn();
+    const members = [{ id: "ada", name: "Ada Lovelace" }, { id: "grace", name: "Grace Hopper" }];
+    await act(async () => { root = create(<CrewSearchSelect members={members} disabled={false} onSelect={onSelect} />); });
+    const input = () => root.root.findByType("input");
+    await act(async () => input().props.onChange({ target: { value: "HOP" } }));
+    expect(root.root.findAllByProps({ role: "option" }).map(option => option.children.join(""))).toEqual(["Grace Hopper"]);
+    await act(async () => input().props.onKeyDown({ key: "Enter", preventDefault: vi.fn() }));
+    expect(onSelect).toHaveBeenCalledWith("grace");
+    expect(input().props.value).toBe("");
+    expect(input().props["aria-expanded"]).toBe(false);
+    await act(async () => root.update(<CrewSearchSelect members={members.slice(0, 1)} disabled={false} onSelect={onSelect} />));
+    await act(async () => input().props.onFocus());
+    expect(root.root.findAllByProps({ role: "option" }).map(option => option.children.join(""))).toEqual(["Ada Lovelace"]);
+  });
+});
+
+describe("date editor drafts", () => {
+  it("retains invalid partial text without saving it and emits ISO values for complete input", async () => {
+    const onChange = vi.fn();
+    await act(async () => { root = create(<DateTimeFormatProvider dateFormat="dd.MM.yyyy" timeFormat="HH:mm"><PreferenceDateTimeInput value="2026-10-24T10:30" onChange={onChange} /></DateTimeFormatProvider>); });
+    const input = () => root.root.findByType("input");
+    expect(input().props.value).toBe("24.10.2026, 10:30");
+    const setCustomValidity = vi.fn();
+    await act(async () => input().props.onChange({ currentTarget: { value: "24.10.2026, 10:", setCustomValidity }, target: { value: "24.10.2026, 10:" } }));
+    expect(onChange).not.toHaveBeenCalled();
+    expect(input().props.value).toBe("24.10.2026, 10:");
+    expect(setCustomValidity).toHaveBeenLastCalledWith(expect.any(String));
+    await act(async () => input().props.onChange({ currentTarget: { value: "24.10.2026, 10:45", setCustomValidity }, target: { value: "24.10.2026, 10:45" } }));
+    expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ target: expect.objectContaining({ value: "2026-10-24T10:45" }) }));
+    expect(setCustomValidity).toHaveBeenLastCalledWith("");
+  });
+});
+
+describe("log sheet actions and warning review", () => {
+  beforeEach(() => {
+    const storage = new Map<string, string>();
+    const target = new EventTarget();
+    vi.stubGlobal("window", { location: { origin: "https://example.test" }, addEventListener: target.addEventListener.bind(target), removeEventListener: target.removeEventListener.bind(target), dispatchEvent: target.dispatchEvent.bind(target) });
+    vi.stubGlobal("localStorage", { getItem: (key: string) => storage.get(key) ?? null, setItem: (key: string, value: string) => storage.set(key, value) });
+  });
+  function props() {
+    const sheet = { ...sampleLogSheets[0], crew: [], lines: [], technicalChecks: [], source: "scanner", scannerWarnings: [{ id: "missing-target", code: "missingFields", row: 99, fields: ["variation"] }] };
+    return { isBackendReady: true, hasSelectedSheet: true, activeSheet: sheet, activeBoat: sampleBoats[0], logbook: { boats: sampleBoats, crewMembers: [], sheets: [sheet] }, lineForms: {}, technicalCheckSuggestions: [], coordinateFormat: "decimal", activeSheetSummary: { motorMiles: 0, sailMiles: 0, totalMiles: 0, duration: "", motionDuration: "", motorHoursDuration: "00:00" }, renderInlineTextField: (_field: string, text: string) => text, renderInlineBoatField: () => "Boat", renderInlineDateField: (_field: string, text: string) => text, previousSheetId: undefined, nextSheetId: "next", onNavigateSheet: vi.fn(), onPrintSheet: vi.fn(), updateScannerWarningDismissal: vi.fn().mockResolvedValue(true) };
+  }
+  const button = (label: string) => root.root.findAllByType("button").find(button => button.props["aria-label"] === label)!;
+  it("uses icon labels, disables boundary arrows and remembers collapsed actions", async () => {
+    const input = props();
+    await act(async () => { root = create(<LogbookDetailsPage {...input} />); });
+    expect(button("Previous log sheet").props.disabled).toBe(true);
+    expect(button("Next log sheet").props.disabled).toBe(false);
+    await act(async () => button("Next log sheet").props.onClick());
+    expect(input.onNavigateSheet).toHaveBeenCalledWith("next");
+    expect(button("Share log sheet").props.title).toBe("Share log sheet");
+    await act(async () => button("Collapse actions").props.onClick());
+    expect(root.root.findByProps({ id: "sheet-action-buttons" }).props.hidden).toBe(true);
+    expect(localStorage.getItem("ultilog.sheetActionsCollapsed")).toBe("true");
+    await act(async () => root.unmount());
+    await act(async () => { root = create(<LogbookDetailsPage {...input} />); });
+    expect(root.root.findByProps({ id: "sheet-action-buttons" }).props.hidden).toBe(true);
+    expect(button("Expand actions").props["aria-expanded"]).toBe(false);
+  });
+  it("keeps unsaved technical-log text when navigating", async () => {
+    const input = props();
+    await act(async () => { root = create(<LogbookDetailsPage {...input} />); });
+    const text = root.root.findAllByType("input").find(input => input.props["aria-label"] === "New technical log entry")!;
+    await act(async () => text.props.onChange({ target: { value: "Check coolant" } }));
+    await act(async () => button("Next log sheet").props.onClick());
+    expect(input.onNavigateSheet).not.toHaveBeenCalled();
+    expect(root.root.findByProps({ role: "alert" }).children.join("")).toContain("Save or cancel");
+    expect(root.root.findAllByType("input").find(input => input.props["aria-label"] === "New technical log entry")!.props.value).toBe("Check coolant");
+  });
+
+  it("lists warnings with missing rows and hidden fields and only permits dismissal when resolved", async () => {
+    const input = props();
+    await act(async () => { root = create(<LogbookDetailsPage {...input} />); });
+    expect(root.root.findAllByProps({ id: "scanner-warning-notice-missing-target" })).toHaveLength(1);
+    expect(JSON.stringify(root.toJSON())).not.toContain("Do not show again");
+    const reviewed = { ...input.activeSheet, scannerWarnings: input.activeSheet.scannerWarnings.map(warning => ({ ...warning, acknowledgedAt: "2026-10-24T10:30:00Z" })) };
+    await act(async () => root.update(<LogbookDetailsPage {...input} activeSheet={reviewed} />));
+    const dismiss = root.root.findAllByType("button").find(button => button.children.includes("Do not show again"))!;
+    await act(async () => dismiss.props.onClick());
+    expect(input.updateScannerWarningDismissal).toHaveBeenCalledWith(true);
+    await act(async () => root.update(<LogbookDetailsPage {...input} activeSheet={{ ...reviewed, scannerWarningsDismissed: true }} />));
+    expect(root.root.findAllByProps({ className: "scanner-draft-notice logbook-section" })).toHaveLength(0);
+    await act(async () => root.update(<LogbookDetailsPage {...input} activeSheet={{ ...input.activeSheet, scannerWarningsDismissed: true }} />));
+    expect(root.root.findAllByProps({ id: "scanner-warning-notice-missing-target" })).toHaveLength(1);
+  });
+});

@@ -45,9 +45,9 @@ const OpenSeaMapLeaflet = dynamic(
   },
 );
 
-function isValidCoordinate(line: LogLine) {
+function isValidCoordinate(line: LogLine): line is LogLine & { latitude: number; longitude: number } {
   return (
-    Number.isFinite(line.latitude) &&
+    line.latitude !== null && line.longitude !== null && Number.isFinite(line.latitude) &&
     Number.isFinite(line.longitude) &&
     Math.abs(line.latitude) <= 90 &&
     Math.abs(line.longitude) <= 180
@@ -65,7 +65,7 @@ function lineDescription(line: LogLine, labels: { weather: string; wind: string;
   return details.join(" · ");
 }
 
-function lineToPoint(line: LogLine, index: number, routeId: string, labels: { weather: string; wind: string; direction: (value: string) => string | undefined }, formatTime: (value?: string | null) => string) {
+function lineToPoint(line: LogLine & { latitude: number; longitude: number }, index: number, routeId: string, labels: { weather: string; wind: string; direction: (value: string) => string | undefined }, formatTime: (value?: string | null) => string) {
   return {
     id: `${routeId}-${line.time || "line"}-${index}`,
     latitude: line.latitude,
@@ -73,15 +73,15 @@ function lineToPoint(line: LogLine, index: number, routeId: string, labels: { we
     label: `${index + 1}`,
     title: line.time ? `${formatTime(line.time)} · ${line.position}` : line.position,
     description: lineDescription(line, labels),
-    courseOverGround: line.courseOverGround,
-    speedKn: line.speedKn,
+    courseOverGround: line.courseOverGround ?? undefined,
+    speedKn: line.speedKn ?? undefined,
   };
 }
 
 function logLinesToRoute(logLines: LogLine[], labels: { weather: string; wind: string; logLinePositions: string; direction: (value: string) => string | undefined }, formatTime: (value?: string | null) => string): MapRoute {
   const points = logLines
     .map((line, index) => ({ line, index }))
-    .filter(({ line }) => isValidCoordinate(line))
+    .filter((entry): entry is typeof entry & { line: LogLine & { latitude: number; longitude: number } } => isValidCoordinate(entry.line))
     .map(({ line, index }) => lineToPoint(line, index, "log-lines", labels, formatTime));
 
   return {
@@ -95,7 +95,7 @@ function logLinesToRoute(logLines: LogLine[], labels: { weather: string; wind: s
 function logSheetToRoute(sheet: LogSheet, labels: { weather: string; wind: string; direction: (value: string) => string | undefined }, formatDateRange: (from?: string | null, to?: string | null) => string, formatTime: (value?: string | null) => string): MapRoute {
   const points = sheet.lines
     .map((line, index) => ({ line, index }))
-    .filter(({ line }) => isValidCoordinate(line))
+    .filter((entry): entry is typeof entry & { line: LogLine & { latitude: number; longitude: number } } => isValidCoordinate(entry.line))
     .map(({ line, index }) => lineToPoint(line, index, sheet.id, labels, formatTime));
 
   return {

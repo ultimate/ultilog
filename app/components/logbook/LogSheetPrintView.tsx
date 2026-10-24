@@ -1,3 +1,4 @@
+import { formatEngineHours } from "../../lib/log-input";
 import { translatedWindDirection } from "./wind-directions";
 import type { Boat, LogLine, LogSheet } from "../../models/logbook";
 import Image from "next/image";
@@ -217,20 +218,20 @@ function formatLatLon(line: LogLine | undefined) {
 }
 
 function formatMotor(line: LogLine | undefined, boat: Boat | undefined) {
-  const hours = Object.entries(line?.engineHours ?? {}).map(([id, value]) => `${boat?.engines?.find((engine) => engine.id === id)?.label ?? id}: ${formatNumber(value)}h`);
+  const hours = Object.entries(line?.engineHours ?? {}).map(([id, value]) => `${boat?.engines?.find((engine) => engine.id === id)?.label ?? id}: ${formatEngineHours(value)}`);
   return joinValues(formatNumber(line?.motorMiles), ...hours);
 }
 
-function formatDegrees(value: number | undefined) {
+function formatDegrees(value: number | null | undefined) {
   return value == null ? undefined : `${Math.round(value)}°`;
 }
 
-function formatSigned(value: number | undefined) {
+function formatSigned(value: number | null | undefined) {
   if (value == null) return undefined;
   return `${value > 0 ? "+" : ""}${Math.round(value)}°`;
 }
 
-function formatNumber(value: number | undefined, suffix = "") {
+function formatNumber(value: number | null | undefined, suffix = "") {
   if (value == null || !Number.isFinite(value)) return undefined;
   return `${Number.isInteger(value) ? value : value.toFixed(1)}${suffix}`;
 }

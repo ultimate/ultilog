@@ -107,11 +107,11 @@ describe("logsheet date filter", () => {
   it("totals only the filtered current page and highlights hovered routes", async () => {
     await render();
     const totalCells = () => renderer.root.findByType("tfoot").findAllByType("td").map((cell) => cell.children.join(""));
-    expect(totalCells()).toEqual(["15 nm", "10 nm", "25 nm", "7h 30m", "5h 00m", "2h 30m", ""]);
+    expect(totalCells()).toEqual(["15 nm", "10 nm", "25 nm", "7h 30m", "5h 00m", "02:30", ""]);
     await act(async () => renderer.root.findByType(ListPagination).props.list.setPage(2));
-    expect(totalCells()).toEqual(["9 nm", "6 nm", "15 nm", "4h 30m", "3h 00m", "1h 30m", ""]);
+    expect(totalCells()).toEqual(["9 nm", "6 nm", "15 nm", "4h 30m", "3h 00m", "01:30", ""]);
     await act(async () => renderer.root.findByProps({ type: "search" }).props.onChange({ target: { value: "after" } }));
-    expect(totalCells()).toEqual(["3 nm", "2 nm", "5 nm", "1h 30m", "1h 00m", "0h 30m", ""]);
+    expect(totalCells()).toEqual(["3 nm", "2 nm", "5 nm", "1h 30m", "1h 00m", "00:30", ""]);
     const row = renderer.root.findByProps({ className: "logbook-sheet-title" });
     await act(async () => row.props.onMouseEnter());
     expect(renderer.root.findByType(LogSheetsMapView).props.highlightedRouteId).toBe("after");
@@ -206,6 +206,22 @@ describe("logsheet date filter", () => {
     expect(from().props["aria-invalid"]).toBe(true);
     await act(async () => from().props.onChange({ currentTarget: { value: "" } }));
     expect(mapIds()).toHaveLength(8);
+  });
+
+  it("captures the complete sorted navigation sequence and restores overview pagination", async () => {
+    await render();
+    const props = renderer.root.findByType(LogbookListPage).props as ComponentProps<typeof LogbookListPage>;
+    const onOpenSequence = vi.fn();
+    await act(async () => renderer.update(<LogbookListPage {...props} onOpenSequence={onOpenSequence} />));
+    await act(async () => renderer.root.findByType(ListPagination).props.list.setSortKey("entry"));
+    await act(async () => renderer.root.findByType(ListPagination).props.list.setPage(2));
+    await act(async () => renderer.root.findByType(LogSheetsMapView).props.onSheetClick(sheets[1]));
+    const [ids, state] = onOpenSequence.mock.calls[0];
+    expect(ids).toEqual(["after", "before", "draft", "end-boundary", "other-boat", "spanning", "start-boundary", "undated"]);
+    expect(state).toMatchObject({ page: 2, pageSize: 5, sort: { key: "entry", direction: "ascending" } });
+    await act(async () => renderer.update(<LogbookListPage {...props} key="restored" overviewState={state} />));
+    expect(renderer.root.findByType(ListPagination).props.list.page).toBe(2);
+    expect(tableIds()).toEqual(["spanning", "start-boundary", "undated"]);
   });
 
   it("shows a validation message for reversed dates", async () => {

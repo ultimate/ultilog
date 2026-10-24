@@ -80,6 +80,16 @@
     }
   },
   {
+    "id": "improve-log-sheet-editing-and-navigation",
+    "category": "improvement",
+    "title": {
+      "en": "Improve log sheet editing, engine hours, warnings and navigation",
+      "de": "Logblattbearbeitung, Motorstunden, Warnungen und Navigation verbessern",
+      "fr": "Améliorer la saisie des feuilles de bord, les heures moteur, les avertissements et la navigation",
+      "it": "Migliora la modifica dei fogli di bordo, le ore motore, gli avvisi e la navigazione"
+    }
+  },
+  {
     "id": "improve-logsheet-line-editing",
     "category": "improvement",
     "title": {

@@ -9,7 +9,7 @@ export function calculateSmartNavigationFields(lines: LogLine[], coordinate: Coo
   if (!previous) return {};
 
   const distance = calculateGlobeDistanceNm(previous, coordinate);
-  const previousLog = Number.isFinite(previous.logNm) ? previous.logNm : 0;
+  const previousLog = previous.logNm ?? 0;
   return { logNm: formatDecimal(previousLog + distance) };
 }
 
@@ -36,8 +36,8 @@ export function previousSheetLogMiles(sheets: LogSheet[], activeSheet: LogSheet)
   return String(lastLine.logNm);
 }
 
-function hasCoordinates(line: LogLine) {
-  return Number.isFinite(line.latitude) && Number.isFinite(line.longitude) && Math.abs(line.latitude) <= 90 && Math.abs(line.longitude) <= 180;
+function hasCoordinates(line: LogLine): line is LogLine & Coordinate {
+  return line.latitude !== null && line.longitude !== null && Number.isFinite(line.latitude) && Number.isFinite(line.longitude) && Math.abs(line.latitude) <= 90 && Math.abs(line.longitude) <= 180;
 }
 
 function initialBearing(from: Coordinate, to: Coordinate) {
