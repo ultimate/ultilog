@@ -44,24 +44,26 @@ export function useI18n() {
   return context;
 }
 
-export function LocaleSelect({ className }: { className?: string }) {
+type LocaleSelectProps = { className?: string; onChange?: (locale: Locale) => void };
+
+export function LocaleSelect({ className, onChange }: LocaleSelectProps) {
   const { locale, locales, localeLabels, setLocale, t } = useI18n();
   return (
     <label className={className}>
       <span>{t("locale.label")}</span>
-      <select value={locale} onChange={(event) => setLocale(event.target.value as Locale)} aria-label={t("locale.label")}>
+      <select value={locale} onChange={(event) => (onChange ?? setLocale)(event.target.value as Locale)} aria-label={t("locale.label")}>
         {locales.map((candidate) => <option key={candidate} value={candidate}>{localeLabels[candidate]}</option>)}
       </select>
     </label>
   );
 }
 
-export function MobileLocaleAction({ className }: { className?: string }) {
+export function MobileLocaleAction({ className, onChange }: LocaleSelectProps) {
   const { locale, locales, localeLabels, setLocale, t } = useI18n();
   return (
     <label className={className} aria-label={t("locale.label")}>
       <span aria-hidden="true">{locale.toUpperCase()}</span>
-      <select value={locale} onChange={(event) => setLocale(event.target.value as Locale)} aria-label={t("locale.label")}>
+      <select value={locale} onChange={(event) => (onChange ?? setLocale)(event.target.value as Locale)} aria-label={t("locale.label")}>
         {locales.map((candidate) => <option key={candidate} value={candidate}>{localeLabels[candidate]}</option>)}
       </select>
     </label>

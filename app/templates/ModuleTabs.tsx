@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { LocaleSelect, MobileLocaleAction, useI18n } from "../lib/i18n";
+import { LocaleSelect, MobileLocaleAction, useI18n, type Locale } from "../lib/i18n";
 import { moduleTabs, type ModuleTab } from "./app-shell";
 
 export type ActiveView = ModuleTab | "changelog" | "profile" | "admin";
@@ -10,6 +10,7 @@ type ModuleTabsProps = {
   onOpenProfile: () => void;
   theme: "light" | "dark" | "auto";
   onToggleTheme: () => void;
+  onLocaleChange?: (locale: Locale) => void;
   userEmail?: string;
   userName?: string;
   userAvatar?: string;
@@ -51,7 +52,7 @@ function NavigationItems({ activeModule, isAdmin, onSelectModule }: NavigationIt
   );
 }
 
-export function ModuleTabs({ activeModule, onSelectModule, onOpenProfile, theme, onToggleTheme, userEmail, userName, userAvatar, userGroups = [], isNavSlim, onToggleNavSlim, onLogout, isLoggingOut }: ModuleTabsProps) {
+export function ModuleTabs({ activeModule, onSelectModule, onOpenProfile, theme, onToggleTheme, onLocaleChange, userEmail, userName, userAvatar, userGroups = [], isNavSlim, onToggleNavSlim, onLogout, isLoggingOut }: ModuleTabsProps) {
   const { t } = useI18n();
   const isAdmin = userGroups.includes("admin");
   return (
@@ -67,7 +68,7 @@ export function ModuleTabs({ activeModule, onSelectModule, onOpenProfile, theme,
         <div className="sidebar-spacer" />
         <section className="sync-icon-card" aria-label={t("nav.cloudSyncStatus")}><span className="sync-icon" aria-hidden="true" /></section>
         <button className={`sidebar-control-row changelog-navigation ${activeModule === "changelog" ? "active" : ""}`} type="button" onClick={() => onSelectModule("changelog")} aria-label={t("nav.changelog")}><span aria-hidden="true">◷</span><span>{t("nav.changelog")}</span></button>
-        <LocaleSelect className="sidebar-control-row locale-select" />
+        <LocaleSelect onChange={onLocaleChange} className="sidebar-control-row locale-select" />
         <div className="sidebar-control-row"><button className="theme-toggle" type="button" onClick={onToggleTheme}><span className="theme-icon" aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span><span>{theme === "dark" ? t("nav.light") : t("nav.dark")}</span></button></div>
         <button className={`profile-card ${activeModule === "profile" ? "active" : ""}`} type="button" onClick={onOpenProfile}><span>{userAvatar ? <Image unoptimized className="user-avatar" src={userAvatar} alt="" width={32} height={32} /> : <Image className="nav-svg-icon" src="/icons/icon_profile.svg" alt="" width={24} height={24} />}</span><strong>{userName ?? t("nav.profile")}</strong><small>{userEmail ?? t("nav.noEmail")}</small></button>
         <button className="logout-chip" type="button" onClick={onLogout} disabled={isLoggingOut} aria-label={t("nav.logout")}>{isLoggingOut ? t("nav.signingOut") : t("nav.logout")}</button>
@@ -75,7 +76,7 @@ export function ModuleTabs({ activeModule, onSelectModule, onOpenProfile, theme,
       <nav className={`mobile-bottom-nav ${isAdmin ? "has-admin-tab" : ""}`} aria-label={t("nav.primary")}>
         <NavigationItems activeModule={activeModule} isAdmin={isAdmin} onSelectModule={onSelectModule} />
         <button className="mobile-sync-action" type="button" disabled aria-label={t("nav.synced")}><span className="sync-icon" aria-hidden="true" /></button>
-        <MobileLocaleAction className="mobile-locale-action" />
+        <MobileLocaleAction onChange={onLocaleChange} className="mobile-locale-action" />
         <button className="mobile-theme-action" type="button" onClick={onToggleTheme} aria-label={theme === "dark" ? t("nav.switchLight") : t("nav.switchDark")}><span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span><small>{theme === "dark" ? t("nav.light") : t("nav.dark")}</small></button>
         <button className={`mobile-profile-action ${activeModule === "profile" ? "active" : ""}`} type="button" onClick={onOpenProfile} aria-label={t("nav.profile")}><span aria-hidden="true">{userAvatar ? <Image unoptimized className="user-avatar" src={userAvatar} alt="" width={32} height={32} /> : <Image className="nav-svg-icon" src="/icons/icon_profile.svg" alt="" width={24} height={24} />}</span><small>{t("nav.profile")}</small></button>
       </nav>
