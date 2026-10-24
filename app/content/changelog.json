@@ -60,6 +60,16 @@
     }
   },
   {
+    "id": "fix-notification-banners-and-profile-picture-preview",
+    "category": "fix",
+    "title": {
+      "en": "Keep notifications visible at the top of every page, dismiss success messages after five seconds, and fix profile picture crop previews.",
+      "de": "Benachrichtigungen oben auf jeder Seite anzeigen, Erfolgsmeldungen nach fünf Sekunden ausblenden und die Zuschnittvorschau für Profilbilder korrigieren.",
+      "fr": "Afficher les notifications en haut de chaque page, masquer les confirmations après cinq secondes et corriger l’aperçu du recadrage des photos de profil.",
+      "it": "Mostra le notifiche in cima a ogni pagina, nasconde le conferme dopo cinque secondi e corregge l’anteprima del ritaglio delle foto del profilo."
+    }
+  },
+  {
     "id": "fix-shared-user-log-sheet-collections",
     "category": "fix",
     "title": {

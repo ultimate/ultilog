@@ -31,7 +31,6 @@ export function LogbookListPage({
   scannerBoatId,
   selectedScannerFiles,
   isScanning,
-  scannerError,
   isScannerPrivacyConfirmed,
   calculateSheetSummary,
   logbook,
@@ -249,12 +248,6 @@ export function LogbookListPage({
             <span />
           </div>
         </div>
-      )}
-
-      {scannerError && (
-        <p className="save-error" role="alert">
-          {scannerError}
-        </p>
       )}
 
       {selectedScannerFiles.length > 0 && !isScannerPrivacyConfirmed && (

@@ -13,7 +13,7 @@ function contentSecurityPolicy(developmentServer: boolean) {
     // Leaflet positions map panes and markers with element style attributes, and
     // the print view emits scoped inline CSS.
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: https://*.tile.openstreetmap.org https://tiles.openseamap.org https://www.gravatar.com https://secure.gravatar.com",
+    "img-src 'self' data: blob: https://*.tile.openstreetmap.org https://tiles.openseamap.org https://www.gravatar.com https://secure.gravatar.com",
     "font-src 'self'",
     "connect-src 'self'",
     "frame-ancestors 'none'",

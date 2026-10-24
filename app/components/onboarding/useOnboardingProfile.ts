@@ -192,6 +192,7 @@ export function useOnboardingProfile({ activeModule, initialEmail, initialName, 
     preferencesRef.current = mergedPreferences;
     setPreferences(mergedPreferences);
     onProfileError("");
+    onProfileMessage?.("");
     const save = async () => {
       const response = await fetch("/api/profile", {
         method: "PATCH",
