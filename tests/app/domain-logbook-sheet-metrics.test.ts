@@ -86,7 +86,7 @@ describe("calculateLogSheetMetrics", () => {
     ]);
 
     expect(metrics.engineHours).toEqual({ port: 1.5, starboard: 1 });
-    expect(metrics.motorHours).toBe(2.5);
+    expect(metrics.motorHours).toBe(1.5);
     expect(metrics.propulsionDurationMinutes).toBe(90);
   });
 });

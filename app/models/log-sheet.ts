@@ -55,6 +55,7 @@ export type LogSheet = {
   copyProvenance?: LogSheetCopyProvenance;
   verificationNote?: string;
   scannerWarnings?: ScannerWarning[];
+  scannerWarningsDismissed?: boolean;
   boatId: string;
   route: {
     from: string;

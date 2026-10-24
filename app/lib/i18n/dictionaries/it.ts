@@ -2,6 +2,22 @@ import { type Dictionary } from "./en";
 
 // Keep one translation key per line so locale files stay easy to diff and edit side by side.
 export const it: Dictionary = {
+  "details.lineDateTime": "Data e ora della riga del registro",
+  "details.invalidNumber": "Numero non valido",
+  "details.invalidHours": "Inserire le ore come HH:mm o ore decimali",
+  "details.invalidDateTime": "Inserire data e ora valide nel formato scelto",
+  "details.requiredLineFields": "Data, ora con fuso orario, latitudine e longitudine sono obbligatorie",
+  "details.noCrewResults": "Nessun membro corrispondente",
+  "details.shareSheet": "Condividi il foglio di bordo",
+  "details.lockSheet": "Blocca il foglio di bordo",
+  "details.unlockSheet": "Sblocca il foglio di bordo",
+  "details.collapseActions": "Comprimi azioni",
+  "details.expandActions": "Espandi azioni",
+  "details.previousSheet": "Foglio di bordo precedente",
+  "details.nextSheet": "Foglio di bordo successivo",
+  "details.dismissWarnings": "Non mostrare più",
+  "details.warningHistory": "Mostra la cronologia degli avvisi di importazione",
+  "details.unsavedEdits": "Salvare o annullare le modifiche prima di cambiare foglio",
   "logbooks.chooseDate": "Scegli data",
   "logbooks.scanImport": "Scansiona / Importa",
   "logbooks.scannerSettingsTitle": "Configura scansione",

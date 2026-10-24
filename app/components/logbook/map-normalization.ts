@@ -24,7 +24,7 @@ export type NormalizedMapRoute = {
 export function normalizeLogLinesForMap(lines: LogLine[]): NormalizedMapRoute {
   const coordinates = lines
     .map((line, index) => ({ line, index }))
-    .filter(({ line }) => isValidCoordinate(line.latitude, line.longitude));
+    .filter((entry): entry is { line: LogLine & { latitude: number; longitude: number }; index: number } => isValidCoordinate(entry.line.latitude, entry.line.longitude));
 
   if (!coordinates.length) return { points: [], bounds: null };
 
@@ -62,9 +62,9 @@ export function normalizeLogSheetsForMap(sheets: LogSheet[]): NormalizedMapRoute
   return normalizeLogLinesForMap(sheets.flatMap((sheet) => sheet.lines));
 }
 
-function isValidCoordinate(latitude: number, longitude: number) {
+function isValidCoordinate(latitude: number | null, longitude: number | null) {
   return (
-    Number.isFinite(latitude) &&
+    latitude !== null && longitude !== null && Number.isFinite(latitude) &&
     Number.isFinite(longitude) &&
     latitude >= -90 &&
     latitude <= 90 &&

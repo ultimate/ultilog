@@ -10,11 +10,11 @@ export function dateTimeLocalFromParts(date: string, time: string) {
 
 export function splitDateTimeLocal(value: string) {
   const [date = "", time = ""] = value.split("T");
-  return { date, time: time.slice(0, 5) };
+  return { date, time: time.match(/^\d{2}:\d{2}(?::\d{2})?/)?.[0] ?? "" };
 }
 
 export function dateTimeLocalFromStamp(value: string) {
-  const iso = value.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
+  const iso = value.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2}(?::\d{2})?)/);
   if (iso) return `${iso[1]}T${iso[2]}`;
   const withTime = value.match(/^(\d{4}-\d{2}-\d{2}), (\d{2}:\d{2})/);
   if (withTime) return `${withTime[1]}T${withTime[2]}`;
@@ -41,7 +41,7 @@ export function isoDateTimeWithTimezone(dateTimeLocal: string, timezoneOffset: s
   if (!dateTimeLocal) return "";
   const { date, time } = splitDateTimeLocal(dateTimeLocal);
   if (!date) return "";
-  return `${date}T${time || "00:00"}:00${normalizeTimezoneOffset(timezoneOffset)}`;
+  return `${date}T${time ? (time.length === 5 ? `${time}:00` : time) : "00:00:00"}${normalizeTimezoneOffset(timezoneOffset)}`;
 }
 
 export function routeStamp(date: string, time: string, timezoneOffset = localTimezoneOffset()) {

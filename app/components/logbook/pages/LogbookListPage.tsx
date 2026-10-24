@@ -1,3 +1,4 @@
+import { formatEngineHours } from "../../../lib/log-input";
 import { DateFilterInput } from "../DateFilterInput";
 import { ModalLayer } from "../ModalLayer";
 import { Fragment } from "react";
@@ -19,6 +20,8 @@ import { sheetToForm } from "../forms";
 import { LogSheetsMapView } from "../OpenSeaMapView";
 import { ListPagination, ListSearch, SortableColumnHeader, useSortableList } from "../SortableList";
 
+export type SheetOverviewState = { fromDate: string; toDate: string; query: string; sort: { key: string; direction: "ascending" | "descending" }; page: number; pageSize: number };
+
 type Navigate = (
   module: "details" | "logbooks",
   itemId?: string | number,
@@ -27,6 +30,8 @@ type SheetSummary = { motorMiles: number; sailMiles: number; totalMiles: number;
 type SheetListRow = { sheet: LogSheet; boat?: Boat; summary: SheetSummary };
 
 export function LogbookListPage({
+  overviewState,
+  onOpenSequence,
   activeBoat,
   scannerBoatId,
   selectedScannerFiles,
@@ -54,6 +59,8 @@ export function LogbookListPage({
   isDemo,
   onDemoFeatureBlocked,
 }: {
+  overviewState?: SheetOverviewState;
+  onOpenSequence?: (ids: string[], state: SheetOverviewState) => void;
   activeBoat?: Boat;
   scannerBoatId: string;
   selectedScannerFiles: File[];
@@ -93,8 +100,8 @@ export function LogbookListPage({
   const [showEndpointMarkers, setShowEndpointMarkers] = useState(true);
   const [highlightedRouteId, setHighlightedRouteId] = useState<string | null>(null);
   const [isMapExpanded, setIsMapExpanded] = useState(false);
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
+  const [fromDate, setFromDate] = useState(overviewState?.fromDate ?? "");
+  const [toDate, setToDate] = useState(overviewState?.toDate ?? "");
   const invalidDateRange = Boolean(fromDate && toDate && fromDate > toDate);
   const filteredSheets = useMemo(
     () => logbook.sheets.filter((sheet) => {
@@ -127,7 +134,7 @@ export function LogbookListPage({
     { key: "motionDuration", value: (row: SheetListRow) => row.summary.motionDuration },
     { key: "motorHours", value: (row: SheetListRow) => row.summary.motorHours },
   ], []);
-  const list = useSortableList(rows, columns, defaultPageSize);
+  const list = useSortableList(rows, columns, defaultPageSize, "", overviewState);
   const totals = list.pageItems.reduce((sum, { summary }) => ({
     sailMiles: sum.sailMiles + summary.sailMiles,
     motorMiles: sum.motorMiles + summary.motorMiles,
@@ -163,6 +170,7 @@ export function LogbookListPage({
   }
 
   function openSheet(sheet: LogSheet) {
+    onOpenSequence?.(list.processedItems.map(row => row.sheet.id), { fromDate, toDate, query: list.query, sort: list.sort, page: list.page, pageSize: list.pageSize });
     setIsMapExpanded(false);
     setActiveSheetId(sheet.id);
     setSheetForm(sheetToForm(sheet));
@@ -397,7 +405,7 @@ export function LogbookListPage({
                 <th colSpan={4} scope="row">{t("logbooks.pageTotals")}</th>
                 <td className="logbook-metric-cell">{formatMiles(totals.sailMiles)} nm</td><td className="logbook-metric-cell">{formatMiles(totals.motorMiles)} nm</td><td className="logbook-metric-cell">{formatMiles(totals.totalMiles)} nm</td>
                 <td className="logbook-metric-cell">{formatLogSheetDuration(totals.durationMinutes)}</td><td className="logbook-metric-cell">{formatLogSheetDuration(totals.motionDurationMinutes)}</td>
-                <td className="logbook-metric-cell">{formatLogSheetDuration(totals.motorHours * 60)}</td><td />
+                <td className="logbook-metric-cell">{formatEngineHours(totals.motorHours)}</td><td />
               </tr></tfoot>
             </table>
           </div>

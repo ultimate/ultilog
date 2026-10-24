@@ -17,12 +17,12 @@ type PaginationResult<T> = {
   setPageSize: (pageSize: PageSize) => void;
 };
 
-export function usePagination<T>(items: T[], defaultPageSize: number): PaginationResult<T> {
+export function usePagination<T>(items: T[], defaultPageSize: number, initial?: { page: number; pageSize: number }): PaginationResult<T> {
   const normalizedDefaultPageSize = normalizePageSize(defaultPageSize);
   const [state, setState] = useState<{ defaultPageSize: PageSize; page: number; pageSize: PageSize }>(() => ({
     defaultPageSize: normalizedDefaultPageSize,
-    page: 1,
-    pageSize: normalizedDefaultPageSize,
+    page: initial?.page ?? 1,
+    pageSize: normalizePageSize(initial?.pageSize, normalizedDefaultPageSize),
   }));
   const pageSize = state.defaultPageSize === normalizedDefaultPageSize ? state.pageSize : normalizedDefaultPageSize;
   const pageCount = Math.max(1, Math.ceil(items.length / pageSize));

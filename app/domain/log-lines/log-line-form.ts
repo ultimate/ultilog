@@ -2,7 +2,8 @@ import type { LineForm, LogLine, TemperatureUnit, WindUnit } from "../../models/
 import { normalizeCoordinate, parseCoordinate } from "../nautical/coordinates";
 import { createLogLineId } from "./log-line-id";
 
-const numberOrZero = (value: string) => Number.parseFloat(value) || 0;
+import { parseDecimalInput, parseHourInput } from "../../lib/log-input";
+const numberOrZero = (value: string) => parseDecimalInput(value) ?? 0;
 const supportedWindUnits = new Set<WindUnit>(["bft", "kn", "km/h", "mp/h", "m/s"]);
 const supportedTemperatureUnits = new Set<TemperatureUnit>(["c", "f", "°C", "°F"]);
 
@@ -27,41 +28,50 @@ export function signedCourse(value: string) {
   return clampInt(value, -180, 180);
 }
 
-export function lineFormToLogLine(lineForm: LineForm): LogLine {
-  const engineHours: Record<string, number> = Object.fromEntries((Object.keys(lineForm.engineHours ?? {}).length ? Object.entries(lineForm.engineHours ?? {}) : [["main-engine", lineForm.motorHours]]).map(([engineId, value]) => [engineId, Math.max(0, numberOrZero(value))]).filter((entry) => Number(entry[1]) > 0));
+export function lineFormToLogLine(lineForm: LineForm, options: { scannerDraft?: boolean } = {}): LogLine {
+  const coordinate = (value: string, axis: "lat" | "lon") => {
+    if (!value.trim()) return null;
+    const parsed = parseCoordinate(value);
+    if (!Number.isFinite(parsed) || Math.abs(parsed) > (axis === "lat" ? 90 : 180)) {
+      if (options.scannerDraft) return null;
+      throw new Error("Invalid coordinate");
+    }
+    return normalizeCoordinate(parsed, axis);
+  };
+  const engineHours = Object.fromEntries((Object.keys(lineForm.engineHours ?? {}).length ? Object.entries(lineForm.engineHours ?? {}) : [["main-engine", lineForm.motorHours ?? ""]]).map(([engineId, value]) => [engineId, parseHourInput(value)]).filter((entry) => entry[1] !== null));
   return {
     id: lineForm.id || createLogLineId(),
     time: lineForm.time,
     position: lineForm.position,
-    latitude: normalizeCoordinate(parseCoordinate(lineForm.latitude), "lat"),
-    longitude: normalizeCoordinate(parseCoordinate(lineForm.longitude), "lon"),
+    latitude: coordinate(lineForm.latitude, "lat"),
+    longitude: coordinate(lineForm.longitude, "lon"),
     weather: lineForm.weather,
     weatherRemark: lineForm.weatherRemark,
-    temperature: numberOrZero(lineForm.temperature),
+    temperature: parseDecimalInput(lineForm.temperature),
     temperatureUnit: normalizeTemperatureUnit(lineForm.temperatureUnit),
-    barometer: clampInt(lineForm.barometer, 800, 1200),
+    barometer: lineForm.barometer.trim() ? Math.round(parseDecimalInput(lineForm.barometer)!) : null,
     windDirection: lineForm.windDirection,
-    windStrength: numberOrZero(lineForm.windStrength),
+    windStrength: parseDecimalInput(lineForm.windStrength),
     windUnit: normalizeWindUnit(lineForm.windUnit),
-    waves: numberOrZero(lineForm.waves),
+    waves: parseDecimalInput(lineForm.waves),
     seaUnit: lineForm.seaUnit === "ft" ? "ft" : "m",
-    tide: numberOrZero(lineForm.tide),
+    tide: parseDecimalInput(lineForm.tide),
     tideUnit: lineForm.tideUnit === "ft" ? "ft" : "m",
     moon: lineForm.moon,
-    compassCourse: bearing(lineForm.compassCourse),
-    deviation: signedCourse(lineForm.deviation),
-    magneticCourse: bearing(lineForm.magneticCourse),
-    variation: signedCourse(lineForm.variation),
-    trueCourse: bearing(lineForm.trueCourse),
-    windDrift: signedCourse(lineForm.windDrift),
-    courseThroughWater: bearing(lineForm.courseThroughWater),
-    currentDrift: signedCourse(lineForm.currentDrift),
-    courseOverGround: bearing(lineForm.courseOverGround),
-    speedKn: numberOrZero(lineForm.speedKn),
-    logNm: numberOrZero(lineForm.logNm),
-    sailMiles: numberOrZero(lineForm.sailMiles),
+    compassCourse: lineForm.compassCourse.trim() ? bearing(lineForm.compassCourse) : null,
+    deviation: lineForm.deviation.trim() ? signedCourse(lineForm.deviation) : null,
+    magneticCourse: lineForm.magneticCourse.trim() ? bearing(lineForm.magneticCourse) : null,
+    variation: lineForm.variation.trim() ? signedCourse(lineForm.variation) : null,
+    trueCourse: lineForm.trueCourse.trim() ? bearing(lineForm.trueCourse) : null,
+    windDrift: lineForm.windDrift.trim() ? signedCourse(lineForm.windDrift) : null,
+    courseThroughWater: lineForm.courseThroughWater.trim() ? bearing(lineForm.courseThroughWater) : null,
+    currentDrift: lineForm.currentDrift.trim() ? signedCourse(lineForm.currentDrift) : null,
+    courseOverGround: lineForm.courseOverGround.trim() ? bearing(lineForm.courseOverGround) : null,
+    speedKn: parseDecimalInput(lineForm.speedKn),
+    logNm: parseDecimalInput(lineForm.logNm),
+    sailMiles: parseDecimalInput(lineForm.sailMiles),
     sailNote: lineForm.sailNote,
-    motorMiles: numberOrZero(lineForm.motorMiles),
+    motorMiles: parseDecimalInput(lineForm.motorMiles),
     engineHours,
     motorNote: lineForm.motorNote,
     remarks: lineForm.remarks,

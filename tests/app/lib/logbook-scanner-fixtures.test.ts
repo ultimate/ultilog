@@ -222,7 +222,7 @@ function projectExpectedLine(line: ExpectedFixtureLine, actualLine: Record<strin
   );
   if (line.motorHours === undefined) return projected;
   const hours = Number(line.motorHours);
-  return { ...projected, engineHours: hours > 0 ? { "main-engine": hours } : {} };
+  return { ...projected, engineHours: hours >= 0 ? { "main-engine": hours } : {} };
 }
 
 function numericExpectedValue(field: string, value: string | number | undefined) {

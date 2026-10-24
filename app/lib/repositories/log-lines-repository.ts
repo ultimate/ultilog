@@ -1,3 +1,4 @@
+import { nullableNumber } from "../log-input";
 import type { LogLine, LogLineRow } from "../../models/logbook";
 import type { QueryableDatabase } from "../db/logbook-database";
 import { expectedRevision, scopedId } from "./boats-repository";
@@ -108,7 +109,7 @@ export class LogLinesRepository {
       const engineHours = line.engineHours ?? {};
       for (const [engineId, rawHours] of Object.entries(engineHours)) {
         const hours = Math.max(0, Number(rawHours) || 0);
-        if (!hours) continue;
+        if (!Number.isFinite(rawHours) || rawHours < 0) throw new Error("Invalid engine runtime");
         await this.db.query(
           `insert into log_line_engine_hours (sheet_id, line_sort_order, engine_id, runtime_hours) select ${this.db.placeholder(1)}, ${this.db.placeholder(2)}, engines.id, ${this.db.placeholder(3)} from engines join log_sheets on log_sheets.boat_id = engines.boat_id where log_sheets.id = ${this.db.placeholder(4)} and engines.id = engines.boat_id || ':' || ${this.db.placeholder(5)}`,
           [scopedId(ownerId, sheetId), sortOrder, hours, scopedId(ownerId, sheetId), engineId],
@@ -129,7 +130,7 @@ function lineValues(line: LogLine) {
 
 function LogSheetsLine(row: LogLineRow & { engineHours?: Record<string, number> }): LogLine {
   const { sheet_id, sort_order, position_name, weather_remark, temperature_unit, log_nm, wind_direction, wind_strength, wind_unit, sea_unit, tide_unit, compass_course, magnetic_course, true_course, wind_drift, course_through_water, current_drift, course_over_ground, speed_kn, sail_miles, sail_note, motor_miles, motor_note, ...rest } = row;
-  return { ...rest, position: position_name, weatherRemark: weather_remark, temperatureUnit: temperature_unit, logNm: Number(log_nm), windDirection: wind_direction, windStrength: Number(wind_strength), windUnit: wind_unit, seaUnit: sea_unit, tideUnit: tide_unit, compassCourse: Number(compass_course), magneticCourse: Number(magnetic_course), trueCourse: Number(true_course), windDrift: Number(wind_drift), courseThroughWater: Number(course_through_water), currentDrift: Number(current_drift), courseOverGround: Number(course_over_ground), speedKn: Number(speed_kn), sailMiles: Number(sail_miles), sailNote: sail_note, motorMiles: Number(motor_miles), motorNote: motor_note } as LogLine;
+  return { ...rest, latitude: nullableNumber(rest.latitude), longitude: nullableNumber(rest.longitude), barometer: nullableNumber(rest.barometer), temperature: nullableNumber(rest.temperature), tide: nullableNumber(rest.tide), deviation: nullableNumber(rest.deviation), variation: nullableNumber(rest.variation), position: position_name, weatherRemark: weather_remark, temperatureUnit: temperature_unit, logNm: nullableNumber(log_nm), windDirection: wind_direction, windStrength: nullableNumber(wind_strength), windUnit: wind_unit, seaUnit: sea_unit, tideUnit: tide_unit, compassCourse: nullableNumber(compass_course), magneticCourse: nullableNumber(magnetic_course), trueCourse: nullableNumber(true_course), windDrift: nullableNumber(wind_drift), courseThroughWater: nullableNumber(course_through_water), currentDrift: nullableNumber(current_drift), courseOverGround: nullableNumber(course_over_ground), speedKn: nullableNumber(speed_kn), sailMiles: nullableNumber(sail_miles), sailNote: sail_note, motorMiles: nullableNumber(motor_miles), motorNote: motor_note } as LogLine;
 }
 
 type EngineHoursRow = { sheet_id: string; line_sort_order: number; engine_id: string; runtime_hours: number; boat_id: string };

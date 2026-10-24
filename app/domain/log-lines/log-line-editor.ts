@@ -1,3 +1,4 @@
+import { parseDecimalInput } from "../../lib/log-input";
 import type { Boat, LineForm, LineFormField } from "../../models/logbook";
 import { calculateCourseConversion, type CourseConversionInput, type CourseConversionLookupOptions, type DeviationTable, type WindDriftTable } from "../nautical/course-conversion";
 import { normalizeCoordinate, parseCoordinate, type CoordinateAxis } from "../nautical/coordinates";
@@ -51,7 +52,8 @@ function applyFieldUpdate(form: LineForm, { field, value }: LogLineFormUpdate): 
   const axis = coordinateAxes[field];
   if (!axis) return { ...form, [field]: value };
   if (!value.trim()) return { ...form, [field]: "" };
-  return { ...form, [field]: String(normalizeCoordinate(parseCoordinate(value), axis)) };
+  const parsed = parseCoordinate(value);
+  return { ...form, [field]: Number.isFinite(parsed) ? String(normalizeCoordinate(parsed, axis)) : value };
 }
 
 function shouldRecalculateCourses(field: keyof LineForm, form: LineForm) {
@@ -109,8 +111,7 @@ function beaufortToKnots(beaufort: number) {
 
 function optionalNumber(value: string) {
   if (!value.trim()) return undefined;
-  const parsed = Number.parseFloat(value);
-  return Number.isFinite(parsed) ? parsed : undefined;
+  try { return parseDecimalInput(value) ?? undefined; } catch { return undefined; }
 }
 
 function hasAnyCourseInput(form: LineForm) {

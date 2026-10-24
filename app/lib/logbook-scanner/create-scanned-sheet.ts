@@ -197,7 +197,7 @@ function scannedLineToLogLine(scannedLine: ScannerResult["draft"]["lines"][numbe
     time: normalizedTime,
     weather: normalizeScannedWeather(scannedLine.weather),
     ...missingScannerUnitDefaults(scannedLine, userPreferences),
-  });
+  }, { scannerDraft: true });
 }
 
 function scannerUnitDefaults(userPreferences?: ScannerUnitPreferences): Pick<LineForm, "windUnit" | "seaUnit" | "tideUnit" | "temperatureUnit"> {

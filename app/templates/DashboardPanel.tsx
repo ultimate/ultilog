@@ -1,5 +1,7 @@
 "use client";
 
+import { formatEngineHours } from "../lib/log-input";
+
 import type React from "react";
 import { useMemo, useState, type ReactNode } from "react";
 import { useI18n } from "../lib/i18n";
@@ -53,7 +55,7 @@ export function DashboardPanel({ stats, onboardingChecklist }: DashboardPanelPro
         <article><i>✚</i><span>{t("dashboard.motorMiles")}</span><strong>{formatMiles(stats.motorNm)} nm</strong><small>{motorPct}% {t("dashboard.ofTotal")}</small></article>
         <article><i>⏱</i><span>{t("dashboard.overallDuration")}</span><strong>{formatDuration(stats.durationMinutes)}</strong><small>{t("dashboard.allTime")}</small></article>
         <article><i>↬</i><span>{t("dashboard.motionDuration")}</span><strong>{formatDuration(stats.motionDurationMinutes)}</strong><small>{t("dashboard.inMotion")}</small></article>
-        <article><i>⚙</i><span>{t("dashboard.totalEngineHours")}</span><strong>{formatDuration(stats.motorHours * 60)}</strong><small>{t("dashboard.allTime")}</small></article>
+        <article><i>⚙</i><span>{t("dashboard.totalEngineHours")}</span><strong>{formatEngineHours(stats.motorHours)}</strong><small>{t("dashboard.allTime")}</small></article>
         <article><i>☀</i><span>{t("dashboard.sailingDays")}</span><strong>{stats.sailingDays}</strong><small>{t("dashboard.sailingDaysDescription")}</small></article>
         <article><i>≋</i><span>{t("dashboard.daysAtSea")}</span><strong>{stats.daysAtSea}</strong><small>{t("dashboard.daysAtSeaDescription")}</small></article>
         <article><i>⚓</i><span>{t("dashboard.boats")}</span><strong>{stats.boats}</strong><small>{t("dashboard.activeVessels")}</small></article>

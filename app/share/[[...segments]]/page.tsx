@@ -1,3 +1,4 @@
+import { formatEngineHours } from "../../lib/log-input";
 import { findUserById } from "../../lib/users";
 import { auth } from "../../../auth";
 import { userCanAccessRegisteredShares } from "../../lib/authorization";
@@ -119,7 +120,7 @@ export default async function SharedLogbookPage({ params, searchParams }: { para
             <article><span>Total miles</span><strong>{formatMiles(metrics?.totalMiles ?? 0)} nm</strong></article>
             <article><span>Duration</span><strong>{formatLogSheetDuration(metrics?.durationMinutes)}</strong></article>
             <article><span>Motion duration</span><strong>{formatLogSheetDuration(metrics?.motionDurationMinutes)}</strong></article>
-            <article><span>Total engine-hours</span><strong>{formatLogSheetDuration((metrics?.motorHours ?? 0) * 60)}</strong></article>
+            <article><span>Total engine-hours</span><strong>{formatEngineHours(metrics?.motorHours ?? 0)}</strong></article>
             <article><span>Propulsion duration</span><strong>{formatLogSheetDuration(metrics?.propulsionDurationMinutes)}</strong></article>
           </section>
         ) : null}

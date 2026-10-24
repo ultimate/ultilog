@@ -11,6 +11,7 @@ const sameOrder = (left: string[], right: string[]) =>
 
 /** Coordinates focused line writes without turning them back into sheet snapshots. */
 export class LineMutationQueue {
+  private readonly pending = new Set<Promise<boolean>>();
   private readonly queues = new Map<string, Promise<boolean>>();
   private readonly creations = new Map<string, Promise<boolean>>();
 
@@ -46,11 +47,17 @@ export class LineMutationQueue {
       return ordered;
     });
 
+    this.pending.add(result);
     void result.finally(() => {
+      this.pending.delete(result);
       if (this.queues.get(lineKey) === content) this.queues.delete(lineKey);
       if (mutation.isNew && this.creations.get(lineKey) === content) this.creations.delete(lineKey);
     });
     return result;
+  }
+
+  async drain() {
+    while (this.pending.size) await Promise.all([...this.pending]);
   }
 
   clear() {

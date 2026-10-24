@@ -23,7 +23,7 @@ describe("shared log sheet presentation", () => {
     expect(content(root)).toContain("Visibility note");
     expect(content(root)).toContain("Sail note");
     expect(content(root)).toContain("Motor note");
-    expect(content(root)).toContain("Main engine 1.5 h");
+    expect(content(root)).toContain("Main engine 01:30");
     expect(root.root.findAllByType("th")).toHaveLength(24);
     await act(async () => root.root.findAllByType("button")[1].props.onClick());
     expect(root.root.findAllByType("th")).toHaveLength(31);
@@ -41,7 +41,7 @@ describe("shared log sheet presentation", () => {
   it("shows technical check symbols and engine counter readings", async () => {
     let root!: ReactTestRenderer;
     await act(async () => { root = create(<SharedTechnicalLog sheet={{ ...sampleLogSheets[0], technicalChecks: [{ status: "⚠️", text: "Check coolant" }], engineHourCounters: { main: { start: 12, end: 14.5 } } }} engineLabels={{ main: "Main engine" }} />); });
-    for (const value of ["⚠️", "Check coolant", "Main engine", "12 h", "14.5 h", "2.5 h"]) expect(content(root)).toContain(value);
+    for (const value of ["⚠️", "Check coolant", "Main engine", "12:00", "14:30", "02:30"]) expect(content(root)).toContain(value);
     await act(async () => root.unmount());
   });
 

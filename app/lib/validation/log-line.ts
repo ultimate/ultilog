@@ -1,9 +1,11 @@
+import { hasRequiredLogLineFields } from "../../domain/log-lines/required-fields";
 import type { LogLine } from "../../models/logbook";
 import { LOGBOOK_LIMITS, LogbookValidationError, requireRevision, validateLine as assertLine } from "./logbook";
 
 export function validateLogLine(value: unknown): LogLine {
   assertLine(value);
   if (typeof (value as { id?: unknown }).id !== "string" || !(value as { id: string }).id.trim()) throw new LogbookValidationError("A log line id is required.");
+  if (!hasRequiredLogLineFields(value as LogLine)) throw new LogbookValidationError("Date, time with timezone, latitude and longitude are required.");
   return value as LogLine;
 }
 

@@ -17,7 +17,13 @@ export type LogSheetMetrics = {
 
 export function calculateLogSheetMetrics(lines: LogLine[], route?: LogSheet["route"], options: { stationaryDistanceThresholdNm?: number } = {}): LogSheetMetrics {
   const chronologicalLines = [...lines].sort((a, b) => lineTimeValue(a) - lineTimeValue(b));
-  const deltas = chronologicalLines.map((line, index) => Math.max(0, numeric(line.logNm) - numeric(chronologicalLines[index - 1]?.logNm)));
+  let previousLogNm = 0;
+  const deltas = chronologicalLines.map((line) => {
+    if (line.logNm == null) return 0;
+    const delta = Math.max(0, line.logNm - previousLogNm);
+    previousLogNm = line.logNm;
+    return delta;
+  });
   const explicitMotorMiles = chronologicalLines.some((line) => numeric(line.motorMiles) > 0);
   const motorMiles = explicitMotorMiles
     ? chronologicalLines.reduce((sum, line) => sum + numeric(line.motorMiles), 0)
@@ -31,7 +37,7 @@ export function calculateLogSheetMetrics(lines: LogLine[], route?: LogSheet["rou
     for (const [engineId, hours] of Object.entries(normalizedEngineHours(line))) totals[engineId] = (totals[engineId] ?? 0) + hours;
     return totals;
   }, {});
-  const motorHours = Object.values(engineHours).reduce((sum, hours) => sum + hours, 0);
+  const motorHours = chronologicalLines.reduce((sum, line) => sum + Math.max(0, ...Object.values(normalizedEngineHours(line))), 0);
   const propulsionDurationMinutes = chronologicalLines.reduce((sum, line) => sum + Math.max(0, ...Object.values(normalizedEngineHours(line))) * 60, 0);
   const motionDurationMinutes = calculateMotionDurationMinutes(chronologicalLines, options.stationaryDistanceThresholdNm ?? defaultMotionStationaryThresholdNm);
   const overallDurationMinutes = calculateOverallDurationMinutes(route);
@@ -111,8 +117,8 @@ function parseLogTimeValue(time: string): { kind: "absolute" | "dayTime"; value:
   return { kind: "dayTime", value: hours * 60 + minutes };
 }
 
-function hasPosition(line: LogLine) {
-  return Number.isFinite(line.latitude) && Number.isFinite(line.longitude);
+function hasPosition(line: LogLine): line is LogLine & { latitude: number; longitude: number } {
+  return line.latitude !== null && line.longitude !== null && Number.isFinite(line.latitude) && Number.isFinite(line.longitude);
 }
 
 function numeric(value: unknown) {
