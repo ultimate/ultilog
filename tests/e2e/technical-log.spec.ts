@@ -8,6 +8,12 @@ test("edits technical log entries and suggests previous checks", async ({ page }
   await page.goto(`/details/${targetSheet.id}`);
 
   await expect(page.getByRole("heading", { name: targetSheet.title })).toBeVisible();
+  const previousSheet = page.getByRole("button", { name: "Previous log sheet", exact: true });
+  const nextSheet = page.getByRole("button", { name: "Next log sheet", exact: true });
+  await expect(previousSheet).toBeDisabled();
+  await expect(previousSheet).toHaveCSS("opacity", "0.4");
+  await expect(nextSheet).toBeEnabled();
+
   await expect(page.getByRole("heading", { name: "Checks", level: 4 })).toBeVisible();
   await expect(page.getByText("08-12: Luca / Jonas")).toHaveCount(0);
   await expect(page.getByRole("combobox", { name: "Technical log entry 1" })).toHaveValue("Engine oil checked");
@@ -45,6 +51,46 @@ test("edits technical log entries and suggests previous checks", async ({ page }
   await page.getByRole("button", { name: "Delete technical log entry 6" }).click();
   await expect(page.getByRole("combobox", { name: "Technical log entry 6" })).toHaveCount(0);
 
+  await test.step("saves new lines rapidly without duplicate rows or ordering failures", async () => {
+    const rows = page.locator(".log-lines-table tbody tr");
+    const initialCount = await rows.count();
+    let release!: () => void;
+    const held = new Promise<void>(resolve => { release = resolve; });
+    let started!: () => void;
+    const firstStarted = new Promise<void>(resolve => { started = resolve; });
+    let first = true;
+    const failures: number[] = [];
+    page.on("response", response => {
+      if (response.url().includes(`/sheets/${targetSheet.id}/lines`) && !response.ok()) failures.push(response.status());
+    });
+    await page.route(`**/sheets/${targetSheet.id}/lines`, async route => {
+      if (first && route.request().method() === "POST") { first = false; started(); await held; }
+      await route.continue();
+    });
+    try {
+      for (const [index, time] of ["2026-10-12T11:10", "2026-10-12T11:20"].entries()) {
+        await page.getByRole("button", { name: "+ Add line", exact: true }).click();
+        const editor = page.locator(".inline-line-row").last();
+        await editor.locator('input[type="datetime-local"]').fill(time);
+        await editor.getByRole("textbox", { name: "Lat", exact: true }).fill("38.5");
+        await editor.getByRole("textbox", { name: "Lon", exact: true }).fill("20.5");
+        await editor.getByRole("button", { name: "Save line", exact: true }).click();
+        if (index === 0) await firstStarted;
+        await expect(rows).toHaveCount(initialCount + index + 1);
+      }
+    } finally { release(); }
+    await expect(page.locator(".inline-line-row")).toHaveCount(0);
+    await expect(rows).toHaveCount(initialCount + 2);
+    await expect.poll(async () => {
+      const stored = await (await page.request.get("/api/logbook")).json();
+      return stored.sheets.find((sheet: { id: string }) => sheet.id === targetSheet.id)?.lines.length;
+    }).toBe(initialCount + 2);
+    expect(failures).toEqual([]);
+    await expect(page.getByText("Unable to save the latest changes. Please try again.", { exact: false })).toHaveCount(0);
+    await page.reload();
+    await expect(rows).toHaveCount(initialCount + 2);
+  });
+
   await page.getByRole("button", { name: "Lock log sheet" }).click();
   await expect(page.getByRole("combobox", { name: "Technical log entry 1" })).toBeDisabled();
   await expect(page.getByRole("combobox", { name: "New technical log entry" })).toBeDisabled();
@@ -62,6 +108,11 @@ test("edits technical log entries and suggests previous checks", async ({ page }
     return stored.sheets.find((sheet: { id: string }) => sheet.id === motorSheet.id)?.lines[0]?.engineHours;
   }).toEqual({ "port-engine": 0.5, "starboard-engine": 0.6 });
   await expect(page.getByText("Unable to save the latest changes. Please try again.")).toHaveCount(0);
+  const storedSheets = (await (await page.request.get("/api/logbook")).json()).sheets as { id: string }[];
+  await page.goto(`/details/${storedSheets.at(-1)!.id}`);
+  await expect(nextSheet).toBeDisabled();
+  await expect(nextSheet).toHaveCSS("opacity", "0.4");
+  await expect(previousSheet).toBeEnabled();
 });
 
 test("preserves formatted date/time drafts and localized numeric input", async ({ page }) => {

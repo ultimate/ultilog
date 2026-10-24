@@ -1,5 +1,6 @@
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { lineToForm } from "../../app/components/logbook/forms";
 import { CrewSearchSelect } from "../../app/components/logbook/CrewSearchSelect";
 import { PreferenceDateTimeInput } from "../../app/components/logbook/PreferenceDateTimeInput";
 import { DateTimeFormatProvider } from "../../app/lib/DateTimeFormatProvider";
@@ -98,6 +99,13 @@ describe("log sheet actions and warning review", () => {
     expect(root.root.findByProps({ id: "sheet-action-buttons" }).props.hidden).toBe(true);
     expect(button("Expand actions").props["aria-expanded"]).toBe(false);
   });
+  it("renders an optimistically inserted new line only once while its editor is open", async () => {
+    const input = props();
+    const line = sampleLogSheets[0].lines[0];
+    await act(async () => { root = create(<LogbookDetailsPage {...input} activeSheet={{ ...input.activeSheet, lines: [line] }} lineForms={{ [line.id]: { form: lineToForm(line), isNew: true } }} />); });
+    expect(root.root.findAllByProps({ className: "inline-line-row" })).toHaveLength(1);
+  });
+
   it("keeps unsaved technical-log text when navigating", async () => {
     const input = props();
     await act(async () => { root = create(<LogbookDetailsPage {...input} />); });

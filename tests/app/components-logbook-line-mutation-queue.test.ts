@@ -17,12 +17,12 @@ const mutation = (lineId: string, overrides: Partial<Parameters<LineMutationQueu
 });
 
 describe("line mutation queue", () => {
-  it("allows edits to different stable line ids to proceed independently", async () => {
+  it("allows edits to different sheets to proceed independently", async () => {
     const queue = new LineMutationQueue();
     const first = deferred();
     const secondPersist = vi.fn().mockResolvedValue(true);
     const firstSave = queue.enqueue(mutation("line-a"), () => first.promise, vi.fn());
-    const secondSave = queue.enqueue(mutation("line-b"), secondPersist, vi.fn());
+    const secondSave = queue.enqueue(mutation("line-b", { sheetId: "sheet-2" }), secondPersist, vi.fn());
 
     await secondSave;
     expect(secondPersist).toHaveBeenCalledOnce();
@@ -59,6 +59,36 @@ describe("line mutation queue", () => {
     creation.resolve(true);
     await createSave;
     expect(reorder).toHaveBeenCalledWith({ lineIds: ["line-old", "line-new"] });
+  });
+
+  it("finishes each creation and reorder before creating the next line on the sheet", async () => {
+    const queue = new LineMutationQueue();
+    const firstOrder = deferred();
+    const storedIds = ["old"];
+    const events: string[] = [];
+    const firstSave = queue.enqueue(mutation("a", { isNew: true, previousLineIds: ["old"], lineIds: ["old", "a"] }), async () => {
+      storedIds.push("a"); events.push("create a"); return true;
+    }, async ({ lineIds }) => {
+      expect(lineIds).toEqual(storedIds); events.push("order a"); return firstOrder.promise;
+    });
+    const secondSave = queue.enqueue(mutation("b", { isNew: true, previousLineIds: ["old", "a"], lineIds: ["old", "a", "b"] }), async () => {
+      storedIds.push("b"); events.push("create b"); return true;
+    }, async ({ lineIds }) => {
+      expect(lineIds).toEqual(storedIds); events.push("order b"); return true;
+    });
+    await new Promise(resolve => setTimeout(resolve, 0));
+    expect(events).toEqual(["create a", "order a"]);
+    firstOrder.resolve(true);
+    expect(await Promise.all([firstSave, secondSave])).toEqual([true, true]);
+    expect(events).toEqual(["create a", "order a", "create b", "order b"]);
+  });
+
+  it("continues saving after a rejected request", async () => {
+    const queue = new LineMutationQueue();
+    const firstSave = queue.enqueue(mutation("a"), async () => { throw new Error("network"); }, vi.fn());
+    const nextSave = queue.enqueue(mutation("b"), async () => true, vi.fn());
+    expect(await Promise.all([firstSave, nextSave])).toEqual([false, true]);
+    await queue.drain();
   });
 
   it("does not persist an order snapshot after a failed content mutation", async () => {
