@@ -89,6 +89,12 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
         await context.database.deleteLogLine("sheet", "new-line", updated!.revision!);
         const persisted = (await context.database.readLogbook()).sheets[0];
         expect(persisted.lines.map(line => line.id)).toEqual([lines[1].id, lines[0].id]);
+        // Deleting the first row leaves stored positions 1 and 2. Moving a
+        // timestamp across days must still be able to reorder these rows.
+        const moved = await context.database.updateLogLine("sheet", lines[0].id, { ...persisted.lines[1], time: "2026-10-13T10:20:00+02:00" });
+        expect(moved?.time).toBe("2026-10-13T10:20:00+02:00");
+        expect(await context.database.reorderLogLines("sheet", [lines[1].id, lines[0].id])).toEqual([lines[1].id, lines[0].id]);
+        expect((await context.database.readLogbook()).sheets[0].lines.map(line => line.id)).toEqual([lines[1].id, lines[0].id]);
         const calculated = calculateLogSheetMetrics(persisted.lines, persisted.route);
         expect(persisted.metrics).toMatchObject({ motorMiles: calculated.motorMiles, sailMiles: calculated.sailMiles, totalMiles: calculated.totalMiles, motorHours: calculated.motorHours, motionDurationMinutes: calculated.motionDurationMinutes });
       } finally { await context.cleanup(); }

@@ -79,9 +79,12 @@ export class LogLinesRepository {
     const scopedSheetId = scopedId(ownerId, sheetId);
     const lines = await this.findForSheet(scopedSheetId);
     if (lines.length !== lineIds.length || lines.some(row => !lineIds.includes(row.id))) return undefined;
+    // Deletions leave gaps, so the row count is not a safe temporary offset.
+    // Start above every stored position to avoid unique-key collisions.
+    const temporaryOffset = Math.max(-1, ...lines.map(line => Number(line.sort_order))) + 1;
     // Move through unique temporary positions after detaching the legacy sort-order FK.
     await this.db.query(`delete from log_line_engine_hours where sheet_id = ${this.db.placeholder(1)}`, [scopedSheetId]);
-    for (const [index, id] of lineIds.entries()) await this.db.query(`update log_lines set sort_order = ${this.db.placeholder(1)} where sheet_id = ${this.db.placeholder(2)} and id = ${this.db.placeholder(3)}`, [lineIds.length + index, scopedSheetId, id]);
+    for (const [index, id] of lineIds.entries()) await this.db.query(`update log_lines set sort_order = ${this.db.placeholder(1)} where sheet_id = ${this.db.placeholder(2)} and id = ${this.db.placeholder(3)}`, [temporaryOffset + index, scopedSheetId, id]);
     for (const [index, id] of lineIds.entries()) await this.db.query(`update log_lines set sort_order = ${this.db.placeholder(1)} where sheet_id = ${this.db.placeholder(2)} and id = ${this.db.placeholder(3)}`, [index, scopedSheetId, id]);
     for (const [index, id] of lineIds.entries()) await this.insertEngineHours(sheetId, index, LogSheetsLine(lines.find(line => line.id === id)!), ownerId);
     return lineIds;
