@@ -46,6 +46,35 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
       } finally { await context.cleanup(); }
     });
 
+    it("replaces and removes crew assignments without retaining old rows or affecting another owner", async () => {
+      const context = await setup();
+      const member = (id: string) => ({ id, name: id, nationality: "", role: "Crew", embarkationDateTime: "", embarkationPosition: "", disembarkationDateTime: "", disembarkationPosition: "" });
+      try {
+        const db = context.database;
+        const first = member("first"), second = member("second");
+        await db.upsertCrewMember(first);
+        await db.upsertCrewMember(second);
+        const created = (await db.upsertLogSheet({ ...sheet([]), crew: [first, second] }))!;
+        const reordered = (await db.upsertLogSheet({ ...created, crew: [...created.crew].reverse() }))!;
+        expect(reordered.crew.map(crew => crew.id)).toEqual(["second", "first"]);
+
+        db.forUser(context.other);
+        await db.upsertBoat({ ...context.boat, revision: undefined });
+        await db.upsertCrewMember(first);
+        await db.upsertLogSheet({ ...sheet([]), crew: [first] });
+
+        db.forUser(context.owner);
+        const removed = (await db.upsertLogSheet({ ...reordered, crew: reordered.crew.filter(crew => crew.id === "first") }))!;
+        expect(removed.crew.map(crew => crew.id)).toEqual(["first"]);
+        const empty = (await db.upsertLogSheet({ ...removed, crew: [] }))!;
+        expect(empty.crew).toEqual([]);
+        expect((await db.readLogbook()).sheets[0].crew).toEqual([]);
+        expect((await db.readLogbook()).crewMembers.map(crew => crew.id)).toEqual(expect.arrayContaining(["first", "second"]));
+        db.forUser(context.other);
+        expect((await db.readLogbook()).sheets[0].crew.map(crew => crew.id)).toEqual(["first"]);
+      } finally { await context.cleanup(); }
+    });
+
     it("creates, updates, reorders, and deletes lines while recalculating metrics", async () => {
       const context = await setup();
       try {

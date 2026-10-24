@@ -81,13 +81,18 @@ test("persists user-created crew, boat, and logbook sheets across refresh and re
   await expect(page.getByRole("heading", { name: sheetTitle })).toBeVisible();
   await expect(page.getByText(`1. ⭐ Skipper · E2E Skipper ${unique}`)).toBeVisible();
 
-  await page.getByLabel("Add crew member").selectOption({ label: crewName });
+  const crewSelector = page.getByRole("combobox", { name: "Add crew member", exact: true });
+  await crewSelector.fill(crewName);
+  const addCrewSave = waitForFocusedLogbookSave(page, "sheets");
+  await page.getByRole("option", { name: crewName, exact: true }).click();
+  await expectSuccessfulSave(addCrewSave);
+  await expect(crewSelector).toHaveValue("");
   const addedCrewRow = page.locator("li").filter({ hasText: `2. ${crewName}` });
   await expect(addedCrewRow).toBeVisible();
   const deleteSave = waitForFocusedLogbookSave(page, "sheets");
   await addedCrewRow.getByRole("button", { name: `Delete ${crewName}` }).click();
-  await expect(addedCrewRow).toBeHidden();
   await expectSuccessfulSave(deleteSave);
+  await expect(addedCrewRow).toBeHidden();
 
   await page.reload();
   await expectLoggedIn(page);

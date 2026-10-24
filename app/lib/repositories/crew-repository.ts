@@ -193,7 +193,7 @@ export class CrewRepository {
 
   async replaceAssignments(sheetId: string, crew: SheetCrewAssignment[], ownerId: string) {
     const id = scopedId(ownerId, sheetId);
-    await this.db.query(`delete from sheet_crew_members where sheet_id = ${this.db.placeholder(1)} and exists (select 1 from log_sheets where id = ${this.db.placeholder(1)} and owner_id = ${this.db.placeholder(2)})`, [id, ownerId]);
+    await this.db.query(`delete from sheet_crew_members where sheet_id = ${this.db.placeholder(1)} and exists (select 1 from log_sheets where id = sheet_crew_members.sheet_id and owner_id = ${this.db.placeholder(2)})`, [id, ownerId]);
     await this.insertAssignments(crew.map((member, sortOrder) => ({ sheetId, sortOrder, crew: member })), ownerId);
   }
 
