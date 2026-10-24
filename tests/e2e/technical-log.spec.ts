@@ -184,7 +184,10 @@ async function loginWithSeededDemoData(page: Page, crewTimezone?: string) {
   const demoLogin = page.getByRole("button", { name: "Try the demo" });
   await expect(demoLogin).toBeVisible();
   await expect(demoLogin).toBeEnabled();
+  const loginResponse = page.waitForResponse(response => response.url().endsWith("/api/demo-login") && response.request().method() === "POST");
   await demoLogin.click();
+  const response = await loginResponse;
+  expect(response.ok(), `Demo login failed (${response.status()}): ${await response.text()}`).toBeTruthy();
   await expect(page.getByRole("button", { name: "Logout" })).toBeVisible({ timeout: 30_000 });
   await page.waitForLoadState("networkidle");
   await removeDemoLogsheets(page);
