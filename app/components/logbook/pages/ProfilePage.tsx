@@ -56,8 +56,7 @@ export function ProfilePage(props: ProfilePageProps) {
     accountName,
     accountEmail,
     isAccountEmailVerified,
-    profileMessage,
-    profileError,
+    setProfileError,
     updateName,
     updateEmail,
     updatePassword,
@@ -123,12 +122,12 @@ export function ProfilePage(props: ProfilePageProps) {
     event.target.value = "";
     if (!file) return;
     if (!/^image\/(?:jpeg|png|webp)$/.test(file.type)) {
-      window.alert(t("profile.avatarUploadError"));
+      setProfileError(t("profile.avatarUploadError"));
       return;
     }
     const bitmap = await createImageBitmap(file).catch(() => undefined);
     if (!bitmap) {
-      window.alert(t("profile.avatarUploadError"));
+      setProfileError(t("profile.avatarUploadError"));
       return;
     }
     const nextCrop = { file, url: URL.createObjectURL(file), width: bitmap.width, height: bitmap.height, zoom: 1, x: 0, y: 0 };
@@ -152,7 +151,7 @@ export function ProfilePage(props: ProfilePageProps) {
       setHasUploadedAvatar(true);
       closeAvatarCrop();
     } catch (error) {
-      window.alert(error instanceof Error ? error.message : t("profile.avatarUploadError"));
+      setProfileError(error instanceof Error ? error.message : t("profile.avatarUploadError"));
     } finally {
       setIsUploadingAvatar(false);
     }
@@ -168,7 +167,7 @@ export function ProfilePage(props: ProfilePageProps) {
       setAvatar(payload.avatar);
       setHasUploadedAvatar(false);
     } catch (error) {
-      window.alert(error instanceof Error ? error.message : t("profile.avatarRemoveError"));
+      setProfileError(error instanceof Error ? error.message : t("profile.avatarRemoveError"));
     } finally {
       setIsRemovingAvatar(false);
     }
@@ -264,13 +263,6 @@ export function ProfilePage(props: ProfilePageProps) {
           </div>
         </article>
         {onboardingChecklist}
-        {(profileMessage || profileError) && (
-          <article className="info-card">
-            <h3>{t("profile.accountStatus")}</h3>
-            {profileMessage && <p className="save-success">{profileMessage}</p>}
-            {profileError && <p className="save-error">{profileError}</p>}
-          </article>
-        )}
         {userGroups.includes("demo") && (
           <article className="info-card inline-edit-grid">
             <h3>{t("profile.demoResetTitle")}</h3>

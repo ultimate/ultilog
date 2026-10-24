@@ -41,7 +41,7 @@ describe("Next.js security headers", () => {
     expect(csp).toContain("https://tiles.openseamap.org");
     expect(csp).toContain("https://www.gravatar.com");
     expect(csp).toContain("https://secure.gravatar.com");
-    expect(csp).toContain("img-src 'self' data:");
+    expect(csp).toContain("img-src 'self' data: blob:");
     expect(csp).not.toContain("openai.com");
     expect(csp).not.toMatch(/smtp/i);
     expect(csp).not.toContain("'unsafe-eval'");

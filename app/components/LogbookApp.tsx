@@ -1,5 +1,6 @@
 "use client";
 
+import { NotificationBanner } from "./NotificationBanner";
 import { ModalLayer } from "./logbook/ModalLayer";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState, type MouseEventHandler } from "react";
 import { signOut } from "next-auth/react";
@@ -1922,11 +1923,13 @@ export function LogbookApp({
       data-theme={theme}
       data-nav={isNavSlim ? "slim" : "full"}
     >
-      {profileMessage && (
-        <div className="toast-notification" role="status" aria-live="polite">
-          {profileMessage}
-        </div>
-      )}
+      <ModalLayer className="notification-stack">
+        <NotificationBanner message={profileMessage} onDismiss={setProfileMessage} />
+        <NotificationBanner message={profileError} onDismiss={setProfileError} kind="error" />
+        <NotificationBanner message={saveError} onDismiss={setSaveError} kind="error" />
+        <NotificationBanner message={adminMessage} onDismiss={setAdminMessage} />
+        <NotificationBanner message={adminError} onDismiss={setAdminError} kind="error" />
+      </ModalLayer>
       <ModuleTabs
         activeModule={activeModule}
         onSelectModule={(module) => navigate(module)}
@@ -1943,8 +1946,6 @@ export function LogbookApp({
         isLoggingOut={isLoggingOut}
       />
       <section className="app-content" data-backend-ready={isBackendReady} aria-busy={!isBackendReady} inert={!isBackendReady}>
-        {saveError && <p className="save-error">{saveError}</p>}
-
         {activeModule === "dashboard" && (
           <DashboardPage
             stats={stats}
@@ -2115,8 +2116,7 @@ export function LogbookApp({
               accountEmail={accountEmail}
               isAccountEmailVerified={isAccountEmailVerified}
               userGroups={userGroups}
-              profileMessage={profileMessage}
-              profileError={profileError}
+              setProfileError={setProfileError}
               avatar={profileAvatar}
               setAvatar={setProfileAvatar}
               hasUploadedAvatar={hasUploadedAvatar}
@@ -2170,14 +2170,6 @@ export function LogbookApp({
                   {t("admin.refreshUsers")}
                 </button>
               </div>
-              {(adminMessage || adminError) && (
-                <article className="info-card">
-                  {adminMessage && (
-                    <p className="save-success">{adminMessage}</p>
-                  )}
-                  {adminError && <p className="save-error">{adminError}</p>}
-                </article>
-              )}
               <article className="table-card admin-users-table-card">
                 <div className="table-header">
                   <div>

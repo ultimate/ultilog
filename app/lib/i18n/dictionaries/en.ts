@@ -147,6 +147,7 @@ export const en = {
   "email.verificationExpiry": "This link expires in 24 hours.",
   "email.verificationIgnore": "If you did not create or update an Ultilog account, you can ignore this email.",
   "common.save": "Save",
+  "common.dismissNotification": "Dismiss notification",
   "common.cancel": "Cancel",
   "common.yes": "Yes",
   "common.no": "No",
