@@ -2,9 +2,11 @@ import { type Dictionary } from "./en";
 
 // Keep one translation key per line so locale files stay easy to diff and edit side by side.
 export const it: Dictionary = {
+  "details.chooseDateTime": "Scegli data e ora",
   "details.lineDateTime": "Data e ora della riga del registro",
   "details.invalidNumber": "Numero non valido",
   "details.invalidHours": "Inserire le ore come HH:mm o ore decimali",
+  "details.invalidDate": "Inserire una data valida nel formato scelto",
   "details.invalidDateTime": "Inserire data e ora valide nel formato scelto",
   "details.requiredLineFields": "Data, ora con fuso orario, latitudine e longitudine sono obbligatorie",
   "details.noCrewResults": "Nessun membro corrispondente",

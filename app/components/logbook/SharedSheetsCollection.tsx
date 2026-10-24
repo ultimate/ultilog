@@ -1,5 +1,7 @@
 "use client";
 
+import { PreferenceDateInput } from "./PreferenceDateInput";
+
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { LogSheetsMapView } from "./OpenSeaMapView";
@@ -60,7 +62,7 @@ export function SharedSheetsCollection({ ownerId, entries, initialView, embedded
       <article className="table-card logbook-list-card"><div className="table-scroll"><table className="logbook-table"><thead><tr><th>Start date</th><th>End date</th><th>Entry</th><th>Vessel</th><th>From / to</th><th>Sail miles</th><th>Motor miles</th><th>Total miles</th><th>Duration</th><th></th></tr></thead><tbody>{filtered.map(({ sheet, boatName }) => <tr key={sheet.id}><td>{formatDate(sheet.route.departed)}</td><td>{formatDate(sheet.route.arrived)}</td><td><Link className="table-title-button" href={href(sheet)}>{sheet.title}</Link></td><td>{boatName || "Not shared"}</td><td>{[sheet.route.from, sheet.route.to].filter(Boolean).join(" → ") || "Not shared"}</td><td>{sheet.metrics ? `${formatMiles(sheet.metrics.sailMiles)} nm` : "Not shared"}</td><td>{sheet.metrics ? `${formatMiles(sheet.metrics.motorMiles)} nm` : "Not shared"}</td><td>{sheet.metrics ? `${formatMiles(sheet.metrics.totalMiles)} nm` : "Not shared"}</td><td>{sheet.metrics ? formatLogSheetDuration(sheet.metrics.durationMinutes) : "Not shared"}</td><td><Link className="edit-chip" href={href(sheet)}>Open</Link></td></tr>)}</tbody></table></div></article>}
     {showEmbedding && !embedded ? <section className="embed-builder shared-embed-builder" aria-labelledby="collection-embed-title">
       <div><h2 id="collection-embed-title">Embed shared log sheets</h2><p>Choose colors and an optional date range, then copy either the list or map embed code.</p></div>
-      <div className="embed-date-grid"><label><span>From</span><input type="date" value={from} onChange={event => setFrom(event.target.value)} /></label><label><span>To</span><input type="date" value={to} onChange={event => setTo(event.target.value)} /></label></div>
+      <div className="embed-date-grid"><label><span>From</span><PreferenceDateInput aria-label="From" value={from} onChange={event => setFrom(event.target.value)} /></label><label><span>To</span><PreferenceDateInput aria-label="To" value={to} onChange={event => setTo(event.target.value)} /></label></div>
       <label className="embed-legend-option"><input type="checkbox" checked={includeMapLegend} onChange={event => setIncludeMapLegend(event.currentTarget.checked)} /><span>Include route legend in map embed</span></label>
       <div className="embed-color-grid">{colors.map(item => <label key={item.key}><span>{item.label}</span><input type="color" value={theme[item.key]} onChange={event => setTheme(current => ({ ...current, [item.key]: event.target.value }))} /></label>)}</div>
       {(["list", "map"] as const).map(mode => <div className="embed-code-block" key={mode}><label className="embed-code-label" htmlFor={`${mode}-embed-code`}>{mode === "list" ? "List" : "Map"} embed code</label><textarea id={`${mode}-embed-code`} value={embedCode(mode)} readOnly rows={4} /><div className="embed-actions"><button type="button" onClick={() => void navigator.clipboard.writeText(embedCode(mode))}>Copy {mode} embed code</button><a href={embedUrl(mode)} target="_blank" rel="noreferrer">Preview {mode} embed</a></div></div>)}
