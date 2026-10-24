@@ -31,3 +31,17 @@ export function formatEngineHours(hours: number | null | undefined): string {
 export function nullableNumber(value: unknown): number | null {
   return value == null ? null : Number(value);
 }
+
+/** Match the view's decimal separator without grouping, rounding or losing typed precision. */
+export function decimalSeparator(locale?: Intl.LocalesArgument) {
+  return new Intl.NumberFormat(locale).formatToParts(1.1).find(part => part.type === "decimal")?.value ?? ".";
+}
+
+export function formatDecimalInput(value: string | number | null | undefined, locale?: Intl.LocalesArgument): string {
+  const text = value == null ? "" : String(value);
+  if (!/[.,]/.test(text)) return text;
+  try {
+    parseDecimalInput(text);
+    return text.replace(/[.,]/, decimalSeparator(locale));
+  } catch { return text; }
+}

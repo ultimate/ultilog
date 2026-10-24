@@ -499,8 +499,8 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
             commitCoordinateParts(event.currentTarget, draftId, field);
           }}
         >
-          <label><span>[°]</span><input aria-label={`${label} degrees`} type="text" inputMode="decimal" data-dms-part="degrees" defaultValue={parts.degrees} /></label>
-          <label><span>[&prime;]</span><input aria-label={`${label} decimal minutes`} type="text" inputMode="decimal" data-dms-part="minutes" defaultValue={parts.minutes} /></label>
+          <label><span>[°]</span><LogNumberInput aria-label={`${label} degrees`} data-dms-part="degrees" defaultValue={parts.degrees} /></label>
+          <label><span>[&prime;]</span><LogNumberInput aria-label={`${label} decimal minutes`} data-dms-part="minutes" defaultValue={parts.minutes} /></label>
         </div>
       );
     }
@@ -514,9 +514,9 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
           commitCoordinateParts(event.currentTarget, draftId, field);
         }}
       >
-        <label><span>[°]</span><input aria-label={`${label} degrees`} type="text" inputMode="decimal" data-dms-part="degrees" defaultValue={parts.degrees} /></label>
-        <label><span>[&prime;]</span><input aria-label={`${label} minutes`} type="text" inputMode="decimal" data-dms-part="minutes" defaultValue={parts.minutes} /></label>
-        <label><span>[&Prime;]</span><input aria-label={`${label} seconds`} type="text" inputMode="decimal" data-dms-part="seconds" defaultValue={parts.seconds} /></label>
+        <label><span>[°]</span><LogNumberInput aria-label={`${label} degrees`} data-dms-part="degrees" defaultValue={parts.degrees} /></label>
+        <label><span>[&prime;]</span><LogNumberInput aria-label={`${label} minutes`} data-dms-part="minutes" defaultValue={parts.minutes} /></label>
+        <label><span>[&Prime;]</span><LogNumberInput aria-label={`${label} seconds`} data-dms-part="seconds" defaultValue={parts.seconds} /></label>
       </div>
     );
   };
@@ -1191,7 +1191,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                     <tbody>
                       {activeSheet.lines.map((line, index) => lineForms[line.id] ? renderLineEditor(line.id, index + 1) : (
                         <tr key={line.id}>
-                          <td>{index + 1}</td><td {...scannerWarningCellProps(index + 1, ["time"])}>{formatTime(line.time)}</td><td {...scannerWarningCellProps(index + 1, ["latitude", "position"])}>{coordinateToInput(line.latitude, "lat", coordinateFormat)}</td><td {...scannerWarningCellProps(index + 1, ["longitude", "position"])}>{coordinateToInput(line.longitude, "lon", coordinateFormat)}</td><td {...scannerWarningCellProps(index + 1, ["weather"])}>{line.weather}</td><td {...scannerWarningCellProps(index + 1, ["weatherRemark"])}>{renderClampedLogText(t("details.weatherRemark"), line.weatherRemark)}</td><td {...scannerWarningCellProps(index + 1, ["temperature", "temperatureUnit"])}>{displayNumber(line.temperature, line.temperatureUnit)}</td><td {...scannerWarningCellProps(index + 1, ["barometer"])}>{displayNumber(line.barometer)}</td><td {...scannerWarningCellProps(index + 1, ["windDirection", "windStrength", "windUnit"])}>{translatedWindDirection(line.windDirection, t)} {displayNumber(line.windStrength, line.windUnit)}</td><td {...scannerWarningCellProps(index + 1, ["waves", "seaUnit"])}>{displayNumber(line.waves, line.seaUnit)}</td><td {...scannerWarningCellProps(index + 1, ["tide", "tideUnit"])}>{displayNumber(line.tide, line.tideUnit)}</td><td {...scannerWarningCellProps(index + 1, ["moon"])}>{line.moon}</td>
+                          <td>{index + 1}</td><td {...scannerWarningCellProps(index + 1, ["time"])}>{formatTime(line.time)}</td><td {...scannerWarningCellProps(index + 1, ["latitude", "position"])}>{coordinateToInput(line.latitude, "lat", coordinateFormat, locale)}</td><td {...scannerWarningCellProps(index + 1, ["longitude", "position"])}>{coordinateToInput(line.longitude, "lon", coordinateFormat, locale)}</td><td {...scannerWarningCellProps(index + 1, ["weather"])}>{line.weather}</td><td {...scannerWarningCellProps(index + 1, ["weatherRemark"])}>{renderClampedLogText(t("details.weatherRemark"), line.weatherRemark)}</td><td {...scannerWarningCellProps(index + 1, ["temperature", "temperatureUnit"])}>{displayNumber(line.temperature, line.temperatureUnit)}</td><td {...scannerWarningCellProps(index + 1, ["barometer"])}>{displayNumber(line.barometer)}</td><td {...scannerWarningCellProps(index + 1, ["windDirection", "windStrength", "windUnit"])}>{translatedWindDirection(line.windDirection, t)} {displayNumber(line.windStrength, line.windUnit)}</td><td {...scannerWarningCellProps(index + 1, ["waves", "seaUnit"])}>{displayNumber(line.waves, line.seaUnit)}</td><td {...scannerWarningCellProps(index + 1, ["tide", "tideUnit"])}>{displayNumber(line.tide, line.tideUnit)}</td><td {...scannerWarningCellProps(index + 1, ["moon"])}>{line.moon}</td>
                           {courseConversionColumns.map((column) => (!column.isOptional || showCourseColumns) && (
                             <td {...scannerWarningCellProps(index + 1, [column.field], column.isOptional ? "optional-course-cell" : undefined)} key={`${line.id}-${column.field}`}>{displayNumber(line[column.field])}</td>
                           ))}

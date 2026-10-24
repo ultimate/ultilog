@@ -1,4 +1,4 @@
-import { parseDecimalInput } from "../../lib/log-input";
+import { decimalSeparator, parseDecimalInput } from "../../lib/log-input";
 export type CoordinateFormat = "decimal" | "ddm" | "dms";
 export type CoordinateAxis = "lat" | "lon";
 export type DmsParts = { degrees: string; minutes: string; seconds: string };
@@ -85,11 +85,11 @@ export function normalizeLongitude(value: number) {
   return ((((value + 180) % 360) + 360) % 360) - 180;
 }
 
-export function coordinateToInput(value: number | null, axis: CoordinateAxis, format: CoordinateFormat) {
+export function coordinateToInput(value: number | null, axis: CoordinateAxis, format: CoordinateFormat, locale?: Intl.LocalesArgument) {
   if (value === null) return "";
   const normalized = normalizeCoordinate(value, axis);
-  if (format === "ddm") return decimalToDdm(normalized, axis);
-  return format === "dms" ? decimalToDms(normalized, axis) : normalized.toFixed(5);
+  const formatted = format === "ddm" ? decimalToDdm(normalized, axis) : format === "dms" ? decimalToDms(normalized, axis) : normalized.toFixed(5);
+  return locale ? formatted.replace(/\./g, decimalSeparator(locale)) : formatted;
 }
 
 export function parseCoordinate(value: string) {
