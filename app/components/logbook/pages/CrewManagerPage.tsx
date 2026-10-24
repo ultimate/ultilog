@@ -1,3 +1,4 @@
+import { PreferenceDateInput } from "../PreferenceDateInput";
 import { EntityImage } from "../EntityImage";
 import { useI18n } from "../../../lib/i18n";
 import { useDateTimeFormat } from "../../../lib/DateTimeFormatProvider";
@@ -166,7 +167,7 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
             </label>
             <label>
               {t("crew.dateOfBirth")}
-              <input type="date" value={crewForm.dateOfBirth ?? ""} onChange={(e) => setCrewForm({ ...crewForm, dateOfBirth: e.target.value })} />
+              <PreferenceDateInput aria-label={t("crew.dateOfBirth")} value={crewForm.dateOfBirth ?? ""} onChange={(e) => setCrewForm({ ...crewForm, dateOfBirth: e.target.value })} />
             </label>
             <label>
               {t("crew.placeOfBirth")}
@@ -193,11 +194,11 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
             </label>
             <label>
               {t("crew.identityDocumentIssuingDate")}
-              <input type="date" value={crewForm.identityDocumentIssuingDate ?? ""} onChange={(e) => setCrewForm({ ...crewForm, identityDocumentIssuingDate: e.target.value })} />
+              <PreferenceDateInput aria-label={t("crew.identityDocumentIssuingDate")} value={crewForm.identityDocumentIssuingDate ?? ""} onChange={(e) => setCrewForm({ ...crewForm, identityDocumentIssuingDate: e.target.value })} />
             </label>
             <label>
               {t("crew.identityDocumentExpiryDate")}
-              <input type="date" value={crewForm.identityDocumentExpiryDate ?? ""} onChange={(e) => setCrewForm({ ...crewForm, identityDocumentExpiryDate: e.target.value })} />
+              <PreferenceDateInput aria-label={t("crew.identityDocumentExpiryDate")} value={crewForm.identityDocumentExpiryDate ?? ""} onChange={(e) => setCrewForm({ ...crewForm, identityDocumentExpiryDate: e.target.value })} />
             </label>
 
             <div className="image-form-field wide-field">

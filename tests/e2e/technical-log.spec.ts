@@ -69,7 +69,7 @@ test("preserves partially typed preference-formatted date and time", async ({ pa
   await page.goto(`/details/${targetSheet.id}`);
   const row = page.locator(".log-lines-table tbody tr").first();
   await row.getByRole("button", { name: "✏️" }).click();
-  const time = row.getByRole("textbox", { name: "Log line date and time" });
+  const time = row.getByRole("textbox", { name: "Log line date and time", exact: true });
   await page.setViewportSize({ width: 2560, height: 1440 });
   const showCourses = page.getByRole("button", { name: "Show course conversion columns", exact: true });
   if (await showCourses.count()) await showCourses.click();
@@ -109,10 +109,50 @@ test("preserves partially typed preference-formatted date and time", async ({ pa
   const savedRow = page.locator(".log-lines-table tbody tr").filter({ hasText: targetSheet.lines[0].weatherRemark });
   await expect.poll(() => page.locator(".log-lines-table").evaluate(table => table.parentElement!.scrollWidth - table.parentElement!.clientWidth)).toBeLessThanOrEqual(1);
   await savedRow.getByRole("button", { name: "✏️" }).click();
-  await expect(page.locator(".inline-line-row").getByRole("textbox", { name: "Log line date and time" })).toHaveValue("12/10/2026, 10:45");
+  await expect(page.locator(".inline-line-row").getByRole("textbox", { name: "Log line date and time", exact: true })).toHaveValue("12/10/2026, 10:45");
 });
 
-async function loginWithSeededDemoData(page: Page) {
+test("chooses sheet, log-line and crew datetimes while preserving format and timezone", async ({ page }) => {
+  await loginWithSeededDemoData(page, "+03:00");
+  await page.goto(`/details/${targetSheet.id}`);
+  const storedSheet = async () => (await (await page.request.get("/api/logbook")).json()).sheets.find((sheet: { id: string }) => sheet.id === targetSheet.id);
+
+  for (const [boundary, rowIndex, value, offset] of [["departed", 1, "2026-10-12T08:30", "+02:00"], ["arrived", 2, "2026-10-12T18:45", "+04:00"]] as const) {
+    await page.locator(".header-table-row").nth(rowIndex).locator(".inline-value-button").first().click();
+    const editor = page.locator(`.inline-value-editor-${boundary}`);
+    const picker = editor.locator('input[type="datetime-local"]');
+    await picker.click();
+    await page.keyboard.press("Escape");
+    await picker.fill(`${value.slice(0, -2)}00`);
+    await editor.locator('input[type="text"]').fill("invalid");
+    await picker.fill(value);
+    await expect(editor.locator('input[type="text"]')).toHaveValue(`12/10/2026, ${value.slice(11)}`);
+    await editor.getByRole("combobox").selectOption(offset);
+    await editor.getByRole("button", { name: "Approve change" }).click();
+    await expect.poll(async () => (await storedSheet()).route[boundary]).toBe(`${value}:00${offset}`);
+  }
+
+  const row = page.locator(".log-lines-table tbody tr").first();
+  await row.getByRole("button", { name: "✏️" }).click();
+  await row.getByLabel("Line time zone", { exact: true }).selectOption("+05:45");
+  await row.locator('input[type="datetime-local"]').fill("2026-10-12T10:20");
+  await expect(row.getByRole("textbox", { name: "Log line date and time", exact: true })).toHaveValue("12/10/2026, 10:20");
+  await row.getByRole("button", { name: "💾" }).click();
+  await expect.poll(async () => (await storedSheet()).lines.find((line: { id: string }) => line.id === targetSheet.lines[0].id)?.time).toBe("2026-10-12T10:20:00+05:45");
+
+  for (const [label, field, value] of [["From", "embarkationDateTime", "2026-10-12T08:35"], ["To", "disembarkationDateTime", "2026-10-12T18:40"]] as const) {
+    await page.getByLabel(`Choose date and time: Crew 1 ${label} datetime`, { exact: true }).fill(value);
+    await expect(page.getByRole("textbox", { name: `Crew 1 ${label} datetime`, exact: true })).toHaveValue(`12/10/2026, ${value.slice(11)}`);
+    await expect.poll(async () => (await storedSheet()).crew[0][field]).toBe(`${value}:00+03:00`);
+  }
+  await page.reload();
+  await expect(page.getByRole("textbox", { name: "Crew 1 From datetime", exact: true })).toHaveValue("12/10/2026, 08:35");
+  await page.getByRole("button", { name: "Lock log sheet" }).click();
+  await expect(page.getByLabel("Choose date and time: Crew 1 From datetime", { exact: true })).toBeDisabled();
+  await expect(page.getByLabel("Choose date and time: Crew 1 To datetime", { exact: true })).toBeDisabled();
+});
+
+async function loginWithSeededDemoData(page: Page, crewTimezone?: string) {
   await page.goto("/login");
   const demoLogin = page.getByRole("button", { name: "Try the demo" });
   await expect(demoLogin).toBeVisible();
@@ -122,7 +162,7 @@ async function loginWithSeededDemoData(page: Page) {
   await page.waitForLoadState("networkidle");
   await removeDemoLogsheets(page);
   const seedResponse = await page.request.put("/api/logbook/import", { headers: { Origin: "http://127.0.0.1:3000", "X-Ultilog-Confirm-Replace": "replace-my-entire-logbook" },
-    data: { boats: sampleBoats.map(boat => ({ ...boat, windDriftTable: defaultWindDriftTable() })), crewMembers: crewProfilesFromSheets(sampleLogSheets), sheets: sampleLogSheets.map(sheet => ({ ...sheet, lines: sheet.lines.map(line => ({ ...line, time: `${line.time}+00:00` })) })) },
+    data: { boats: sampleBoats.map(boat => ({ ...boat, windDriftTable: defaultWindDriftTable() })), crewMembers: crewProfilesFromSheets(sampleLogSheets), sheets: sampleLogSheets.map(sheet => ({ ...sheet, crew: sheet.crew.map(member => ({ ...member, embarkationDateTime: `${member.embarkationDateTime}${crewTimezone ?? ""}`, disembarkationDateTime: `${member.disembarkationDateTime}${crewTimezone ?? ""}` })), lines: sheet.lines.map(line => ({ ...line, time: `${line.time}+00:00` })) })) },
   });
   expect(seedResponse.ok(), await seedResponse.text()).toBeTruthy();
   await page.reload();

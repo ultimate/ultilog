@@ -85,3 +85,15 @@ export function parseFormattedDate(value: string, format: DateFormat, locale = "
   });
   return normalizeIsoDate(`${year}-${month}-${day}`);
 }
+
+export function parsePreferenceDateTime(text: string, dateFormat: DateFormat, timeFormat: TimeFormat, locale: string): string | undefined {
+  const match = /^(.*?)\s+(\d{1,2}):(\d{2})(?::(\d{2}))?(?:\s*(AM|PM))?$/i.exec(text.trim());
+  if (!match) return undefined;
+  const date = parseFormattedDate(match[1].replace(/,\s*$/, ""), dateFormat, locale);
+  let hours = Number(match[2]);
+  const minutes = Number(match[3]), seconds = Number(match[4] ?? 0);
+  const twelveHour = timeFormat.includes("a");
+  if (!date || minutes > 59 || seconds > 59 || (twelveHour ? hours < 1 || hours > 12 || !match[5] : hours > 23 || Boolean(match[5]))) return undefined;
+  if (twelveHour) hours = hours % 12 + (match[5].toUpperCase() === "PM" ? 12 : 0);
+  return `${date}T${String(hours).padStart(2, "0")}:${match[3]}${timeFormat.includes("ss") ? `:${String(seconds).padStart(2, "0")}` : ""}`;
+}

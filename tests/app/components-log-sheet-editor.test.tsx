@@ -37,7 +37,7 @@ describe("date editor drafts", () => {
   it("retains invalid partial text without saving it and emits ISO values for complete input", async () => {
     const onChange = vi.fn();
     await act(async () => { root = create(<DateTimeFormatProvider dateFormat="dd.MM.yyyy" timeFormat="HH:mm"><PreferenceDateTimeInput value="2026-10-24T10:30" onChange={onChange} /></DateTimeFormatProvider>); });
-    const input = () => root.root.findByType("input");
+    const input = () => root.root.findByProps({ type: "text" });
     expect(input().props.value).toBe("24.10.2026, 10:30");
     const setCustomValidity = vi.fn();
     await act(async () => input().props.onChange({ currentTarget: { value: "24.10.2026, 10:", setCustomValidity }, target: { value: "24.10.2026, 10:" } }));
@@ -48,6 +48,26 @@ describe("date editor drafts", () => {
     expect(onChange).toHaveBeenLastCalledWith(expect.objectContaining({ target: expect.objectContaining({ value: "2026-10-24T10:45" }) }));
     expect(setCustomValidity).toHaveBeenLastCalledWith("");
   });
+  it("uses the native chooser to replace invalid text and preserves second precision", async () => {
+    const onChange = vi.fn();
+    const render = (value: string, disabled = false, readOnly = false) => <DateTimeFormatProvider dateFormat="dd.MM.yyyy" timeFormat="HH:mm:ss"><PreferenceDateTimeInput value={value} aria-label="Departure" onChange={onChange} disabled={disabled} readOnly={readOnly} /></DateTimeFormatProvider>;
+    await act(async () => { root = create(render("2026-10-24T10:30:27")); });
+    const picker = () => root.root.findByProps({ type: "datetime-local" });
+    expect(picker().props.value).toBe("2026-10-24T10:30:27");
+    expect(picker().props.step).toBe(1);
+    expect(picker().props["aria-label"]).toBe("Choose date and time: Departure");
+    await act(async () => root.root.findByProps({ type: "text" }).props.onChange({ currentTarget: { value: "invalid", setCustomValidity: vi.fn() }, target: { value: "invalid" } }));
+    const event = { currentTarget: { value: "2026-10-25T11:45:32", validity: { badInput: false } }, target: { value: "2026-10-25T11:45:32" } };
+    await act(async () => picker().props.onChange(event));
+    expect(onChange).toHaveBeenLastCalledWith(event);
+    await act(async () => root.update(render(event.target.value)));
+    expect(root.root.findByProps({ type: "text" }).props.value).toBe("25.10.2026, 11:45:32");
+    await act(async () => root.update(render(event.target.value, true)));
+    expect(picker().props.disabled).toBe(true);
+    await act(async () => root.update(render(event.target.value, false, true)));
+    expect(picker().props.disabled).toBe(true);
+  });
+
 });
 
 describe("log sheet actions and warning review", () => {

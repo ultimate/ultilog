@@ -2,9 +2,11 @@ import { type Dictionary } from "./en";
 
 // Keep one translation key per line so locale files stay easy to diff and edit side by side.
 export const fr: Dictionary = {
+  "details.chooseDateTime": "Choisir la date et l’heure",
   "details.lineDateTime": "Date et heure de la ligne de journal",
   "details.invalidNumber": "Nombre invalide",
   "details.invalidHours": "Saisir les heures au format HH:mm ou décimal",
+  "details.invalidDate": "Saisir une date valide au format choisi",
   "details.invalidDateTime": "Saisir une date et une heure valides au format choisi",
   "details.requiredLineFields": "La date, l’heure avec fuseau horaire, la latitude et la longitude sont obligatoires",
   "details.noCrewResults": "Aucun équipier correspondant",

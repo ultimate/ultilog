@@ -1,8 +1,10 @@
 // Keep one translation key per line so locale files stay easy to diff and edit side by side.
 export const en = {
+  "details.chooseDateTime": "Choose date and time",
   "details.lineDateTime": "Log line date and time",
   "details.invalidNumber": "Invalid number",
   "details.invalidHours": "Enter hours as HH:mm or decimal hours",
+  "details.invalidDate": "Enter a valid date in the selected format",
   "details.invalidDateTime": "Enter a valid date and time in the selected format",
   "details.requiredLineFields": "Date, time with timezone, latitude and longitude are required",
   "details.noCrewResults": "No matching crew members",
