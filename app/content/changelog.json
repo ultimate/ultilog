@@ -63,10 +63,10 @@
     "id": "fix-notification-banners-and-profile-picture-preview",
     "category": "fix",
     "title": {
-      "en": "Keep notifications visible at the top of every page, dismiss success messages after five seconds, and fix profile picture crop previews.",
-      "de": "Benachrichtigungen oben auf jeder Seite anzeigen, Erfolgsmeldungen nach fünf Sekunden ausblenden und die Zuschnittvorschau für Profilbilder korrigieren.",
-      "fr": "Afficher les notifications en haut de chaque page, masquer les confirmations après cinq secondes et corriger l’aperçu du recadrage des photos de profil.",
-      "it": "Mostra le notifiche in cima a ogni pagina, nasconde le conferme dopo cinque secondi e corregge l’anteprima del ritaglio delle foto del profilo."
+      "en": "Keep notifications at the top of the page with timed success messages, fix profile picture crop previews, and synchronize menu and profile language settings.",
+      "de": "Benachrichtigungen oben mit zeitlich begrenzten Erfolgsmeldungen anzeigen, die Profilbild-Zuschnittvorschau korrigieren und Menü- und Profilsprache synchronisieren.",
+      "fr": "Afficher les notifications en haut avec des confirmations temporaires, corriger l’aperçu du recadrage et synchroniser la langue du menu et du profil.",
+      "it": "Mostra le notifiche in alto con conferme temporanee, corregge l’anteprima del ritaglio e sincronizza la lingua del menu e del profilo."
     }
   },
   {

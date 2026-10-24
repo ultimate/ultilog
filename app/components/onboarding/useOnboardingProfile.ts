@@ -3,7 +3,7 @@ import type { ActiveView } from "../../templates/ModuleTabs";
 import type { PersistedLogbook } from "../../models/logbook";
 import { detectOnboardingCompletion } from "../../lib/onboarding/detect";
 import type { OnboardingTaskId } from "../../lib/onboarding/tasks";
-import type { Locale } from "../../lib/i18n";
+import { t as translate, type Locale } from "../../lib/i18n";
 import { STANDARD_TECHNICAL_CHECK_IDS, type StandardTechnicalCheckId } from "../../domain/logbook/technical-log";
 import type { DateFormat, TimeFormat } from "../../lib/date-time-format";
 
@@ -191,6 +191,7 @@ export function useOnboardingProfile({ activeModule, initialEmail, initialName, 
     const updateVersion = ++preferenceUpdateVersionRef.current;
     preferencesRef.current = mergedPreferences;
     setPreferences(mergedPreferences);
+    if (nextPreferences.language) onLocaleChange?.(mergedPreferences.language);
     onProfileError("");
     onProfileMessage?.("");
     const save = async () => {
@@ -204,6 +205,7 @@ export function useOnboardingProfile({ activeModule, initialEmail, initialName, 
         if (preferenceUpdateVersionRef.current === updateVersion) {
           preferencesRef.current = previousPreferences;
           setPreferences(previousPreferences);
+          if (nextPreferences.language) onLocaleChange?.(previousPreferences.language);
           onProfileError(payload?.error ?? t("profile.unableUpdatePreferences"));
         }
         return;
@@ -214,7 +216,7 @@ export function useOnboardingProfile({ activeModule, initialEmail, initialName, 
       setPreferences(savedPreferences);
       onLocaleChange?.(savedPreferences.language);
       onCourseConversionPreferenceChange?.(savedPreferences.showCourseConversionTable);
-      onProfileMessage?.(t("profile.preferencesUpdated"));
+      onProfileMessage?.(translate(savedPreferences.language, "profile.preferencesUpdated"));
     };
     const queuedSave = preferenceSaveQueueRef.current.then(save, save);
     preferenceSaveQueueRef.current = queuedSave;

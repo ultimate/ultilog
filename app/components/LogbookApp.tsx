@@ -1935,6 +1935,7 @@ export function LogbookApp({
         onSelectModule={(module) => navigate(module)}
         onOpenProfile={() => navigate("profile")}
         theme={theme}
+        onLocaleChange={(language) => { void updatePreferences({ language }); }}
         onToggleTheme={() => updatePreferences({ theme: theme === "dark" ? "light" : "dark" })}
         userEmail={accountEmail || userEmail}
         userName={accountName || userName}
