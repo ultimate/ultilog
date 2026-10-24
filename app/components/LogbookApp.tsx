@@ -397,7 +397,7 @@ export function LogbookApp({
         async () => {
           const current = logbookRef.current;
           const entity = withCurrentConcurrency(submitted, current.sheets.find(sheet => sheet.id === mutation.sheetId)?.lines.find(line => line.id === submitted.id));
-          const response = await persistLogLine(mutation.sheetId, entity, mutation.isNew).catch(() => undefined);
+          const response = await persistLogLine(mutation.sheetId, entity, mutation.isNew && !entity.revision).catch(() => undefined);
           if (!response?.ok) return false;
           const persisted = await response.clone().json().catch(() => undefined) as LogLine | undefined;
           if (persisted) mergePersistedMutation("line", submitted.id, entity, persisted, mutation.sheetId);
@@ -1354,7 +1354,13 @@ export function LogbookApp({
     const nextSheet = nextLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)!;
     const previousLineIds = currentLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)?.lines.map((candidate) => candidate.id) ?? [];
     const saved = await saveLogbookNow(nextLogbook, { kind: "line", sheetId: activeSheet.id, entity: line, isNew: draft.isNew && !previousLine?.revision, previousLineIds, lineIds: nextSheet.lines.map(candidate => candidate.id) });
-    if (saved) setLineForms((current) => Object.fromEntries(Object.entries(current).filter(([id]) => id !== draftId)));
+    if (saved) setLineForms((current) => {
+      if (!current[draftId]) return current;
+      // A user may continue typing while the request is pending. Only close
+      // the exact draft submitted by this save; retain subsequent edits.
+      if (current[draftId].form !== draft.form) return { ...current, [draftId]: { ...current[draftId], isNew: false } };
+      return Object.fromEntries(Object.entries(current).filter(([id]) => id !== draftId));
+    });
     return saved;
   }
 

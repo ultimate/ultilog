@@ -2338,3 +2338,5 @@ img.entity-image--preview {
 
 .formatted-date-input.formatted-date-filter { width: auto; }
 .formatted-date-input.formatted-date-filter > input[type="text"] { width: 11rem; flex: 0 1 11rem; }
+
+.sheet-action-wrap button:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }

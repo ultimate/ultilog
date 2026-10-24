@@ -1200,7 +1200,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                           <td><button type="button" className="edit-chip" disabled={isActiveSheetLocked} onClick={() => deleteLine(line.id)}>🗑️</button></td>
                         </tr>
                       ))}
-                      {Object.entries(lineForms).filter(([, draft]) => draft.isNew).map(([draftId], index) => renderLineEditor(draftId, activeSheet.lines.length + index + 1))}
+                      {Object.entries(lineForms).filter(([id, draft]) => draft.isNew && !activeSheet.lines.some(line => line.id === id)).map(([draftId], index) => renderLineEditor(draftId, activeSheet.lines.length + index + 1))}
                     </tbody>
                   </table>
                 </div>
