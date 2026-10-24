@@ -2252,7 +2252,6 @@ img.entity-image--preview {
 .log-lines-table .inline-line-row input[data-line-field="barometer"] { width: 4.75rem; }
 .log-lines-table .inline-line-row input[data-line-field="logNm"] { width: 6rem; }
 .log-lines-table .inline-line-row input[data-line-field="speedKn"] { width: 4rem; }
-.log-lines-table .inline-line-row input[type="datetime-local"] { width: 11.5rem; padding-inline: 0.25rem; }
 .log-lines-table .inline-line-row select { width: auto; min-width: 0; padding-inline: 0.25rem; }
 .course-tooltip-bubble { max-width: min(24rem, 85vw); text-align: left; }
 
@@ -2280,8 +2279,8 @@ img.entity-image--preview {
 
 .formatted-date-filter { display: flex; align-items: center; gap: 0.25rem; }
 .formatted-date-filter input[type="text"] { width: 11rem; }
-.formatted-date-calendar { position: relative; display: grid; place-items: center; width: 2.5rem; height: 2.5rem; flex-shrink: 0; border: 1px solid var(--border); border-radius: 0.5rem; }
-.formatted-date-calendar input[type="date"], .formatted-date-calendar input[type="datetime-local"] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; min-width: 0; }
+.formatted-date-calendar { position: relative; display: grid; place-items: center; width: 2.5rem; height: 2.5rem; flex-shrink: 0; overflow: hidden; border: 1px solid var(--border); border-radius: 0.5rem; }
+.formatted-date-calendar input[type="date"], .formatted-date-calendar input[type="datetime-local"] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; min-width: 0; padding: 0; margin: 0; }
 .formatted-date-calendar input::-webkit-calendar-picker-indicator { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; }
 .formatted-date-calendar:focus-within { outline: 2px solid var(--primary); outline-offset: 2px; }
 
