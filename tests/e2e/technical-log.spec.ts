@@ -71,9 +71,20 @@ test("edits technical log entries and suggests previous checks", async ({ page }
       for (const [index, time] of ["2026-10-12T11:10", "2026-10-12T11:20"].entries()) {
         await page.getByRole("button", { name: "+ Add line", exact: true }).click();
         const editor = page.locator(".inline-line-row").last();
-        await editor.locator('input[type="datetime-local"]').fill(time);
-        await editor.getByRole("textbox", { name: "Lat", exact: true }).fill("38.5");
-        await editor.getByRole("textbox", { name: "Lon", exact: true }).fill("20.5");
+        const picker = editor.locator('input[type="datetime-local"]');
+        await picker.fill(time);
+        const pickerBounds = await picker.boundingBox();
+        const buttonBounds = await editor.locator(".formatted-date-calendar").boundingBox();
+        expect(pickerBounds).not.toBeNull();
+        expect(buttonBounds).not.toBeNull();
+        expect(pickerBounds!.x).toBeGreaterThanOrEqual(buttonBounds!.x);
+        expect(pickerBounds!.x + pickerBounds!.width).toBeLessThanOrEqual(buttonBounds!.x + buttonBounds!.width);
+        for (const [label, value] of [["Lat", "38.5"], ["Lon", "20.5"]]) {
+          const coordinate = editor.getByRole("textbox", { name: label, exact: true });
+          await coordinate.click();
+          await expect(coordinate).toBeFocused();
+          await coordinate.fill(value);
+        }
         await editor.getByRole("button", { name: "Save line", exact: true }).click();
         if (index === 0) await firstStarted;
         await expect(rows).toHaveCount(initialCount + index + 1);
