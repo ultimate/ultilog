@@ -221,13 +221,21 @@ test("chooses sheet, log-line and crew datetimes while preserving format and tim
     await expect.poll(async () => (await storedSheet()).route[boundary]).toBe(`${value}:00${offset}`);
   }
 
+  // Leave a gap in stored row positions before changing a date across days.
+  const deletion = page.waitForResponse(response => response.request().method() === "DELETE" && response.url().endsWith(`/lines/${targetSheet.lines[0].id}`));
+  await page.locator(".log-lines-table tbody tr").first().getByRole("button", { name: "🗑️" }).click();
+  expect((await deletion).ok()).toBeTruthy();
   const row = page.locator(".log-lines-table tbody tr").first();
   await row.getByRole("button", { name: "✏️" }).click();
   await row.getByLabel("Line time zone", { exact: true }).selectOption("+05:45");
-  await row.locator('input[type="datetime-local"]').fill("2026-10-12T10:20");
-  await expect(row.getByRole("textbox", { name: "Log line date and time", exact: true })).toHaveValue("12/10/2026, 10:20");
+  await row.locator('input[type="datetime-local"]').fill("2026-10-13T10:20");
+  await expect(row.getByRole("textbox", { name: "Log line date and time", exact: true })).toHaveValue("13/10/2026, 10:20");
+  const reordered = page.waitForResponse(response => response.url().endsWith(`/sheets/${targetSheet.id}/lines/reorder`));
   await row.getByRole("button", { name: "💾" }).click();
-  await expect.poll(async () => (await storedSheet()).lines.find((line: { id: string }) => line.id === targetSheet.lines[0].id)?.time).toBe("2026-10-12T10:20:00+05:45");
+  const orderResponse = await reordered;
+  expect(orderResponse.ok(), await orderResponse.text()).toBeTruthy();
+  await expect(page.locator(".inline-line-row")).toHaveCount(0);
+  await expect.poll(async () => (await storedSheet()).lines.find((line: { id: string }) => line.id === targetSheet.lines[1].id)?.time).toBe("2026-10-13T10:20:00+05:45");
 
   for (const [label, field, value] of [["From", "embarkationDateTime", "2026-10-12T08:35"], ["To", "disembarkationDateTime", "2026-10-12T18:40"]] as const) {
     await page.getByLabel(`Choose date and time: Crew 1 ${label} datetime`, { exact: true }).fill(value);
@@ -235,6 +243,7 @@ test("chooses sheet, log-line and crew datetimes while preserving format and tim
     await expect.poll(async () => (await storedSheet()).crew[0][field]).toBe(`${value}:00+03:00`);
   }
   await page.reload();
+  expect((await storedSheet()).lines.at(-1)?.time).toBe("2026-10-13T10:20:00+05:45");
   await expect(page.getByRole("textbox", { name: "Crew 1 From datetime", exact: true })).toHaveValue("12/10/2026, 08:35");
   await page.getByRole("button", { name: "Lock log sheet" }).click();
   await expect(page.getByLabel("Choose date and time: Crew 1 From datetime", { exact: true })).toBeDisabled();
