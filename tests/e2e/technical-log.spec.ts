@@ -64,7 +64,7 @@ test("edits technical log entries and suggests previous checks", async ({ page }
   await expect(page.getByText("Unable to save the latest changes. Please try again.")).toHaveCount(0);
 });
 
-test("preserves partially typed preference-formatted date and time", async ({ page }) => {
+test("preserves formatted date/time drafts and localized numeric input", async ({ page }) => {
   await loginWithSeededDemoData(page);
   await page.goto(`/details/${targetSheet.id}`);
   const row = page.locator(".log-lines-table tbody tr").first();
@@ -110,6 +110,33 @@ test("preserves partially typed preference-formatted date and time", async ({ pa
   await expect.poll(() => page.locator(".log-lines-table").evaluate(table => table.parentElement!.scrollWidth - table.parentElement!.clientWidth)).toBeLessThanOrEqual(1);
   await savedRow.getByRole("button", { name: "✏️" }).click();
   await expect(page.locator(".inline-line-row").getByRole("textbox", { name: "Log line date and time", exact: true })).toHaveValue("12/10/2026, 10:45");
+  await page.locator(".inline-line-row").getByRole("button", { name: "Cancel", exact: true }).click();
+  await test.step("matches numeric separators between view and editor", async () => {
+    await page.getByLabel("Language", { exact: true }).first().selectOption("de");
+    const lineId = targetSheet.lines[1].id;
+    const row = page.locator(".log-lines-table tbody tr").filter({ hasText: targetSheet.lines[1].weatherRemark });
+    await expect(row).toContainText("7,2");
+    await row.getByRole("button", { name: "✏️" }).click();
+    const editor = page.locator(".inline-line-row");
+    const speed = editor.locator('input[data-line-field="speedKn"]');
+    await expect(speed).toHaveValue("7,2");
+    await speed.focus();
+    await expect(speed).toHaveValue("7,2");
+    await speed.fill("7.25");
+    await expect(speed).toHaveValue("7.25");
+    await speed.blur();
+    await expect(speed).toHaveValue("7,25");
+    await speed.fill("7,75");
+    await speed.blur();
+    await expect(speed).toHaveValue("7,75");
+    await editor.getByRole("button", { name: "💾" }).click();
+    await expect.poll(async () => {
+      const stored = await (await page.request.get("/api/logbook")).json();
+      return stored.sheets.find((sheet: { id: string }) => sheet.id === targetSheet.id)?.lines.find((line: { id: string }) => line.id === lineId)?.speedKn;
+    }).toBe(7.75);
+    await row.getByRole("button", { name: "✏️" }).click();
+    await expect(editor.locator('input[data-line-field="speedKn"]')).toHaveValue("7,75");
+  });
 });
 
 test("chooses sheet, log-line and crew datetimes while preserving format and timezone", async ({ page }) => {
