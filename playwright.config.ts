@@ -21,6 +21,9 @@ export default defineConfig({
       CREW_DATA_ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
       LOCAL_DATABASE_PATH: ".data/playwright.sqlite",
       NODE_ENV: "test",
+      // Tests create isolated demo sandboxes from one IP. Use the existing
+      // preview quota so the full suite does not exhaust the production quota.
+      VERCEL_ENV: "preview",
     },
   },
   projects: [
