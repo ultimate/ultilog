@@ -2247,6 +2247,8 @@ img.entity-image--preview {
   width: 10px;
   margin-left: 2px;
 }
+/* Keep three digits plus a possible sign readable, including on narrow screens. */
+.log-lines-table .inline-line-row .course-number-input { width: calc(4ch + 1rem + 2px); min-width: calc(4ch + 1rem + 2px); }
 .log-lines-table .inline-line-row input[data-line-field="windStrength"] { width: 3.5rem; }
 .log-lines-table .inline-line-row input[data-line-field="temperature"] { width: 3.5rem; }
 .log-lines-table .inline-line-row input[data-line-field="barometer"] { width: 4.75rem; }

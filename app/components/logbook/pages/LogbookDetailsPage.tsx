@@ -398,6 +398,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     const lineForm = lineForms[draftId].form;
     return <span className="smart-field-wrap">
     <LogNumberInput
+      className="course-number-input"
       min={options.min}
       max={options.max}
       step="1"
