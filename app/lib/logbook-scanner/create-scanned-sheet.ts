@@ -1,3 +1,4 @@
+import { normalizeScannerRows } from "./normalize-result";
 import { lineFormToLogLine } from "../../domain/log-lines/log-line-form";
 import type {
   CrewMember,
@@ -82,6 +83,7 @@ export function createScannedSheet({
   technicalLogTemplate = [],
   engineIds = [],
 }: CreateScannedSheetInput): LogSheet {
+  scannerResult = normalizeScannerRows(scannerResult);
   const draft = scannerResult.draft;
   const extractedRoute = {
     from: draft.route?.from ?? "",

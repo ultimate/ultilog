@@ -1,4 +1,7 @@
 "use client";
+
+import { mergeScannerWarningState } from "./logbook/scanner-warning-state";
+import { updateScannerWarnings } from "../lib/logbook-scanner/update-warnings";
 import { PreferenceDateTimeInput } from "./logbook/PreferenceDateTimeInput";
 import { formatEngineHours } from "../lib/log-input";
 import { hasRequiredLogLineFields } from "../domain/log-lines/required-fields";
@@ -371,6 +374,12 @@ export function LogbookApp({
     | { kind: "deletion"; entityKind: "boat" | "crew" | "sheet"; id: string; revision: number; password?: string };
 
   async function saveLogbookNow(nextLogbook: PersistedLogbook, mutation: FocusedMutation) {
+    if (mutation.kind === "line" || mutation.kind === "line-deletion") {
+      const before = logbookRef.current.sheets.find(sheet => sheet.id === mutation.sheetId);
+      nextLogbook = { ...nextLogbook, sheets: nextLogbook.sheets.map(sheet => sheet.id === before?.id && before.scannerWarnings
+        ? { ...sheet, scannerWarnings: updateScannerWarnings(before.scannerWarnings, before.lines, sheet.lines) }
+        : sheet) };
+    }
     logbookRef.current = nextLogbook;
     setLogbook(nextLogbook);
     setSaveError(null);
@@ -414,6 +423,7 @@ export function LogbookApp({
       if (succeeded) {
         failedMutationsRef.current.delete(key);
         if (failedMutationsRef.current.size === 0) setSaveError(null);
+        await refreshScannerWarnings(mutation.sheetId);
       }
       return succeeded;
     }
@@ -458,9 +468,28 @@ export function LogbookApp({
     if (response?.ok) {
       failedMutationsRef.current.delete(key);
       if (failedMutationsRef.current.size === 0) setSaveError(null);
+      if (mutation.kind === "line-deletion") await refreshScannerWarnings(mutation.sheetId);
       return true;
     }
     return false;
+  }
+
+  async function refreshScannerWarnings(sheetId: string) {
+    const submitted = logbookRef.current.sheets.find(sheet => sheet.id === sheetId);
+    if (!submitted || (submitted.source !== "scanner" && !submitted.scannerWarnings)) return;
+    try {
+      const response = await fetch("/api/logbook");
+      if (!response.ok) throw new Error("Unable to refresh scanner warnings");
+      const stored = (await response.json()) as PersistedLogbook;
+      const persisted = stored.sheets.find(sheet => sheet.id === sheetId);
+      if (!persisted) return;
+      const current = logbookRef.current;
+      const updated = { ...current, sheets: current.sheets.map(sheet => {
+        return sheet.id === sheetId ? mergeScannerWarningState(sheet, submitted, persisted) : sheet;
+      }) };
+      logbookRef.current = updated;
+      setLogbook(updated);
+    } catch { setSaveError(t("logbook.saveError")); }
   }
 
   function mergePersistedMutation(kind: "boat" | "crew" | "sheet" | "line", entityId: string, submitted: Boat | CrewMember | LogSheet | LogLine, persisted: Boat | CrewMember | LogSheet | LogLine, sheetId?: string) {

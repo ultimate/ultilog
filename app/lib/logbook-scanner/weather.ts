@@ -27,6 +27,9 @@ export function normalizeScannedWeather(value: string | undefined) {
   if (matches(normalized, ["heavy rain", "continuous rain", "pluie", "regen", "pioggia"])) return "🌧️";
   if (matches(normalized, ["rain", "drizzle", "shower", "bruine", "schauer", "niesel"])) return "🌦️";
   if (matches(normalized, ["fog", "mist", "haze", "brouillard", "brume", "nebel", "dunst", "nebbia", "foschia"])) return "🌫️";
+  const oktas = cloudCoverOktas(normalized);
+  if (oktas !== undefined) return cloudCoverEmoji(oktas);
+
   if (matches(normalized, ["overcast", "fully cloudy", "couvert", "bedeckt", "coperto"])) return "☁️";
   if (matches(normalized, ["mostly cloudy", "broken cloud", "tres nuageux", "stark bewolkt", "molto nuvoloso"])) return "🌥️";
   if (matches(normalized, ["partly cloudy", "scattered cloud", "partiellement nuageux", "wolkig", "parzialmente nuvoloso"])) return "⛅";
@@ -34,8 +37,7 @@ export function normalizeScannedWeather(value: string | undefined) {
   if (matches(normalized, ["clear", "sunny", "sereno", "soleggiato", "klar", "heiter", "degag"])) return "☀️";
   if (matches(normalized, ["cloudy", "cloud", "nuageux", "bewolkt", "nuvoloso"])) return "☁️";
 
-  const oktas = cloudCoverOktas(normalized);
-  return oktas === undefined ? input : cloudCoverEmoji(oktas);
+  return input;
 }
 
 function matches(value: string, terms: string[]) {
@@ -50,8 +52,8 @@ function cloudCoverOktas(value: string) {
   if (okta) return Number(okta[1]);
 
   // Common printed station-model cloud-cover symbols, from an open to a filled circle.
-  const symbols: Record<string, number> = { "○": 0, "◔": 2, "◑": 4, "◕": 6, "●": 8 };
-  return symbols[value];
+  const symbols: Record<string, number> = { "○": 0, "◯": 0, "◔": 2, "◑": 4, "◐": 4, "◒": 4, "◓": 4, "◕": 6, "●": 8 };
+  return symbols[value.replace(/[\s\uFE0F]/g, "")];
 }
 
 function cloudCoverEmoji(oktas: number) {

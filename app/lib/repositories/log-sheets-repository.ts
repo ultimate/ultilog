@@ -93,6 +93,14 @@ export class LogSheetsRepository {
     );
   }
 
+  async updateScannerWarnings(sheet: LogSheet, warnings: ScannerWarning[], ownerId: string) {
+    const result = await this.db.query<{ revision: number }>(
+      `update log_sheets set scanner_warnings = ${this.db.placeholder(1)}, revision = revision + 1, updated_at = ${this.now()} where id = ${this.db.placeholder(2)} and owner_id = ${this.db.placeholder(3)} and revision = ${this.db.placeholder(4)} returning revision`,
+      [JSON.stringify(warnings), scopedId(ownerId, sheet.id), ownerId, expectedRevision(sheet.revision)],
+    );
+    if (!result.rows.length) throw Object.assign(new Error("The log sheet was changed by another request."), { code: "revision_conflict" });
+  }
+
   static toLogbook(boatRows: BoatRow[], sheetRows: LogSheetRow[], crewRows: CrewMemberRow[], lineRows: LogLineRow[], crewProfileRows: CrewMemberRow[] = []): PersistedLogbook {
     const crewBySheet = groupBy(crewRows, (crew) => crew.sheet_id);
     const linesBySheet = groupBy(lineRows, (line) => line.sheet_id);

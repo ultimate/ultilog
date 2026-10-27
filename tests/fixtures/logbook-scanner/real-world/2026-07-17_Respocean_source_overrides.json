@@ -1,0 +1,65 @@
+{
+  "allRows": {
+    "temperature": null,
+    "temperatureUnit": "",
+    "tide": null,
+    "tideUnit": "",
+    "moon": "",
+    "weatherRemark": "",
+    "motorHours": null,
+    "position": "",
+    "deviation": null,
+    "magneticCourse": null,
+    "variation": null,
+    "windDrift": null,
+    "courseThroughWater": null,
+    "currentDrift": null
+  },
+  "rows": [
+    {
+      "speedKn": null,
+      "sailMiles": null,
+      "motorMiles": null,
+      "logNm": 25420
+    },
+    {
+      "sailMiles": null,
+      "logNm": 0.21,
+      "waves": null
+    },
+    {
+      "sailMiles": null,
+      "logNm": 0.21,
+      "waves": null
+    },
+    {
+      "motorMiles": null,
+      "logNm": 0.21
+    },
+    {
+      "motorMiles": null,
+      "logNm": 0.22
+    },
+    {
+      "motorMiles": null,
+      "logNm": 0.22
+    },
+    {
+      "sailMiles": null,
+      "logNm": 0.22
+    },
+    {
+      "barometer": null,
+      "sailMiles": null,
+      "logNm": null
+    },
+    {
+      "speedKn": null,
+      "sailMiles": null,
+      "logNm": null,
+      "waves": null,
+      "windStrength": null,
+      "windDirection": ""
+    }
+  ]
+}

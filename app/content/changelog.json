@@ -110,6 +110,16 @@
     }
   },
   {
+    "id": "improve-scanner-recognition-and-warning-review",
+    "category": "improvement",
+    "title": {
+      "en": "Improve log sheet recognition, preserve empty measurements, and acknowledge warnings when their fields are corrected",
+      "de": "Logblätter besser erkennen, leere Messwerte beibehalten und Warnungen beim Korrigieren der zugehörigen Felder bestätigen",
+      "fr": "Améliorer la reconnaissance des feuilles de bord, préserver les mesures vides et acquitter les avertissements lors de la correction des champs concernés",
+      "it": "Migliorare il riconoscimento dei fogli di giornale, mantenere vuote le misurazioni mancanti e confermare gli avvisi quando i campi vengono corretti"
+    }
+  },
+  {
     "id": "introduce-public-changelog",
     "category": "feature",
     "title": {
