@@ -1,0 +1,75 @@
+{
+  "allRows": {
+    "temperature": null,
+    "temperatureUnit": "",
+    "tide": null,
+    "tideUnit": "",
+    "moon": "",
+    "weatherRemark": "",
+    "motorHours": null,
+    "position": "",
+    "deviation": null,
+    "magneticCourse": null,
+    "variation": null,
+    "windDrift": null,
+    "courseThroughWater": null,
+    "currentDrift": null
+  },
+  "rows": [
+    {
+      "sailMiles": null,
+      "motorMiles": null,
+      "trueCourse": 248,
+      "courseOverGround": 248
+    },
+    {
+      "barometer": null,
+      "sailMiles": null,
+      "trueCourse": 180,
+      "courseOverGround": null
+    },
+    {
+      "barometer": null,
+      "sailMiles": null,
+      "trueCourse": 155,
+      "courseOverGround": null
+    },
+    {
+      "sailMiles": null
+    },
+    {
+      "barometer": null,
+      "sailMiles": null
+    },
+    {
+      "barometer": null,
+      "sailMiles": null
+    },
+    {
+      "sailMiles": null
+    },
+    {
+      "barometer": null,
+      "sailMiles": null
+    },
+    {
+      "barometer": null,
+      "motorMiles": null
+    },
+    {
+      "motorMiles": null
+    },
+    {
+      "barometer": null,
+      "speedKn": null,
+      "sailMiles": null,
+      "waves": null,
+      "windStrength": null,
+      "compassCourse": null,
+      "trueCourse": null,
+      "courseOverGround": null,
+      "windDirection": "",
+      "weather": ""
+    }
+  ]
+}

@@ -1,3 +1,4 @@
+import { normalizeScannerRows } from "./normalize-result";
 import type { ScannerResult } from "../../models/logbook-scanner";
 import {
   getPrintLogColumns,
@@ -10,7 +11,7 @@ import { criticalCourseScannerFields, scannerFieldAliases } from "./field-aliase
 import type { ScannerProviderInput, ScannerTemplate } from "./provider";
 import { scannerWarningCodes, type ScannerWarningDiagnostic } from "./warning-codes";
 
-const DEFAULT_MODEL = "gpt-4.1-mini";
+const DEFAULT_MODEL = "gpt-6-luna";
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 const IMAGE_DETAIL = "high";
 
@@ -188,13 +189,16 @@ const extractionInstructions = `Extract a logbook draft from these image(s). The
 - draft.route.from/to/departed/arrived: visible route information, otherwise empty strings. Treat Standort morgens/Location morning as route.from and Standort abends/Location evening as route.to.
 - draft.technicalChecks: technical-log or daily-check entries, with the visible mark converted to the closest allowed status symbol and its label in text. Use ⌛ when no mark is visible.
 - draft.engineHourCounters: cumulative engine hour-meter readings at the start and end of the sheet. Use only a supplied engineId and preserve decimal readings as text.
-- draft.lines: one object per logbook row using only the schema's log line fields.
+- draft.lines: one object per populated logbook row using only the schema's log line fields. Ignore unused printed rows, preprinted weather-circle outlines, N/E coordinate labels, units, totals, and fully crossed-out rows. Include clearly timed log entries written outside the main table, in document order after the table.
+- Every blank source cell must remain an empty string, including numeric cells. An explicit handwritten zero is a value; a blank is never zero. Do not carry measurements forward from earlier rows. A printed unit or absent column is not a measurement. Do not copy sheet totals or cumulative engine counters into blank row cells.
+- Warning row numbers are one-based indexes into draft.lines, not printed grid row numbers. Never warn about unused printed rows or reference rows outside draft.lines.
 - Use the renamed log line fields waves, compassCourse, magneticCourse, windDrift, weatherRemark, and temperature.
 - Do not output deprecated course or wind fields; split wind into windDirection, windStrength, and windUnit.
 - Keep position in each row for named positions or waypoint text, even when latitude and longitude are present.
 - When one Position/Standort cell contains a coordinate pair, split it into latitude and longitude. DDM is common in nautical logs; for example, N49°27.3346' W2°32.0386' maps to latitude=N49°27.3346' and longitude=W2°32.0386'.
 - Expected row data types are strings in the JSON schema. Transcribe numeric values as strings for numeric fields such as temperature, barometer, waves, compassCourse, magneticCourse, windDrift, speedKn, and logNm.
 - Include explicit units when visible for windUnit, seaUnit, tideUnit, and temperatureUnit; leave them empty only when no unit is shown.
+- Weather-circle shading can be hatched or scribbled and can occupy any orientation. Count the fraction of the circle covered, not the darkness of the ink or the outline. An empty circle in a populated row means clear sky; a preprinted circle in an otherwise unused row does not create an observation. Technical-check fill circles describe tank/check status, not weather.
 - Convert written weather conditions in any language to the closest canonical weather emoji. Interpret meteorological cloud-cover circles by their filled fraction (oktas): 0/8=☀️, 1–2/8=🌤️, 3–4/8=⛅, 5–7/8=🌥️, and 8/8=☁️. Use precipitation, thunderstorm, snow, fog, and other specific weather emojis when those marks or words are visible.
 - warnings: structured diagnostics using the allowed code, canonical row/field metadata, and fallbackMessage only for scannerGenerated diagnostics.`;
 
@@ -204,6 +208,7 @@ const documentInterpretationInstructions = `Interpret the document before transc
 - Establish one header-to-field mapping for a table and apply it consistently to every row. Do not remap a column based on an individual cell value.
 - The user's interface language, when supplied below, is only a weak hint for ambiguous headings. Never exclude terminology from another language because of it.
 - Similar or shared abbreviations can be ambiguous. Resolve them using the full header, neighboring columns, units, and the table structure; warn instead of guessing when those signals conflict.
+- On German nautical sheets, rwK/rwk/rw K (rechtweisender Kurs) maps to trueCourse (TC), while mwK maps to magneticCourse. Read these distinct headers by their printed column positions even when intermediate correction columns are empty.
 - On German nautical sheets, WA (Windabdrift) maps to windDrift, SA (Stromabdrift) maps to currentDrift, KüG (Kurs über Grund) maps to courseOverGround, and F [kn] (Fahrt in Knoten) maps to speedKn. Do not discard or shift these columns merely because their headings are abbreviated.
 - Course-conversion columns commonly follow this semantic sequence: ${criticalCourseScannerFields.join(" -> ")}. A sheet may contain only a subset, and its printed headings and spatial alignment always take precedence.
 - A missing intermediate course column never shifts the meaning of later columns. For example, the shortened header sequence MgK / Cc, Abl / d, Mw / D, rwK / Cv maps to compassCourse, deviation, variation, trueCourse; leave magneticCourse empty.
@@ -317,7 +322,7 @@ export async function extractLogbookDraft(input: ScannerProviderInput): Promise<
   }
 
   const payload = (await response.json()) as OpenAIResponsePayload;
-  const parsed = parseScannerResult(payload);
+  const parsed = normalizeScannerRows(parseScannerResult(payload));
   repairShiftedMissingMagneticCourse(parsed);
   parsed.warnings = [...parsed.warnings, ...findLocalWarnings(parsed)];
 

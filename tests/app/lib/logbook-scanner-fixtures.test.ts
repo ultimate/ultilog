@@ -1,3 +1,4 @@
+import { loadRealWorldFixture, type FixtureLine } from "../../fixtures/logbook-scanner/real-world-fixture";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
@@ -13,7 +14,7 @@ const expectedFileName = "logsheet-expected.json";
 const imagePattern = /\.(jpe?g|png|webp)$/i;
 const liveScannerEnabled = process.env.RUN_LIVE_SCANNER_TESTS === "true" && Boolean(process.env.OPENAI_API_KEY);
 
-type ExpectedFixtureLine = Record<string, string | number | undefined>;
+type ExpectedFixtureLine = FixtureLine;
 type ExpectedFixture = {
   title?: string;
   dateText?: string;
@@ -33,6 +34,7 @@ type ScannerFixtureCase = {
   directory: string;
   images: string[];
   expected: ExpectedFixture;
+  realWorld?: boolean;
 };
 
 const fixtureCases = loadFixtureCases();
@@ -40,6 +42,21 @@ const fixtureCases = loadFixtureCases();
 describe("logbook scanner image fixtures", () => {
   it("discovers at least one real-image scenario", () => {
     expect(fixtureCases.length).toBeGreaterThan(0);
+  });
+
+  it("loads all six corrected real-world sheets without persistence metadata", () => {
+    const realWorld = fixtureCases.filter(fixture => fixture.realWorld);
+    expect(realWorld).toHaveLength(6);
+    expect(realWorld.map(fixture => fixture.expected.lines!.length)).toEqual([8, 11, 7, 11, 5, 9]);
+    for (const fixture of realWorld) {
+      for (const line of fixture.expected.lines!) {
+        expect(line.temperature).toBeNull();
+        expect(line.tide).toBeNull();
+        expect(line).not.toHaveProperty("id");
+        expect(line).not.toHaveProperty("sheet_id");
+        expect(line).not.toHaveProperty("revision");
+      }
+    }
   });
 
   it.each(fixtureCases)("validates fixture files for $name", ({ directory, images, expected }) => {
@@ -109,14 +126,18 @@ describe.skipIf(!liveScannerEnabled)("live logbook scanner image fixtures", () =
   it.each(fixtureCases.flatMap((fixture) => fixture.images.map((image) => ({ ...fixture, image }))))(
     "extracts expected core values from $name/$image",
     { timeout: 120_000 },
-    async ({ directory, image, expected }) => {
+    async ({ directory, image, expected, realWorld }) => {
       const imagePath = path.join(directory, image);
       const scannerResult = await openAiScannerProvider.extractLogbookDraft({
         files: [{ name: image, type: mimeTypeForImage(image), buffer: readFileSync(imagePath) }],
       });
 
-      expect(scannerResult.draft.title).toBe(expected.title);
-      expect(scannerResult.draft.route).toEqual(expect.objectContaining(expected.route ?? {}));
+      // Real-world sheet titles and route master data were edited in the application;
+      // the source-reviewed row expectations are the OCR contract for these photos.
+      if (!realWorld) {
+        expect(scannerResult.draft.title).toBe(expected.title);
+        expect(scannerResult.draft.route).toEqual(expect.objectContaining(expected.route ?? {}));
+      }
       expect(scannerResult.draft.lines).toHaveLength(expected.lines?.length ?? 0);
       assertExtractedLines(scannerResult, expected);
     },
@@ -128,16 +149,22 @@ function loadFixtureCases(): ScannerFixtureCase[] {
 
   return readdirSync(fixturesRoot, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
-    .map((entry) => {
+    .flatMap((entry): ScannerFixtureCase[] => {
       const directory = path.join(fixturesRoot, entry.name);
+      if (entry.name === "real-world") {
+        return readdirSync(directory).filter(file => /_log_sheet\.json$/.test(file)).sort().map(file => {
+          const base = file.replace(/_log_sheet\.json$/, "");
+          return { name: `real-world/${base}`, directory, images: [`${base}.jpg`], expected: loadRealWorldFixture(directory, base), realWorld: true };
+        });
+      }
       const expectedPath = path.join(directory, expectedFileName);
       const images = readdirSync(directory).filter((file) => imagePattern.test(file)).sort();
-      return {
+      return [{
         name: entry.name,
         directory,
         images,
         expected: JSON.parse(readFileSync(expectedPath, "utf8")) as ExpectedFixture,
-      };
+      }];
     })
     .sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -163,7 +190,7 @@ function stringifyLineValues(line: ExpectedFixtureLine) {
   const entries = Object.entries(line)
     .filter(([, value]) => value !== undefined)
     .flatMap(([key, value]) => {
-      const stringValue = String(value);
+      const stringValue = value === null ? "" : String(value);
       if (key === "sailMiles") return [["sailMiles", stringValue], ["sailSm", stringValue]];
       if (key === "motorMiles") return [["motorMiles", stringValue], ["motorSm", stringValue]];
       return [[key, stringValue]];
@@ -217,17 +244,19 @@ function projectExpectedLine(line: ExpectedFixtureLine, actualLine: Record<strin
         const value = field === "time" && /^\d{1,2}:\d{2}/.test(String(line[field]))
           ? `${sheetDate}T${String(line[field]).padStart(5, "0")}`
           : line[field];
-        return [fieldAliases[field] ?? field, numericExpectedValue(field, value)];
+        const unitDefault = { temperatureUnit: "°C", tideUnit: "m", seaUnit: "m", windUnit: "bft" }[field];
+        return [fieldAliases[field] ?? field, unitDefault && value === "" ? unitDefault : numericExpectedValue(field, value)];
       }),
   );
   if (line.motorHours === undefined) return projected;
+  if (line.motorHours === null) return { ...projected, engineHours: {} };
   const hours = Number(line.motorHours);
   return { ...projected, engineHours: hours >= 0 ? { "main-engine": hours } : {} };
 }
 
-function numericExpectedValue(field: string, value: string | number | undefined) {
-  if (value === undefined) return value;
-  const stringFields = new Set(["time", "weather", "weatherRemark", "windDirection", "windUnit", "seaUnit", "tideUnit", "moon", "sailNote", "motorNote", "remarks"]);
+function numericExpectedValue(field: string, value: string | number | null | undefined) {
+  if (value == null) return value;
+  const stringFields = new Set(["time", "weather", "weatherRemark", "windDirection", "windUnit", "seaUnit", "tideUnit", "temperatureUnit", "moon", "sailNote", "motorNote", "remarks"]);
   return stringFields.has(field) ? String(value) : Number(value);
 }
 
@@ -238,11 +267,16 @@ function assertExtractedLines(scannerResult: ScannerResult, expected: ExpectedFi
     for (const [field, expectedValue] of Object.entries(expectedLine)) {
       if (expectedValue === undefined) continue;
       const actualValue = actual[field as keyof typeof actual];
-      if (isUnitField(field)) {
+      if (expectedValue === null || expectedValue === "") {
+        expect(actualValue?.trim() ?? "", `${field} in row ${index + 1} must stay empty`).toBe("");
+      } else if (field === "time") {
+        expect(actualValue?.match(/(?:T|^)(\d{1,2}:\d{2})/)?.[1], `time in row ${index + 1}`).toBe(String(expectedValue).match(/(?:T|^)(\d{1,2}:\d{2})/)?.[1]);
+      } else if (isUnitField(field)) {
         expect(normalizeUnit(actualValue), `${field} in row ${index + 1}`).toBe(normalizeUnit(String(expectedValue)));
       } else if (isTextField(field)) {
         expect(actualValue, `${field} in row ${index + 1}`).toBe(String(expectedValue));
       } else {
+        expect(actualValue?.trim(), `${field} in row ${index + 1} must contain a written number`).toBeTruthy();
         expect(Number(actualValue), `${field} in row ${index + 1}`).toBeCloseTo(Number(expectedValue), numericPrecision(field));
       }
     }

@@ -24,6 +24,72 @@ async function seed(db: SqliteLogbookDatabase) {
 }
 
 describe("log sheet editor database contract", () => {
+  it("acknowledges saved field changes atomically and follows lines through reorder and deletion", async () => {
+    const db = await database();
+    await db.migrate();
+    await seed(db);
+    const first = { ...sampleLogSheets[1].lines[0], id: "first", engineHours: {} };
+    const second = { ...first, id: "second" };
+    await db.createLogSheetAggregate({ ...sampleLogSheets[1], id: "warnings", boatId: sampleBoats[1].id, crew: [], source: "scanner", scannerWarnings: [
+      { id: "coordinates", code: "missingFields", row: 1, fields: ["latitude", "longitude"] },
+      { id: "pressure", code: "missingFields", row: 1, fields: ["barometer"] },
+      { id: "second", code: "missingFields", row: 2, fields: ["latitude"] },
+      { id: "sheet", code: "missingSheetTitle" },
+    ] }, [first, second]);
+    const read = async () => (await db.readLogbook()).sheets.find(sheet => sheet.id === "warnings")!;
+    let stored = await read();
+    const initialRevision = stored.revision!;
+    await db.updateLogLine("warnings", "first", { ...stored.lines[0], remarks: "unrelated edit" });
+    stored = await read();
+    expect(stored.scannerWarnings?.some(warning => warning.acknowledgedAt)).toBe(false);
+    expect(stored.revision).toBe(initialRevision);
+    const stale = stored.lines[0];
+    await db.updateLogLine("warnings", "first", { ...stale, latitude: (stale.latitude ?? 0) + 1 });
+    stored = await read();
+    expect(stored.scannerWarnings?.[0].acknowledgedAt).toEqual(expect.any(String));
+    expect(stored.scannerWarnings?.slice(1).some(warning => warning.acknowledgedAt)).toBe(false);
+    expect(stored.revision).toBe(initialRevision + 1);
+    await expect(db.updateLogLine("warnings", "first", { ...stale, barometer: 999 })).rejects.toThrow("changed by another request");
+    expect((await read()).scannerWarnings).toEqual(stored.scannerWarnings);
+    const history = stored.scannerWarnings?.[0].acknowledgedAt;
+    await db.reorderLogLines("warnings", ["second", "first"]);
+    stored = await read();
+    expect(stored.scannerWarnings?.find(warning => warning.id === "coordinates")).toMatchObject({ row: 2, acknowledgedAt: history });
+    expect(stored.scannerWarnings?.find(warning => warning.id === "second")).toMatchObject({ row: 1 });
+    await db.deleteLogLine("warnings", "first", stored.lines.find(line => line.id === "first")!.revision!);
+    stored = await read();
+    expect(stored.scannerWarnings?.map(warning => warning.id)).toEqual(["second", "sheet"]);
+    expect(stored.scannerWarnings?.[0]).toMatchObject({ row: 1 });
+    await db.updateLogLine("warnings", "second", stored.lines[0]);
+    expect((await read()).scannerWarnings?.[0].acknowledgedAt).toBeUndefined();
+  });
+
+  it("rolls back both the line and its acknowledgment when the transaction fails", async () => {
+    const db = await database();
+    await db.migrate();
+    await seed(db);
+    const first = { ...sampleLogSheets[1].lines[0], id: "first", engineHours: {}, temperature: null, barometer: null, windStrength: null, waves: null, tide: null, compassCourse: null, deviation: null, magneticCourse: null, variation: null, trueCourse: null, windDrift: null, courseThroughWater: null, currentDrift: null, courseOverGround: null, speedKn: null, logNm: null, sailMiles: null, motorMiles: null };
+    await db.createLogSheetAggregate({ ...sampleLogSheets[1], id: "atomic", boatId: sampleBoats[1].id, crew: [], source: "scanner", scannerWarnings: [{ id: "pressure", code: "missingFields", row: 1, fields: ["barometer"] }] }, [first]);
+    const before = (await db.readLogbook()).sheets.find(sheet => sheet.id === "atomic")!;
+    for (const field of ["temperature", "barometer", "windStrength", "waves", "tide", "compassCourse", "speedKn", "logNm", "sailMiles", "motorMiles"] as const) expect(before.lines[0][field]).toBeNull();
+    // Intercept the adapter's transaction-scoped queries too.
+    const query = SqliteLogbookDatabase.prototype.query;
+    const failure = vi.spyOn(SqliteLogbookDatabase.prototype, "query").mockImplementation(function (this: SqliteLogbookDatabase, sql, values) {
+      if (sql.startsWith("update log_sheets set motor_miles")) throw new Error("metrics failure");
+      return query.call(this, sql, values);
+    });
+    await expect(db.updateLogLine("atomic", "first", { ...before.lines[0], barometer: 0 })).rejects.toThrow("metrics failure");
+    failure.mockRestore();
+    const after = (await db.readLogbook()).sheets.find(sheet => sheet.id === "atomic")!;
+    expect(after.lines[0]).toEqual(before.lines[0]);
+    expect(after.scannerWarnings).toEqual(before.scannerWarnings);
+    expect(after.revision).toBe(before.revision);
+    await db.updateLogLine("atomic", "first", { ...after.lines[0], barometer: 0 });
+    const saved = (await db.readLogbook()).sheets.find(sheet => sheet.id === "atomic")!;
+    expect(saved.lines[0].barometer).toBe(0);
+    expect(saved.scannerWarnings?.[0].acknowledgedAt).toEqual(expect.any(String));
+  });
+
   it("upgrades existing rows without losing engine records, indexes or concurrency metadata", async () => {
     const db = await database();
     const migrations = await schema.readMigrations();

@@ -1,4 +1,5 @@
 import { hasRequiredLogLineFields } from "../../domain/log-lines/required-fields";
+import { updateScannerWarnings } from "../logbook-scanner/update-warnings";
 import { LogbookValidationError } from "../validation/logbook";
 import { defaultLogSheetShareSettings, type Boat, type CrewMember, type FocusedLogSheet, type LogLine, type LogSheet, type PersistedLogbook } from "../../models/logbook";
 import { BoatsRepository } from "../repositories/boats-repository";
@@ -283,10 +284,18 @@ export abstract class LogbookDatabase implements QueryableDatabase {
       const ownerId = database.requireOwnerId();
       const sheetRow = await database.sheets.findById(sheetId, ownerId);
       if (!sheetRow) return undefined;
+      const beforeRows = sheetRow.scanner_warnings ? await database.lines.findForSheet(sheetRow.id) : [];
+      const before = LogSheetsRepository.toLogbook([], [sheetRow], [], beforeRows).sheets[0];
       const result = await mutation(database);
       if (result === undefined) return undefined;
       const lines = await database.lines.findForSheet(sheetRow.id);
       const sheet = LogSheetsRepository.toLogbook([], [sheetRow], [], lines).sheets[0];
+      if (before.scannerWarnings?.length) {
+        const warnings = updateScannerWarnings(before.scannerWarnings, before.lines, sheet.lines, new Date().toISOString());
+        if (JSON.stringify(warnings) !== JSON.stringify(before.scannerWarnings)) {
+          await database.sheets.updateScannerWarnings(before, warnings, ownerId);
+        }
+      }
       await database.sheets.updateMetrics(sheet, sheet.lines, ownerId, await database.motionStationaryThresholdNm());
       return result;
     });
