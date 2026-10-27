@@ -75,6 +75,16 @@ describe("logbook scanner prompt", () => {
     expect(prompt).toContain("User interface language hint: none");
   });
 
+  it("distinguishes blank cells, unused printed rows and hatched cloud circles", () => {
+    const prompt = buildScannerUserPrompt();
+    expect(prompt).toContain("Every blank source cell must remain an empty string");
+    expect(prompt).toContain("Do not carry measurements forward");
+    expect(prompt).toContain("one-based indexes into draft.lines");
+    expect(prompt).toContain("hatched or scribbled");
+    expect(prompt).toContain("Technical-check fill circles");
+    expect(prompt).toContain("rwK/rwk/rw K (rechtweisender Kurs) maps to trueCourse (TC)");
+  });
+
   it("describes conditional recognition and diagnostics for versioned UltiLog templates", () => {
     const instructions = formatTemplateRecognitionInstructions();
 
