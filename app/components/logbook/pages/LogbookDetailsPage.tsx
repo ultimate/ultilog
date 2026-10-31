@@ -35,6 +35,7 @@ import { fileToStoredImage } from "../image-utils";
 import { defaultLogSheetShareSettings } from "../../../models/logbook";
 import { uploadStoredImage } from "../persistence";
 import { indexScannerWarnings } from "../../../lib/logbook-scanner/warning-fields";
+import { isActionableScannerWarning } from "../../../lib/logbook-scanner/actionable-warning";
 import { formatScannerWarning } from "../../../lib/logbook-scanner/format-warning";
 import type { LineFormField } from "../../../models/logbook-forms";
 import { EmbedCodeBuilder } from "../EmbedCodeBuilder";
@@ -193,7 +194,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     setSheetNavigationError("");
     void props.onNavigateSheet(id);
   };
-  const scannerWarnings = activeSheet.scannerWarnings ?? [];
+  const scannerWarnings = (activeSheet.scannerWarnings ?? []).filter(isActionableScannerWarning);
   const scannerWarningText = (warning: ScannerWarning) => formatScannerWarning(warning, t);
   const activeScannerWarningCount = scannerWarnings.filter((warning) => !warning.acknowledgedAt).length;
   const orderedActiveScannerWarnings = scannerWarnings

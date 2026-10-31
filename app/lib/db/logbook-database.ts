@@ -1,3 +1,4 @@
+import { isActionableScannerWarning } from "../logbook-scanner/actionable-warning";
 import { hasRequiredLogLineFields } from "../../domain/log-lines/required-fields";
 import { updateScannerWarnings } from "../logbook-scanner/update-warnings";
 import { LogbookValidationError } from "../validation/logbook";
@@ -189,7 +190,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
       const persistedLines = prior ? LogSheetsRepository.toLogbook([], [prior], [], persistedLineRows).sheets[0].lines : [];
       const effectiveLines = prior ? persistedLines : submittedLines;
       if (sheet.status === "Locked" && prior?.status !== "Locked" && effectiveLines.some(line => !hasRequiredLogLineFields(line))) throw new LogbookValidationError("Date, time with timezone, latitude and longitude are required before locking.");
-      if (sheet.scannerWarnings?.some(warning => !warning.acknowledgedAt)) sheet = { ...sheet, scannerWarningsDismissed: false };
+      if (sheet.scannerWarnings?.some(warning => isActionableScannerWarning(warning) && !warning.acknowledgedAt)) sheet = { ...sheet, scannerWarningsDismissed: false };
       await database.sheets.upsert({ ...sheet, crew: [], lines: persistedLines }, ownerId, threshold);
       await database.crew.replaceAssignments(sheet.id, sheet.crew, ownerId);
       // Focused sheet writes own metadata and assignments only. Log lines are

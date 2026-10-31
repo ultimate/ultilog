@@ -1,4 +1,5 @@
 import { nullableNumber } from "../log-input";
+import { isActionableScannerWarning } from "../logbook-scanner/actionable-warning";
 import { normalizeLegacySharing } from "../../domain/logbook/share-policy";
 import { calculateLogSheetMetrics } from "../../domain/logbook/sheet-metrics";
 import { defaultLogSheetShareSettings, normalizeDeviationTable, type Boat, type BoatRow, type CrewMemberRow, type LogLine, type LogLineRow, type LogSheet, type LogSheetRow, type PersistedLogbook, type ScannerWarning, type StoredLogSheet } from "../../models/logbook";
@@ -199,7 +200,7 @@ function mapStoredSheet(sheet: LogSheetRow): StoredLogSheet {
       ...(sheet.source_title ? { sourceTitle: sheet.source_title } : {}),
     } } : {}),
     ...(sheet.verification_note ? { verificationNote: sheet.verification_note } : {}),
-    ...(sheet.scanner_warnings ? { scannerWarnings: parseJson<ScannerWarning[]>(sheet.scanner_warnings) } : {}),
+    ...(sheet.scanner_warnings ? { scannerWarnings: parseJson<ScannerWarning[]>(sheet.scanner_warnings).filter(isActionableScannerWarning) } : {}),
     ...(sheet.scanner_warnings_dismissed ? { scannerWarningsDismissed: true } : {}),
     boatId: unscopedId(sheet.boat_id),
     route: parseJson<LogSheet["route"]>(sheet.route),
