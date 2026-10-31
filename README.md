@@ -163,6 +163,9 @@ The scanner imports photographed or handwritten paper logbook sheets and turns e
 
 The current scanner implementation uses the OpenAI Responses API as its cloud recognition provider. Configure it with `OPENAI_API_KEY`; optionally set `LOGBOOK_SCANNER_MODEL` to choose a different compatible model. If you add another provider, keep it behind the scanner provider interface and make the API route choose the provider explicitly rather than spreading provider-specific code through the app.
 
+Log-line positions use latitude and longitude only. Named places and waypoints belong in row remarks. Migration `055_remove_log_line_position` appends existing place names to remarks before dropping `log_lines.position_name` and removes obsolete place-name warning targets. Older JSON logbook exports containing a row `position` string remain importable: the name is moved into remarks and the obsolete field is removed.
+
+
 Tests must mock the scanner provider and must not call the real cloud LLM. Unit and route tests should replace the provider with deterministic fixtures, and end-to-end tests should intercept `/api/logbook/scanner` rather than uploading photos to the real service.
 
 Scanner provider failures are reported with distinct API error codes where possible: `provider_authentication_failed` for invalid OpenAI API keys, `provider_quota_exceeded` for exhausted credits or quota, `provider_service_unavailable` for OpenAI service outages, and `provider_unavailable` for unclassified provider failures.

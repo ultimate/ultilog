@@ -454,7 +454,6 @@ export const fr: Dictionary = {
   "details.scanner.warning.shiftedMissingMagneticCourse": "Une colonne de cap magnétique manquante a été détectée ; la variation et le cap vrai ont été réaffectés.",
   "details.scanner.warning.noImages": "Aucune image n’a été fournie pour la numérisation.",
   "details.scanner.warning.unknown": "Avertissement de numérisation inconnu.",
-  "details.scanner.field.position": "Position",
   "logbooks.continueAndUpload": "Continuer et téléverser",
   "logbooks.search": "Rechercher des journaux",
   "logbooks.searchPlaceholder": "Rechercher des journaux…",

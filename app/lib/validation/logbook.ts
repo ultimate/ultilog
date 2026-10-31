@@ -1,3 +1,5 @@
+import { appendNamedPosition } from "../../domain/log-lines/legacy-position";
+import { retirePositionWarnings } from "../logbook-scanner/retire-position-warnings";
 import type { LogSheetShareSettings, PersistedLogbook } from "../../models/logbook";
 import { StoredImageValidationError, validateStoredImage } from "./stored-image";
 import { scannerWarningCodes } from "../logbook-scanner/warning-codes";
@@ -62,9 +64,14 @@ function validateCrew(v: unknown, path: string, sheet = false) {
   assert(optional(v.imageId, string), `${path}.imageId must be a string.`);
 }
 
-const lineStringFields = ["time", "position", "weather", "weatherRemark", "temperatureUnit", "windDirection", "windUnit", "seaUnit", "tideUnit", "moon", "sailNote", "motorNote", "remarks"];
+const lineStringFields = ["time", "weather", "weatherRemark", "temperatureUnit", "windDirection", "windUnit", "seaUnit", "tideUnit", "moon", "sailNote", "motorNote", "remarks"];
 const lineNumberFields = ["latitude", "longitude", "temperature", "barometer", "windStrength", "waves", "tide", "compassCourse", "deviation", "magneticCourse", "variation", "trueCourse", "windDrift", "courseThroughWater", "currentDrift", "courseOverGround", "speedKn", "logNm", "sailMiles", "motorMiles"];
 export function validateLine(v: unknown, path = "line") {
+  if (record(v) && "position" in v) {
+    assert(string(v.position) && string(v.remarks), `${path} legacy position is malformed.`);
+    v.remarks = appendNamedPosition(v.remarks as string, v.position as string);
+    delete v.position;
+  }
   assert(record(v) && lineStringFields.every(k => string(v[k])) && lineNumberFields.every(k => v[k] === null || finite(v[k])) && optional(v.engineHours, value => numberRecord(value) && Object.values(value as Record<string, number>).every(hours => hours >= 0)), `${path} is malformed.`);
 }
 
@@ -107,6 +114,7 @@ export function validatePersistedLogbook(value: unknown): PersistedLogbook {
       && string(copyProvenance.sourceOwnerId) && string(copyProvenance.sourceOwnerName) && string(copyProvenance.sourceSheetId)
       && Number.isSafeInteger(copyProvenance.sourceRevision) && Number(copyProvenance.sourceRevision) > 0
       && isoTimestamp(copyProvenance.copiedAt) && optional(copyProvenance.sourceTitle, string);
+    if (sheet.scannerWarnings !== undefined) sheet.scannerWarnings = retirePositionWarnings(sheet.scannerWarnings);
     assert(optional(sheet.source, x => x === "manual" || x === "scanner" || x === "shared")
       && validCopyProvenance && (sheet.source === "shared" || copyProvenance === undefined)
       && optional(sheet.verificationNote, string) && optional(sheet.scannerWarnings, scannerWarnings) && optional(sheet.scannerWarningsDismissed, boolean), `sheets[${i}] optional values are malformed.`);

@@ -453,7 +453,6 @@ export const en = {
   "details.scanner.warning.shiftedMissingMagneticCourse": "Detected a missing magnetic-course column and remapped the following variation and true-course columns.",
   "details.scanner.warning.noImages": "No images were provided for scanning.",
   "details.scanner.warning.unknown": "Unknown scanner warning.",
-  "details.scanner.field.position": "Position",
   "logbooks.continueAndUpload": "Continue and upload",
   "logbooks.search": "Search logbooks",
   "logbooks.searchPlaceholder": "Search logbooks…",

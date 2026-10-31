@@ -51,7 +51,7 @@ export const logSheetPrintTemplate = {
   revision: LOG_SHEET_PRINT_TEMPLATE_REVISION,
   columns: [
     column("time", "print.column.time", ["time"], "text", "print-col-time", 4, 4),
-    column("position", "print.column.position", ["position", "latitude", "longitude"], "composite", "print-col-position", 9, 11),
+    column("position", "print.column.position", ["latitude", "longitude"], "composite", "print-col-position", 9, 11),
     column("weather", "print.column.weather", ["weather", "weatherRemark"], "composite", "print-col-weather", 6, 8),
     column("temperature", "print.column.temperature", ["temperature", "temperatureUnit"], "composite", "print-col-temp", 3.5, 3.5),
     column("barometer", "print.column.barometer", ["barometer"], "number", "print-col-baro", 3.5, 3.5),

@@ -284,7 +284,7 @@ function assertExtractedLines(scannerResult: ScannerResult, expected: ExpectedFi
 }
 
 function isTextField(field: string) {
-  return new Set(["time", "position", "weather", "weatherRemark", "windDirection", "moon", "sailNote", "motorNote", "remarks"]).has(field);
+  return new Set(["time", "weather", "weatherRemark", "windDirection", "moon", "sailNote", "motorNote", "remarks"]).has(field);
 }
 
 function isUnitField(field: string) {

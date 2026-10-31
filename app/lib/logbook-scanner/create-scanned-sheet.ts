@@ -40,7 +40,6 @@ const rolloverEndDateWarning = { code: "rolloverExceededEndDate" } as const;
 const defaultLineForm: LineForm = {
   id: "",
   time: "",
-  position: "",
   latitude: "",
   longitude: "",
   weather: "",

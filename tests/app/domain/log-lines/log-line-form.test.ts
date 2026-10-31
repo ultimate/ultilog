@@ -5,7 +5,6 @@ import type { LineForm } from "../../../../app/models/logbook";
 const baseLineForm: LineForm = {
   id: "test-line",
   time: "2026-07-03T10:15",
-  position: "Off Point",
   latitude: "47° 30.000' N",
   longitude: "122° 20.000' W",
   weather: "☀️",
@@ -45,7 +44,6 @@ describe("lineFormToLogLine", () => {
     expect(lineFormToLogLine(baseLineForm)).toEqual({
       id: "test-line",
       time: "2026-07-03T10:15",
-      position: "Off Point",
       latitude: 47.5,
       longitude: -122.33333333333333,
       weather: "☀️",

@@ -32,6 +32,57 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
       return { ...resource, database, owner, other, boat: boat! };
     }
 
+    it("migrates named positions into remarks and removes obsolete warning targets without losing line data", async () => {
+      const context = await setup();
+      try {
+        const db = context.database;
+        const lines = sampleLogSheets[0].lines.slice(0, 3).map((line, i) => ({ ...line, id: `legacy-${i}`, remarks: i === 2 ? "Existing remark\nHarbor" : "Existing remark" }));
+        await db.upsertLogSheet(sheet(lines));
+        const before = (await db.readLogbook()).sheets[0];
+        const hours = (await db.query("select * from log_line_engine_hours order by line_sort_order, engine_id")).rows;
+        await db.query("alter table log_lines add column position_name text not null default ''");
+        const p = (index: number) => db.placeholder(index);
+        await db.query(`update log_lines set position_name = ${p(1)} where id <> ${p(2)}`, ["Harbor", "legacy-1"]);
+        await db.query(`update log_sheets set scanner_warnings = ${p(1)}`, [JSON.stringify([
+          { id: "obsolete", code: "missingFields", row: 1, fields: ["position"] },
+          { id: "mixed", code: "missingFields", row: 2, fields: ["position", "logNm"], acknowledgedAt: "2026-10-31T12:00:00Z" },
+          { id: "coordinates", code: "missingFields", row: 3, fields: ["latitude"] },
+        ])]);
+        await db.query(`delete from schema_migrations where id = ${p(1)}`, ["055_remove_log_line_position"]);
+        // Fail after the backfill and DROP COLUMN to prove the entire migration rolls back.
+        const postgres = p(1) === "$1";
+        if (postgres) {
+          await db.query("create function contract_fail_position_migration() returns trigger language plpgsql as $$ begin if new.id = '055_remove_log_line_position' then raise exception 'position migration failure'; end if; return new; end $$");
+          await db.query("create trigger contract_fail_position_migration before insert on schema_migrations for each row execute function contract_fail_position_migration()");
+        } else {
+          await db.query("create trigger contract_fail_position_migration before insert on schema_migrations when new.id = '055_remove_log_line_position' begin select raise(abort, 'position migration failure'); end");
+        }
+        await expect(db.migrate()).rejects.toThrow("position migration failure");
+        expect((await db.query<{ position_name: string; remarks: string }>("select position_name, remarks from log_lines order by sort_order")).rows).toEqual([
+          { position_name: "Harbor", remarks: "Existing remark" },
+          { position_name: "", remarks: "Existing remark" },
+          { position_name: "Harbor", remarks: "Existing remark\nHarbor" },
+        ]);
+        const warningRows = (await db.query<{ scanner_warnings: string }>("select scanner_warnings from log_sheets")).rows;
+        expect(JSON.stringify(warningRows)).toContain("position");
+        await db.query(postgres ? "drop trigger contract_fail_position_migration on schema_migrations" : "drop trigger contract_fail_position_migration");
+        if (postgres) await db.query("drop function contract_fail_position_migration()");
+        await db.migrate();
+        const after = (await db.readLogbook()).sheets[0];
+        expect(after.lines.map(line => line.remarks)).toEqual(["Existing remark\nHarbor", "Existing remark", "Existing remark\nHarbor"]);
+        expect(after.lines.map(({ remarks: _remarks, ...line }) => line)).toEqual(before.lines.map(({ remarks: _remarks, ...line }) => line));
+        expect(after.lines[0]).not.toHaveProperty("position");
+        expect((await db.query("select * from log_line_engine_hours order by line_sort_order, engine_id")).rows).toEqual(hours);
+        expect(after.scannerWarnings).toEqual([
+          { id: "mixed", code: "missingFields", row: 2, fields: ["logNm"], acknowledgedAt: "2026-10-31T12:00:00Z" },
+          { id: "coordinates", code: "missingFields", row: 3, fields: ["latitude"] },
+        ]);
+        await expect(db.query("select position_name from log_lines")).rejects.toThrow();
+        await db.migrate();
+        expect((await db.readLogbook()).sheets[0].lines).toEqual(after.lines);
+      } finally { await context.cleanup(); }
+    });
+
     it("updates only sheet metadata atomically and preserves timestamps", async () => {
       const context = await setup();
       try {

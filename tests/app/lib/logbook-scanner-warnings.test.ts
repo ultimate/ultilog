@@ -3,6 +3,13 @@ import { findLocalWarnings, repairShiftedMissingMagneticCourse } from "../../../
 import type { ScannerResult } from "../../../app/models/logbook-scanner";
 
 describe("logbook scanner course diagnostics", () => {
+  it("accepts coordinates as the position without requiring a place name", () => {
+    const result: ScannerResult = { draft: { title: "Sheet", dateText: "2026-07-01", route: { from: "A", to: "B", departed: "09:00", arrived: "12:00" }, lines: [{ time: "10:00", latitude: "0", longitude: "0", courseOverGround: "0", speedKn: "0", logNm: "0" }] }, warnings: [] };
+    expect(findLocalWarnings(result)).toEqual([]);
+    result.draft.lines[0].longitude = "";
+    expect(findLocalWarnings(result)).toEqual([{ code: "missingFields", row: 1, fields: ["longitude"] }]);
+  });
+
   it("does not warn for a complete and consistent course chain crossing north", () => {
     const warnings = courseWarnings({
       compassCourse: "358°", deviation: "+4°", magneticCourse: "2°",
@@ -90,7 +97,7 @@ function scannerResult(lines: ScannerResult["draft"]["lines"]): ScannerResult {
       title: "Test",
       dateText: "2026-08-04",
       route: { from: "A", to: "B", departed: "10:00", arrived: "11:00" },
-      lines: lines.map((line) => ({ time: "10:30", position: "At sea", speedKn: "5", logNm: "10", ...line })),
+      lines: lines.map((line) => ({ time: "10:30", speedKn: "5", logNm: "10", ...line })),
     },
     warnings: [],
   };

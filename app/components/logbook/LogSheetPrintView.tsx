@@ -151,7 +151,7 @@ function renderLogCell(column: PrintLogColumn, line: LogLine | undefined, boat: 
   const value = (() => {
     switch (column.id) {
       case "time": return formatTime(line?.time);
-      case "position": return line?.position || formatLatLon(line);
+      case "position": return formatLatLon(line);
       case "weather": return joinValues(line?.weather, line?.weatherRemark);
       case "temperature": return formatNumber(line?.temperature, line?.temperatureUnit);
       case "barometer": return formatNumber(line?.barometer);

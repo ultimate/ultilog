@@ -9,7 +9,6 @@ export type LogLine = {
   /** Stable identifier retained when the line is edited or reordered. */
   id: string;
   time: string;
-  position: string;
   latitude: number | null;
   longitude: number | null;
   weather: string;

@@ -7,7 +7,7 @@ import {
 import type { LineForm } from "../../../app/models/logbook-forms";
 
 const lineFormFields = [
-  "time", "position", "latitude", "longitude", "weather", "weatherRemark",
+  "time", "latitude", "longitude", "weather", "weatherRemark",
   "temperature", "temperatureUnit", "barometer", "windDirection", "windStrength",
   "windUnit", "waves", "seaUnit", "tide", "tideUnit", "moon", "compassCourse",
   "deviation", "magneticCourse", "variation", "trueCourse", "windDrift",

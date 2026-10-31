@@ -48,6 +48,8 @@ describe("logbook scanner prompt", () => {
 
     expect(prompt).toContain("split it into latitude and longitude");
     expect(prompt).toContain("DDM is common in nautical logs");
+    expect(prompt).toContain("Put named places, waypoints, and location descriptions in remarks");
+    expect(prompt).not.toContain("Keep position in each row");
     expect(prompt).toContain("latitude=N49°27.3346'");
     expect(prompt).toContain("longitude=W2°32.0386'");
   });

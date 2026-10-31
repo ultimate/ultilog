@@ -31,7 +31,6 @@ export class ScannerProviderError extends Error {
 
 const LOG_LINE_FIELDS = [
   "time",
-  "position",
   "latitude",
   "longitude",
   "weather",
@@ -68,7 +67,6 @@ const LOG_LINE_FIELDS = [
 
 const lineFieldDescriptions = {
   time: "Log row time as visible text.",
-  position: "Named position, waypoint, or place description for map context; keep this field even when coordinates are present.",
   latitude: "Latitude as visible text in decimal degrees, DMS, or DDM (degrees and decimal minutes); preserve a visible N/S hemisphere prefix or suffix.",
   longitude: "Longitude as visible text in decimal degrees, DMS, or DDM (degrees and decimal minutes); preserve a visible E/W hemisphere prefix or suffix.",
   weather: "Weather as one canonical UI emoji: ☀️, 🌤️, ⛅, 🌥️, ☁️, 🌦️, 🌧️, ⛈️, 🌨️, 🌩️, 🌪️, 🌫️, ❄️, or ⭐.",
@@ -100,7 +98,7 @@ const lineFieldDescriptions = {
   motorMiles: "Motor distance as numeric nautical miles text.",
   motorHours: "Engine hours as numeric text.",
   motorNote: "Engine or motor-specific note.",
-  remarks: "General row remarks or events.",
+  remarks: "General row remarks, events, and named places or waypoints; preserve all visible text together.",
 } satisfies Record<(typeof LOG_LINE_FIELDS)[number], string>;
 
 const lineProperties = Object.fromEntries(
@@ -200,7 +198,7 @@ const extractionInstructions = `Extract a logbook draft from these image(s). The
 - Warning row numbers are one-based indexes into draft.lines, not printed grid row numbers. Never warn about unused printed rows or reference rows outside draft.lines.
 - Use the renamed log line fields waves, compassCourse, magneticCourse, windDrift, weatherRemark, and temperature.
 - Do not output deprecated course or wind fields; split wind into windDirection, windStrength, and windUnit.
-- Keep position in each row for named positions or waypoint text, even when latitude and longitude are present.
+- Row position is always latitude and longitude. Put named places, waypoints, and location descriptions in remarks, preserving any other row remarks. Never invent coordinates from a name and never warn merely because a place name is absent.
 - When one Position/Standort cell contains a coordinate pair, split it into latitude and longitude. DDM is common in nautical logs; for example, N49°27.3346' W2°32.0386' maps to latitude=N49°27.3346' and longitude=W2°32.0386'.
 - Expected row data types are strings in the JSON schema. Transcribe numeric values as strings for numeric fields such as temperature, barometer, waves, compassCourse, magneticCourse, windDrift, speedKn, and logNm.
 - Numeric output grammar: an optional + or - sign followed by digits and an optional decimal part using a dot or comma, for example "270", "+2", "-1.5", "5,2", or "0". Preserve the visible numeric value; omit units, degree symbols, labels, uncertainty marks, and commentary. If the numeric value itself is unreadable or a range cannot be resolved, return "" and add a warning for that row and field. Empty cells remain "", never "0". Do not calculate missing values.
@@ -448,7 +446,7 @@ export function findLocalWarnings(result: ScannerResult): ScannerWarningDiagnost
   if (result.draft.lines.length === 0) add({ code: "noRows" });
 
   result.draft.lines.forEach((line, index) => {
-    const fields = ["time", "position", "courseOverGround", "speedKn", "logNm"].filter((field) => !line[field as keyof typeof line]) as (keyof typeof line)[];
+    const fields = ["time", "latitude", "longitude", "courseOverGround", "speedKn", "logNm"].filter((field) => !line[field as keyof typeof line]?.trim()) as (keyof typeof line)[];
     if (fields.length > 0) add({ code: "missingFields", row: index + 1, fields });
     for (const warning of findCourseWarnings(line, index + 1)) add(warning);
   });
