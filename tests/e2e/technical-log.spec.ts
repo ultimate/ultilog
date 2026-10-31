@@ -265,8 +265,9 @@ test("persists boat engine arrow ordering and multiline dimensions after reload"
     await form.getByRole("button", { name: "Save boat", exact: true }).click();
     const saved = await response;
     expect(saved.ok(), await saved.text()).toBeTruthy();
-    await expect(form).toBeHidden();
-    await page.goto(`/boats/${boatId}`);
+    // The boat detail route restores the editor after saving. Reload to verify
+    // persisted values instead of depending on a transient form closing.
+    await page.reload();
     await expect(rows).toHaveCount(2);
   };
   await save();
@@ -274,12 +275,12 @@ test("persists boat engine arrow ordering and multiline dimensions after reload"
   const ids = before.boats.find((boat: { id: string }) => boat.id === boatId).engines.map((engine: { id: string }) => engine.id);
   await rows.nth(1).getByRole("button", { name: "↑", exact: true }).click();
   const dimensions = "Length: 10m\nBeam: 3m\nDraft: 1.5m";
-  await form.getByLabel("Dimensions & data", { exact: true }).fill(dimensions);
-  await form.getByLabel("Manufacturer & model", { exact: true }).fill("Yard Model 10");
+  await form.getByRole("textbox", { name: "Dimensions & data", exact: true }).fill(dimensions);
+  await form.getByRole("textbox", { name: "Manufacturer & model", exact: true }).fill("Yard Model 10");
   await save();
   await page.reload();
-  await expect(form.getByLabel("Dimensions & data", { exact: true })).toHaveValue(dimensions);
-  await expect(form.getByLabel("Manufacturer & model", { exact: true })).toHaveValue("Yard Model 10");
+  await expect(form.getByRole("textbox", { name: "Dimensions & data", exact: true })).toHaveValue(dimensions);
+  await expect(form.getByRole("textbox", { name: "Manufacturer & model", exact: true })).toHaveValue("Yard Model 10");
   await expect(rows.nth(0).getByRole("textbox", { name: "Engine name", exact: true })).toHaveValue("Second engine");
   await expect(rows.nth(1).getByRole("textbox", { name: "Engine name", exact: true })).toHaveValue(firstName);
   const after = await (await page.request.get("/api/logbook")).json();

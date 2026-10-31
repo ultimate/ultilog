@@ -12,6 +12,25 @@ Unless stated otherwise or asked to work on an existing branch, agents must
 name newly created branches with a prefix identifying the agent and a "/" (e.g.
 "codex/..." for Codex).
 
+## Validation
+
+Before creating or updating a PR with application or E2E test changes, run
+`npm run test:e2e:ci` in addition to the relevant unit tests, typecheck, and lint.
+Run a targeted E2E test while fixing a failure, then run the full E2E suite.
+Documentation-only changes do not require E2E tests.
+
+Check browser availability early. Prefer Playwright's matching Chromium installed
+with `npx playwright install --with-deps chromium` during environment setup. If
+downloads are unavailable and a system Chromium is installed, set
+`PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium` for the test command.
+The environment must allow the local test server and browser to run. When a
+sandbox blocks these, use the supported permission mechanism and retry.
+
+If E2E execution remains blocked, report the exact blocker and command in the PR
+and final response; do not describe unexecuted tests as passing. CI E2E checks
+must pass before merging. Agent instruction changes are not public changelog
+entries.
+
 ## Pull requests
 
 Agents must include issue links in the pull request description whenever the
