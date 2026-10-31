@@ -50,6 +50,13 @@ describe("BoatManagerPage archiving", () => {
     expect(markup).toContain('placeholder="To be completed" value=""');
   });
 
+  it("renders clearer master-data labels and a three-line dimensions textarea", () => {
+    const markup = renderManager({ boats: [boat], crewMembers: [], sheets: [] }, boat);
+    expect(markup).toContain("Manufacturer &amp; model");
+    expect(markup).toContain("Dimensions &amp; data");
+    expect(markup).toContain('<textarea rows="3">');
+  });
+
   it("stores an ISO code while showing the selected country flag", () => {
     const markup = renderManager({ boats: [boat], crewMembers: [], sheets: [] }, boat, "CH");
 

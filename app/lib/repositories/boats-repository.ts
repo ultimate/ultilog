@@ -72,9 +72,15 @@ export class BoatsRepository {
 
   private async syncEngines(boatId: string, configuredEngines?: BoatEngine[]) {
     const engines = configuredEngines?.length ? configuredEngines : [defaultMainEngine()];
-    const stored = await this.db.query<{ id: string }>(`select id from engines where boat_id = ${this.db.placeholder(1)}`, [boatId]);
+    const stored = await this.db.query<{ id: string; sort_order: number }>(`select id, sort_order from engines where boat_id = ${this.db.placeholder(1)} order by sort_order`, [boatId]);
     const storedIds = new Set(stored.rows.map(({ id }) => id));
     const desiredIds = new Set<string>();
+    // Vacate all final positions before assigning them. Updating a swap directly
+    // would violate the immediate unique (boat_id, sort_order) constraint.
+    const temporaryStart = Math.max(engines.length + stored.rows.length, ...stored.rows.map((row) => row.sort_order)) + 1;
+    for (const [index, engine] of stored.rows.entries()) {
+      await this.db.query(`update engines set sort_order = ${this.db.placeholder(1)} where id = ${this.db.placeholder(2)} and boat_id = ${this.db.placeholder(3)}`, [temporaryStart + index, engine.id, boatId]);
+    }
 
     for (const [sortOrder, engine] of engines.entries()) {
       const id = `${boatId}:${engine.id}`;
@@ -88,9 +94,10 @@ export class BoatsRepository {
       }
     }
 
+    let retainedSortOrder = engines.length;
     for (const id of [...storedIds].filter((candidate) => !desiredIds.has(candidate))) {
       const referenced = await this.db.query<{ engine_id: string }>(`select engine_id from log_line_engine_hours where engine_id = ${this.db.placeholder(1)} limit 1`, [id]);
-      if (referenced.rows.length) await this.db.query(`update engines set archived = 1 where id = ${this.db.placeholder(1)}`, [id]);
+      if (referenced.rows.length) await this.db.query(`update engines set archived = 1, sort_order = ${this.db.placeholder(1)} where id = ${this.db.placeholder(2)} and boat_id = ${this.db.placeholder(3)}`, [retainedSortOrder++, id, boatId]);
       else await this.db.query(`delete from engines where id = ${this.db.placeholder(1)}`, [id]);
     }
   }
