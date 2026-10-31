@@ -32,7 +32,12 @@ export function normalizeScannedNumbers(result: ScannerResult): ScannerResult {
       const value = source[field];
       if (value === undefined) continue;
       try {
-        const text = value.trim().replace(/\u2212/g, "-");
+        let text = value.trim().replace(/\u2212/g, "-");
+        // Log counters may use Swiss apostrophes or spaces as thousands separators.
+        // Require full groups of three; never join unrelated numbers or a range.
+        if (["logNm", "sailMiles", "motorMiles"].includes(field)) {
+          text = text.replace(/^([+-]?\d{1,3}(?:['’\s]\d{3})+(?:[.,]\d+)?)(?=\s*(?:[a-zA-Z]|$))/, number => number.replace(/['’\s]/g, ""));
+        }
         // The entire cell must be a number followed by an optional known unit.
         const match = /^([+-]?(?:\d+(?:[.,]\d+)?|[.,]\d+)(?::[0-5]\d)?)\s*(.*?)$/.exec(text);
         let number = text;
@@ -40,7 +45,7 @@ export function normalizeScannedNumbers(result: ScannerResult): ScannerResult {
         const unitField = unitFields[field];
         if (match?.[2]) {
           number = match[1];
-          const suffix = unitKey(match[2]);
+          const suffix = unitKey(match[2]).replace(/\.$/, "");
           if (unitField) {
             embeddedUnit = units[unitField][suffix];
             if (!embeddedUnit) throw new Error("Unknown unit");
@@ -49,7 +54,7 @@ export function normalizeScannedNumbers(result: ScannerResult): ScannerResult {
           } else {
             const valid = courseFields.has(field) ? /^(?:°|deg|degrees?)$/.test(suffix)
               : field === "barometer" ? /^(?:hpa|mbar|mb)$/.test(suffix)
-              : field === "speedKn" ? /^(?:kn|kt|kts|knots?)$/.test(suffix)
+              : field === "speedKn" ? /^(?:kn|kt|kts|knots?|knoten|nds?)$/.test(suffix)
               : field === "motorHours" ? /^(?:h|hr|hrs|hours?)$/.test(suffix)
               : /^(?:nm|nmi|sm|nauticalmiles?)$/.test(suffix);
             if (!valid) throw new Error("Unknown unit");
@@ -63,7 +68,7 @@ export function normalizeScannedNumbers(result: ScannerResult): ScannerResult {
         line[field] = "";
         warnings.push({
           code: "scannerGenerated", row: index + 1, fields: [field, ...(unitFields[field] ? [unitFields[field]!] : [])],
-          fallbackMessage: `Row ${index + 1}, ${field}: the scanned value ${JSON.stringify(value)} could not be read unambiguously and was left empty. Please check the source image.`,
+          fallbackMessage: `${field}: the scanned value ${JSON.stringify(value)} could not be read unambiguously and was left empty. Please check the source image.`,
         });
       }
     }

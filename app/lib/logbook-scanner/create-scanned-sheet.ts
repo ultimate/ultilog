@@ -1,3 +1,5 @@
+import { sortLogLinesByTime } from "../../domain/log-lines/log-line-order";
+import { updateScannerWarnings } from "./update-warnings";
 import { normalizeScannerRows } from "./normalize-result";
 import { lineFormToLogLine } from "../../domain/log-lines/log-line-form";
 import type {
@@ -102,7 +104,8 @@ export function createScannedSheet({
   const normalizedLines = scannedLinesToLogLines(draft.lines, userPreferences, startDate, endDate);
   const warningDiagnostics = [...scannerResult.warnings];
   if (normalizedLines.rolloverExceededEndDate && !warningDiagnostics.some(warning => warning.code === rolloverEndDateWarning.code)) warningDiagnostics.push(rolloverEndDateWarning);
-  const scannerWarnings = warningDiagnostics.map((warning) => ({ id: createId(), ...warning }));
+  const lines = sortLogLinesByTime(normalizedLines.lines);
+  const scannerWarnings = updateScannerWarnings(warningDiagnostics.map((warning) => ({ id: createId(), ...warning })), normalizedLines.lines, lines);
 
   return {
     id: createId(),
@@ -117,7 +120,7 @@ export function createScannedSheet({
     remarks: "",
     technicalChecks: mergeTechnicalChecks(technicalLogTemplate, draft.technicalChecks ?? []),
     engineHourCounters: scannedEngineHourCounters(draft.engineHourCounters ?? [], engineIds),
-    lines: normalizedLines.lines,
+    lines,
   };
 }
 
@@ -173,7 +176,9 @@ function scannedLinesToLogLines(
     }
 
     if (timeOnly && activeDate) {
-      if (previousMinutes !== undefined && timeOnly.minutes < previousMinutes) {
+      // Small backward jumps can be OCR row-order errors. Only infer midnight
+      // for a large clock reset; explicit dates always take precedence above.
+      if (previousMinutes !== undefined && previousMinutes - timeOnly.minutes > 12 * 60) {
         const nextDate = addDays(activeDate, 1);
         if (endDate && nextDate > endDate) {
           activeDate = endDate;

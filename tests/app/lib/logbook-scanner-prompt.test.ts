@@ -96,6 +96,15 @@ describe("logbook scanner prompt", () => {
     expect(prompt).toContain("Do not convert readings to another unit");
   });
 
+  it("keeps speed and log columns distinct from wind and per-row distances", () => {
+    const prompt = buildScannerUserPrompt();
+    expect(prompt).toContain("KüG | F kn | Log sm | SM Seg. | SM Mot.");
+    expect(prompt).toContain("must not replace vessel speed");
+    expect(prompt).toContain('output logNm="25397"');
+    expect(prompt).toContain("never infer a prefix");
+    expect(prompt).toContain("Keep rows in their physical document order");
+  });
+
   it("describes conditional recognition and diagnostics for versioned UltiLog templates", () => {
     const instructions = formatTemplateRecognitionInstructions();
 
