@@ -83,6 +83,61 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
       } finally { await context.cleanup(); }
     });
 
+    it("reorders engines without changing identities, metadata or logged hours", async () => {
+      const context = await setup();
+      try {
+        const db = context.database;
+        const engines = ["a", "b", "c"].map(id => ({ id, name: `Engine ${id}`, label: id, role: "propulsion" as const, manufacturer: "Yard", model: id, serialNumber: `serial-${id}` }));
+        let boat = (await db.upsertBoat({ ...context.boat, engines, dimensions: "Length: 10m\nBeam: 3m" }))!;
+        await db.upsertLogSheet(sheet([{ ...sampleLogSheets[0].lines[0], engineHours: { a: 1, b: 2 } }]));
+        const beforeSheet = (await db.readLogbook()).sheets[0];
+        for (const order of [[1, 0, 2], [2, 1, 0], [2, 1, 0]]) {
+          boat = (await db.upsertBoat({ ...boat, engines: order.map(index => engines[index]) }))!;
+          expect(boat.engines).toEqual(order.map(index => expect.objectContaining(engines[index])));
+          expect(boat.dimensions).toBe("Length: 10m\nBeam: 3m");
+          expect((await db.readLogbook()).sheets[0]).toEqual(beforeSheet);
+        }
+        const added = { ...engines[0], id: "d", name: "New engine" };
+        boat = (await db.upsertBoat({ ...boat, engines: [added, engines[1]] }))!;
+        expect(boat.engines?.map(engine => engine.id)).toEqual(["d", "b", "a"]);
+        expect(boat.engines?.[2]).toMatchObject({ ...engines[0], archived: true });
+        expect((await db.readLogbook()).sheets[0]).toEqual(beforeSheet);
+        // Re-saving includes the automatically retained engine and must remain valid.
+        await expect(db.upsertBoat(boat)).resolves.toBeDefined();
+      } finally { await context.cleanup(); }
+    });
+
+    it("places multiple retained engines behind newly configured engines without position collisions", async () => {
+      const context = await setup();
+      try {
+        const db = context.database;
+        const engines = ["a", "b", "c"].map(id => ({ id, name: id, label: id, role: "propulsion" as const }));
+        const boat = (await db.upsertBoat({ ...context.boat, engines }))!;
+        await db.upsertLogSheet(sheet([{ ...sampleLogSheets[0].lines[0], engineHours: { a: 1, b: 2, c: 3 } }]));
+        const replacements = engines.map(engine => ({ ...engine, id: `new-${engine.id}` }));
+        const updated = (await db.upsertBoat({ ...boat, engines: replacements }))!;
+        expect(updated.engines?.map(engine => engine.id)).toEqual(["new-a", "new-b", "new-c", "a", "b", "c"]);
+        expect(updated.engines?.slice(3).every(engine => engine.archived)).toBe(true);
+      } finally { await context.cleanup(); }
+    });
+
+    it("rolls back boat metadata, revision and temporary engine positions on sync failure", async () => {
+      const context = await setup();
+      try {
+        const db = context.database;
+        const engines = ["a", "b"].map(id => ({ id, name: id, label: id, role: "propulsion" as const }));
+        const boat = (await db.upsertBoat({ ...context.boat, engines }))!;
+        const before = await db.readLogbook();
+        // The role constraint fails after positions have been vacated and the
+        // first reordered engine has been written, exercising transaction rollback.
+        await expect(db.upsertBoat({ ...boat, name: "Must roll back", engines: [engines[1], { ...engines[0], role: "invalid" as typeof engines[0]["role"] }] })).rejects.toThrow();
+        expect(await db.readLogbook()).toEqual(before);
+        const rows = await db.query<{ sort_order: number }>(`select sort_order from engines where boat_id = ${db.placeholder(1)} order by sort_order`, [`${context.owner}:boat`]);
+        expect(rows.rows.map(row => row.sort_order)).toEqual([0, 1]);
+        await expect(db.upsertBoat({ ...boat, engines: [...engines].reverse() })).resolves.toBeDefined();
+      } finally { await context.cleanup(); }
+    });
+
     it("updates only sheet metadata atomically and preserves timestamps", async () => {
       const context = await setup();
       try {

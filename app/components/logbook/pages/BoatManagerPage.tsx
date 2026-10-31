@@ -189,7 +189,8 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
             </label>
             <label>
               {t("boats.dimensions")}
-              <input
+              <textarea
+                rows={3}
                 value={boatForm.dimensions}
                 onChange={(e) =>
                   setBoatForm({ ...boatForm, dimensions: e.target.value })

@@ -80,6 +80,16 @@
     }
   },
   {
+    "id": "improve-boat-details-and-engine-ordering",
+    "category": "improvement",
+    "title": {
+      "en": "Save engine order reliably and add clearer boat fields with multiline dimensions and data",
+      "de": "Motorreihenfolge zuverlässig speichern und Bootsfelder mit mehrzeiligen Abmessungen und Daten verbessern",
+      "fr": "Enregistrer fiablement l’ordre des moteurs et clarifier les champs du bateau avec des dimensions et données multilignes",
+      "it": "Salva correttamente l’ordine dei motori e migliora i campi della barca con dimensioni e dati su più righe"
+    }
+  },
+  {
     "id": "improve-log-sheet-editing-and-navigation",
     "category": "improvement",
     "title": {
