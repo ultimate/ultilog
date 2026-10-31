@@ -250,6 +250,43 @@ test("chooses sheet, log-line and crew datetimes while preserving format and tim
   await expect(page.getByLabel("Choose date and time: Crew 1 To datetime", { exact: true })).toBeDisabled();
 });
 
+test("persists boat engine arrow ordering and multiline dimensions after reload", async ({ page }) => {
+  await loginWithSeededDemoData(page);
+  const boatId = sampleBoats[0].id;
+  await page.goto(`/boats/${boatId}`);
+  const form = page.locator("form.inline-edit-grid");
+  const rows = form.locator(".engine-manager-row");
+  await expect(rows).toHaveCount(1);
+  const firstName = await rows.first().getByRole("textbox", { name: "Engine name", exact: true }).inputValue();
+  await form.getByRole("button", { name: "Add engine", exact: true }).click();
+  await rows.nth(1).getByRole("textbox", { name: "Engine name", exact: true }).fill("Second engine");
+  const save = async () => {
+    const response = page.waitForResponse(response => response.url().endsWith(`/boats/${boatId}`) && response.request().method() === "PUT");
+    await form.getByRole("button", { name: "Save boat", exact: true }).click();
+    const saved = await response;
+    expect(saved.ok(), await saved.text()).toBeTruthy();
+    // The boat detail route restores the editor after saving. Reload to verify
+    // persisted values instead of depending on a transient form closing.
+    await page.reload();
+    await expect(rows).toHaveCount(2);
+  };
+  await save();
+  const before = await (await page.request.get("/api/logbook")).json();
+  const ids = before.boats.find((boat: { id: string }) => boat.id === boatId).engines.map((engine: { id: string }) => engine.id);
+  await rows.nth(1).getByRole("button", { name: "↑", exact: true }).click();
+  const dimensions = "Length: 10m\nBeam: 3m\nDraft: 1.5m";
+  await form.getByRole("textbox", { name: "Dimensions & data", exact: true }).fill(dimensions);
+  await form.getByRole("textbox", { name: "Manufacturer & model", exact: true }).fill("Yard Model 10");
+  await save();
+  await page.reload();
+  await expect(form.getByRole("textbox", { name: "Dimensions & data", exact: true })).toHaveValue(dimensions);
+  await expect(form.getByRole("textbox", { name: "Manufacturer & model", exact: true })).toHaveValue("Yard Model 10");
+  await expect(rows.nth(0).getByRole("textbox", { name: "Engine name", exact: true })).toHaveValue("Second engine");
+  await expect(rows.nth(1).getByRole("textbox", { name: "Engine name", exact: true })).toHaveValue(firstName);
+  const after = await (await page.request.get("/api/logbook")).json();
+  expect(after.boats.find((boat: { id: string }) => boat.id === boatId).engines.map((engine: { id: string }) => engine.id)).toEqual([...ids].reverse());
+});
+
 async function loginWithSeededDemoData(page: Page, crewTimezone?: string) {
   await page.goto("/login");
   const demoLogin = page.getByRole("button", { name: "Try the demo" });
