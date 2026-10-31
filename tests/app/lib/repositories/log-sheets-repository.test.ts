@@ -107,6 +107,13 @@ describe("LogSheetsRepository", () => {
     expect(LogSheetsRepository.toLogbook([], [logSheetRow({ source: "shared", source_owner_id: "source-owner", source_owner_name: "Source owner", source_sheet_id: "source-sheet", source_revision: 7, copied_at: copyProvenance.copiedAt, source_title: "Original passage" })], [], []).sheets[0]).toMatchObject({ source: "shared", copyProvenance });
   });
 
+  it("ignores stored field diagnostics without targets while retaining useful warnings", () => {
+    const retained = [{ id: "valid", code: "missingFields", row: 2, fields: ["latitude"] }, { id: "sheet", code: "missingSheetDate" }, { id: "text", code: "scannerGenerated", fallbackMessage: "Check handwriting." }];
+    const warnings = [{ id: "empty", code: "missingFields" }, { id: "no-fields", code: "incompleteCourseChain", row: 2, fields: [] }, ...retained];
+    const mapped = LogSheetsRepository.toLogbook([], [logSheetRow({ scanner_warnings: JSON.stringify(warnings) })], [], []);
+    expect(mapped.sheets[0].scannerWarnings).toEqual(retained);
+  });
+
   it("maps the single structured scanner warning format without compatibility conversion", () => {
     const warnings = [{ id: "warning-1", code: "scannerGenerated" as const, fallbackMessage: "Missing signature" }];
     const mapped = LogSheetsRepository.toLogbook([], [logSheetRow({ scanner_warnings: JSON.stringify(warnings) })], [], []);

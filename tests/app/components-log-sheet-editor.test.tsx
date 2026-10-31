@@ -117,6 +117,18 @@ describe("log sheet actions and warning review", () => {
     expect(root.root.findAllByType("input").find(input => input.props["aria-label"] === "New technical log entry")!.props.value).toBe("Check coolant");
   });
 
+  it("excludes incomplete stored warnings from the list, count, and dismissal requirement", async () => {
+    const input = props();
+    const emptyWarnings = [{ id: "no-row", code: "missingFields", fields: ["latitude"] }, { id: "no-fields", code: "incompleteCourseChain", row: 2, fields: [] }];
+    await act(async () => { root = create(<LogbookDetailsPage {...input} activeSheet={{ ...input.activeSheet, scannerWarnings: [...emptyWarnings, ...input.activeSheet.scannerWarnings] }} />); });
+    expect(root.root.findAllByProps({ id: "scanner-warning-notice-no-row" })).toHaveLength(0);
+    expect(root.root.findAllByProps({ id: "scanner-warning-notice-no-fields" })).toHaveLength(0);
+    expect(root.root.findByProps({ className: "scanner-warning-progress" }).children.join("")).toBe("1 active of 1 total warnings");
+    await act(async () => root.update(<LogbookDetailsPage {...input} activeSheet={{ ...input.activeSheet, scannerWarnings: emptyWarnings }} />));
+    expect(root.root.findByProps({ className: "scanner-warning-progress" }).children.join("")).toBe("0 active of 0 total warnings");
+    expect(root.root.findAllByType("button").some(button => button.children.includes("Do not show again"))).toBe(true);
+  });
+
   it("lists warnings with missing rows and hidden fields and only permits dismissal when resolved", async () => {
     const input = props();
     await act(async () => { root = create(<LogbookDetailsPage {...input} />); });

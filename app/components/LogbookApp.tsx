@@ -1,6 +1,7 @@
 "use client";
 
 import { mergeScannerWarningState } from "./logbook/scanner-warning-state";
+import { isActionableScannerWarning } from "../lib/logbook-scanner/actionable-warning";
 import { updateScannerWarnings } from "../lib/logbook-scanner/update-warnings";
 import { PreferenceDateTimeInput } from "./logbook/PreferenceDateTimeInput";
 import { formatEngineHours } from "../lib/log-input";
@@ -1261,7 +1262,7 @@ export function LogbookApp({
 
   async function updateScannerWarningDismissal(dismissed: boolean) {
     const sheet = logbookRef.current.sheets.find(sheet => sheet.id === activeSheet.id);
-    if (!sheet || (dismissed && sheet.scannerWarnings?.some(warning => !warning.acknowledgedAt))) return false;
+    if (!sheet || (dismissed && sheet.scannerWarnings?.some(warning => isActionableScannerWarning(warning) && !warning.acknowledgedAt))) return false;
     const nextSheet = { ...sheet, scannerWarningsDismissed: dismissed };
     return saveLogbookNow({ ...logbookRef.current, sheets: logbookRef.current.sheets.map(candidate => candidate.id === sheet.id ? nextSheet : candidate) }, { kind: "sheet", entity: nextSheet });
   }

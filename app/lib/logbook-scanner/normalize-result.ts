@@ -1,4 +1,5 @@
 import type { ScannerResult } from "../../models/logbook-scanner";
+import { isActionableScannerWarning } from "./actionable-warning";
 
 const unitFields = new Set(["temperatureUnit", "windUnit", "seaUnit", "tideUnit"]);
 
@@ -13,6 +14,7 @@ export function normalizeScannerRows(result: ScannerResult): ScannerResult {
   return {
     draft: { ...result.draft, lines },
     warnings: result.warnings.flatMap(warning => {
+      if (!isActionableScannerWarning(warning)) return [];
       if (warning.row === undefined) return [warning];
       const row = rowNumbers.get(warning.row);
       return row ? [{ ...warning, row }] : [];
