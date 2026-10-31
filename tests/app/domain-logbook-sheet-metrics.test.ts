@@ -5,7 +5,7 @@ import type { LogLine } from "../../app/models/logbook";
 const baseLine: LogLine = {
   id: "base-line",
   time: "00:00",
-  position: "",
+
   latitude: 0,
   longitude: 0,
   weather: "",

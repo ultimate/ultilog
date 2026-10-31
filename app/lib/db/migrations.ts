@@ -1,4 +1,6 @@
 import type { QueryableDatabase } from "./logbook-database";
+import { appendNamedPosition } from "../../domain/log-lines/legacy-position";
+import { retirePositionWarnings } from "../logbook-scanner/retire-position-warnings";
 import { normalizeIsoDate } from "../iso-date";
 import { countryCodeForFlagValue } from "../flags";
 import { randomUUID } from "node:crypto";
@@ -40,6 +42,25 @@ export async function runMigrations(db: QueryableDatabase) {
 }
 
 async function applyMigration(db: QueryableDatabase, id: string, sql: string) {
+  if (id === "055_remove_log_line_position") {
+    const rows = await db.query<{ sheet_id: string; id: string; remarks: string; position_name: string }>("select sheet_id, id, remarks, position_name from log_lines");
+    for (const row of rows.rows) {
+      const remarks = appendNamedPosition(row.remarks ?? "", row.position_name ?? "");
+      if (remarks !== row.remarks) await db.query(`update log_lines set remarks = ${db.placeholder(1)} where sheet_id = ${db.placeholder(2)} and id = ${db.placeholder(3)}`, [remarks, row.sheet_id, row.id]);
+    }
+    const sheets = await db.query<ScannerWarningsRow>("select id, scanner_warnings from log_sheets where scanner_warnings is not null");
+    for (const sheet of sheets.rows) {
+      const original = typeof sheet.scanner_warnings === "string" ? JSON.parse(sheet.scanner_warnings) : sheet.scanner_warnings;
+      const warnings = (retirePositionWarnings(original) as unknown[]).flatMap(value => {
+        const warning = normalizeScannerWarning(value);
+        if (!warning || (warning.code === "missingFields" && !warning.fields?.length)) return [];
+        return [warning];
+      });
+      await db.query(`update log_sheets set scanner_warnings = ${db.placeholder(1)} where id = ${db.placeholder(2)}`, [JSON.stringify(warnings), sheet.id]);
+    }
+    await db.query(sql);
+    return;
+  }
   if (id === "054_log_sheet_editor") {
     await makeLogLineNumbersNullable(db);
     await db.query(sql);

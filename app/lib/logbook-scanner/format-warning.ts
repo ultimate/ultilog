@@ -3,7 +3,7 @@ import type { ScannerWarning } from "../../models/logbook";
 import type { LineFormField } from "../../models/logbook-forms";
 
 const fieldKeys: Partial<Record<LineFormField, TranslationKey>> = {
-  time: "details.time", position: "details.scanner.field.position", latitude: "details.lat", longitude: "details.lon",
+  time: "details.time", latitude: "details.lat", longitude: "details.lon",
   compassCourse: "details.course.compass", deviation: "details.course.deviation", magneticCourse: "details.course.magnetic",
   variation: "details.course.variation", trueCourse: "details.course.true", windDrift: "details.course.windDrift",
   courseThroughWater: "details.course.throughWater", currentDrift: "details.course.currentDrift", courseOverGround: "details.course.overGround",

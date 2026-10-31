@@ -30,7 +30,7 @@ These annotations distinguish source transcription from later application edits:
 
 - All photos lack temperature and tide columns. Their filled-in temperatures and
   default tide zeros must not become OCR readings. Blank course corrections,
-  absent moon/weather-note/position-name cells, and absent per-row engine hours
+  absent moon/weather-note cells, and absent per-row engine hours
   likewise remain empty. Application unit defaults are tested separately.
 - Pressure is written only on selected rows. The annotations remove values
   carried forward into blank cells. Empty sail/motor-distance cells and speed

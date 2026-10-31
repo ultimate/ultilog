@@ -227,7 +227,6 @@ create table if not exists log_lines (
   sheet_id text not null references log_sheets(id) on delete cascade,
   sort_order integer not null,
   time text not null,
-  position_name text not null,
   latitude real,
   longitude real,
   log_nm real,

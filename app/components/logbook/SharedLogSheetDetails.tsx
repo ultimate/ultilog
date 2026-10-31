@@ -36,7 +36,7 @@ export function SharedLogSheetDetails({ sheet, engineLabels = {}, initialCoordin
           {(["speed", "log", "sail", "motor", "remarksEvent"] as const).map(key => <th scope="col" key={key}>{t(`details.${key}`)}</th>)}
         </tr></thead>
       <tbody>{sheet.lines.map((line, index) => <tr key={line.id}>
-        <td>{index + 1}</td><td>{formatTime(line.time)}</td><td>{coordinateToInput(line.latitude, "lat", coordinateFormat, locale)}{line.position ? <div className="shared-log-text">{line.position}</div> : null}</td><td>{coordinateToInput(line.longitude, "lon", coordinateFormat, locale)}</td>
+        <td>{index + 1}</td><td>{formatTime(line.time)}</td><td>{coordinateToInput(line.latitude, "lat", coordinateFormat, locale)}</td><td>{coordinateToInput(line.longitude, "lon", coordinateFormat, locale)}</td>
         <td>{line.weather}</td><td className="shared-log-text">{line.weatherRemark}</td><td>{line.temperature == null ? "" : `${line.temperature} ${line.temperatureUnit}`}</td><td>{line.barometer}</td><td>{translatedWindDirection(line.windDirection, t)} {line.windStrength == null ? "" : `${line.windStrength} ${line.windUnit}`}</td><td>{line.waves == null ? "" : `${line.waves} ${line.seaUnit}`}</td><td>{line.tide == null ? "" : `${line.tide} ${line.tideUnit}`}</td><td>{line.moon}</td>
         {columns.map(([field]) => <td key={field} className={field !== "compassCourse" && field !== "courseOverGround" ? "optional-course-cell" : undefined}>{line[field]}</td>)}
         <td>{line.speedKn}</td><td>{line.logNm}</td><td><span className="log-line-distance-summary">{line.sailMiles == null ? "" : `${line.sailMiles} nm`}</span><div className="shared-log-text">{line.sailNote}</div></td>

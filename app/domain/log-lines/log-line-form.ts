@@ -42,7 +42,6 @@ export function lineFormToLogLine(lineForm: LineForm, options: { scannerDraft?: 
   return {
     id: lineForm.id || createLogLineId(),
     time: lineForm.time,
-    position: lineForm.position,
     latitude: coordinate(lineForm.latitude, "lat"),
     longitude: coordinate(lineForm.longitude, "lon"),
     weather: lineForm.weather,

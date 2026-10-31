@@ -12,7 +12,6 @@ export type ScannerFieldAliases = Readonly<Record<Locale, readonly string[]>>;
  */
 export const scannerFieldAliases = {
   time: aliases(["Time", "Date/time", "UTC", "LT"], ["Zeit", "Datum/Zeit", "Bordzeit", "BZ"], ["Heure", "Date/heure", "TU", "UTC"], ["Ora", "Data/ora", "UTC", "Ora bordo"]),
-  position: aliases(["Position", "Pos.", "Waypoint", "Place"], ["Position", "Pos.", "Wegpunkt", "Ort"], ["Position", "Pos.", "Point de route", "Lieu"], ["Posizione", "Pos.", "Punto nave", "Luogo"]),
   latitude: aliases(["Latitude", "Lat.", "Lat"], ["Breite", "Breitengrad", "Lat.", "Lat"], ["Latitude", "Lat.", "Lat"], ["Latitudine", "Lat.", "Lat"]),
   longitude: aliases(["Longitude", "Lon.", "Long."], ["Länge", "Längengrad", "Lon.", "Long."], ["Longitude", "Lon.", "Long."], ["Longitudine", "Lon.", "Long."]),
   weather: aliases(["Weather", "Wx", "Conditions"], ["Wetter", "Wtr.", "Wetterlage"], ["Météo", "Temps", "Conditions"], ["Meteo", "Tempo", "Condizioni"]),

@@ -5,7 +5,7 @@ export type FixtureLine = Record<string, string | number | null | undefined>;
 
 // Explicit allowlist: persistence IDs, sharing, warning history and audit data never become OCR expectations.
 const lineColumns = {
-  time: "time", position_name: "position", latitude: "latitude", longitude: "longitude",
+  time: "time", latitude: "latitude", longitude: "longitude",
   weather: "weather", weather_remark: "weatherRemark", temperature: "temperature", temperature_unit: "temperatureUnit",
   barometer: "barometer", wind_direction: "windDirection", wind_strength: "windStrength", wind_unit: "windUnit",
   waves: "waves", tide: "tide", moon: "moon", compass_course: "compassCourse", deviation: "deviation",
@@ -13,7 +13,7 @@ const lineColumns = {
   course_through_water: "courseThroughWater", current_drift: "currentDrift", course_over_ground: "courseOverGround",
   speed_kn: "speedKn", log_nm: "logNm", sail_miles: "sailMiles", motor_miles: "motorMiles",
 } as const;
-const textFields = new Set(["time", "position", "weather", "weatherRemark", "temperatureUnit", "windDirection", "windUnit", "moon"]);
+const textFields = new Set(["time", "weather", "weatherRemark", "temperatureUnit", "windDirection", "windUnit", "moon"]);
 
 export function loadRealWorldFixture(directory: string, base: string) {
   const read = (suffix: string) => JSON.parse(readFileSync(path.join(directory, `${base}_${suffix}.json`), "utf8"));

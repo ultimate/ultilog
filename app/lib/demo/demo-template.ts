@@ -257,7 +257,6 @@ function logLine(dayData: Day, waypoint: Waypoint, nextWaypoint: Waypoint | unde
   return {
     id: `demo-line-${dayData.date}-${index}`,
     time,
-    position: waypoint.name,
     latitude: waypoint.latitude,
     longitude: waypoint.longitude,
     weather: weather.icon,
@@ -289,7 +288,7 @@ function logLine(dayData: Day, waypoint: Waypoint, nextWaypoint: Waypoint | unde
     motorMiles: motorBoat && index > 0 ? legDistance : !motorBoat && index === count - 1 ? 2 : 0,
     engineHours,
     motorNote: motorBoat ? (index === count - 1 ? "Engines stopped after mooring" : "Both engines, 1,900 rpm") : index === count - 1 ? "Harbor maneuver" : "Engine off",
-    remarks: index === 0 ? `Departed after checks. ${dayData.summary}` : index === count - 1 ? "Moored safely; engine, shore power and passage records checked." : "Position fixed by GNSS and visual bearings; log and weather recorded.",
+    remarks: waypoint.name + "\n" + (index === 0 ? `Departed after checks. ${dayData.summary}` : index === count - 1 ? "Moored safely; engine, shore power and passage records checked." : "Position fixed by GNSS and visual bearings; log and weather recorded."),
   };
 }
 

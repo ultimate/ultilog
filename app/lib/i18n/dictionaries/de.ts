@@ -454,7 +454,6 @@ export const de: Dictionary = {
   "details.scanner.warning.shiftedMissingMagneticCourse": "Eine fehlende Magnetkurs-Spalte wurde erkannt; Variation und rechtweisender Kurs wurden neu zugeordnet.",
   "details.scanner.warning.noImages": "Es wurden keine Bilder zum Scannen bereitgestellt.",
   "details.scanner.warning.unknown": "Unbekannte Scannerwarnung.",
-  "details.scanner.field.position": "Position",
   "logbooks.continueAndUpload": "Fortfahren und hochladen",
   "logbooks.search": "Logbücher suchen",
   "logbooks.searchPlaceholder": "Logbücher suchen…",

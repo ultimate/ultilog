@@ -454,7 +454,6 @@ export const it: Dictionary = {
   "details.scanner.warning.shiftedMissingMagneticCourse": "È stata rilevata una colonna della rotta magnetica mancante; variazione e rotta vera sono state rimappate.",
   "details.scanner.warning.noImages": "Non sono state fornite immagini da scansionare.",
   "details.scanner.warning.unknown": "Avviso scanner sconosciuto.",
-  "details.scanner.field.position": "Posizione",
   "logbooks.continueAndUpload": "Continua e carica",
   "logbooks.search": "Cerca logbook",
   "logbooks.searchPlaceholder": "Cerca logbook…",

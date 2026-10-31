@@ -11,6 +11,7 @@ describe("OpenAI scanner request", () => {
     const result = await extractLogbookDraft({ files: [{ name: "test.jpg", type: "image/jpeg", buffer: Buffer.from("test") }] });
     const request = JSON.parse(fetch.mock.calls[0][1].body);
     expect(request.model).toBe(model ?? "gpt-6-luna");
+    expect(request.text.format.schema.properties.draft.properties.lines.items.properties).not.toHaveProperty("position");
     expect(request.text.format).toMatchObject({ type: "json_schema", strict: true });
     expect(request.input[1].content[1]).toMatchObject({ type: "input_image", detail: "high" });
     expect(result.draft.lines).toHaveLength(1);

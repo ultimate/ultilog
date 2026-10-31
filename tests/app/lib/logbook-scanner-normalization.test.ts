@@ -35,7 +35,7 @@ describe("scanner row normalization", () => {
     }
     expect(sheet.lines[1].engineHours).toEqual({});
     expect(sheet.lines[1].weather).toBe("");
-    expect(sheet.lines[1].position).toBe("");
+    expect(sheet.lines[1]).not.toHaveProperty("position");
   });
 });
 

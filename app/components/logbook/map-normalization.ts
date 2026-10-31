@@ -4,7 +4,6 @@ export type NormalizedMapPoint = {
   id: string;
   label: string;
   time: string;
-  position: string;
   latitude: number;
   longitude: number;
   x: number;
@@ -42,10 +41,9 @@ export function normalizeLogLinesForMap(lines: LogLine[]): NormalizedMapRoute {
   return {
     bounds,
     points: coordinates.map(({ line, index }) => ({
-      id: `${line.time}-${line.position}-${index}`,
+      id: `${line.id}-${index}`,
       label: String(index + 1),
       time: line.time,
-      position: line.position,
       latitude: line.latitude,
       longitude: line.longitude,
       x: ((line.longitude - bounds.west) / longitudeRange) * 100,

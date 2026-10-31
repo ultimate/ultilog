@@ -56,7 +56,6 @@ function isValidCoordinate(line: LogLine): line is LogLine & { latitude: number;
 
 function lineDescription(line: LogLine, labels: { weather: string; wind: string; direction: (value: string) => string | undefined }) {
   const details = [
-    line.position,
     line.remarks,
     line.weather ? `${labels.weather}: ${line.weather}` : undefined,
     line.windDirection || line.windStrength ? `${labels.wind}: ${[labels.direction(line.windDirection), line.windStrength, line.windUnit].filter(Boolean).join(" ")}` : undefined,
@@ -71,7 +70,7 @@ function lineToPoint(line: LogLine & { latitude: number; longitude: number }, in
     latitude: line.latitude,
     longitude: line.longitude,
     label: `${index + 1}`,
-    title: line.time ? `${formatTime(line.time)} · ${line.position}` : line.position,
+    title: line.time ? formatTime(line.time) : `${line.latitude}, ${line.longitude}`,
     description: lineDescription(line, labels),
     courseOverGround: line.courseOverGround ?? undefined,
     speedKn: line.speedKn ?? undefined,
