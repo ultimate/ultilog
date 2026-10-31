@@ -85,6 +85,17 @@ describe("logbook scanner prompt", () => {
     expect(prompt).toContain("rwK/rwk/rw K (rechtweisender Kurs) maps to trueCourse (TC)");
   });
 
+  it("requires degree-free course numbers and separates measurement units", () => {
+    const prompt = buildScannerUserPrompt();
+    expect(prompt).toContain("All course and angular correction fields (" + criticalCourseScannerFields.join(", ") + ") are always in degrees");
+    expect(prompt).toContain('visible 270° becomes trueCourse="270"');
+    expect(prompt).toContain('visible -2° becomes deviation="-2"');
+    expect(prompt).toContain('"5 kn" becomes windStrength="5", windUnit="kn"');
+    expect(prompt).toContain("Empty cells remain");
+    expect(prompt).toContain("preserve their coordinate notation and hemisphere");
+    expect(prompt).toContain("Do not convert readings to another unit");
+  });
+
   it("describes conditional recognition and diagnostics for versioned UltiLog templates", () => {
     const instructions = formatTemplateRecognitionInstructions();
 

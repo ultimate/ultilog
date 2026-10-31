@@ -104,7 +104,12 @@ const lineFieldDescriptions = {
 } satisfies Record<(typeof LOG_LINE_FIELDS)[number], string>;
 
 const lineProperties = Object.fromEntries(
-  LOG_LINE_FIELDS.map((field) => [field, { type: "string", description: lineFieldDescriptions[field] }]),
+  LOG_LINE_FIELDS.map((field) => [field, {
+    type: "string",
+    description: lineFieldDescriptions[field] + (new Set<string>(criticalCourseScannerFields).has(field)
+      ? ' Always degrees. Output only a signed or unsigned numeric string without °, deg, or other unit text; use an empty string when unreadable.'
+      : ""),
+  }]),
 );
 
 const scannerResultJsonSchema = {
@@ -179,7 +184,7 @@ const scannerResultJsonSchema = {
 
 const systemPrompt = `You extract handwritten or photographed vessel logbook sheets into strict JSON.
 Return only fields that match the provided schema. Use empty strings for fields that are missing, illegible, or not present.
-Do not invent values. Preserve original units and text when unsure, except numeric fields should be transcribed as written.
+Do not invent values. Preserve measured values and signs. Numeric fields must contain only the number, without unit suffixes or commentary. Put explicit units in their separate unit fields where available. Courses and corrections are always in degrees, with no degree symbol in the numeric output.
 Add a warning for every missing, illegible, conflicting, or ambiguous sheet-level field and for any row where important navigation fields are unclear.
 Never include raw image data, file names, or unrelated commentary in the response.`;
 
@@ -197,6 +202,10 @@ const extractionInstructions = `Extract a logbook draft from these image(s). The
 - Keep position in each row for named positions or waypoint text, even when latitude and longitude are present.
 - When one Position/Standort cell contains a coordinate pair, split it into latitude and longitude. DDM is common in nautical logs; for example, N49°27.3346' W2°32.0386' maps to latitude=N49°27.3346' and longitude=W2°32.0386'.
 - Expected row data types are strings in the JSON schema. Transcribe numeric values as strings for numeric fields such as temperature, barometer, waves, compassCourse, magneticCourse, windDrift, speedKn, and logNm.
+- Numeric output grammar: an optional + or - sign followed by digits and an optional decimal part using a dot or comma, for example "270", "+2", "-1.5", "5,2", or "0". Preserve the visible numeric value; omit units, degree symbols, labels, uncertainty marks, and commentary. If the numeric value itself is unreadable or a range cannot be resolved, return "" and add a warning for that row and field. Empty cells remain "", never "0". Do not calculate missing values.
+- All course and angular correction fields (${criticalCourseScannerFields.join(", ")}) are always in degrees. There is no course unit field. Examples: visible 270° becomes trueCourse="270"; visible -2° becomes deviation="-2"; visible +1,5° becomes variation="+1,5". Never append °, deg, or degrees. This rule does not apply to latitude or longitude: preserve their coordinate notation and hemisphere.
+- Split a numeric reading from its visible unit: "5 kn" becomes windStrength="5", windUnit="kn"; "3 Bft" becomes windStrength="3", windUnit="bft"; "18 °F" becomes temperature="18", temperatureUnit="°F"; "0.5 m" becomes waves="0.5", seaUnit="m". Units alone are not readings. Do not convert readings to another unit.
+- Fields with fixed units still contain only the number: barometer is pressure in hPa (for example "1013 hPa" becomes "1013"), speedKn is knots, and logNm/sailMiles/motorMiles are nautical miles. Do not silently treat another unit as the fixed unit; warn if it cannot be represented reliably.
 - Include explicit units when visible for windUnit, seaUnit, tideUnit, and temperatureUnit; leave them empty only when no unit is shown.
 - Weather-circle shading can be hatched or scribbled and can occupy any orientation. Count the fraction of the circle covered, not the darkness of the ink or the outline. An empty circle in a populated row means clear sky; a preprinted circle in an otherwise unused row does not create an observation. Technical-check fill circles describe tank/check status, not weather.
 - Convert written weather conditions in any language to the closest canonical weather emoji. Interpret meteorological cloud-cover circles by their filled fraction (oktas): 0/8=☀️, 1–2/8=🌤️, 3–4/8=⛅, 5–7/8=🌥️, and 8/8=☁️. Use precipitation, thunderstorm, snow, fog, and other specific weather emojis when those marks or words are visible.

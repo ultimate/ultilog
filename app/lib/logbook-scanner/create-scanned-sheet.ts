@@ -14,6 +14,7 @@ import type {
 import type { UserPreferences } from "../users";
 import { normalizeIsoDate } from "../iso-date";
 import { normalizeScannedWeather } from "./weather";
+import { normalizeScannedNumbers } from "./normalize-numbers";
 import { normalizeTechnicalCheck } from "../../domain/logbook/technical-log";
 
 type CurrentUserCrew = Partial<CrewMember> & Pick<CrewMember, "name">;
@@ -83,7 +84,7 @@ export function createScannedSheet({
   technicalLogTemplate = [],
   engineIds = [],
 }: CreateScannedSheetInput): LogSheet {
-  scannerResult = normalizeScannerRows(scannerResult);
+  scannerResult = normalizeScannedNumbers(normalizeScannerRows(scannerResult));
   const draft = scannerResult.draft;
   const extractedRoute = {
     from: draft.route?.from ?? "",

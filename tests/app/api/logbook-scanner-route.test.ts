@@ -301,6 +301,21 @@ describe("logbook scanner endpoint", () => {
     expect(mockedWriteLogbook).not.toHaveBeenCalled();
   });
 
+  it("creates a reviewable draft instead of returning 500 for invalid scanned numbers", async () => {
+    mockedAuth.mockResolvedValueOnce(session);
+    mockedReadLogbook.mockResolvedValueOnce(logbook);
+    mockedScanner.mockResolvedValueOnce({ ...partialScannerResult, draft: { ...partialScannerResult.draft, lines: [{ time: "10:30", trueCourse: "270?", speedKn: "5 unknown", barometer: "1013" }] } });
+    const formData = new FormData();
+    formData.set("boatId", boat.id);
+    formData.append("files", imageFile());
+    const response = await POST(scannerRequest(formData));
+    expect(response.status).toBe(200);
+    expect(mockedCreateLogSheetAggregate).toHaveBeenCalledWith(expect.objectContaining({ scannerWarnings: expect.arrayContaining([
+      expect.objectContaining({ code: "scannerGenerated", row: 1, fields: ["trueCourse"], fallbackMessage: expect.stringContaining("270?") }),
+      expect.objectContaining({ code: "scannerGenerated", row: 1, fields: ["speedKn"], fallbackMessage: expect.stringContaining("5 unknown") }),
+    ]) }), [expect.objectContaining({ trueCourse: null, speedKn: null, barometer: 1013 })], "user-1");
+  });
+
   it("returns a diagnostic reference when saving a scanned draft fails unexpectedly", async () => {
     mockedAuth.mockResolvedValueOnce(session);
     mockedReadLogbook.mockResolvedValueOnce(logbook);
