@@ -2,6 +2,12 @@
 
 ## Branches
 
+At the start of every new conversation, fetch `origin/main` and create the task
+branch from that latest remote main, unless the user explicitly asks to continue
+work on an existing branch or use a different base. Do not branch from the
+workspace's current checkout merely because it is already checked out. Preserve
+any existing uncommitted changes; use a separate worktree if necessary.
+
 Unless stated otherwise or asked to work on an existing branch, agents must 
 name newly created branches with a prefix identifying the agent and a "/" (e.g.
 "codex/..." for Codex).
