@@ -93,8 +93,8 @@ const lineFieldDescriptions = {
   courseThroughWater: "Course through water as numeric degrees text.",
   currentDrift: "Current drift/set correction as signed numeric degrees text.",
   courseOverGround: "Course over ground as numeric degrees text.",
-  speedKn: "Speed as numeric knots text.",
-  logNm: "Log distance as numeric nautical miles text.",
+  speedKn: "Vessel speed in knots from the navigation speed/F [kn] column, not wind speed. Preserve a visible reading, including zero; empty only when the cell is blank or unreadable.",
+  logNm: "Visible log counter reading in nautical miles, including cumulative counters and decimal shorthand. Do not replace it with daily distance, sail miles, or motor miles; do not omit a readable counter.",
   sailMiles: "Sailing distance as numeric nautical miles text.",
   sailNote: "Sail configuration or sail-specific note.",
   motorMiles: "Motor distance as numeric nautical miles text.",
@@ -196,6 +196,7 @@ const extractionInstructions = `Extract a logbook draft from these image(s). The
 - draft.engineHourCounters: cumulative engine hour-meter readings at the start and end of the sheet. Use only a supplied engineId and preserve decimal readings as text.
 - draft.lines: one object per populated logbook row using only the schema's log line fields. Ignore unused printed rows, preprinted weather-circle outlines, N/E coordinate labels, units, totals, and fully crossed-out rows. Include clearly timed log entries written outside the main table, in document order after the table.
 - Every blank source cell must remain an empty string, including numeric cells. An explicit handwritten zero is a value; a blank is never zero. Do not carry measurements forward from earlier rows. A printed unit or absent column is not a measurement. Do not copy sheet totals or cumulative engine counters into blank row cells.
+- Keep rows in their physical document order for date interpretation; explicitly include dates when a page or row establishes a different day. Do not treat a small backward time jump as proof of midnight.
 - Warning row numbers are one-based indexes into draft.lines, not printed grid row numbers. Never warn about unused printed rows or reference rows outside draft.lines.
 - Use the renamed log line fields waves, compassCourse, magneticCourse, windDrift, weatherRemark, and temperature.
 - Do not output deprecated course or wind fields; split wind into windDirection, windStrength, and windUnit.
@@ -205,6 +206,8 @@ const extractionInstructions = `Extract a logbook draft from these image(s). The
 - Numeric output grammar: an optional + or - sign followed by digits and an optional decimal part using a dot or comma, for example "270", "+2", "-1.5", "5,2", or "0". Preserve the visible numeric value; omit units, degree symbols, labels, uncertainty marks, and commentary. If the numeric value itself is unreadable or a range cannot be resolved, return "" and add a warning for that row and field. Empty cells remain "", never "0". Do not calculate missing values.
 - All course and angular correction fields (${criticalCourseScannerFields.join(", ")}) are always in degrees. There is no course unit field. Examples: visible 270° becomes trueCourse="270"; visible -2° becomes deviation="-2"; visible +1,5° becomes variation="+1,5". Never append °, deg, or degrees. This rule does not apply to latitude or longitude: preserve their coordinate notation and hemisphere.
 - Split a numeric reading from its visible unit: "5 kn" becomes windStrength="5", windUnit="kn"; "3 Bft" becomes windStrength="3", windUnit="bft"; "18 °F" becomes temperature="18", temperatureUnit="°F"; "0.5 m" becomes waves="0.5", seaUnit="m". Units alone are not readings. Do not convert readings to another unit.
+- Read navigation speed and log independently in every populated row, even if neighboring course or position cells are empty. On the Respocean-style German grid, the navigation columns are KüG | F kn | Log sm | SM Seg. | SM Mot. The F kn column immediately after KüG maps to speedKn; the earlier Wind/Bft/kn columns describe wind and must not replace vessel speed. The Log sm column maps to logNm; the following SM Seg./SM Mot. columns map to sailMiles/motorMiles. Do not shift these values when a neighboring cell is blank.
+- Preserve visible speed decimals and written zeros. Preserve cumulative log counters as written, even if a counter is faulty or repeats. For an unambiguous grouped log reading such as 25'397 or 25 397, output logNm="25397". Preserve decimal shorthand such as .21 as "0.21"; never infer a prefix or replace it with a calculated daily distance. Add a warning for uncertainty without omitting an otherwise readable number; leave blank only if the numeric value itself cannot be read.
 - Fields with fixed units still contain only the number: barometer is pressure in hPa (for example "1013 hPa" becomes "1013"), speedKn is knots, and logNm/sailMiles/motorMiles are nautical miles. Do not silently treat another unit as the fixed unit; warn if it cannot be represented reliably.
 - Include explicit units when visible for windUnit, seaUnit, tideUnit, and temperatureUnit; leave them empty only when no unit is shown.
 - Weather-circle shading can be hatched or scribbled and can occupy any orientation. Count the fraction of the circle covered, not the darkness of the ink or the outline. An empty circle in a populated row means clear sky; a preprinted circle in an otherwise unused row does not create an observation. Technical-check fill circles describe tank/check status, not weather.

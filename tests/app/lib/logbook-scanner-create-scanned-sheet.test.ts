@@ -45,14 +45,40 @@ describe("scanned log-line dates", () => {
 
     expect(sheet.lines.map((line) => line.time)).toEqual([
       "2026-07-01T23:00",
+      "2026-07-02T00:30",
       "2026-07-02T01:00",
       "2026-07-02T23:30",
-      "2026-07-02T00:30",
     ]);
     expect(sheet.scannerWarnings).toEqual([expect.objectContaining({
       id: expect.any(String),
       code: "rolloverExceededEndDate",
     })]);
+  });
+
+  it("sorts model rows by time without turning a small backward jump into another day", () => {
+    const result = scannerResult({ dateText: "2026-07-01", times: ["12:00", "08:00", "10:00"] });
+    result.draft.lines[1].speedKn = "unreadable";
+    result.warnings = [{ code: "missingFields", row: 3, fields: ["logNm"] }];
+    const sheet = createSheet(result);
+    expect(sheet.lines.map(line => line.time)).toEqual(["2026-07-01T08:00", "2026-07-01T10:00", "2026-07-01T12:00"]);
+    expect(sheet.scannerWarnings).toEqual([
+      expect.objectContaining({ row: 2, fields: ["logNm"] }),
+      expect.objectContaining({ row: 1, fields: ["speedKn"] }),
+    ]);
+    expect(sheet.scannerWarnings?.some(warning => warning.acknowledgedAt)).toBe(false);
+  });
+
+  it("sorts a small backward jump after a real midnight rollover on the same inferred day", () => {
+    const sheet = createSheet(scannerResult({ dateText: "2026-07-01 - 2026-07-02", times: ["23:00", "01:00", "00:30"] }));
+    expect(sheet.lines.map(line => line.time)).toEqual(["2026-07-01T23:00", "2026-07-02T00:30", "2026-07-02T01:00"]);
+    expect(sheet.scannerWarnings).toEqual([]);
+  });
+
+  it("sorts dated observations by actual time and keeps undated rows at the end", () => {
+    const result = scannerResult({ dateText: "", times: ["2026-07-02T10:00:00+00:00", "2026-07-02T11:00:00+02:00", ""] });
+    result.draft.lines[2].remarks = "Time illegible";
+    const sheet = createSheet(result);
+    expect(sheet.lines.map(line => line.time)).toEqual(["2026-07-02T11:00:00+02:00", "2026-07-02T10:00:00+00:00", ""]);
   });
 
   it("preserves already dated values and time-only values without an extracted master date", () => {
@@ -103,6 +129,24 @@ describe("scanned numeric values", () => {
     const sheet = createSheet(result);
     expect(sheet.lines[0][field]).toBe(2);
     expect(sheet.scannerWarnings).toEqual([]);
+  });
+
+  it.each(["25'397", "25’397", "25 397", "25\u202f397"])("preserves a grouped log counter %s and its paired speed", counter => {
+    const result = scannerResult({ dateText: "2026-07-01", times: ["09:00", "10:00"] });
+    result.draft.lines[0] = { time: "09:00", logNm: counter + " sm", speedKn: "5,8 kn.", courseOverGround: "" };
+    result.draft.lines[1] = { time: "10:00", logNm: ".21", speedKn: "0", sailMiles: "", motorMiles: "" };
+    const sheet = createSheet(result);
+    expect(sheet.lines[0]).toMatchObject({ logNm: 25397, speedKn: 5.8, courseOverGround: null });
+    expect(sheet.lines[1]).toMatchObject({ logNm: 0.21, speedKn: 0, sailMiles: null, motorMiles: null });
+    expect(sheet.scannerWarnings).toEqual([]);
+  });
+
+  it("does not join separate speed/log readings or ranges into a number", () => {
+    const result = scannerResult({ dateText: "2026-07-01", times: ["09:00"] });
+    result.draft.lines[0] = { time: "09:00", speedKn: "5 8", logNm: "25 39", sailMiles: "1-2" };
+    const sheet = createSheet(result);
+    expect(sheet.lines[0]).toMatchObject({ speedKn: null, logNm: null, sailMiles: null });
+    expect(sheet.scannerWarnings).toHaveLength(3);
   });
 
   it("canonicalizes separate units and flags conflicts instead of changing their meaning", () => {
