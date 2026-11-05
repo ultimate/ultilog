@@ -14,12 +14,22 @@ export class LogSheetsRepository {
     return rows.sort((left, right) => routeStart(right).localeCompare(routeStart(left)) || left.title.localeCompare(right.title));
   }
 
-  async findById(id: string, ownerId: string) {
-    return (await this.db.query<LogSheetRow>(`select log_sheets.*, stored_images.data as image_data, stored_images.mime_type as image_mime_type, stored_images.width as image_width, stored_images.height as image_height from log_sheets left join stored_images on stored_images.id = log_sheets.image_id and stored_images.owner_id = log_sheets.owner_id where log_sheets.id = ${this.db.placeholder(1)} and log_sheets.owner_id = ${this.db.placeholder(2)} limit 1`, [scopedId(ownerId, id), ownerId])).rows[0];
+  async findById(id: string, ownerId: string, lock = false) {
+    return (await this.db.query<LogSheetRow>(`select log_sheets.*, stored_images.data as image_data, stored_images.mime_type as image_mime_type, stored_images.width as image_width, stored_images.height as image_height from log_sheets left join stored_images on stored_images.id = log_sheets.image_id and stored_images.owner_id = log_sheets.owner_id where log_sheets.id = ${this.db.placeholder(1)} and log_sheets.owner_id = ${this.db.placeholder(2)} limit 1${lock && this.db.placeholder(1) === "$1" ? " for update of log_sheets" : ""}`, [scopedId(ownerId, id), ownerId])).rows[0];
   }
 
   async findPreviousCopy(ownerId: string, sourceOwnerId: string, sourceSheetId: string) {
     return (await this.db.query<LogSheetRow>(`select * from log_sheets where owner_id = ${this.db.placeholder(1)} and source_owner_id = ${this.db.placeholder(2)} and source_sheet_id = ${this.db.placeholder(3)} order by copied_at desc limit 1`, [ownerId, sourceOwnerId, sourceSheetId])).rows[0];
+  }
+
+  async findCopies(ownerId: string, sourceOwnerId: string, sourceSheetId: string) {
+    return (await this.db.query<LogSheetRow & { boat_name: string }>(`select log_sheets.*, boats.name as boat_name from log_sheets join boats on boats.id = log_sheets.boat_id and boats.owner_id = log_sheets.owner_id where log_sheets.owner_id = ${this.db.placeholder(1)} and source_owner_id = ${this.db.placeholder(2)} and source_sheet_id = ${this.db.placeholder(3)} order by copied_at desc, log_sheets.id`, [ownerId, sourceOwnerId, sourceSheetId])).rows;
+  }
+
+  /** Only the dedicated shared-copy operation may refresh provenance. */
+  async refreshCopyProvenance(sheet: LogSheet, ownerId: string) {
+    const provenance = sheet.copyProvenance!;
+    await this.db.query(`update log_sheets set source_owner_name = ${this.db.placeholder(1)}, source_revision = ${this.db.placeholder(2)}, copied_at = ${this.db.placeholder(3)}, source_title = ${this.db.placeholder(4)} where id = ${this.db.placeholder(5)} and owner_id = ${this.db.placeholder(6)}`, [provenance.sourceOwnerName, provenance.sourceRevision, provenance.copiedAt, provenance.sourceTitle, scopedId(ownerId, sheet.id), ownerId]);
   }
 
   async upsert(sheet: LogSheet, ownerId: string, motionStationaryThresholdNm = 0.1) {

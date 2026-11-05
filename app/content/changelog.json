@@ -40,6 +40,16 @@
     }
   },
   {
+    "id": "copy-and-update-multiple-shared-log-sheets",
+    "category": "improvement",
+    "title": {
+      "en": "Copy multiple shared log sheets, refresh existing copies and log in directly from shared pages",
+      "de": "Mehrere geteilte Logblätter kopieren, vorhandene Kopien aktualisieren und direkt auf Freigabeseiten anmelden",
+      "fr": "Copier plusieurs feuilles partagées, actualiser les copies existantes et se connecter depuis les pages partagées",
+      "it": "Copia più fogli condivisi, aggiorna le copie esistenti e accedi direttamente dalle pagine condivise"
+    }
+  },
+  {
     "id": "edit-and-display-logsheet-images",
     "category": "improvement",
     "title": {

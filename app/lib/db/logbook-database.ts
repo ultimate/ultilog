@@ -17,8 +17,9 @@ import { sectionVisibility, sharedSheetCapability, type SectionVisibility, type 
 
 export type SharedLogSheet = { sheet: LogSheet; boatName: string; engineLabels?: Record<string, string>; capability: SharedSheetCapability; sourceOwnerId?: string; ownerName?: string; ownerAvatar?: string; showOwnerAvatarOnPrint?: boolean };
 export type SharedLogSheetCollection = { ownerId: string; ownerName: string; ownerAvatar?: string; sheets: SharedLogSheet[] };
-export type CopySharedLogSheetOptions = { destinationBoatId: string; includeCrew?: boolean; includePicture?: boolean; allowDuplicate?: boolean };
+export type CopySharedLogSheetOptions = { destinationBoatId: string; includeCrew?: boolean; includePicture?: boolean; allowDuplicate?: boolean; action?: "create" | "update"; targetCopyId?: string; expectedRevision?: number; expectedContentVersion?: string };
 export type PreviousCopySummary = { id: string; title: string; copiedAt: string };
+export type SharedCopyTarget = PreviousCopySummary & { boatId: string; boatName: string; revision: number; contentVersion: string };
 
 export type QueryResult<Row> = { rows: Row[] };
 
@@ -283,7 +284,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
     await this.ensureSchema();
     return this.withTransaction(async database => {
       const ownerId = database.requireOwnerId();
-      const sheetRow = await database.sheets.findById(sheetId, ownerId);
+      const sheetRow = await database.sheets.findById(sheetId, ownerId, true);
       if (!sheetRow) return undefined;
       const beforeRows = sheetRow.scanner_warnings ? await database.lines.findForSheet(sheetRow.id) : [];
       const before = LogSheetsRepository.toLogbook([], [sheetRow], [], beforeRows).sheets[0];
@@ -358,6 +359,22 @@ export abstract class LogbookDatabase implements QueryableDatabase {
     return { ownerId, ownerName: owner.name, ownerAvatar, sheets };
   }
 
+  async previewSharedCopies(sourceOwnerId: string, sourceSheetId: string): Promise<{ copies: SharedCopyTarget[] } | undefined> {
+    await this.ensureSchemaAndBackfill();
+    const recipientId = this.requireOwnerId();
+    const access = await canAccessRegisteredShares(this, recipientId);
+    const shared = await this.readSharedSheet(sourceSheetId, access, sourceOwnerId);
+    if (!shared) return undefined;
+    if (!shared.capability.canCopy) throw Object.assign(new Error("The required shared sections are not visible."), { code: "shared_sections_not_visible" });
+    const rows = await this.sheets.findCopies(recipientId, sourceOwnerId, sourceSheetId);
+    const copies = await Promise.all(rows.map(async row => ({
+      id: unscopedId(row.id), title: row.title, boatId: unscopedId(row.boat_id), boatName: row.boat_name,
+      copiedAt: new Date(row.copied_at ?? row.created_at!).toISOString(), revision: Number(row.revision),
+      contentVersion: copyContentVersion(await this.lines.findForSheet(row.id)),
+    })));
+    return { copies };
+  }
+
   /** Copies a shared sheet into the currently scoped owner's logbook in one transaction. */
   async copySharedSheet(sourceOwnerId: string, sourceSheetId: string, options: CopySharedLogSheetOptions): Promise<LogSheet | undefined> {
     await this.ensureSchemaAndBackfill();
@@ -366,8 +383,15 @@ export abstract class LogbookDatabase implements QueryableDatabase {
       const sourceRow = await database.sheets.findSharedByScopedId(scopedId(sourceOwnerId, sourceSheetId));
       if (!sourceRow?.owner_id || sourceRow.owner_id !== sourceOwnerId) return undefined;
 
+      const targetRow = options.action === "update" && options.targetCopyId
+        ? await database.sheets.findById(options.targetCopyId, recipientId, true) : undefined;
+      if (options.action === "update" && (!targetRow || targetRow.source !== "shared" || targetRow.source_owner_id !== sourceOwnerId || targetRow.source_sheet_id !== sourceSheetId)) return undefined;
+      const target = targetRow ? LogSheetsRepository.toLogbook([], [targetRow], [], []).sheets[0] : undefined;
+      if (targetRow && (Number(targetRow.revision) !== options.expectedRevision || copyContentVersion(await database.lines.findForSheet(targetRow.id)) !== options.expectedContentVersion)) {
+        throw Object.assign(new Error("The copy changed. Review it again before updating."), { code: "revision_conflict" });
+      }
       const previousRow = await database.sheets.findPreviousCopy(recipientId, sourceOwnerId, sourceSheetId);
-      if (previousRow && !options.allowDuplicate) {
+      if (previousRow && !target && !options.allowDuplicate) {
         const previousCopy: PreviousCopySummary = {
           id: unscopedId(previousRow.id),
           title: previousRow.title,
@@ -383,8 +407,9 @@ export abstract class LogbookDatabase implements QueryableDatabase {
         throw Object.assign(new Error("The required shared sections are not visible."), { code: "shared_sections_not_visible" });
       }
 
-      const boatRow = await database.boats.findById(options.destinationBoatId, recipientId);
-      const policyError = sheetBoatMutationError(boatRow ? { name: boatRow.name, archived: Boolean(boatRow.archived) } : undefined, false);
+      const destinationBoatId = target?.boatId ?? options.destinationBoatId;
+      const boatRow = await database.boats.findById(destinationBoatId, recipientId);
+      const policyError = sheetBoatMutationError(boatRow ? { name: boatRow.name, archived: Boolean(boatRow.archived) } : undefined, Boolean(target));
       if (policyError) throw Object.assign(new Error(policyError.message), { code: policyError.code });
 
       const [sourceCrewRows, sourceLineRows] = await Promise.all([
@@ -396,7 +421,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
         `select name from users where id = ${database.placeholder(1)} limit 1`,
         [sourceOwnerId],
       )).rows[0];
-      const sheetId = crypto.randomUUID();
+      const sheetId = target?.id ?? crypto.randomUUID();
       const copiedAt = new Date().toISOString();
       const lines = source.lines.map(({ revision: _revision, createdAt: _createdAt, updatedAt: _updatedAt, id: _id, ...line }) => ({ ...line, id: crypto.randomUUID() }));
 
@@ -413,23 +438,35 @@ export abstract class LogbookDatabase implements QueryableDatabase {
       });
       for (const member of crew) await database.crew.insertProfile(member, recipientId);
 
+      if (target?.status === "Locked" && lines.some(line => !hasRequiredLogLineFields(line))) {
+        throw new LogbookValidationError("Date, time with timezone, latitude and longitude are required before locking.");
+      }
       const copied: LogSheet = {
         id: sheetId,
+        ...(target ? { revision: target.revision } : {}),
         title: source.title,
-        status: "Draft",
+        status: target?.status ?? "Draft",
         source: "shared",
         copyProvenance: { sourceOwnerId, sourceOwnerName: sourceOwner?.name ?? sourceOwnerId, sourceSheetId, sourceRevision: Number(sourceRow.revision ?? 1), copiedAt, sourceTitle: source.title },
-        boatId: options.destinationBoatId,
+        boatId: destinationBoatId,
         route: { ...source.route },
         crew,
         remarks: visibility.remarks ? source.remarks ?? "" : "",
         technicalChecks: source.technicalChecks.map(check => ({ ...check })),
+        engineHourCounters: { ...source.engineHourCounters },
         ...(imageId ? { imageId } : {}),
         lines: [],
-        share: { ...defaultLogSheetShareSettings },
+        share: { ...(target?.share ?? defaultLogSheetShareSettings) },
       };
       const threshold = await database.motionStationaryThresholdNm();
-      await database.sheets.insert(copied, recipientId, threshold);
+      if (target) {
+        await database.sheets.upsert(copied, recipientId, threshold);
+        await database.sheets.refreshCopyProvenance(copied, recipientId);
+        await database.query(`delete from log_line_engine_hours where sheet_id = ${database.placeholder(1)}`, [scopedId(recipientId, sheetId)]);
+        await database.query(`delete from log_lines where sheet_id = ${database.placeholder(1)}`, [scopedId(recipientId, sheetId)]);
+      } else {
+        await database.sheets.insert(copied, recipientId, threshold);
+      }
       await database.crew.replaceAssignments(sheetId, crew, recipientId);
       for (const line of lines) {
         if (!await database.lines.create(sheetId, line, recipientId)) throw new Error("The copied log line could not be created.");
@@ -438,6 +475,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
       const lineRows = await database.lines.findForSheet(row.id);
       const persistedLines = LogSheetsRepository.toLogbook([], [row], [], lineRows).sheets[0].lines;
       await database.sheets.updateMetrics(copied, persistedLines, recipientId, threshold);
+      if (targetRow?.image_id !== imageId) await database.images.deleteIfOrphaned(targetRow?.image_id ?? undefined, recipientId);
       const [createdRow, createdCrew] = await Promise.all([database.sheets.findById(sheetId, recipientId), database.crew.findForSheet(row.id, recipientId)]);
       return createdRow ? withoutImageBytes(LogSheetsRepository.toLogbook([], [createdRow], createdCrew, lineRows).sheets[0]) : undefined;
     });
@@ -501,4 +539,9 @@ function filterSharedSheet(sheet: LogSheet, visibility: SectionVisibility): LogS
     remarks: visibility.remarks ? sheet.remarks : undefined,
     crew,
   };
+}
+
+/** Lines have independent revisions, so a sheet revision alone cannot detect edits. */
+function copyContentVersion(rows: unknown[]) {
+  return createHash("sha256").update(JSON.stringify(rows, (_key, value) => value && typeof value === "object" && !Array.isArray(value) ? Object.fromEntries(Object.entries(value).sort(([left], [right]) => left.localeCompare(right))) : value)).digest("hex");
 }
