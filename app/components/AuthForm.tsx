@@ -1,5 +1,6 @@
 "use client";
 
+import { loginReturnDestination } from "../lib/auth-return-path";
 import { FormEvent, ReactNode, useState } from "react";
 import { signIn } from "next-auth/react";
 import Image from "next/image";
@@ -100,7 +101,8 @@ export function AuthForm({ mode, footer }: Props) {
     const profileResponse = await fetch("/api/profile").catch(() => undefined);
     const profile = (await profileResponse?.json().catch(() => ({})) ?? {}) as { email?: string; emailVerified?: boolean };
     if (profileResponse?.ok && profile.email && profile.emailVerified === false) {
-      window.location.assign(`/check-email?email=${encodeURIComponent(profile.email)}`);
+      const returnPath = loginReturnDestination();
+      window.location.assign(`/check-email?email=${encodeURIComponent(profile.email)}${returnPath !== "/" ? `&callbackUrl=${encodeURIComponent(returnPath)}` : ""}`);
       return;
     }
     window.location.assign(loginReturnDestination());
@@ -185,7 +187,4 @@ export function AuthForm({ mode, footer }: Props) {
   );
 }
 
-export function loginReturnDestination(search = typeof window === "undefined" ? "" : window.location.search) {
-  const destination = new URLSearchParams(search).get("callbackUrl");
-  return destination?.startsWith("/") && !destination.startsWith("//") ? destination : "/";
-}
+export { loginReturnDestination } from "../lib/auth-return-path";

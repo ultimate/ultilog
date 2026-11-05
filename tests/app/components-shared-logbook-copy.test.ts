@@ -64,5 +64,7 @@ describe("shared logbook copy", () => {
     expect(loginReturnDestination("?callbackUrl=%2Fshare%2Fowner%2Fsheet")).toBe("/share/owner/sheet");
     expect(loginReturnDestination("?callbackUrl=https%3A%2F%2Fevil.test")).toBe("/");
     expect(loginReturnDestination("?callbackUrl=%2F%2Fevil.test")).toBe("/");
+    expect(loginReturnDestination("?callbackUrl=%2F%5Cevil.test")).toBe("/");
+    expect(loginReturnDestination("?callbackUrl=%2F%09%2Fevil.test")).toBe("/");
   });
 });

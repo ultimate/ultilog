@@ -52,6 +52,7 @@ export const upsertCrewMember = (crew: CrewMember, userId: string) => mutate(use
 export const deleteCrewMember = (id: string, revision: number, userId: string) => mutate(userId, db => db.deleteCrewMember(id, revision));
 export const upsertLogSheet = (sheet: FocusedLogSheet, userId: string) => mutate(userId, db => db.upsertLogSheet(sheet));
 export const createLogSheetAggregate = (sheet: Omit<LogSheet, "lines">, lines: LogLine[], userId: string) => mutate(userId, db => db.createLogSheetAggregate(sheet, lines));
+export const previewSharedLogSheetCopies = (sourceOwnerId: string, sourceSheetId: string, userId: string) => mutate(userId, db => db.previewSharedCopies(sourceOwnerId, sourceSheetId));
 export const copySharedLogSheet = (sourceOwnerId: string, sourceSheetId: string, options: CopySharedLogSheetOptions, userId: string) => mutate(userId, db => db.copySharedSheet(sourceOwnerId, sourceSheetId, options));
 export const deleteLogSheet = (id: string, revision: number, userId: string) => mutate(userId, db => db.deleteLogSheet(id, revision));
 export const createLogLine = (sheetId: string, line: LogLine, userId: string) => mutate(userId, db => db.createLogLine(sheetId, line));
