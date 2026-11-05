@@ -501,6 +501,7 @@ export const fr: Dictionary = {
   "details.courseColumns": "colonnes de conversion de cap",
   "details.addLine": "+ Ajouter une ligne",
   "details.addSmartLine": "+ Ajouter une ligne intelligente",
+  "details.gettingLocation": "Localisation de l’appareil…",
   "details.addSmartLineLoading": "Récupération météo…",
   "details.trackingMotion": "Suivi du mouvement de l’appareil",
   "details.addSmartLineError": "La ligne est prête, mais certains champs de position ou de météo n’ont pas pu être remplis automatiquement.",

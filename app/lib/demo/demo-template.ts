@@ -1,3 +1,4 @@
+import { OPEN_METEO_CREDIT } from "../../domain/meteo/attribution";
 import {
   type Boat,
   type CrewMember,
@@ -7,7 +8,7 @@ import {
   type SheetCrewMember,
 } from "../../models/logbook";
 
-export const DEMO_TEMPLATE_VERSION = 4;
+export const DEMO_TEMPLATE_VERSION = 5;
 
 const demoIds = {
   boats: {
@@ -260,7 +261,7 @@ function logLine(dayData: Day, waypoint: Waypoint, nextWaypoint: Waypoint | unde
     latitude: waypoint.latitude,
     longitude: waypoint.longitude,
     weather: weather.icon,
-    weatherRemark: weather.remark,
+    weatherRemark: weather.remark + ` ${OPEN_METEO_CREDIT}`,
     temperature: weather.temperature,
     temperatureUnit: "°C",
     barometer: weather.pressure,
@@ -306,7 +307,7 @@ function createSheet(dayData: Day, boat: Boat, memberIds: string[], index: numbe
     title: dayData.title,
     status: index === 3 ? "Draft" : "Locked",
     source: "manual",
-    verificationNote: `Demo record. ${DEMO_WEATHER_PROVENANCE.note}`,
+    verificationNote: `Demo record. ${DEMO_WEATHER_PROVENANCE.note} ${OPEN_METEO_CREDIT}`,
     boatId: boat.id,
     route: { from: dayData.from.name, to: dayData.to.name, departed: `${dayData.date}T${dayData.departure}`, arrived: `${dayData.date}T${dayData.arrival}` },
     crew: people,

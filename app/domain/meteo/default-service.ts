@@ -3,7 +3,7 @@ import { createLocalAstronomyProvider } from "./local-astronomy";
 import { createMetarProvider } from "./metar";
 import { createNoaaCoopsProvider } from "./noaa-coops";
 import { createNoaaNdbcProvider } from "./noaa-ndbc";
-import { createOpenMeteoProvider } from "./open-meteo";
+import { createOpenMeteoProvider, type OpenMeteoProviderOptions } from "./open-meteo";
 import { createMeteoService, type MeteoProvider, type MeteoServiceOptions } from "./provider";
 import type { MeteoService, MeteoSnapshotRequest } from "./types";
 
@@ -17,6 +17,8 @@ export type FreeMeteoServiceOptions = {
   maxStationDistanceNm?: number;
   allowFallbackEstimate?: boolean;
   cacheTtlMs?: number;
+  // Explicit opt-in: free API eligibility or commercial subscription is an operator decision.
+  openMeteo?: OpenMeteoProviderOptions;
 };
 
 export const defaultFreeMeteoProviderOrder: FreeMeteoProviderName[] = [
@@ -39,14 +41,14 @@ export function createFreeMeteoService(options: FreeMeteoServiceOptions = {}): M
 }
 
 export function createFreeMeteoProviders(options: FreeMeteoServiceOptions = {}): MeteoProvider[] {
-  const enabledProviders = options.enabledProviders ?? defaultFreeMeteoProviderOrder;
+  const enabledProviders = options.enabledProviders ?? defaultFreeMeteoProviderOrder.filter((name) => name !== "open-meteo" || options.openMeteo);
   const enabled = new Set(enabledProviders);
   const providerFactories: Record<FreeMeteoProviderName, () => MeteoProvider> = {
     "noaa-ndbc": () => createNoaaNdbcProvider({ fetcher: options.fetcher }),
     "noaa-coops": () => createNoaaCoopsProvider({ fetcher: options.fetcher }),
     metar: () => createMetarProvider({ fetcher: options.fetcher, stationIds: options.metarStationIds }),
     "local-astronomy": createLocalAstronomyProvider,
-    "open-meteo": () => createOpenMeteoProvider({ fetcher: options.fetcher }),
+    "open-meteo": () => createOpenMeteoProvider({ ...options.openMeteo, fetcher: options.fetcher }),
   };
 
   const providers = defaultFreeMeteoProviderOrder

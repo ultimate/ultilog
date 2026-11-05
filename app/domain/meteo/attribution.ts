@@ -1,0 +1,1 @@
+export const OPEN_METEO_CREDIT = "Weather data by Open-Meteo.com (https://open-meteo.com/), CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Values converted, rounded or adapted for this logbook.";

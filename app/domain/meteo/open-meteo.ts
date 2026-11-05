@@ -7,6 +7,7 @@ const marineEndpoint = "https://marine-api.open-meteo.com/v1/marine";
 
 export type OpenMeteoProviderOptions = {
   fetcher?: typeof fetch;
+  apiKey?: string;
   forecastEndpoint?: string;
   marineEndpoint?: string;
 };
@@ -22,8 +23,8 @@ type OpenMeteoResponse = {
 
 export function createOpenMeteoProvider(options: OpenMeteoProviderOptions = {}): MeteoProvider {
   const fetcher = options.fetcher ?? fetch;
-  const weatherSource = options.forecastEndpoint ?? forecastEndpoint;
-  const seaSource = options.marineEndpoint ?? marineEndpoint;
+  const weatherSource = options.forecastEndpoint ?? (options.apiKey ? "https://customer-api.open-meteo.com/v1/forecast" : forecastEndpoint);
+  const seaSource = options.marineEndpoint ?? (options.apiKey ? "https://customer-marine-api.open-meteo.com/v1/marine" : marineEndpoint);
 
   return createMeteoProvider({
     name: "open-meteo",
@@ -36,8 +37,8 @@ export function createOpenMeteoProvider(options: OpenMeteoProviderOptions = {}):
       }
 
       const [weather, marine] = await Promise.all([
-        fetchOpenMeteoWeather(context, fetcher, weatherSource),
-        fetchOpenMeteoMarine(context, fetcher, seaSource),
+        fetchOpenMeteoWeather(context, fetcher, weatherSource, options.apiKey),
+        fetchOpenMeteoMarine(context, fetcher, seaSource, options.apiKey),
       ]);
       const weatherProvenance = openMeteoProvenance(context, weatherSource, weather.validAt);
       const marineProvenance = openMeteoProvenance(context, seaSource, marine.validAt);
@@ -76,8 +77,9 @@ export function createOpenMeteoProvider(options: OpenMeteoProviderOptions = {}):
   });
 }
 
-async function fetchOpenMeteoWeather(context: MeteoProviderContext, fetcher: typeof fetch, endpoint: string) {
+async function fetchOpenMeteoWeather(context: MeteoProviderContext, fetcher: typeof fetch, endpoint: string, apiKey?: string) {
   const url = new URL(endpoint);
+  if (apiKey) url.searchParams.set("apikey", apiKey);
   url.searchParams.set("latitude", String(context.latitude));
   url.searchParams.set("longitude", String(context.longitude));
   url.searchParams.set("current", [
@@ -98,8 +100,9 @@ async function fetchOpenMeteoWeather(context: MeteoProviderContext, fetcher: typ
   return fetchOpenMeteoCurrent(url, fetcher);
 }
 
-async function fetchOpenMeteoMarine(context: MeteoProviderContext, fetcher: typeof fetch, endpoint: string) {
+async function fetchOpenMeteoMarine(context: MeteoProviderContext, fetcher: typeof fetch, endpoint: string, apiKey?: string) {
   const url = new URL(endpoint);
+  if (apiKey) url.searchParams.set("apikey", apiKey);
   url.searchParams.set("latitude", String(context.latitude));
   url.searchParams.set("longitude", String(context.longitude));
   url.searchParams.set("current", [
@@ -116,7 +119,13 @@ async function fetchOpenMeteoMarine(context: MeteoProviderContext, fetcher: type
 }
 
 async function fetchOpenMeteoCurrent(url: URL, fetcher: typeof fetch) {
-  const response = await fetcher(url);
+  let response: Response;
+  try {
+    response = await fetcher(url);
+  } catch {
+    // Fetch errors may contain the request URL, including the commercial API key.
+    throw new Error("Open-Meteo request failed.");
+  }
   if (!response.ok) {
     throw new Error(`Open-Meteo request failed with status ${response.status}.`);
   }

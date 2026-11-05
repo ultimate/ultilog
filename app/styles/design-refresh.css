@@ -963,3 +963,8 @@ h3 { margin-block:.25rem .55rem; }
 .engine-manager-row { display:grid; grid-template-columns:repeat(3,minmax(7rem,1fr)); gap:.5rem; align-items:center; border-bottom:1px solid var(--line); padding-bottom:.75rem; }
 .engine-manager-row > label { display:flex; align-items:center; gap:.35rem; }
 @media (max-width: 720px) { .engine-manager-row { grid-template-columns:1fr; } }
+
+.weather-data-attribution { display: block; margin-block: .4rem; font-size: .75rem; }
+
+/* Keep Leaflet panes inside the padded grid rather than inheriting its outer minimum height. */
+.open-seamap-view > .open-seamap-container { min-height: 0; }

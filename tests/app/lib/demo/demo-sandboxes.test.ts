@@ -68,7 +68,7 @@ describe("demo sandboxes", () => {
     const rows = (await getDatabase().query<{ template_version: number; expires_at: string }>("select template_version, expires_at from demo_sandboxes")).rows;
 
     expect(rows).toHaveLength(1);
-    expect(rows[0].template_version).toBe(4);
+    expect(rows[0].template_version).toBe(5);
     expect(new Date(rows[0].expires_at).getTime()).toBeGreaterThanOrEqual(before + (2 * 60 * 60 * 1000));
     expect(login.expiresAt).toBe(rows[0].expires_at);
   });
@@ -88,7 +88,7 @@ describe("demo sandboxes", () => {
     const migrated = await readLogbook(sandbox.user_id);
     expect(migrated.sheets).toHaveLength(8);
     expect(migrated.sheets.every((sheet) => /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-8[0-9a-f]{3}-[0-9a-f]{12}$/i.test(sheet.id))).toBe(true);
-    await expect(db.query<{ template_version: number }>("select template_version from demo_sandboxes where user_id = ?", [sandbox.user_id])).resolves.toMatchObject({ rows: [{ template_version: 4 }] });
+    await expect(db.query<{ template_version: number }>("select template_version from demo_sandboxes where user_id = ?", [sandbox.user_id])).resolves.toMatchObject({ rows: [{ template_version: 5 }] });
   });
 
   it("resets only an active demo sandbox to a fresh template copy", async () => {

@@ -32,6 +32,19 @@ function request(body: unknown) {
 describe("meteo log-line autofill endpoint", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.unstubAllEnvs();
+  });
+
+  it("enforces the shared free-provider allowance with the default mode", async () => {
+    vi.stubEnv("OPEN_METEO_MODE", undefined);
+    mockedAuth.mockResolvedValueOnce(session);
+    const { consumeRateLimit } = await import("../../../app/lib/security/rate-limiter");
+    vi.mocked(consumeRateLimit).mockResolvedValueOnce({ allowed: true, remaining: 29, retryAfter: 60, resetAt: new Date() })
+      .mockResolvedValueOnce({ allowed: false, remaining: 0, retryAfter: 60, resetAt: new Date() });
+    const response = await POST(request({ latitude: 47.1, longitude: 8.3 }));
+    expect(response.status).toBe(429);
+    expect(getSnapshot).not.toHaveBeenCalled();
+    expect(consumeRateLimit).toHaveBeenLastCalledWith({ name: "open-meteo-minute", limit: 150, windowMs: 60_000 }, "application");
   });
 
   it("requires authentication", async () => {

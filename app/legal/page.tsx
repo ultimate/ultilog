@@ -20,6 +20,7 @@ export default function LegalPage() {
         <section aria-labelledby="imprint-heading">
           <h2 id="imprint-heading">Impressum / Legal notice</h2>
           <p><strong>Service:</strong> Ultilog, a personal skipper logbook project.</p>
+          <p>Ultilog is currently operated as a non-commercial website.</p>
           <p>
             <strong>Contact:</strong>{" "}
             <a href="mailto:ultilog@verkin.de">ultilog@verkin.de</a>
@@ -28,6 +29,11 @@ export default function LegalPage() {
             <strong>Source code and project:</strong>{" "}
             <a href="https://github.com/verkin/ultilog" target="_blank" rel="noopener noreferrer">GitHub project</a>
           </p>
+        </section>
+
+        <section aria-labelledby="licenses-heading">
+          <h2 id="licenses-heading">Third-party licenses and data credits</h2>
+          <p><Link href="/legal/licenses">Software licenses, source information, and weather and map credits</Link></p>
         </section>
 
         <section aria-labelledby="liability-heading">

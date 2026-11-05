@@ -1,3 +1,4 @@
+import { OPEN_METEO_CREDIT } from "./attribution";
 import type { MeteoSnapshot, MeteoValue, MeteoValueProvenance } from "./types";
 
 export type MeteoRemarkFieldKey =
@@ -46,7 +47,7 @@ export function createMeteoSourceRemark(snapshot: MeteoSnapshot) {
 
   return parts
     .map((group) => `${humanList(group.fields.map(fieldLabel))} from ${describeProvenance(group.provenance)}.`)
-    .join(" ");
+    .join(" ") + (parts.some((part) => part.provenance.provider === "open-meteo") ? ` ${OPEN_METEO_CREDIT}` : "");
 }
 
 export function createMeteoSourceRemarkParts(snapshot: MeteoSnapshot): MeteoSourceRemarkPart[] {

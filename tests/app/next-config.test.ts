@@ -20,6 +20,8 @@ describe("Next.js security headers", () => {
     expect(headers.get("X-Content-Type-Options")).toBe("nosniff");
     expect(headers.get("Referrer-Policy")).toBe("strict-origin-when-cross-origin");
     expect(headers.get("Permissions-Policy")).toContain("camera=()");
+    expect(headers.get("Permissions-Policy")).toContain("microphone=()");
+    expect(headers.get("Permissions-Policy")).toContain("geolocation=(self)");
     expect(headers.get("X-Frame-Options")).toBe("DENY");
 
     const csp = headers.get("Content-Security-Policy");
@@ -37,7 +39,7 @@ describe("Next.js security headers", () => {
     ]) {
       expect(csp).toMatch(new RegExp(`(?:^|; )${directive} `));
     }
-    expect(csp).toContain("https://*.tile.openstreetmap.org");
+    expect(csp).toContain("https://tile.openstreetmap.org");
     expect(csp).toContain("https://tiles.openseamap.org");
     expect(csp).toContain("https://www.gravatar.com");
     expect(csp).toContain("https://secure.gravatar.com");

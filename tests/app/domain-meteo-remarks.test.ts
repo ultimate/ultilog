@@ -1,3 +1,4 @@
+import { OPEN_METEO_CREDIT } from "../../app/domain/meteo/attribution";
 import { describe, expect, it } from "vitest";
 import { createMeteoSourceRemark, createMeteoSourceRemarkParts, type MeteoSnapshot, type MeteoValueProvenance } from "../../app/domain/meteo";
 
@@ -66,7 +67,7 @@ describe("meteo source remarks", () => {
     };
 
     expect(createMeteoSourceRemark(snapshot)).toBe(
-      "cloud cover from Open-Meteo (fallback estimate 2026-07-18T12:00:00Z).",
+      "cloud cover from Open-Meteo (fallback estimate 2026-07-18T12:00:00Z). " + OPEN_METEO_CREDIT,
     );
   });
 

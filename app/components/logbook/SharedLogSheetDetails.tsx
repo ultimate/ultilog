@@ -1,5 +1,7 @@
 "use client";
 
+import { WeatherDataAttribution } from "./WeatherDataAttribution";
+
 import { formatEngineHours } from "../../lib/log-input";
 
 import { translatedWindDirection } from "./wind-directions";
@@ -29,6 +31,7 @@ export function SharedLogSheetDetails({ sheet, engineLabels = {}, initialCoordin
       <button type="button" onClick={() => setCoordinateFormat(nextCoordinateFormat(coordinateFormat))}>{t("details.coordinates")}: {t(coordinateFormat === "decimal" ? "profile.coordinateDecimal" : coordinateFormat === "ddm" ? "profile.coordinateDdm" : "profile.coordinateDms")}</button>
       <button type="button" aria-expanded={showCourseColumns} onClick={() => setShowCourseColumns(!showCourseColumns)}>{t(showCourseColumns ? "details.hide" : "details.show")} {t("details.courseColumns")}</button>
     </div></div>
+    <WeatherDataAttribution />
     <div className="table-scroll"><table className={showCourseColumns ? "log-lines-table with-course-columns" : "log-lines-table"}>
       <thead><tr className="column-groups"><th colSpan={4}>{t("details.timePos")}</th><th colSpan={8}>{t("details.weatherSea")}</th><th colSpan={columns.length}>{t("details.course")}</th><th colSpan={4}>{t("details.travel")}</th><th>{t("details.remarks")}</th></tr>
         <tr><th scope="col" aria-label="Log line number">#</th>{(["time", "lat", "lon", "weather", "weatherRemark", "temperature", "baro", "wind", "sea", "tide", "moon"] as const).map(key => <th scope="col" key={key}>{t(`details.${key}`)}</th>)}
