@@ -25,7 +25,6 @@
     "pg": "^8.22.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "react-leaflet": "^5.0.0",
     "sql.js": "^1.14.1"
   },
   "devDependencies": {

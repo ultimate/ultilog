@@ -500,6 +500,7 @@ export const en = {
   "details.courseColumns": "course conversion columns",
   "details.addLine": "+ Add line",
   "details.addSmartLine": "+ Add smart line",
+  "details.gettingLocation": "Getting device location…",
   "details.addSmartLineLoading": "Fetching meteo…",
   "details.trackingMotion": "Tracking device motion",
   "details.addSmartLineError": "The line is ready, but some location or weather fields could not be filled automatically.",

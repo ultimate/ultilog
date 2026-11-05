@@ -1,3 +1,4 @@
+import { WeatherDataAttribution } from "./WeatherDataAttribution";
 import { formatEngineHours } from "../../lib/log-input";
 import { translatedWindDirection } from "./wind-directions";
 import type { Boat, LogLine, LogSheet } from "../../models/logbook";
@@ -121,6 +122,7 @@ export function LogSheetPrintView(props: LogSheetPrintViewProps) {
             <section className="print-remarks-box"><h2>{t("print.footer.remarksSignature")}</h2>{sheet?.remarks ? <p className="print-sheet-remarks">{sheet.remarks}</p> : <div className="print-writing-lines" aria-hidden="true" />}{hasTruncatedRemark(page.lines) ? <small>{t("print.truncated")}</small> : null}{props.avatar ? <Image className="print-owner-avatar" src={props.avatar} alt="" width={68} height={68} unoptimized /> : null}</section>
             <span className="print-page-number">{formatPageOf(t("print.pageOf"), page.pageIndex + 1, page.pageCount)}</span>
           </footer>
+          <div className="print-data-credit"><WeatherDataAttribution /></div>
           <span className="print-template-marker" aria-label="UltiLog print template marker">{templateMarker}</span>
         </section>
       ))}
@@ -277,6 +279,8 @@ const printStyles = `
 .print-crew-box ul, .print-tech-box ul { margin: 0; padding-left: 3.5mm; font-size: 7pt; }
 .print-writing-lines { height: 21mm; background: repeating-linear-gradient(to bottom, transparent 0, transparent 7mm, #000 7.2mm); }
 .print-page-number { position: absolute; right: 1.5mm; bottom: 1mm; font-size: 7pt; font-weight: 700; }
+.print-data-credit { position: absolute; bottom: 2.5mm; left: 6mm; font-size: 5pt; line-height: 1.1; }
+.print-data-credit .weather-data-attribution { font-size: 5pt; margin: 0; }
 .print-template-marker { position: absolute; left: 1.5mm; bottom: .8mm; font-family: monospace; font-size: 4.5pt; font-weight: 400; letter-spacing: 0; white-space: nowrap; }
 @media print { body { margin: 0; } @page { size: A4 landscape; size: 297mm 210mm; page-orientation: landscape; margin: 8mm; } .log-sheet-print-view { width: 281mm; min-width: 281mm; max-width: none; } .log-sheet-print-page { width: 281mm; min-width: 281mm; height: 194mm; min-height: 194mm; padding: 0; } .print-header, .print-footer { width: 281mm; } .print-log-table { width: 281mm !important; min-width: 0 !important; max-width: 281mm !important; } }
 `;

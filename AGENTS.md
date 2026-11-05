@@ -103,3 +103,13 @@ Use this complete shape (the translated titles are optional):
 The only supported categories are `feature`, `improvement`, `fix`, and
 `security`. Do not add release versions, timestamps, pull request numbers, pull
 request URLs, or any other fields.
+
+## Dependency license review
+
+Highlight `package.json` and `package-lock.json` changes in PR descriptions.
+Name added, removed, or upgraded dependencies and versions, including relevant
+transitive changes, and distinguish browser, server-only, and development use.
+This lets the reviewer request a focused license review when needed. Update
+`public/legal/third-party-notices.txt` when shipped code requires changed notices.
+License reviews are manual and on demand; do not add recurring license scans or
+build/CI license gates unless explicitly requested. See `docs/licensing.md`.

@@ -12,7 +12,11 @@ describe("free meteo service configuration", () => {
       "local-astronomy",
       "open-meteo",
     ]);
-    expect(providers.map((provider) => provider.name)).toEqual(defaultFreeMeteoProviderOrder);
+    expect(providers.map((provider) => provider.name)).toEqual(defaultFreeMeteoProviderOrder.filter((name) => name !== "open-meteo"));
+  });
+
+  it("includes Open-Meteo only when explicitly configured", () => {
+    expect(createFreeMeteoProviders({ openMeteo: {} }).map((provider) => provider.name)).toEqual(defaultFreeMeteoProviderOrder);
   });
 
   it("allows provider subsets for scoped deployments and tests", () => {

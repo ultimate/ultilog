@@ -501,6 +501,7 @@ export const de: Dictionary = {
   "details.courseColumns": "Kursumrechnungsspalten",
   "details.addLine": "+ Zeile hinzufügen",
   "details.addSmartLine": "+ Smarte Zeile hinzufügen",
+  "details.gettingLocation": "Gerätestandort wird ermittelt…",
   "details.addSmartLineLoading": "Meteo wird geladen…",
   "details.trackingMotion": "Gerätebewegung wird erfasst",
   "details.addSmartLineError": "Die Zeile ist bereit, aber einige Positions- oder Wetterfelder konnten nicht automatisch ausgefüllt werden.",

@@ -168,5 +168,15 @@
       "fr": "Trier les feuilles de journal partagées par date de départ et afficher tous les détails de navigation et techniques",
       "it": "Ordina i fogli di giornale condivisi per data di partenza e mostra tutti i dettagli di navigazione e tecnici"
     }
+  },
+  {
+    "id": "show-third-party-credits-and-configure-weather-provider",
+    "category": "improvement",
+    "title": {
+      "en": "Show third-party credits and non-commercial weather with device location, loading indicators and readable source popups",
+      "de": "Drittanbieterhinweise und nichtkommerzielle Wetterdaten mit Gerätestandort, Ladeanzeigen und lesbaren Quellen-Popups anzeigen",
+      "fr": "Afficher les crédits tiers et la météo non commerciale avec localisation, indicateurs de chargement et fenêtres de sources lisibles",
+      "it": "Mostrare crediti di terze parti e meteo non commerciale con posizione del dispositivo, indicatori di caricamento e popup delle fonti leggibili"
+    }
   }
 ]

@@ -1,5 +1,7 @@
 "use client";
 
+import { OPEN_METEO_CREDIT } from "../domain/meteo/attribution";
+
 import { mergeScannerWarningState } from "./logbook/scanner-warning-state";
 import { isActionableScannerWarning } from "../lib/logbook-scanner/actionable-warning";
 import { updateScannerWarnings } from "../lib/logbook-scanner/update-warnings";
@@ -257,6 +259,7 @@ export function LogbookApp({
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [smartLineStatus, setSmartLineStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [smartLineProgress, setSmartLineProgress] = useState<{ draftId: string; location: boolean; weather: boolean } | null>(null);
   const [smartMotionStatus, setSmartMotionStatus] = useState<"idle" | "tracking">("idle");
   const [nameForm, setNameForm] = useState({
     name: userName ?? "",
@@ -1431,6 +1434,7 @@ export function LogbookApp({
         : {}),
     } } }));
     setSmartLineStatus("loading");
+    setSmartLineProgress({ draftId, location: !coordinate, weather: true });
     setSaveError(null);
 
     try {
@@ -1443,6 +1447,7 @@ export function LogbookApp({
       const navigationFields = calculateSmartNavigationFields(activeSheet.lines, linePosition);
       updateLineForm(draftId, (current) => ({ ...current, ...navigationFields, latitude: latitudeValue, longitude: longitudeValue }));
 
+      setSmartLineProgress(current => current?.draftId === draftId ? { ...current, location: false } : current);
       if (initialPosition) setSmartMotionStatus("tracking");
       const motionPromise = initialPosition ? trackDeviceMotion(sampleFromPosition(initialPosition)) : Promise.resolve({});
       const weatherPromise = fetch("/api/meteo/log-line-autofill", {
@@ -1470,14 +1475,19 @@ export function LogbookApp({
         }));
       });
 
-      const [weatherResult, motionResult] = await Promise.allSettled([weatherPromise, motionPromise]);
+      const settledWeather = weatherPromise.finally(() => {
+        setSmartLineProgress(current => current?.draftId === draftId ? { ...current, weather: false } : current);
+      });
+      const [weatherResult, motionResult] = await Promise.allSettled([settledWeather, motionPromise]);
       setSmartMotionStatus("idle");
       if (motionResult.status === "fulfilled") updateLineForm(draftId, (current) => ({ ...current, ...motionResult.value }));
       if (weatherResult.status === "rejected") throw weatherResult.reason;
       setSmartLineStatus("idle");
+      setSmartLineProgress(null);
     } catch {
       setSmartMotionStatus("idle");
       setSmartLineStatus("error");
+      setSmartLineProgress(null);
       setSaveError(t("details.addSmartLineError"));
     }
   }
@@ -2119,6 +2129,7 @@ export function LogbookApp({
               startAddingLine={startAddingLine}
               startAddingLineAtCoordinates={startAddingLineAtCoordinates}
               startAddingSmartLine={startAddingSmartLine}
+              smartLineProgress={smartLineProgress}
               smartLineStatus={smartLineStatus}
               smartMotionStatus={smartMotionStatus}
               lineForms={lineForms}
@@ -2472,7 +2483,7 @@ function getCurrentPosition() {
       reject(new Error("Geolocation is not available."));
       return;
     }
-    navigator.geolocation.getCurrentPosition(resolve, reject);
+    navigator.geolocation.getCurrentPosition(resolve, reject, { enableHighAccuracy: true, maximumAge: 0, timeout: 10_000 });
   });
 }
 
@@ -2484,7 +2495,7 @@ function formatMeteoWeatherRemark(parts: MeteoSourceRemarkPart[], translate: (ke
     const station = part.provenance.station?.id ? ` · ${part.provenance.station.id}` : "";
     const distance = typeof part.provenance.station?.distanceNm === "number" ? ` · ${part.provenance.station.distanceNm.toFixed(1)} NM` : "";
     return `${fields}: ${provider}${station}${distance} · ${sourceType}`;
-  }).join("; ");
+  }).join("; ") + (parts.some((part) => part.provenance.provider === "open-meteo") ? ` ${OPEN_METEO_CREDIT}` : "");
 }
 
 function humanList(items: string[]) {

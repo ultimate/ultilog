@@ -13,7 +13,7 @@ function contentSecurityPolicy(developmentServer: boolean) {
     // Leaflet positions map panes and markers with element style attributes, and
     // the print view emits scoped inline CSS.
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob: https://*.tile.openstreetmap.org https://tiles.openseamap.org https://www.gravatar.com https://secure.gravatar.com",
+    "img-src 'self' data: blob: https://tile.openstreetmap.org https://tiles.openseamap.org https://www.gravatar.com https://secure.gravatar.com",
     "font-src 'self'",
     "connect-src 'self'",
     "frame-ancestors 'none'",
@@ -30,7 +30,7 @@ export function securityHeaders(productionHttps: boolean, developmentServer = fa
     { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
     {
       key: "Permissions-Policy",
-      value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
+      value: "camera=(), microphone=(), geolocation=(self), payment=(), usb=()",
     },
     // Legacy fallback for clients that do not implement frame-ancestors.
     { key: "X-Frame-Options", value: "DENY" },

@@ -280,3 +280,29 @@ header `X-Ultilog-Confirm-Replace: replace-my-entire-logbook`. `PUT /api/logbook
 is intentionally not supported. Callers should obtain direct user confirmation
 immediately before import; background saves, scanners, logout handlers, and page
 lifecycle handlers must never invoke it.
+
+### Third-party licenses and weather-provider configuration
+
+See [the license register and source guide](docs/licensing.md) before changing
+libraries, bundled fonts, or external data providers. Full notices are served at
+`/legal/third-party-notices.txt` and linked from `/legal/licenses`.
+
+The operator confirms that Ultilog is currently non-commercial, so Open-Meteo
+fallback defaults to **non-commercial** mode. Set `OPEN_METEO_MODE=disabled` to
+turn it off. If the site becomes commercial, review the provider terms; for an
+active commercial subscription, set `OPEN_METEO_MODE=commercial` and the server-only
+`OPEN_METEO_API_KEY`; both weather and marine calls then use customer endpoints.
+Missing commercial credentials never fall back to the public API. NOAA providers
+and local astronomy remain enabled. The free mode counts requests conservatively
+against application-wide minute/hour/day limits in the shared database; multiple
+deployments sharing one provider allowance must share that rate-limit store.
+
+Dependency license review is manual and happens when dependencies change.
+PR descriptions must highlight `package.json` and `package-lock.json` changes as
+specified in `AGENTS.md`. Maintain the browser notices at
+`public/legal/third-party-notices.txt` when relevant code or licenses change.
+There are no automated license scans, license build hooks, or license CI gates.
+
+Smart lines request a fresh, high-accuracy device location through the browser.
+This requires HTTPS (or localhost) and the user’s location permission. The site
+allows geolocation for its own origin, then requests weather for those coordinates.

@@ -12,3 +12,9 @@ coverage/
 
 # Derived from app/content/changelog.json and Git history during builds.
 public/generated/changelog.json
+
+# Local working files and validation logs.
+work/
+__pycache__/
+test-results/
+playwright-report/

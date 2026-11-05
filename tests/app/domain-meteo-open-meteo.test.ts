@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createMeteoService, createOpenMeteoProvider } from "../../app/domain/meteo";
 
 const weatherResponse = {
@@ -62,6 +62,26 @@ describe("Open-Meteo fallback provider", () => {
     expect(snapshot.warnings).toEqual([
       { code: "meteo.reason.openMeteoFallbackEstimate" },
     ]);
+  });
+
+  it("uses both commercial endpoints without leaking credentials into provenance", async () => {
+    const urls: URL[] = [];
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      urls.push(url);
+      return Response.json(url.hostname.includes("marine") ? marineResponse : weatherResponse);
+    });
+    const service = createMeteoService({ providers: [createOpenMeteoProvider({ apiKey: "test-secret", fetcher })] });
+    const snapshot = await service.getSnapshot({ latitude: 54.1, longitude: 10.2, timestamp: new Date("2026-07-16T12:30:00Z") });
+    expect(urls.map((url) => url.hostname).sort()).toEqual(["customer-api.open-meteo.com", "customer-marine-api.open-meteo.com"]);
+    expect(urls.every((url) => url.searchParams.get("apikey") === "test-secret")).toBe(true);
+    expect(JSON.stringify(snapshot)).not.toContain("test-secret");
+  });
+
+  it("redacts request URLs from network errors", async () => {
+    const fetcher = vi.fn().mockRejectedValue(new Error("https://customer-api.open-meteo.com/?apikey=test-secret"));
+    const service = createMeteoService({ providers: [createOpenMeteoProvider({ apiKey: "test-secret", fetcher })] });
+    await expect(service.getSnapshot({ latitude: 54.1, longitude: 10.2, timestamp: new Date("2026-07-16T12:30:00Z") })).rejects.toThrow(/^Open-Meteo request failed\.$/);
   });
 
   it("skips fallback estimates when estimated data is not allowed", async () => {

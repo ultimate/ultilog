@@ -1314,7 +1314,10 @@ td { color: #28384b; line-height: 1.45; }
   height: 1.1rem;
   border-radius: 50%;
   color: var(--muted);
-  cursor: help;
+  cursor: pointer;
+  border: 0;
+  padding: 0;
+  background: transparent;
   font-size: 0.82rem;
   line-height: 1;
 }
@@ -1326,13 +1329,12 @@ td { color: #28384b; line-height: 1.45; }
 }
 
 .log-line-text-tooltip-bubble {
-  position: absolute;
-  right: 0;
-  bottom: calc(100% + 0.45rem);
-  z-index: 20;
-  display: none;
-  width: min(24rem, 70vw);
-  max-height: 14rem;
+  position: fixed;
+  z-index: 2000;
+  display: block;
+  box-sizing: border-box;
+  width: min(28rem, calc(100vw - 16px));
+  max-height: min(24rem, calc(100dvh - 16px));
   overflow: auto;
   border: 1px solid var(--border);
   border-radius: 0.85rem;
@@ -1347,10 +1349,7 @@ td { color: #28384b; line-height: 1.45; }
   white-space: normal;
 }
 
-.log-line-text-tooltip:hover .log-line-text-tooltip-bubble,
-.log-line-text-tooltip:focus-visible .log-line-text-tooltip-bubble {
-  display: block;
-}
+.log-line-text-tooltip-bubble a { color: #9dd8ff; text-decoration: underline; overflow-wrap: anywhere; }
 
 .labeled-inputs label {
   display: grid;
@@ -2192,6 +2191,7 @@ img.entity-image--preview {
 }
 
 .smart-field-wrap {
+  min-width: 0;
   position: relative;
   display: inline-flex;
   width: 100%;

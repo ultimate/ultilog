@@ -1,3 +1,5 @@
+import { LogTextPopover } from "../LogTextPopover";
+import { WeatherDataAttribution } from "../WeatherDataAttribution";
 import { CrewSearchSelect } from "../CrewSearchSelect";
 import { SheetAction } from "../SheetAction";
 import { LogNumberInput } from "../LogNumberInput";
@@ -115,6 +117,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     startAddingLine,
     startAddingLineAtCoordinates,
     startAddingSmartLine,
+    smartLineProgress,
     smartLineStatus,
     smartMotionStatus,
     saveLineFromFields,
@@ -371,13 +374,22 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeScannerWarningIds]);
 
+  const weatherFields = new Set(["weather", "weatherRemark", "temperature", "barometer", "windDirection", "windStrength", "waves", "tide", "moon"]);
+  const renderSmartField = (draftId: string, field: string, input: React.ReactNode) => {
+    const pending = smartLineProgress?.draftId === draftId && ((field === "latitude" || field === "longitude") ? smartLineProgress.location : weatherFields.has(field) && smartLineProgress.weather);
+    return <span className="smart-field-wrap" aria-busy={Boolean(pending)} data-loading-field={field}>
+      {input}
+      {pending ? <span className="smart-field-spinner" role="status" aria-label={field === "latitude" || field === "longitude" ? t("details.gettingLocation") : t("details.addSmartLineLoading")} /> : null}
+    </span>;
+  };
+
   const renderNumberInput = (draftId: string, field: Exclude<keyof LineForm, "engineHours" | "id">, options?: { min?: number; max?: number; step?: string }) => {
     const lineForm = lineForms[draftId].form;
-    return <LogNumberInput data-line-field={field} min={options?.min} max={options?.max} step={options?.step ?? "1"} value={lineForm[field]} onChange={(e) => setDraftLineForm(draftId, { ...lineForm, [field]: e.target.value })} />;
+    return renderSmartField(draftId, field, <LogNumberInput data-line-field={field} min={options?.min} max={options?.max} step={options?.step ?? "1"} value={lineForm[field]} onChange={(e) => setDraftLineForm(draftId, { ...lineForm, [field]: e.target.value })} />);
   };
   const renderTextInput = (draftId: string, field: Exclude<keyof LineForm, "engineHours" | "id">, label?: string) => {
     const lineForm = lineForms[draftId].form;
-    return <input aria-label={label} value={lineForm[field]} onChange={(e) => setDraftLineForm(draftId, { ...lineForm, [field]: e.target.value })} />;
+    return renderSmartField(draftId, field, <input aria-label={label} value={lineForm[field]} onChange={(e) => setDraftLineForm(draftId, { ...lineForm, [field]: e.target.value })} />);
   };
 
 
@@ -405,9 +417,9 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
       step="1"
       value={lineForm[field]}
       onChange={(e) => updateLineFormField(draftId, field, e.target.value)}
-      aria-busy={field === "courseOverGround" && smartMotionStatus === "tracking"}
+      aria-busy={field === "courseOverGround" && smartMotionStatus === "tracking" && smartLineProgress?.draftId === draftId}
     />
-    {field === "courseOverGround" && smartMotionStatus === "tracking" ? <span className="smart-field-spinner" role="status" aria-label={t("details.trackingMotion")} /> : null}
+    {field === "courseOverGround" && smartMotionStatus === "tracking" && smartLineProgress?.draftId === draftId ? <span className="smart-field-spinner" role="status" aria-label={t("details.trackingMotion")} /> : null}
     </span>;
   };
 
@@ -529,10 +541,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     return (
       <span className="log-line-clamped-text-wrap">
         <span className="log-line-clamped-text">{text}</span>
-        <span className="log-line-text-tooltip" tabIndex={0} aria-label={`${label}: ${text}`}>
-          <span aria-hidden="true">ⓘ</span>
-          <span className="log-line-text-tooltip-bubble" role="tooltip">{text}</span>
-        </span>
+        <LogTextPopover label={label} text={text} />
       </span>
     );
   };
@@ -601,20 +610,20 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     return (
     <tr key={draftId} className="inline-line-row">
       <td>{lineNumber}</td>
-      <td><div className="compound-inputs"><LogLineDateTimeInput value={dateTimeLocalFromStamp(lineForm.time)} onChange={(value) => updateLineFormField(draftId, "time", isoDateTimeWithTimezone(value, timezoneOffsetFromStamp(lineForm.time)))} /><select aria-label="Line time zone" value={timezoneOffsetFromStamp(lineForm.time)} onChange={(e) => updateLineFormField(draftId, "time", isoDateTimeWithTimezone(dateTimeLocalFromStamp(lineForm.time), e.target.value))}>{timeZoneOffsetOptions.map((offset) => <option key={offset} value={offset}>UTC{offset}</option>)}</select></div></td><td>{renderCoordinateInput(draftId, "latitude", t("details.lat"))}</td><td>{renderCoordinateInput(draftId, "longitude", t("details.lon"))}</td>
-      <td><select value={lineForm.weather} onChange={(e) => setLineForm({ ...lineForm, weather: e.target.value })}><option value="">—</option>{weatherEmojis.map((emoji) => <option key={emoji} value={emoji}>{emoji}</option>)}</select></td>
+      <td><div className="compound-inputs"><LogLineDateTimeInput value={dateTimeLocalFromStamp(lineForm.time)} onChange={(value) => updateLineFormField(draftId, "time", isoDateTimeWithTimezone(value, timezoneOffsetFromStamp(lineForm.time)))} /><select aria-label="Line time zone" value={timezoneOffsetFromStamp(lineForm.time)} onChange={(e) => updateLineFormField(draftId, "time", isoDateTimeWithTimezone(dateTimeLocalFromStamp(lineForm.time), e.target.value))}>{timeZoneOffsetOptions.map((offset) => <option key={offset} value={offset}>UTC{offset}</option>)}</select></div></td><td>{renderSmartField(draftId, "latitude", renderCoordinateInput(draftId, "latitude", t("details.lat")))}</td><td>{renderSmartField(draftId, "longitude", renderCoordinateInput(draftId, "longitude", t("details.lon")))}</td>
+      <td>{renderSmartField(draftId, "weather", <select value={lineForm.weather} onChange={(e) => setLineForm({ ...lineForm, weather: e.target.value })}><option value="">—</option>{weatherEmojis.map((emoji) => <option key={emoji} value={emoji}>{emoji}</option>)}</select>)}</td>
       <td>{renderTextInput(draftId, "weatherRemark", t("details.weatherRemark"))}</td>
       <td><div className="compound-inputs">{renderNumberInput(draftId, "temperature")}<select value={lineForm.temperatureUnit} onChange={(e) => setLineForm({ ...lineForm, temperatureUnit: e.target.value })}><option value="°C">°C</option><option value="°F">°F</option></select></div></td>
       <td>{renderNumberInput(draftId, "barometer", { min: 800, max: 1200 })}</td>
-      <td><div className="compound-inputs"><select aria-label={t("details.windDirection")} value={lineForm.windDirection} onChange={(e) => setLineForm({ ...lineForm, windDirection: e.target.value })}><option value="">—</option>{compassDirections.map((direction) => <option key={direction} value={direction}>{translatedWindDirection(direction, t)}</option>)}</select>{renderNumberInput(draftId, "windStrength")}<select value={lineForm.windUnit} onChange={(e) => setLineForm({ ...lineForm, windUnit: e.target.value })}><option value="bft">bft</option><option value="kn">kn</option><option value="km/h">km/h</option><option value="mp/h">mp/h</option><option value="m/s">m/s</option></select></div></td>
+      <td><div className="compound-inputs">{renderSmartField(draftId, "windDirection", <select aria-label={t("details.windDirection")} value={lineForm.windDirection} onChange={(e) => setLineForm({ ...lineForm, windDirection: e.target.value })}><option value="">—</option>{compassDirections.map((direction) => <option key={direction} value={direction}>{translatedWindDirection(direction, t)}</option>)}</select>)}{renderNumberInput(draftId, "windStrength")}<select value={lineForm.windUnit} onChange={(e) => setLineForm({ ...lineForm, windUnit: e.target.value })}><option value="bft">bft</option><option value="kn">kn</option><option value="km/h">km/h</option><option value="mp/h">mp/h</option><option value="m/s">m/s</option></select></div></td>
       <td><div className="compound-inputs">{renderNumberInput(draftId, "waves", { step: "0.1" })}<select value={lineForm.seaUnit} onChange={(e) => setLineForm({ ...lineForm, seaUnit: e.target.value })}><option value="m">m</option><option value="ft">ft</option></select></div></td>
       <td><div className="compound-inputs">{renderNumberInput(draftId, "tide", { step: "0.1" })}<select value={lineForm.tideUnit} onChange={(e) => setLineForm({ ...lineForm, tideUnit: e.target.value })}><option value="m">m</option><option value="ft">ft</option></select></div></td>
-      <td><select value={lineForm.moon} onChange={(e) => setLineForm({ ...lineForm, moon: e.target.value })}><option value="">—</option>{moonEmojis.map((emoji) => <option key={emoji} value={emoji}>{emoji}</option>)}</select></td>
+      <td>{renderSmartField(draftId, "moon", <select value={lineForm.moon} onChange={(e) => setLineForm({ ...lineForm, moon: e.target.value })}><option value="">—</option>{moonEmojis.map((emoji) => <option key={emoji} value={emoji}>{emoji}</option>)}</select>)}</td>
       {courseConversionColumns.map((column) => (!column.isOptional || showCourseColumns) && (
         <td className={column.isOptional ? "optional-course-cell" : undefined} key={column.field}>
           {renderCourseInput(draftId, column.field, { min: column.min, max: column.max })}
         </td>
-      ))}<td><span className="smart-field-wrap">{renderNumberInput(draftId, "speedKn", { step: "0.1" })}{smartMotionStatus === "tracking" ? <span className="smart-field-spinner" role="status" aria-label={t("details.trackingMotion")} /> : null}</span></td><td>{renderNumberInput(draftId, "logNm", { step: "0.1" })}</td>
+      ))}<td><span className="smart-field-wrap">{renderNumberInput(draftId, "speedKn", { step: "0.1" })}{smartMotionStatus === "tracking" && smartLineProgress?.draftId === draftId ? <span className="smart-field-spinner" role="status" aria-label={t("details.trackingMotion")} /> : null}</span></td><td>{renderNumberInput(draftId, "logNm", { step: "0.1" })}</td>
       <td><div className="compound-inputs labeled-inputs"><label><span>[nm]</span>{renderNumberInput(draftId, "sailMiles", { step: "0.1" })}</label><label><span>[note]</span>{renderTextInput(draftId, "sailNote", t("details.sailNote"))}</label></div></td>
       <td><div className="compound-inputs labeled-inputs"><label><span>[nm]</span>{renderNumberInput(draftId, "motorMiles", { step: "0.1" })}</label>{logLineEngines.map((engine) => <label key={engine.id}><span>{engine.label} [HH:mm]</span><LogNumberInput hours aria-label={`${engine.name} ${t("details.engineRuntime")}`} min="0" value={lineForm.engineHours?.[engine.id] ?? ""} onChange={(event) => setLineForm({ ...lineForm, engineHours: { ...lineForm.engineHours, [engine.id]: event.target.value } })} /></label>)}<label><span>[note]</span>{renderTextInput(draftId, "motorNote", t("details.motorNote"))}</label></div></td>
       <td>{renderTextInput(draftId, "remarks")}</td><td colSpan={2}><div className="table-actions"><button type="button" onClick={(event) => {
@@ -1180,6 +1189,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                     <button type="button" disabled={isActiveSheetLocked || smartLineStatus === "loading"} onClick={() => void startAddingSmartLine()}>{smartLineStatus === "loading" ? t("details.addSmartLineLoading") : t("details.addSmartLine")}</button>
                   </div>
                 </div>
+                <WeatherDataAttribution />
                 <div className="table-scroll">
                   <table className={showCourseColumns ? "log-lines-table with-course-columns" : "log-lines-table"}>
                     <thead>
