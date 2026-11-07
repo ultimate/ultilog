@@ -97,6 +97,8 @@ export default async function SharedLogbookPage({ params, searchParams }: { para
           {!session?.user && <Link className="powered-by-ultilog" href="/" target={isEmbed ? "_blank" : undefined} rel={isEmbed ? "noreferrer" : undefined}>Powered by <strong>Ultilog</strong></Link>}
         </aside>
 
+        <SharedLogbookCopy ownerId={shared.sourceOwnerId ?? ownerId ?? ""} sheetId={sheetId!} title={sheet.title} isAuthenticated={Boolean(session?.user?.id)} canCopy={capability.canCopy} requiresAuthentication={capability.requiresAuthentication} missingRequiredSections={capability.missingRequiredSections} canIncludeCrew={hasCrew} canIncludePicture={Boolean(sheet.image)} returnPath={returnPath} />
+
         <div className={`sheet-master-map-grid${hasLogLines ? "" : " sheet-master-map-grid--single"}`}>
           <article className="logbook-section sheet-master-header">
             {sheet.image ? <EntityImage image={sheet.image} entityType="sheet" alt={`${sheet.title} image`} variant="header" /> : null}
@@ -119,8 +121,6 @@ export default async function SharedLogbookPage({ params, searchParams }: { para
             </article>
           ) : null}
         </div>
-
-        <SharedLogbookCopy ownerId={shared.sourceOwnerId ?? ownerId ?? ""} sheetId={sheetId!} title={sheet.title} isAuthenticated={Boolean(session?.user?.id)} canCopy={capability.canCopy} requiresAuthentication={capability.requiresAuthentication} missingRequiredSections={capability.missingRequiredSections} canIncludeCrew={hasCrew} canIncludePicture={Boolean(sheet.image)} returnPath={returnPath} />
 
         {hasMetrics ? (
           <section className="entry-metrics logbook-section" aria-label="Shared logbook summary">

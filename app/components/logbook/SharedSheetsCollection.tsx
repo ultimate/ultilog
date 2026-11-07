@@ -66,11 +66,13 @@ export function SharedSheetsCollection({ ownerId, entries, initialView, embedded
   };
 
   return <>
-    {!embedded && <div className="shared-collection-controls" role="group" aria-label="Shared log sheet view">
-      <button className={view === "list" ? "active" : ""} type="button" onClick={() => setView("list")}>List</button>
-      <button className={view === "map" ? "active" : ""} type="button" onClick={() => setView("map")}>Map</button>
+    {!embedded && <div className="shared-collection-toolbar">
+      <div className="shared-collection-controls" role="group" aria-label="Shared log sheet view">
+        <button className={view === "list" ? "active" : ""} type="button" onClick={() => setView("list")}>List</button>
+        <button className={view === "map" ? "active" : ""} type="button" onClick={() => setView("map")}>Map</button>
+      </div>
+      {selectable ? <div className="shared-copy-toolbar"><button type="button" className="primary-action" disabled={selectedIds.length === 0} onClick={() => setCopyOpen(true)}>{t("sharedCopy.copySelected").replace("{count}", String(selectedIds.length))}</button></div> : null}
     </div>}
-    {selectable ? <div className="shared-copy-toolbar"><button type="button" disabled={selectedIds.length === 0} onClick={() => setCopyOpen(true)}>{t("sharedCopy.copySelected").replace("{count}", String(selectedIds.length))}</button></div> : null}
     {copyOpen ? <SharedCopyDialog ownerId={ownerId} entries={copyEntries} returnPath={returnPath} onClose={() => { setCopyOpen(false); setSelected([]); }} /> : null}
     {filtered.length === 0 ? <article className="logbook-section shared-empty"><h2>No shared log sheets</h2><p>No log sheets are visible for this date range and your access level.</p></article> : view === "map" ?
       <article className="map-card logbook-section"><LogSheetsMapView sheets={filtered.map(({ sheet }) => sheet)} onSheetClick={sheet => { window.location.href = href(sheet); }} showRouteTargets={showMapLegend} /></article> :

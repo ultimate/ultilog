@@ -48,13 +48,13 @@ export function SharedLogbookCopy(props: Props) {
   const unavailableMessage = props.missingRequiredSections.length > 0 && !props.requiresAuthentication
     ? `${t("sharedCopy.missingRequiredPrefix")} ${props.missingRequiredSections.map(section => missingSectionLabels[section]).join(", ")}. ${t("sharedCopy.askOwner")}` : "";
   if (!props.isAuthenticated) return <section className="logbook-section shared-copy-action">
-    <button type="button" disabled>{t("sharedCopy.action")}</button>
+    <button type="button" className="primary-action" disabled>{t("sharedCopy.action")}</button>
     <p>{unavailableMessage || t("sharedCopy.signInExplanation")}</p>
-    {(props.canCopy || props.requiresAuthentication) ? <Link className="button-link" href={`/login?callbackUrl=${encodeURIComponent(props.returnPath)}`}>{t("sharedCopy.signIn")}</Link> : null}
+    {(props.canCopy || props.requiresAuthentication) ? <Link className="button-link primary-action" href={`/login?callbackUrl=${encodeURIComponent(props.returnPath)}`}>{t("sharedCopy.signIn")}</Link> : null}
   </section>;
-  if (!props.canCopy) return <section className="logbook-section shared-copy-action"><button type="button" disabled>{t("sharedCopy.action")}</button><p>{unavailableMessage}</p></section>;
+  if (!props.canCopy) return <section className="logbook-section shared-copy-action"><button type="button" className="primary-action" disabled>{t("sharedCopy.action")}</button><p>{unavailableMessage}</p></section>;
   return <section className="logbook-section shared-copy-action">
-    <button type="button" disabled={!hydrated} onClick={() => setIsOpen(true)}>{t("sharedCopy.action")}</button>
+    <button type="button" className="primary-action" disabled={!hydrated} onClick={() => setIsOpen(true)}>{t("sharedCopy.action")}</button>
     {isOpen ? <SharedCopyDialog ownerId={props.ownerId} entries={[{ id: props.sheetId, title: props.title ?? props.sheetId, canIncludeCrew: props.canIncludeCrew, canIncludePicture: props.canIncludePicture }]} returnPath={props.returnPath} onClose={() => setIsOpen(false)} single /> : null}
   </section>;
 }
