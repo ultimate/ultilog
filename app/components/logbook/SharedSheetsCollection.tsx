@@ -2,7 +2,7 @@
 
 import { PreferenceDateInput } from "./PreferenceDateInput";
 
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import Link from "next/link";
 import { LogSheetsMapView } from "./OpenSeaMapView";
 import { embedThemeDefaults, type EmbedTheme } from "../../domain/logbook/embed-theme";
@@ -13,6 +13,7 @@ import type { SharedSheetCapability } from "../../domain/logbook/share-policy";
 import type { LogSheet } from "../../models/logbook";
 import { useDateTimeFormat } from "../../lib/DateTimeFormatProvider";
 import { formatMiles } from "../../lib/format-number";
+import { sheetListDate } from "./date-utils";
 import { formatLogSheetDuration } from "../../domain/logbook/sheet-metrics";
 
 const colors: { key: keyof EmbedTheme; label: string; parameter: string }[] = [
@@ -76,7 +77,43 @@ export function SharedSheetsCollection({ ownerId, entries, initialView, embedded
     {copyOpen ? <SharedCopyDialog ownerId={ownerId} entries={copyEntries} returnPath={returnPath} onClose={() => { setCopyOpen(false); setSelected([]); }} /> : null}
     {filtered.length === 0 ? <article className="logbook-section shared-empty"><h2>No shared log sheets</h2><p>No log sheets are visible for this date range and your access level.</p></article> : view === "map" ?
       <article className="map-card logbook-section"><LogSheetsMapView sheets={filtered.map(({ sheet }) => sheet)} onSheetClick={sheet => { window.location.href = href(sheet); }} showRouteTargets={showMapLegend} /></article> :
-      <article className="table-card logbook-list-card"><div className="table-scroll"><table className="logbook-table"><thead><tr>{selectable ? <th className="shared-selection-cell"><input type="checkbox" aria-label={t("sharedCopy.selectAll")} disabled={!hydrated || eligibleIds.length === 0} checked={allSelected} ref={input => { if (input) input.indeterminate = selectedIds.length > 0 && !allSelected; }} onChange={event => setSelected(event.target.checked ? eligibleIds : [])} /></th> : null}<th>Start date</th><th>End date</th><th>Entry</th><th>Vessel</th><th>From / to</th><th>Sail miles</th><th>Motor miles</th><th>Total miles</th><th>Duration</th><th></th></tr></thead><tbody>{filtered.map(({ sheet, boatName, capability }) => <tr key={sheet.id}>{selectable ? <td className="shared-selection-cell"><input type="checkbox" aria-label={t("sharedCopy.selectSheet").replace("{title}", sheet.title)} title={capability?.canCopy ? sheet.title : t("sharedCopy.unavailableSelection")} aria-describedby={!capability?.canCopy ? `shared-selection-reason-${sheet.id}` : undefined} disabled={!hydrated || !capability?.canCopy} checked={selectedIds.includes(sheet.id)} onChange={event => setSelected(current => event.target.checked ? [...current, sheet.id] : current.filter(id => id !== sheet.id))} /></td> : null}<td>{formatDate(sheet.route.departed)}</td><td>{formatDate(sheet.route.arrived)}</td><td><Link className="table-title-button" href={href(sheet)}>{sheet.title}</Link>{selectable && !capability?.canCopy ? <span id={`shared-selection-reason-${sheet.id}`} className="shared-selection-reason">{t("sharedCopy.unavailableSelection")}</span> : null}</td><td>{boatName || "Not shared"}</td><td>{[sheet.route.from, sheet.route.to].filter(Boolean).join(" → ") || "Not shared"}</td><td>{sheet.metrics ? `${formatMiles(sheet.metrics.sailMiles)} nm` : "Not shared"}</td><td>{sheet.metrics ? `${formatMiles(sheet.metrics.motorMiles)} nm` : "Not shared"}</td><td>{sheet.metrics ? `${formatMiles(sheet.metrics.totalMiles)} nm` : "Not shared"}</td><td>{sheet.metrics ? formatLogSheetDuration(sheet.metrics.durationMinutes) : "Not shared"}</td><td><Link className="edit-chip" href={href(sheet)}>Open</Link></td></tr>)}</tbody></table></div></article>}
+      <article className="table-card logbook-list-card">
+        <div className="table-scroll">
+          <table className="logbook-table shared-logbook-table">
+            <thead>
+              <tr>
+                {selectable ? <th className="shared-selection-cell"><input type="checkbox" aria-label={t("sharedCopy.selectAll")} disabled={!hydrated || eligibleIds.length === 0} checked={allSelected} ref={input => { if (input) input.indeterminate = selectedIds.length > 0 && !allSelected; }} onChange={event => setSelected(event.target.checked ? eligibleIds : [])} /></th> : null}
+                <th>Start date</th><th>End date</th><th>Vessel</th><th>Sail miles</th><th>Motor miles</th><th>Total miles</th><th>Duration</th><th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(({ sheet, boatName, capability }) => <Fragment key={sheet.id}>
+                <tr className="logbook-sheet-title">
+                  {selectable ? <td rowSpan={2} className="shared-selection-cell"><input type="checkbox" aria-label={t("sharedCopy.selectSheet").replace("{title}", sheet.title)} title={capability?.canCopy ? sheet.title : t("sharedCopy.unavailableSelection")} aria-describedby={!capability?.canCopy ? `shared-selection-reason-${sheet.id}` : undefined} disabled={!hydrated || !capability?.canCopy} checked={selectedIds.includes(sheet.id)} onChange={event => setSelected(current => event.target.checked ? [...current, sheet.id] : current.filter(id => id !== sheet.id))} /></td> : null}
+                  <td colSpan={7}>
+                    <Link className="table-title-button" href={href(sheet)}><span className="table-vessel">{sheet.title}</span></Link>
+                    <span className="logbook-sheet-route">({[sheet.route.from, sheet.route.to].filter(Boolean).join(" → ") || "Not shared"})</span>
+                    {selectable && !capability?.canCopy ? <span id={`shared-selection-reason-${sheet.id}`} className="shared-selection-reason">{t("sharedCopy.unavailableSelection")}</span> : null}
+                  </td>
+                  <td rowSpan={2} className="logbook-sheet-actions-cell">
+                    <div className="table-row-actions"><Link className="edit-chip" href={href(sheet)} aria-label={t("common.open")} title={t("common.open")}><span aria-hidden="true">📂</span></Link></div>
+                  </td>
+                </tr>
+                <tr>
+                  <td className="logbook-date-cell">{formatDate(sheetListDate(sheet.route.departed))}</td>
+                  <td className="logbook-date-cell">{formatDate(sheetListDate(sheet.route.arrived, true))}</td>
+                  <td className="logbook-boat-name-cell">{boatName || "Not shared"}</td>
+                  <td className="logbook-metric-cell">{sheet.metrics ? `${formatMiles(sheet.metrics.sailMiles)} nm` : "Not shared"}</td>
+                  <td className="logbook-metric-cell">{sheet.metrics ? `${formatMiles(sheet.metrics.motorMiles)} nm` : "Not shared"}</td>
+                  <td className="logbook-metric-cell">{sheet.metrics ? `${formatMiles(sheet.metrics.totalMiles)} nm` : "Not shared"}</td>
+                  <td className="logbook-metric-cell">{sheet.metrics ? formatLogSheetDuration(sheet.metrics.durationMinutes) : "Not shared"}</td>
+                </tr>
+              </Fragment>)}
+            </tbody>
+          </table>
+        </div>
+      </article>}
+
     {showEmbedding && !embedded ? <section className="embed-builder shared-embed-builder" aria-labelledby="collection-embed-title">
       <div><h2 id="collection-embed-title">Embed shared log sheets</h2><p>Choose colors and an optional date range, then copy either the list or map embed code.</p></div>
       <div className="embed-date-grid"><label><span>From</span><PreferenceDateInput aria-label="From" value={from} onChange={event => { setFrom(event.target.value); setSelected([]); }} /></label><label><span>To</span><PreferenceDateInput aria-label="To" value={to} onChange={event => { setTo(event.target.value); setSelected([]); }} /></label></div>

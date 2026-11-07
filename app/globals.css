@@ -2370,3 +2370,6 @@ img.entity-image--preview {
 .shared-copy-checking { display: flex; align-items: center; gap: .5rem; color: var(--subtle, var(--muted)); }
 .shared-copy-spinner { flex: 0 0 auto; width: 1rem; height: 1rem; border: 2px solid color-mix(in srgb, var(--blue) 25%, transparent); border-top-color: var(--blue); border-radius: 50%; animation: smart-field-spin .8s linear infinite; }
 @media (prefers-reduced-motion: reduce) { .shared-copy-spinner { animation: none; } }
+
+.shared-logbook-table .shared-selection-cell { vertical-align: middle; border-bottom: 1px solid var(--line, var(--border)); }
+.shared-logbook-table .shared-selection-reason { max-width: none; white-space: normal; }
