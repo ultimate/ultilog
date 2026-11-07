@@ -49,8 +49,8 @@ describe("shared log sheet presentation", () => {
     const entries = ["2026-10-08", "", "2025-03-01"].map((departed, index) => ({ boatName: "Boat", sheet: { ...sampleLogSheets[0], id: String(index), title: `Voyage ${index}`, route: { ...sampleLogSheets[0].route, departed } } }));
     let root!: ReactTestRenderer;
     await act(async () => { root = create(<SharedSheetsCollection ownerId="owner" entries={entries} initialView="list" embedded={false} showEmbedding={false} />); });
-    const rows = root.root.findByType("tbody").findAllByType("tr");
-    expect(rows.map(row => row.findAllByType("td")[2].findByType("a").children.join(""))).toEqual(["Voyage 2", "Voyage 0", "Voyage 1"]);
+    const sheetLinks = root.root.findByType("tbody").findAllByType("a").filter(link => link.props.className === "table-title-button");
+    expect(sheetLinks.map(link => link.props.href)).toEqual(["/share/owner/2", "/share/owner/0", "/share/owner/1"]);
     expect(entries.map(entry => entry.sheet.id)).toEqual(["0", "1", "2"]);
     await act(async () => root.unmount());
   });
