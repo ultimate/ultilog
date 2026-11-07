@@ -38,6 +38,28 @@ describe("shared copy review", () => {
   });
   afterEach(async () => { if (root) await act(async () => root!.unmount()); root = undefined; vi.unstubAllGlobals(); vi.clearAllMocks(); });
 
+  it("shows checking progress for each pending sheet until its own preview resolves", async () => {
+    let resolveFirst!: (value: Response) => void;
+    let resolveSecond!: (value: Response) => void;
+    const original = fetchMock.getMockImplementation()!;
+    fetchMock.mockImplementation((url: string, options?: RequestInit) => {
+      if (url.includes("/fresh/copy")) return new Promise<Response>(resolve => { resolveFirst = resolve; });
+      if (url.includes("/existing/copy")) return new Promise<Response>(resolve => { resolveSecond = resolve; });
+      return original(url, options);
+    });
+    await renderDialog();
+    expect(root!.root.findAllByProps({ className: "shared-copy-spinner" })).toHaveLength(2);
+    expect(root!.root.findByProps({ type: "submit" }).props.disabled).toBe(true);
+    await act(async () => resolveFirst(new Response(JSON.stringify({ copies: [] }))));
+    expect(root!.root.findAllByProps({ className: "shared-copy-spinner" })).toHaveLength(1);
+    expect(root!.root.findAllByType("fieldset").map(row => row.props["aria-busy"])).toEqual([false, true]);
+    expect(root!.root.findByProps({ type: "submit" }).props.disabled).toBe(true);
+    await act(async () => resolveSecond(new Response(JSON.stringify({ copies: [target] }))));
+    expect(root!.root.findAllByProps({ className: "shared-copy-spinner" })).toHaveLength(0);
+    expect(root!.root.findByProps({ type: "submit" }).props.disabled).toBe(false);
+    expect(root!.root.findAllByProps({ className: "shared-copy-badge" }).map(node => node.children.join(""))).toEqual(["New copy", "Update existing copy"]);
+  });
+
   it("labels each sheet and sends independent create and update options", async () => {
     await renderDialog();
     expect(root!.root.findAllByProps({ className: "shared-copy-badge" }).map(node => node.children.join(""))).toEqual(["New copy", "Update existing copy"]);

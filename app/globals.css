@@ -2362,3 +2362,11 @@ img.entity-image--preview {
 .shared-copy-panel button:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
 .logbook-table .shared-selection-cell { width: 1%; white-space: nowrap; text-align: center; }
 .logbook-table .shared-selection-cell input[type="checkbox"] { width: 1.125rem; min-width: 1.125rem; max-width: 1.125rem; height: 1.125rem; margin: 0; padding: 0; vertical-align: middle; accent-color: var(--blue); }
+
+.shared-copy-panel, .shared-copy-rows, .shared-copy-row { grid-template-columns: minmax(0, 1fr); }
+.shared-copy-rows, .shared-copy-panel label { min-width: 0; }
+.shared-copy-panel select { box-sizing: border-box; width: 100%; min-width: 0; max-width: 100%; text-overflow: ellipsis; }
+.shared-copy-row legend { max-width: 100%; }
+.shared-copy-checking { display: flex; align-items: center; gap: .5rem; color: var(--subtle, var(--muted)); }
+.shared-copy-spinner { flex: 0 0 auto; width: 1rem; height: 1rem; border: 2px solid color-mix(in srgb, var(--blue) 25%, transparent); border-top-color: var(--blue); border-radius: 50%; animation: smart-field-spin .8s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .shared-copy-spinner { animation: none; } }
