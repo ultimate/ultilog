@@ -2357,3 +2357,8 @@ img.entity-image--preview {
 .shared-collection-toolbar .shared-collection-controls, .shared-collection-toolbar .shared-copy-toolbar { margin-bottom: 0; }
 
 .shared-copy-action button:disabled, .shared-copy-toolbar button:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+
+.shared-copy-panel .modal-actions { flex-wrap: wrap; }
+.shared-copy-panel button:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+.logbook-table .shared-selection-cell { width: 1%; white-space: nowrap; text-align: center; }
+.logbook-table .shared-selection-cell input[type="checkbox"] { width: 1.125rem; min-width: 1.125rem; max-width: 1.125rem; height: 1.125rem; margin: 0; padding: 0; vertical-align: middle; accent-color: var(--blue); }
