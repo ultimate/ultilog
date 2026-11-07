@@ -452,6 +452,125 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
       } finally { await context.cleanup(); }
     });
 
+    async function setupSharedCopy() {
+      const context = await setup();
+      const db = context.database.forUser(context.other);
+      await db.upsertBoat({ ...context.boat, id: "source-boat", revision: undefined });
+      const source = await db.upsertLogSheet({ ...sheet(voyageLines()), boatId: "source-boat", title: "Original voyage", remarks: "Original remarks", share: { masterData: "public", remarks: "public", logLines: "public", technicalLog: "public", picture: "public", metrics: "public", skipper: "public", crew: "public" } });
+      db.forUser(context.owner);
+      const copied = (await db.copySharedSheet(context.other, "sheet", { destinationBoatId: "boat" }))!;
+      return { ...context, copied, source: source! };
+    }
+
+    it("previews all owned matching copies and updates a selected copy in place", async () => {
+      const context = await setupSharedCopy();
+      try {
+        const db = context.database;
+        const another = await db.copySharedSheet(context.other, "sheet", { destinationBoatId: "boat", allowDuplicate: true });
+        const local = (await db.upsertLogSheet({ ...context.copied, title: "Local title", status: "Locked", share: context.source.share }))!;
+        const preview = (await db.previewSharedCopies(context.other, "sheet"))!;
+        expect(preview.copies).toHaveLength(2);
+        const target = preview.copies.find(copy => copy.id === local.id)!;
+        expect(target).toMatchObject({ title: "Local title", boatId: "boat", boatName: "Contract boat", revision: local.revision, contentVersion: expect.any(String) });
+        db.forUser(context.other);
+        const changedSource = await db.upsertLogSheet({ ...context.source, title: "Updated source", remarks: "Fresh remarks", technicalChecks: [{ status: "ok", text: "New check" }] });
+        db.forUser(context.owner);
+        const result = (await db.copySharedSheet(context.other, "sheet", { action: "update", targetCopyId: target.id, expectedRevision: target.revision, expectedContentVersion: target.contentVersion, destinationBoatId: "ignored-for-update" }))!;
+        expect(result).toMatchObject({ id: local.id, createdAt: local.createdAt, status: "Locked", boatId: "boat", share: local.share, title: "Updated source", remarks: "Fresh remarks", technicalChecks: [{ status: "ok", text: "New check" }], copyProvenance: { sourceRevision: changedSource!.revision, sourceTitle: "Updated source" } });
+        expect(result.revision).toBeGreaterThan(local.revision!);
+        expect(result.lines.map(line => line.id)).not.toEqual(local.lines.map(line => line.id));
+        expect(result.metrics?.totalMiles).toBe(calculateLogSheetMetrics(result.lines, result.route).totalMiles);
+        const stored = (await db.readLogbook()).sheets;
+        expect(stored).toHaveLength(2);
+        expect(stored.find(candidate => candidate.id === another!.id)?.title).toBe("Original voyage");
+        expect((await db.previewSharedCopies(context.other, "sheet"))!.copies[0].id).toBe(local.id);
+      } finally { await context.cleanup(); }
+    });
+
+    it("rejects stale metadata and independently edited lines before overwriting", async () => {
+      const context = await setupSharedCopy();
+      try {
+        const db = context.database;
+        const target = (await db.previewSharedCopies(context.other, "sheet"))!.copies[0];
+        const options = { action: "update" as const, targetCopyId: target.id, expectedRevision: target.revision, expectedContentVersion: target.contentVersion, destinationBoatId: "boat" };
+        await db.updateLogLine(target.id, context.copied.lines[0].id, { ...context.copied.lines[0], remarks: "Concurrent line edit" });
+        await expect(db.copySharedSheet(context.other, "sheet", options)).rejects.toMatchObject({ code: "revision_conflict" });
+        const refreshed = (await db.previewSharedCopies(context.other, "sheet"))!.copies[0];
+        const local = (await db.readLogbook()).sheets[0];
+        await db.upsertLogSheet({ ...local, title: "Concurrent title" });
+        await expect(db.copySharedSheet(context.other, "sheet", { ...options, expectedContentVersion: refreshed.contentVersion })).rejects.toMatchObject({ code: "revision_conflict" });
+        const stored = (await db.readLogbook()).sheets[0];
+        expect(stored.title).toBe("Concurrent title");
+        expect(stored.lines[0].remarks).toBe("Concurrent line edit");
+      } finally { await context.cleanup(); }
+    });
+
+    it("rejects foreign or unrelated update targets and rechecks source permissions", async () => {
+      const context = await setupSharedCopy();
+      try {
+        const db = context.database;
+        const target = (await db.previewSharedCopies(context.other, "sheet"))!.copies[0];
+        const options = { action: "update" as const, targetCopyId: target.id, expectedRevision: target.revision, expectedContentVersion: target.contentVersion, destinationBoatId: "boat" };
+        await db.upsertLogSheet({ ...sheet([]), id: "unrelated" });
+        await expect(db.copySharedSheet(context.other, "sheet", { ...options, targetCopyId: "unrelated" })).resolves.toBeUndefined();
+        db.forUser(context.other);
+        await expect(db.copySharedSheet(context.other, "sheet", options)).resolves.toBeUndefined();
+        await db.upsertLogSheet({ ...context.source, share: { ...context.source.share!, technicalLog: "private" } });
+        db.forUser(context.owner);
+        await expect(db.previewSharedCopies(context.other, "sheet")).rejects.toMatchObject({ code: "shared_sections_not_visible" });
+        await expect(db.copySharedSheet(context.other, "sheet", options)).rejects.toMatchObject({ code: "shared_sections_not_visible" });
+        expect((await db.readLogbook()).sheets.find(candidate => candidate.id === target.id)?.title).toBe("Original voyage");
+      } finally { await context.cleanup(); }
+    });
+
+    it("clears omitted pictures and assignments without deleting reusable crew profiles", async () => {
+      const context = await setupSharedCopy();
+      try {
+        const db = context.database;
+        await db.upsertCrewMember({ id: "local-crew", name: "Local crew", nationality: "GB", role: "Crew" });
+        const imageId = randomUUID();
+        await db.createStoredImage(imageId, { data: "data:image/png;base64,Y29weQ==", mimeType: "image/png", width: 2, height: 3 });
+        await db.upsertLogSheet({ ...context.copied, imageId, crew: [{ id: "local-crew", embarkationDateTime: "", embarkationPosition: "", disembarkationDateTime: "", disembarkationPosition: "" }] });
+        const target = (await db.previewSharedCopies(context.other, "sheet"))!.copies[0];
+        const result = await db.copySharedSheet(context.other, "sheet", { action: "update", targetCopyId: target.id, expectedRevision: target.revision, expectedContentVersion: target.contentVersion, destinationBoatId: "boat" });
+        expect(result!.crew).toEqual([]);
+        expect(result!.imageId).toBeUndefined();
+        expect(await db.readStoredImage(imageId)).toBeUndefined();
+        expect((await db.readLogbook()).crewMembers?.some(member => member.id === "local-crew")).toBe(true);
+      } finally { await context.cleanup(); }
+    });
+
+    it("updates on the retained archived boat but rejects invalid locked contents", async () => {
+      const context = await setupSharedCopy();
+      try {
+        const db = context.database;
+        await db.upsertBoat({ ...context.boat, archived: true });
+        const locked = (await db.upsertLogSheet({ ...context.copied, status: "Locked" }))!;
+        const target = (await db.previewSharedCopies(context.other, "sheet"))!.copies[0];
+        const options = { action: "update" as const, targetCopyId: target.id, expectedRevision: target.revision, expectedContentVersion: target.contentVersion, destinationBoatId: "boat" };
+        const result = await db.copySharedSheet(context.other, "sheet", options);
+        expect(result!.status).toBe(locked.status);
+        const refreshed = (await db.previewSharedCopies(context.other, "sheet"))!.copies[0];
+        db.forUser(context.other);
+        const sourceLine = (await db.readLogbook()).sheets[0].lines[0];
+        await db.updateLogLine("sheet", sourceLine.id, { ...sourceLine, latitude: null });
+        db.forUser(context.owner);
+        await expect(db.copySharedSheet(context.other, "sheet", { ...options, expectedRevision: refreshed.revision, expectedContentVersion: refreshed.contentVersion })).rejects.toThrow(/required before locking/);
+        expect((await db.readLogbook()).sheets[0].lines[0].latitude).not.toBeNull();
+      } finally { await context.cleanup(); }
+    });
+
+    it("rolls back an entire update when persistence fails", async () => {
+      const context = await setupSharedCopy();
+      try {
+        const db = context.database;
+        const target = (await db.previewSharedCopies(context.other, "sheet"))!.copies[0];
+        await harness.installMetricFailure(db);
+        await expect(db.copySharedSheet(context.other, "sheet", { action: "update", targetCopyId: target.id, expectedRevision: target.revision, expectedContentVersion: target.contentVersion, destinationBoatId: "boat" })).rejects.toThrow(/metric/i);
+        expect((await db.readLogbook()).sheets[0]).toEqual(context.copied);
+      } finally { await context.cleanup(); }
+    });
+
     it("counts a copied sheet read by its recipient exactly like a manually created sheet", async () => {
       const context = await setup();
       try {

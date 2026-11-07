@@ -1,3 +1,6 @@
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { I18nProvider } from "../../app/lib/i18n";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../auth", () => ({ auth: vi.fn() }));
@@ -41,4 +44,21 @@ describe("shared logbook page access", () => {
     await openShare(["owner", "sheet"]);
     expect(readSharedLogSheet).toHaveBeenCalledWith("sheet", true, "owner");
   });
+  it("offers login on unavailable pages without exposing private details and preserves query parameters", async () => {
+    vi.mocked(auth).mockResolvedValueOnce(null as never);
+    const page = await SharedLogbookPage({ params: Promise.resolve({ segments: ["owner", "private-sheet"] }), searchParams: Promise.resolve({ view: "list", from: "2026-10-01" }) });
+    const markup = renderToStaticMarkup(createElement(I18nProvider, null, page));
+    expect(markup).toContain("Logbook not available");
+    expect(markup).toContain(">Log in</a>");
+    expect(markup).toContain("callbackUrl=%2Fshare%2Fowner%2Fprivate-sheet%3Fview%3Dlist%26from%3D2026-10-01");
+  });
+
+  it.each([false, true])("shows a general login control only on non-embedded anonymous collections (embed=%s)", async embed => {
+    vi.mocked(auth).mockResolvedValueOnce(null as never);
+    vi.mocked(readSharedLogSheets).mockResolvedValueOnce({ ownerId: "owner", ownerName: "Owner", sheets: [] });
+    const page = await openShare(["owner"], embed);
+    const markup = renderToStaticMarkup(createElement(I18nProvider, null, page));
+    expect(markup.includes(">Log in</a>")).toBe(!embed);
+  });
+
 });

@@ -1,5 +1,7 @@
 "use client";
 
+import { useHydrated } from "../lib/use-hydrated";
+import { loginReturnDestination } from "../lib/auth-return-path";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
@@ -15,11 +17,12 @@ export default function CheckEmailPage() {
 
 function CheckEmailContent() {
   const searchParams = useSearchParams();
-  return <CheckEmailCard email={searchParams.get("email") ?? ""} />;
+  return <CheckEmailCard email={searchParams.get("email") ?? ""} returnPath={loginReturnDestination(`?${searchParams}`)} />;
 }
 
-function CheckEmailCard({ email = "" }: { email?: string }) {
+function CheckEmailCard({ email = "", returnPath = "/" }: { email?: string; returnPath?: string }) {
   const { t } = useI18n();
+  const hydrated = useHydrated();
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isResending, setIsResending] = useState(false);
@@ -57,7 +60,7 @@ function CheckEmailCard({ email = "" }: { email?: string }) {
         {message ? <p className="auth-success">{message}</p> : null}
         {error ? <p className="auth-error">{error}</p> : null}
         <button type="button" onClick={resendVerificationEmail} disabled={!email || isResending}>{isResending ? t("auth.pleaseWait") : t("auth.resendVerificationEmail")}</button>
-        <button type="button" onClick={() => window.location.assign("/")}>{t("auth.continueToApp")}</button>
+        <button type="button" disabled={!hydrated} onClick={() => window.location.assign(returnPath)}>{t("auth.continueToApp")}</button>
         <div className="auth-footer"><p><Link href="/login">{t("auth.backToLogin")}</Link></p></div>
       </section>
     </main>

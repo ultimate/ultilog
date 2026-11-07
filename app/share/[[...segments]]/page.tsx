@@ -13,12 +13,19 @@ import Link from "next/link";
 import { embedThemeStyle, parseEmbedTheme } from "../../domain/logbook/embed-theme";
 import { SharedSheetsCollection } from "../../components/logbook/SharedSheetsCollection";
 import { SharedLogSheetDetails, SharedTechnicalLog } from "../../components/logbook/SharedLogSheetDetails";
+import { SharedLoginLink } from "../../components/logbook/SharedLoginLink";
 import { SharedPageNavigation } from "../../components/logbook/SharedPageNavigation";
 
 export default async function SharedLogbookPage({ params, searchParams }: { params: Promise<{ segments?: string[] }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const { segments = [] } = await params;
   const query = await searchParams;
   const isEmbed = query.embed === "1";
+  const returnQuery = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (Array.isArray(value)) value.forEach(item => returnQuery.append(key, item));
+    else if (value !== undefined) returnQuery.set(key, value);
+  }
+  const returnPath = `/share/${segments.map(encodeURIComponent).join("/")}${returnQuery.size ? `?${returnQuery}` : ""}`;
   const embedTheme = parseEmbedTheme(query);
   const { ownerId, sheetId } = parseShareSegments(segments);
   const session = await auth();
@@ -37,13 +44,14 @@ export default async function SharedLogbookPage({ params, searchParams }: { para
     return <main className={`app-shell shared-logbook-page shared-collection-page${isEmbed ? " shared-logbook-page--embed" : ""}`} style={isEmbed ? embedThemeStyle(embedTheme) : undefined}>
       {session?.user && !isEmbed ? <SharedPageNavigation user={session.user} /> : null}
       <section className="app-content">
+        {!session?.user?.id && !isEmbed ? <SharedLoginLink returnPath={returnPath} /> : null}
         {!isEmbed && <aside className="shared-owner-banner" aria-label={`Shared by ${collection.ownerName}`}>
           {collection.ownerAvatar ? <Image className="shared-owner-logo" src={collection.ownerAvatar} alt="" width={64} height={64} unoptimized /> : null}
           <div><span>Shared log sheets by</span><strong>{collection.ownerName}</strong></div>
           {!session?.user && <Link className="powered-by-ultilog" href="/">Powered by <strong>Ultilog</strong></Link>}
         </aside>}
         {!isEmbed && <div className="page-heading"><div><p className="eyebrow">Community logbook</p><h1>Shared log sheets</h1><p>Select a voyage from the list or map to open its sharing view.</p></div></div>}
-        <SharedSheetsCollection ownerId={collection.ownerId} entries={entries} initialView={view} embedded={isEmbed} showEmbedding={session?.user?.id === collection.ownerId} showMapLegend={showMapLegend} />
+        <SharedSheetsCollection ownerId={collection.ownerId} entries={entries} isAuthenticated={Boolean(session?.user?.id)} returnPath={returnPath} initialView={view} embedded={isEmbed} showEmbedding={session?.user?.id === collection.ownerId} showMapLegend={showMapLegend} />
         {isEmbed && !session?.user && <Link className="powered-by-ultilog shared-embed-attribution" href="/" target="_blank" rel="noreferrer">Powered by <strong>Ultilog</strong></Link>}
       </section>
     </main>;
@@ -57,6 +65,7 @@ export default async function SharedLogbookPage({ params, searchParams }: { para
           <article className="logbook-section">
             <p className="eyebrow">Shared logbook</p>
             <h1>Logbook not available</h1>
+            {!session?.user?.id && !isEmbed ? <SharedLoginLink returnPath={returnPath} /> : null}
             <p>This logbook is private, restricted to registered users, or does not exist.</p>
           </article>
         </section>
@@ -72,13 +81,13 @@ export default async function SharedLogbookPage({ params, searchParams }: { para
   const hasLogLines = sheet.lines.length > 0;
   const hasMetrics = Boolean(metrics);
   const hasSupportContent = hasCrew || hasTechnicalLog;
-  const returnPath = `/share/${segments.map(encodeURIComponent).join("/")}`;
   const ownerName = shared.ownerName ?? "Logbook owner";
 
   return (
     <main className={`app-shell shared-logbook-page${isEmbed ? " shared-logbook-page--embed" : ""}`} data-can-copy={capability.canCopy} style={isEmbed ? embedThemeStyle(embedTheme) : undefined}>
       {session?.user && !isEmbed ? <SharedPageNavigation user={session.user} /> : null}
       <section className="app-content">
+        {!session?.user?.id && !isEmbed ? <SharedLoginLink returnPath={returnPath} /> : null}
         <aside className="shared-owner-banner" aria-label={`Shared by ${ownerName}`}>
           {shared.ownerAvatar ? <Image className="shared-owner-logo" src={shared.ownerAvatar} alt="" width={64} height={64} unoptimized /> : null}
           <div>
@@ -87,6 +96,8 @@ export default async function SharedLogbookPage({ params, searchParams }: { para
           </div>
           {!session?.user && <Link className="powered-by-ultilog" href="/" target={isEmbed ? "_blank" : undefined} rel={isEmbed ? "noreferrer" : undefined}>Powered by <strong>Ultilog</strong></Link>}
         </aside>
+
+        <SharedLogbookCopy ownerId={shared.sourceOwnerId ?? ownerId ?? ""} sheetId={sheetId!} title={sheet.title} isAuthenticated={Boolean(session?.user?.id)} canCopy={capability.canCopy} requiresAuthentication={capability.requiresAuthentication} missingRequiredSections={capability.missingRequiredSections} canIncludeCrew={hasCrew} canIncludePicture={Boolean(sheet.image)} returnPath={returnPath} />
 
         <div className={`sheet-master-map-grid${hasLogLines ? "" : " sheet-master-map-grid--single"}`}>
           <article className="logbook-section sheet-master-header">
@@ -110,8 +121,6 @@ export default async function SharedLogbookPage({ params, searchParams }: { para
             </article>
           ) : null}
         </div>
-
-        <SharedLogbookCopy ownerId={shared.sourceOwnerId ?? ownerId ?? ""} sheetId={sheetId!} isAuthenticated={Boolean(session?.user?.id)} canCopy={capability.canCopy} requiresAuthentication={capability.requiresAuthentication} missingRequiredSections={capability.missingRequiredSections} canIncludeCrew={hasCrew} canIncludePicture={Boolean(sheet.image)} returnPath={returnPath} />
 
         {hasMetrics ? (
           <section className="entry-metrics logbook-section" aria-label="Shared logbook summary">
