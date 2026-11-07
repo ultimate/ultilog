@@ -108,7 +108,7 @@ export function SharedCopyDialog({ ownerId, entries, returnPath, onClose, single
 
   return <ModalLayer className="share-logsheet-modal" role="dialog" aria-modal="true" aria-labelledby="shared-copy-title">
     <form className="share-logsheet-panel shared-copy-panel" onSubmit={submit}>
-      <div className="share-logsheet-heading"><h2 id="shared-copy-title">{t("sharedCopy.title")}</h2><button type="button" disabled={submitting} aria-label={t("sharedCopy.close")} onClick={onClose}>×</button></div>
+      <div className="share-logsheet-heading"><h2 id="shared-copy-title">{t("sharedCopy.title")}</h2><button type="button" className="secondary-action" disabled={submitting} aria-label={t("sharedCopy.close")} onClick={onClose}>×</button></div>
       <p>{t("sharedCopy.manualUpdates")}</p><p>{t("sharedCopy.deletion")}</p>
       <p className="shared-copy-warning">{t("sharedCopy.overwrite")}</p>
       <p>{t("sharedCopy.optionalReplacement")}</p>
@@ -132,8 +132,8 @@ export function SharedCopyDialog({ ownerId, entries, returnPath, onClose, single
           {row.error ? <p role="alert">{row.error}</p> : null}
         </fieldset>;
       })}</div>
-      {rows.filter(row => row.status === "error" || row.status === "uncertain").map(row => <button type="button" key={row.id} disabled={submitting} onClick={() => void reviewAgain(row)}>{t("sharedCopy.reviewAgain")}: {row.title}</button>)}
-      <div className="modal-actions"><button type="button" disabled={submitting} onClick={onClose}>{t("sharedCopy.close")}</button><button type="submit" disabled={!canSubmit}>{submitting ? t("sharedCopy.copying") : t("sharedCopy.confirmCounts").replace("{new}", String(newCount)).replace("{updates}", String(updateCount))}</button></div>
+      {rows.filter(row => row.status === "error" || row.status === "uncertain").map(row => <button type="button" className="secondary-action" key={row.id} disabled={submitting} onClick={() => void reviewAgain(row)}>{t("sharedCopy.reviewAgain")}: {row.title}</button>)}
+      <div className="modal-actions"><button type="button" className="secondary-action" disabled={submitting} onClick={onClose}>{t("sharedCopy.close")}</button><button type="submit" className="primary-action" disabled={!canSubmit}>{submitting ? t("sharedCopy.copying") : t("sharedCopy.confirmCounts").replace("{new}", String(newCount)).replace("{updates}", String(updateCount))}</button></div>
     </form>
   </ModalLayer>;
 }
