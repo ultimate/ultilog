@@ -48,14 +48,14 @@ describe("shared logbook copy", () => {
 
   it("always shows a disabled copy button and names information the owner must share", () => {
     const markup = renderCopy();
-    expect(markup).toContain("<button type=\"button\" disabled=\"\">Copy to my logbook</button>");
+    expect(markup).toContain("<button type=\"button\" class=\"primary-action\" disabled=\"\">Copy to my logbook</button>");
     expect(markup).toContain("master data, technical log");
     expect(markup).toContain("Please ask the owner to share this information");
   });
 
   it("keeps the disabled copy button beside sign-in guidance when authentication unlocks the share", () => {
     const markup = renderCopy({ isAuthenticated: false, requiresAuthentication: true, missingRequiredSections: ["masterData"] });
-    expect(markup).toContain("<button type=\"button\" disabled=\"\">Copy to my logbook</button>");
+    expect(markup).toContain("<button type=\"button\" class=\"primary-action\" disabled=\"\">Copy to my logbook</button>");
     expect(markup).toContain("Sign in to copy this shared sheet");
     expect(markup).toContain("/login?callbackUrl=%2Fshare%2Fowner%2Fsheet");
   });
