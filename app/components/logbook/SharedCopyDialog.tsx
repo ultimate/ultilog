@@ -117,8 +117,9 @@ export function SharedCopyDialog({ ownerId, entries, returnPath, onClose, single
       {newCount > 0 && boats.length > 0 ? <label>{t("sharedCopy.destination")}<select value={boatId} disabled={submitting} onChange={event => setBoatId(event.target.value)}>{boats.map(boat => <option key={boat.id} value={boat.id}>{boat.name}</option>)}</select></label> : null}
       <div className="shared-copy-rows">{rows.map(row => {
         const target = row.copies.find(copy => copy.id === row.targetId);
-        return <fieldset className="shared-copy-row" key={row.id} disabled={submitting || row.status !== "ready"}>
+        return <fieldset className="shared-copy-row" key={row.id} aria-busy={row.status === "loading"} disabled={submitting || row.status !== "ready"}>
           <legend>{row.title}</legend>
+          {row.status === "loading" ? <p className="shared-copy-checking" role="status"><span className="shared-copy-spinner" aria-hidden="true" />{t("sharedCopy.reviewLoading")}</p> : null}
           {row.previewed && row.status !== "loading" ? <strong className="shared-copy-badge">{target ? t("sharedCopy.updateExisting") : t("sharedCopy.newCopy")}</strong> : null}
           {row.copies.length > 0 ? <label>{t("sharedCopy.chooseAction")}<select value={row.targetId} onChange={event => patch(row.id, { targetId: event.target.value })}>
             <option value="">{t("sharedCopy.newCopy")}</option>
