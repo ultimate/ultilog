@@ -55,12 +55,20 @@ describe("compliance catalog domain", () => {
 
   it("rejects invalid tracked requirements", () => {
     const missingUnit = fixture();
-    missingUnit.licenses[0].requirements = [{ id: "miles", type: "total-miles", threshold: 10, translationKey: "example.key" }];
+    missingUnit.licenses[0].requirements = [{ id: "miles", type: "miles", threshold: 10, translationKey: "example.key" }];
     expect(() => createComplianceCatalog(missingUnit)).toThrow(/recognized unit/);
 
     const invalidThreshold = fixture();
-    invalidThreshold.licenses[0].requirements = [{ id: "miles", type: "total-miles", threshold: 0, unit: "nautical-miles", translationKey: "example.key" }];
+    invalidThreshold.licenses[0].requirements = [{ id: "miles", type: "miles", threshold: 0, unit: "nautical-miles", translationKey: "example.key" }];
     expect(() => createComplianceCatalog(invalidThreshold)).toThrow(/positive threshold/);
+  });
+
+  it.each(["boatType", "propulsion"])("validates lowercase %s independently", key => {
+    const input = fixture();
+    input.licenses[0].requirements = [{ id: "miles", type: "miles", threshold: 10, unit: "nautical-miles", translationKey: "example.key", filters: { boatType: "sail", propulsion: "motor" } }];
+    expect(createComplianceCatalog(input).licenses[0].requirements[0].filters).toEqual({ boatType: "sail", propulsion: "motor" });
+    input.licenses[0].requirements[0].filters = { [key]: "Sail" };
+    expect(() => createComplianceCatalog(input)).toThrow(/must be sail or motor/);
   });
 
   it("allows manual progress metadata to be absent and strips author metadata", () => {

@@ -4,7 +4,7 @@ import { DEMO_LOGBOOK_TEMPLATE, DEMO_ROUTE_PROVENANCE, DEMO_TEMPLATE_VERSION, DE
 describe("immutable demo logbook template", () => {
   it("contains two boats, five reusable crew members, and two four-day cruises", () => {
     expect(DEMO_TEMPLATE_VERSION).toBe(5);
-    expect(DEMO_LOGBOOK_TEMPLATE.boats.map((boat) => boat.type).sort()).toEqual(["Motor", "Sail"]);
+    expect(DEMO_LOGBOOK_TEMPLATE.boats.map((boat) => boat.type).sort()).toEqual(["motor", "sail"]);
     expect(DEMO_LOGBOOK_TEMPLATE.crewMembers).toHaveLength(5);
     expect(DEMO_LOGBOOK_TEMPLATE.sheets).toHaveLength(8);
 
@@ -34,7 +34,7 @@ describe("immutable demo logbook template", () => {
   });
 
   it("uses typed boat master data and illustrative shifted deviation curves", () => {
-    const sailboat = DEMO_LOGBOOK_TEMPLATE.boats.find((boat) => boat.type === "Sail")!;
+    const sailboat = DEMO_LOGBOOK_TEMPLATE.boats.find((boat) => boat.type === "sail")!;
     expect(sailboat.homePort).toBe("Basel");
 
     for (const boat of DEMO_LOGBOOK_TEMPLATE.boats) {

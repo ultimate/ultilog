@@ -100,7 +100,7 @@ const boats: DemoBoat[] = [
   {
     id: demoIds.boats.boreas,
     name: "SY Boreas",
-    type: "Sail",
+    type: "sail",
     registration: "CHE-7421",
     flagState: "CH",
     homePort: "Basel",
@@ -123,7 +123,7 @@ const boats: DemoBoat[] = [
   {
     id: demoIds.boats.aurora,
     name: "MY Aurora",
-    type: "Motor",
+    type: "motor",
     registration: "ST-19884",
     flagState: "HR",
     homePort: "Split",
@@ -246,7 +246,7 @@ function logLine(dayData: Day, waypoint: Waypoint, nextWaypoint: Waypoint | unde
   const weather = weatherAt(dayData, fraction);
   const underway = index < count - 1;
   const trueCourse = nextWaypoint ? bearing(waypoint, nextWaypoint) : 0;
-  const motorBoat = boat.type === "Motor";
+  const motorBoat = boat.type === "motor";
   const distance = Math.round(dayData.distance * fraction * 10) / 10;
   const magneticCourse = underway ? (trueCourse + 356) % 360 : 0;
   const closestDeviation = underway ? boat.deviationTable.reduce((closest, row) => Math.abs(row.heading - magneticCourse) < Math.abs(closest.heading - magneticCourse) ? row : closest) : undefined;
@@ -301,7 +301,7 @@ function createSheet(dayData: Day, boat: Boat, memberIds: string[], index: numbe
     const fraction = lineIndex / (lineCount - 1);
     return logLine(dayData, waypoints[lineIndex], waypoints[lineIndex + 1], interpolateTime(dayData.date, dayData.departure, dayData.arrival, fraction), lineIndex, lineCount, boat);
   });
-  const motorBoat = boat.type === "Motor";
+  const motorBoat = boat.type === "motor";
   return {
     id: demoIds.sheets[dayData.id as keyof typeof demoIds.sheets],
     title: dayData.title,

@@ -79,7 +79,9 @@ export function validatePersistedLogbook(value: unknown): PersistedLogbook {
   assert(record(value), "Logbook must be an object.");
   count(value.boats, LOGBOOK_LIMITS.boats, "boats"); count(value.crewMembers, LOGBOOK_LIMITS.crewMembers, "crew members"); count(value.sheets, LOGBOOK_LIMITS.sheets, "sheets");
   value.boats.forEach((boat, i) => {
-    assert(record(boat) && ["id", "name", "registration", "flagState", "homePort", "owner", "dimensions"].every(k => string(boat[k])) && ["manufacturer", "mmsi"].every(k => optional(boat[k], string)) && ["Sail", "Motor"].includes(boat.type as string) && finite(boat.logfactor) && Array.isArray(boat.deviationTable) && optional(boat.archived, boolean), `boats[${i}] is malformed.`);
+    // Normalize exports created before boat types became lowercase.
+    if (record(boat) && (boat.type === "Sail" || boat.type === "Motor")) boat.type = boat.type.toLowerCase();
+    assert(record(boat) && ["id", "name", "registration", "flagState", "homePort", "owner", "dimensions"].every(k => string(boat[k])) && ["manufacturer", "mmsi"].every(k => optional(boat[k], string)) && ["sail", "motor"].includes(boat.type as string) && finite(boat.logfactor) && Array.isArray(boat.deviationTable) && optional(boat.archived, boolean), `boats[${i}] is malformed.`);
     const flagState = boat.flagState as string;
     assert(flagState === "" || isSupportedCountryCode(flagState), `boats[${i}].flagState must be an uppercase ISO 3166-1 alpha-2 country code.`);
     assert(boat.deviationTable.every(row => record(row) && finite(row.heading) && string(row.deviation)), `boats[${i}].deviationTable is malformed.`);

@@ -100,6 +100,16 @@
     }
   },
   {
+    "id": "improve-license-dates-and-vessel-mileage",
+    "category": "fix",
+    "title": {
+      "en": "Improve license start-date editing and count Swiss license progress by boat type",
+      "de": "Startdatum der Lizenz zuverlässiger bearbeiten und Schweizer Lizenzfortschritt nach Bootstyp zählen",
+      "fr": "Améliorer la saisie de la date de début et calculer la progression des permis suisses selon le type de bateau",
+      "it": "Migliorare la modifica della data iniziale e calcolare i progressi delle patenti svizzere per tipo di barca"
+    }
+  },
+  {
     "id": "improve-log-sheet-editing-and-navigation",
     "category": "improvement",
     "title": {

@@ -1,6 +1,6 @@
 import type { StoredImage } from "./stored-image";
 
-export type BoatType = "Sail" | "Motor";
+export type BoatType = "sail" | "motor";
 
 export type BoatEngineRole = "propulsion" | "generator" | "auxiliary";
 

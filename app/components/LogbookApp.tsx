@@ -2032,6 +2032,7 @@ export function LogbookApp({
       <section className="app-content" data-backend-ready={isBackendReady} aria-busy={!isBackendReady} inert={!isBackendReady}>
         {activeModule === "dashboard" && (
           <DashboardPage
+            boats={logbook.boats}
             stats={stats}
             sheets={logbook.sheets}
             language={preferences.language}
@@ -2396,7 +2397,7 @@ export function LogbookApp({
             </section>
           )}
 
-          {activeModule === "compliance" && <CompliancePage countryCode={preferences.countryCode} language={preferences.language} sheets={logbook.sheets} />}
+          {activeModule === "compliance" && <CompliancePage countryCode={preferences.countryCode} language={preferences.language} sheets={logbook.sheets} boats={logbook.boats} />}
         </section>
       </section>
       </main>

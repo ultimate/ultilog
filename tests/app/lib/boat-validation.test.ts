@@ -4,7 +4,7 @@ import { validateBoat, validateBoatUpdate } from "../../../app/lib/validation/bo
 const boat = {
   id: "boat-1",
   name: "Aurora",
-  type: "Sail",
+  type: "sail",
   registration: "CH-1",
   flagState: "CH",
   homePort: "Basel",
@@ -15,6 +15,12 @@ const boat = {
 };
 
 describe("boat validation", () => {
+  it.each([["Sail", "sail"], ["Motor", "motor"]])("normalizes legacy %s boats on import", (legacy, normalized) => {
+    const result = validateBoat({ ...boat, type: legacy });
+    expect(result.type).toBe(normalized);
+    expect(JSON.parse(JSON.stringify(result)).type).toBe(normalized);
+  });
+
   it.each(["Switzerland", "🇨🇭", "ch"])("rejects the legacy flag value %s", (flagState) => {
     expect(() => validateBoat({ ...boat, flagState })).toThrow("uppercase ISO 3166-1 alpha-2");
   });

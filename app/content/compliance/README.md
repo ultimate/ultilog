@@ -28,14 +28,24 @@ Each requirement requires a globally unique, stable `id`, `type` (the progress
 type), numeric `threshold`, nullable `filters`, and `translationKey`. Automatically
 tracked requirements additionally require `unit`; supported units are `days` and
 `nautical-miles`. `filters` is optional counting context represented as `null` when
-there is none; its current optional fields are `propulsion` and `withinYears`.
+there is none; its current optional fields are `boatType`, `propulsion`, and `withinYears`.
 `unit` is omitted for manual checklist requirements because it has no metric.
 
-Tracked `type` values directly select a counter: `days-sailing`, `days-underway`,
-`days-at-sea`, `sail-miles`, `motor-miles`, or `total-miles`. This discriminator is
-the only added metadata needed to distinguish counting rules; filters only narrow
-which records contribute. IDs must never be edited or reused after publication,
-because saved progress refers to them.
+Tracked `type` values select a counter: `days-sailing`, `days-underway`,
+`days-at-sea`, or `miles`. Filters narrow which records contribute. IDs must never
+be edited or reused after publication, because saved progress refers to them.
+
+Boat type and propulsion are separate types, each currently accepting lowercase
+`sail` and `motor` values. They can evolve independently. Filters combine:
+`boatType` selects eligible vessels; for `miles`, `propulsion` selects sail or
+motor distance. With no propulsion filter, all distance on eligible vessels
+counts. For example, `{ "boatType": "sail", "propulsion": "motor" }` counts only
+motoring distance aboard sailing boats. Boat-filtered requirements exclude sheets
+whose boat cannot be resolved, and include archived boats.
+
+Swiss requirements use boat-type filters, including day, manual, and extension
+requirements, without restricting propulsion. Propulsion-qualified day counters
+are not automatically verifiable. Manual requirements remain user-confirmed.
 
 ## Current localization
 
@@ -43,4 +53,3 @@ The Swiss legal document is authored in German, French, Italian, and English. Sw
 licences are authored in German, French, and Italian. The German legal document and
 licences currently contain German only. Applications must fall back to each entry's
 `defaultLanguage` rather than requiring every UI language to exist in the catalog.
-

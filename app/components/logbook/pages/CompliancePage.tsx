@@ -1,16 +1,17 @@
 import { useI18n } from "../../../lib/i18n";
 import { LegalInformationSection } from "../compliance/LegalInformationSection";
 import { LicenseSection } from "../compliance/LicenseSection";
-import type { LogSheet } from "../../../models/logbook";
+import type { Boat, LogSheet } from "../../../models/logbook";
 
 export type CompliancePageProps = {
   countryCode: string;
   language: string;
+  boats?: readonly Boat[];
   sheets?: readonly LogSheet[];
 };
 
 /** Compliance is intentionally page-local: changing its jurisdiction never edits the profile. */
-export function CompliancePage({ countryCode, language, sheets = [] }: CompliancePageProps) {
+export function CompliancePage({ countryCode, language, sheets = [], boats = [] }: CompliancePageProps) {
   const { t } = useI18n();
   return (
     <section className="sheet-detail module-panel">
@@ -25,7 +26,7 @@ export function CompliancePage({ countryCode, language, sheets = [] }: Complianc
         <p>{t("compliance.disclaimer")}</p>
       </aside>
       <LegalInformationSection key={`${countryCode}:${language}`} profileCountryCode={countryCode} requestedLanguage={language} />
-      <LicenseSection requestedLanguage={language} sheets={sheets} />
+      <LicenseSection requestedLanguage={language} sheets={sheets} boats={boats} />
     </section>
   );
 }

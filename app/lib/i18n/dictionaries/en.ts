@@ -398,6 +398,8 @@ export const en = {
   "compliance.required": "Required",
   "compliance.remaining": "Remaining",
   "compliance.checklist": "Requirement checklist",
+  "compliance.milesOnSailingBoats": "Miles on sailing boats",
+  "compliance.milesOnMotorBoats": "Miles on motorboats",
   "compliance.sailMiles": "Sail miles",
   "compliance.motorMiles": "Motor miles",
   "compliance.oceanPassages": "Ocean passages",

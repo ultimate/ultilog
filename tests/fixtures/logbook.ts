@@ -4,7 +4,7 @@ export const sampleBoats: Boat[] = [
   {
     id: "4bff7b1f-ff73-40ed-9a97-800a4e3bf3c0",
     name: "SY Boreas",
-    type: "Sail",
+    type: "sail",
     registration: "CHE-7421",
     flagState: "CH",
     homePort: "Basel",
@@ -19,7 +19,7 @@ export const sampleBoats: Boat[] = [
   {
     id: "d63fa02f-54d2-47d6-a826-96d0bbd28991",
     name: "MY Aurora",
-    type: "Motor",
+    type: "motor",
     registration: "HR-19-884",
     flagState: "HR",
     homePort: "Split",

@@ -61,7 +61,9 @@ describe("LicenseSection", () => {
     expect(root.root.findAllByProps({ className: "license-status-pie" })).toHaveLength(2);
     const startDates = root.root.findAllByProps({ type: "date" });
     expect(startDates[1].props.value).toBe("2026-03-01");
-    await act(async () => { startDates[0].props.onChange({ target: { value: "2026-04-02" } }); });
+    await act(async () => { startDates[0].props.onChange({ target: { value: "2026-04-02" }, currentTarget: { value: "2026-04-02" } }); });
+    expect(fetch).toHaveBeenCalledTimes(1);
+    await act(async () => { root.root.findAllByProps({ type: "date" })[0].props.onBlur({ target: {}, currentTarget: {} }); });
     expect(fetch).toHaveBeenLastCalledWith("/api/compliance", expect.objectContaining({ body: expect.stringContaining('"action":"license-start-date"') }));
   });
 });

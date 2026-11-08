@@ -160,9 +160,18 @@ class RemoveDateRangeDatabase implements QueryableDatabase {
 }
 
 describe("runMigrations", () => {
+  it("normalizes both legacy boat types without changing lowercase values", async () => {
+    const SQL = await initSqlJs();
+    const db = new SQL.Database();
+    try {
+      db.run("create table boats (type text not null); insert into boats values ('Sail'), ('Motor'), ('sail'), ('motor');");
+      db.run(await readFile("app/lib/db/migrations/056_lowercase_boat_types.sql", "utf8"));
+      expect(db.exec("select type from boats")[0].values).toEqual([["sail"], ["motor"], ["sail"], ["motor"]]);
+    } finally { db.close(); }
+  });
   it("discovers migrations in order", async () => {
     const migrations = await readMigrations();
-    expect(migrations.at(-1)?.id).toBe("055_remove_log_line_position");
+    expect(migrations.at(-1)?.id).toBe("056_lowercase_boat_types");
     expect(migrations.some(({ id }) => id === REMOVE_LOG_SHEET_SOURCE_DETAILS_MIGRATION_ID)).toBe(true);
     expect(migrations.some(({ id }) => id === "048_shared_sheet_source_details")).toBe(false);
     expect(migrations.find(({ id }) => id === USER_COMPLIANCE_MIGRATION_ID)?.sql).toContain("user_compliance_licenses");

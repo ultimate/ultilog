@@ -399,6 +399,8 @@ export const fr: Dictionary = {
   "compliance.required": "Requis",
   "compliance.remaining": "Restant",
   "compliance.checklist": "Liste des exigences",
+  "compliance.milesOnSailingBoats": "Milles sur des voiliers",
+  "compliance.milesOnMotorBoats": "Milles sur des bateaux à moteur",
   "compliance.sailMiles": "Milles à la voile",
   "compliance.motorMiles": "Milles au moteur",
   "compliance.oceanPassages": "Traversées hauturières",

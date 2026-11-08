@@ -6,9 +6,7 @@
     "legalText": "Set textKind to official-excerpt for verbatim official wording or editorial-summary for our own summary. Put the precise act/article/paragraph reference in citation.",
     "requirementTypes": [
       "manual",
-      "sail-miles",
-      "motor-miles",
-      "total-miles",
+      "miles",
       "days-sailing",
       "days-underway",
       "days-at-sea"
@@ -214,8 +212,8 @@
           "type": "days-sailing",
           "threshold": 21,
           "filters": {
-            "propulsion": "sail",
-            "withinYears": 4
+            "withinYears": 4,
+            "boatType": "sail"
           },
           "translationKey": "dashboard.sailingDays",
           "unit": "days"
@@ -225,21 +223,21 @@
           "type": "days-at-sea",
           "threshold": 18,
           "filters": {
-            "propulsion": "sail",
-            "withinYears": 4
+            "withinYears": 4,
+            "boatType": "sail"
           },
           "translationKey": "dashboard.daysAtSea",
           "unit": "days"
         },
         {
           "id": "ch-7-a-2-1",
-          "type": "sail-miles",
+          "type": "miles",
           "threshold": 1000,
           "filters": {
-            "propulsion": "sail",
-            "withinYears": 4
+            "withinYears": 4,
+            "boatType": "sail"
           },
-          "translationKey": "dashboard.sailMiles",
+          "translationKey": "compliance.milesOnSailingBoats",
           "unit": "nautical-miles"
         },
         {
@@ -247,8 +245,8 @@
           "type": "manual",
           "threshold": 700,
           "filters": {
-            "propulsion": "sail",
-            "withinYears": 4
+            "withinYears": 4,
+            "boatType": "sail"
           },
           "translationKey": "compliance.requirement.afterTheoryExam"
         }
@@ -362,8 +360,8 @@
           "type": "days-underway",
           "threshold": 14,
           "filters": {
-            "propulsion": "motor",
-            "withinYears": 4
+            "withinYears": 4,
+            "boatType": "motor"
           },
           "translationKey": "dashboard.sailingDays",
           "unit": "days"
@@ -373,21 +371,21 @@
           "type": "days-at-sea",
           "threshold": 10,
           "filters": {
-            "propulsion": "motor",
-            "withinYears": 4
+            "withinYears": 4,
+            "boatType": "motor"
           },
           "translationKey": "dashboard.daysAtSea",
           "unit": "days"
         },
         {
           "id": "ch-7-b-2-1",
-          "type": "motor-miles",
+          "type": "miles",
           "threshold": 500,
           "filters": {
-            "propulsion": "motor",
-            "withinYears": 4
+            "withinYears": 4,
+            "boatType": "motor"
           },
-          "translationKey": "dashboard.motorMiles",
+          "translationKey": "compliance.milesOnMotorBoats",
           "unit": "nautical-miles"
         },
         {
@@ -395,8 +393,8 @@
           "type": "manual",
           "threshold": 400,
           "filters": {
-            "propulsion": "motor",
-            "withinYears": 4
+            "withinYears": 4,
+            "boatType": "motor"
           },
           "translationKey": "compliance.requirement.afterTheoryExam"
         }
@@ -467,21 +465,21 @@
           "type": "days-at-sea",
           "threshold": 10,
           "filters": {
-            "propulsion": "sail",
-            "withinYears": 4
+            "withinYears": 4,
+            "boatType": "sail"
           },
           "translationKey": "dashboard.daysAtSea",
           "unit": "days"
         },
         {
           "id": "ch-8-a-2",
-          "type": "sail-miles",
+          "type": "miles",
           "threshold": 500,
           "filters": {
-            "propulsion": "sail",
-            "withinYears": 4
+            "withinYears": 4,
+            "boatType": "sail"
           },
-          "translationKey": "dashboard.sailMiles",
+          "translationKey": "compliance.milesOnSailingBoats",
           "unit": "nautical-miles"
         }
       ]
@@ -551,21 +549,21 @@
           "type": "days-at-sea",
           "threshold": 5,
           "filters": {
-            "propulsion": "motor",
-            "withinYears": 4
+            "withinYears": 4,
+            "boatType": "motor"
           },
           "translationKey": "dashboard.daysAtSea",
           "unit": "days"
         },
         {
           "id": "ch-8-b-2",
-          "type": "motor-miles",
+          "type": "miles",
           "threshold": 100,
           "filters": {
-            "propulsion": "motor",
-            "withinYears": 4
+            "withinYears": 4,
+            "boatType": "motor"
           },
-          "translationKey": "dashboard.sailMiles",
+          "translationKey": "compliance.milesOnMotorBoats",
           "unit": "nautical-miles"
         }
       ]
@@ -645,7 +643,7 @@
         },
         {
           "id": "de-SportSeeSchV-6-1-2",
-          "type": "total-miles",
+          "type": "miles",
           "threshold": 300,
           "filters": null,
           "translationKey": "dashboard.sailMiles",
@@ -692,7 +690,7 @@
         },
         {
           "id": "de-SportSeeSchV-6-2-2",
-          "type": "total-miles",
+          "type": "miles",
           "threshold": 700,
           "filters": null,
           "translationKey": "dashboard.sailMiles",
@@ -739,7 +737,7 @@
         },
         {
           "id": "de-SportSeeSchV-6-3-3",
-          "type": "total-miles",
+          "type": "miles",
           "threshold": 1000,
           "filters": null,
           "translationKey": "dashboard.sailMiles",
