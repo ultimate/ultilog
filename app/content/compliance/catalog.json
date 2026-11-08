@@ -287,6 +287,13 @@
           },
           "translationKey": "compliance.requirement.afterTheoryExam",
           "unit": "nautical-miles"
+        },
+        {
+          "id": "ch-hochseeausweis-sail-daily-signed-logbook",
+          "type": "manual",
+          "threshold": 1,
+          "filters": null,
+          "translationKey": "compliance.requirement.dailySignedLogbook"
         }
       ],
       "referenceDateKind": "theory-exam"
@@ -473,6 +480,13 @@
           },
           "translationKey": "compliance.requirement.afterTheoryExam",
           "unit": "nautical-miles"
+        },
+        {
+          "id": "ch-hochseeausweis-motor-daily-signed-logbook",
+          "type": "manual",
+          "threshold": 1,
+          "filters": null,
+          "translationKey": "compliance.requirement.dailySignedLogbook"
         }
       ],
       "referenceDateKind": "theory-exam"
@@ -576,6 +590,13 @@
           },
           "translationKey": "compliance.milesOnSailingBoats",
           "unit": "nautical-miles"
+        },
+        {
+          "id": "ch-hochseeausweis-sail-addon-daily-signed-logbook",
+          "type": "manual",
+          "threshold": 1,
+          "filters": null,
+          "translationKey": "compliance.requirement.dailySignedLogbook"
         }
       ],
       "referenceDateKind": "extension-application"
@@ -679,6 +700,13 @@
           },
           "translationKey": "compliance.milesOnMotorBoats",
           "unit": "nautical-miles"
+        },
+        {
+          "id": "ch-hochseeausweis-motor-addon-daily-signed-logbook",
+          "type": "manual",
+          "threshold": 1,
+          "filters": null,
+          "translationKey": "compliance.requirement.dailySignedLogbook"
         }
       ],
       "referenceDateKind": "extension-application"

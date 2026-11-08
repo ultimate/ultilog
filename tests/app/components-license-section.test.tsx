@@ -29,6 +29,24 @@ describe("LicenseSection", () => {
     expect(root.root.findAllByProps({ "aria-describedby": sail.props.id })).toHaveLength(1);
   });
 
+  it("renders and saves the signed-logbook confirmation independently for all four Swiss licenses", async () => {
+    let licenses = ["ch-hochseeausweis-sail", "ch-hochseeausweis-motor", "ch-hochseeausweis-sail-addon", "ch-hochseeausweis-motor-addon"].map(licenseId => ({ licenseId, startDate: null, completedManualRequirementIds: [] as string[] }));
+    vi.stubGlobal("fetch", vi.fn((_url, options?: RequestInit) => {
+      if (options) {
+        const body = JSON.parse(String(options.body));
+        licenses = licenses.map(license => license.licenseId === body.licenseId ? { ...license, completedManualRequirementIds: [body.requirementId] } : license);
+      }
+      return response({ licenses });
+    }));
+    let root!: ReturnType<typeof create>;
+    await act(async () => { root = create(<I18nProvider><LicenseSection requestedLanguage="en" sheets={[]} /></I18nProvider>); });
+    const label = "Logbook kept daily at sea, with every page signed by the skipper";
+    expect(root.root.findAllByProps({ type: "checkbox", "aria-label": label })).toHaveLength(4);
+    await act(async () => { root.root.findAllByProps({ type: "checkbox", "aria-label": label })[0].props.onChange({ target: { checked: true } }); });
+    expect(licenses.map(license => license.completedManualRequirementIds)).toEqual([["ch-hochseeausweis-sail-daily-signed-logbook"], [], [], []]);
+    expect(root.root.findAllByProps({ type: "checkbox", "aria-label": label }).map(node => node.props.checked)).toEqual([true, false, false, false]);
+  });
+
   it("persists manual requirements and never renders automatic requirements as checkboxes", async () => {
     const fetch = vi.fn().mockImplementation((_url, options?: RequestInit) => {
       if (!options) return response(state);

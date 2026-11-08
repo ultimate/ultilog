@@ -331,6 +331,7 @@ export const en = {
   "crew.addMember": "Add crew member",
   "crew.select": "Select crew…",
   "crew.skipper": "Skipper",
+  "compliance.requirement.dailySignedLogbook": "Logbook kept daily at sea, with every page signed by the skipper",
   "compliance.requirement.theoryExamPassed": "Theory exam passed",
   "compliance.requirement.nauticalBasicTraining": "Proof of basic nautical training",
   "compliance.requirement.firstAidTraining": "Proof of lifesaving first-aid training",
