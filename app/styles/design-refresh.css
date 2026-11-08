@@ -968,3 +968,9 @@ h3 { margin-block:.25rem .55rem; }
 
 /* Keep Leaflet panes inside the padded grid rather than inheriting its outer minimum height. */
 .open-seamap-view > .open-seamap-container { min-height: 0; }
+
+/* Keep targets and qualifiers visible on both manual and automatic checks. */
+.requirement-details { display: grid; gap: .2rem; margin: .25rem 0; font-size: .85rem; }
+.requirement-details > div { display: flex; flex-wrap: wrap; gap: .2rem .5rem; }
+.requirement-details dt { color: var(--subtle); }
+.requirement-details dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }

@@ -19,6 +19,14 @@ for (const dateFormat of ["dd/MM/yyyy", "yyyy-MM-dd"]) {
     const achieved = page.locator(".requirement-progress dl > div:first-child dd");
     await expect(achieved).toHaveCount(3);
     expect((await achieved.allTextContents()).some(value => Number(value) > 0)).toBe(true);
+    const manualDetails = page.locator("#requirement-copy-ch-7-a-2-2");
+    await expect(manualDetails).toContainText("700 nautical miles");
+    await expect(manualDetails).toContainText("Within 4 years");
+    await expect(manualDetails).toContainText("Boat type");
+    await page.setViewportSize({ width: 375, height: 812 });
+    await expect(manualDetails).toBeVisible();
+    await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await page.setViewportSize({ width: 1280, height: 720 });
     const saves: string[] = [];
     page.on("request", request => {
       if (request.url().endsWith("/api/compliance") && request.method() === "PATCH") saves.push(request.postData() ?? "");

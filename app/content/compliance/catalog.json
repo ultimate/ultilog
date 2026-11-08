@@ -11,7 +11,7 @@
       "days-underway",
       "days-at-sea"
     ],
-    "progress": "For tracked requirements, provide a numeric threshold and unit. Use the progress type to select the counter; use filters only for additional qualification rules. Manual requirements are checklist items and omit unit.",
+    "progress": "For tracked requirements, provide a numeric threshold and unit. Use the progress type to select the counter; use filters only for additional qualification rules. Manual requirements use checkboxes. Quantitative manual requirements include a unit; boolean confirmations omit it.",
     "placeholders": "Replace all TODO values. Duplicate the example section or requirement objects as needed; do not reuse an id within the same document or license."
   },
   "legalLogbookRequirements": [
@@ -248,7 +248,8 @@
             "withinYears": 4,
             "boatType": "sail"
           },
-          "translationKey": "compliance.requirement.afterTheoryExam"
+          "translationKey": "compliance.requirement.afterTheoryExam",
+          "unit": "nautical-miles"
         }
       ]
     },
@@ -396,7 +397,8 @@
             "withinYears": 4,
             "boatType": "motor"
           },
-          "translationKey": "compliance.requirement.afterTheoryExam"
+          "translationKey": "compliance.requirement.afterTheoryExam",
+          "unit": "nautical-miles"
         }
       ]
     },

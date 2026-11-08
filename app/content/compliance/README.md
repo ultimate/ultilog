@@ -29,7 +29,10 @@ type), numeric `threshold`, nullable `filters`, and `translationKey`. Automatica
 tracked requirements additionally require `unit`; supported units are `days` and
 `nautical-miles`. `filters` is optional counting context represented as `null` when
 there is none; its current optional fields are `boatType`, `propulsion`, and `withinYears`.
-`unit` is omitted for manual checklist requirements because it has no metric.
+Quantitative manual requirements also supply `unit` so their targets are visible
+(e.g. 700 nautical miles after the theory exam). Boolean checklist requirements
+omit `unit`; their threshold of one represents confirmation, not a distance.
+The tracking view displays numeric targets and all configured counting filters.
 
 Tracked `type` values select a counter: `days-sailing`, `days-underway`,
 `days-at-sea`, or `miles`. Filters narrow which records contribute. IDs must never
