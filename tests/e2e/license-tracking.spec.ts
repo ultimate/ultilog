@@ -18,10 +18,11 @@ for (const dateFormat of ["dd/MM/yyyy", "yyyy-MM-dd"]) {
     await expect(input).toBeVisible();
     const achieved = page.locator(".requirement-progress dl > div:first-child dd");
     await expect(achieved).toHaveCount(3);
-    expect((await achieved.allTextContents()).some(value => Number(value) > 0)).toBe(true);
+    await expect(achieved).toHaveText(["0", "0", "0"]);
+    await expect(input).toHaveAttribute("aria-label", "Theory exam date");
     const manualDetails = page.locator("#requirement-copy-ch-7-a-2-2");
     await expect(manualDetails).toContainText("700 nautical miles");
-    await expect(manualDetails).toContainText("Within 4 years");
+    await expect(manualDetails).toContainText("4 years after the reference date");
     await expect(manualDetails).toContainText("Boat type");
     await page.setViewportSize({ width: 375, height: 812 });
     await expect(manualDetails).toBeVisible();
@@ -53,11 +54,21 @@ for (const dateFormat of ["dd/MM/yyyy", "yyyy-MM-dd"]) {
     await picker.fill("2024-03-01");
     await picker.press("Enter");
     await expect.poll(async () => (await (await page.request.get("/api/compliance")).json()).licenses[0].startDate).toBe("2024-03-01");
-    await input.fill(dateFormat === "yyyy-MM-dd" ? "2021-01-01" : "01/01/2021");
+    await input.fill(dateFormat === "yyyy-MM-dd" ? "2021-07-01" : "01/07/2021");
     await input.press("Enter");
-    await expect.poll(async () => (await (await page.request.get("/api/compliance")).json()).licenses[0].startDate).toBe("2021-01-01");
-    await expect(achieved).toHaveText(["0", "0", "0"]);
+    await expect.poll(async () => (await (await page.request.get("/api/compliance")).json()).licenses[0].startDate).toBe("2021-07-01");
+    // The demo sailing cruise is in September 2025: the entire final year now counts.
+    await expect(achieved).toHaveText(["4", "4", "87.8"]);
+    await expect(manualDetails).toContainText(dateFormat === "yyyy-MM-dd" ? "2021-07-01 – 2025-12-31" : "01/07/2021 – 31/12/2025");
     await page.reload();
-    await expect(achieved).toHaveText(["0", "0", "0"]);
+    // The demo sailing cruise is in September 2025: the entire final year now counts.
+    await expect(achieved).toHaveText(["4", "4", "87.8"]);
+    await expect(page.locator("#requirement-copy-ch-7-a-2-1")).toContainText(dateFormat === "yyyy-MM-dd" ? "2017-01-01 – 2025-12-31" : "01/01/2017 – 31/12/2025");
+    await page.locator("#compliance-license").selectOption("ch-hochseeausweis-sail-addon");
+    const extensionDate = page.locator("#license-start-ch-hochseeausweis-sail-addon");
+    await expect(extensionDate).toHaveAttribute("aria-label", "Extension application date");
+    await extensionDate.fill(dateFormat === "yyyy-MM-dd" ? "2021-07-01" : "01/07/2021");
+    await extensionDate.press("Enter");
+    await expect(page.locator("#requirement-copy-ch-8-a-2")).toContainText(dateFormat === "yyyy-MM-dd" ? "2017-01-01 – 2021-07-01" : "01/01/2017 – 01/07/2021");
   });
 }

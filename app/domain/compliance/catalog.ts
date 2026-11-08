@@ -20,7 +20,10 @@ export type LocalizedLegalContent = {
 export type LocalizedLicenseContent = LocalizedLegalContent & { licenseName: string };
 
 export type PropulsionType = "sail" | "motor";
-export type RequirementFilters = { boatType?: BoatType; propulsion?: PropulsionType; withinYears?: number };
+export type DateWindowBoundary = { yearOffset: number; boundary: "date" | "year-start" | "year-end" };
+export type DateWindow = { from: DateWindowBoundary; through: DateWindowBoundary };
+export type ReferenceDateKind = "theory-exam" | "extension-application";
+export type RequirementFilters = { boatType?: BoatType; propulsion?: PropulsionType; withinYears?: number; dateWindow?: DateWindow };
 export type ManualRequirement = {
   id: string;
   type: "manual";
@@ -48,6 +51,7 @@ export type License = {
   id: string;
   countryCode: string;
   variant?: string;
+  referenceDateKind?: ReferenceDateKind;
   defaultLanguage: string;
   content: Record<string, LocalizedLicenseContent>;
   requirements: Requirement[];
@@ -102,6 +106,20 @@ function localizations(value: unknown, at: string, license: boolean) {
   return Object.fromEntries(Object.entries(object(value, at)).map(([language, content]) => [language, localized(content, `${at}.${language}`, license)]));
 }
 
+function parseDateWindow(value: unknown, at: string): DateWindow {
+  const raw = object(value, at);
+  const endpoint = (value: unknown, at: string): DateWindowBoundary => {
+    const raw = object(value, at);
+    if (!Number.isSafeInteger(raw.yearOffset)) fail(`${at}.yearOffset must be an integer`);
+    if (!["date", "year-start", "year-end"].includes(raw.boundary as string)) fail(`${at}.boundary must be date, year-start, or year-end`);
+    return { yearOffset: raw.yearOffset as number, boundary: raw.boundary as DateWindowBoundary["boundary"] };
+  };
+  const result = { from: endpoint(raw.from, `${at}.from`), through: endpoint(raw.through, `${at}.through`) };
+  const order = { "year-start": 0, date: 1, "year-end": 2 };
+  if (result.from.yearOffset > result.through.yearOffset || result.from.yearOffset === result.through.yearOffset && order[result.from.boundary] > order[result.through.boundary]) fail(`${at} must run from an earlier boundary through a later boundary`);
+  return result;
+}
+
 export function createComplianceCatalog(value: unknown): ComplianceCatalog {
   const raw = object(value, "catalog");
   const countries = array(raw.legalLogbookRequirements, "legalLogbookRequirements").map((item, index) => {
@@ -121,6 +139,8 @@ export function createComplianceCatalog(value: unknown): ComplianceCatalog {
     const countryCode = string(entry.countryCode, `${id}.countryCode`);
     if (!/^[A-Z]{2}$/.test(countryCode)) fail(`${countryCode} is not an uppercase ISO alpha-2 country code`);
     const defaultLanguage = string(entry.defaultLanguage, `${id}.defaultLanguage`);
+    const referenceDateKind = entry.referenceDateKind;
+    if (referenceDateKind !== undefined && referenceDateKind !== "theory-exam" && referenceDateKind !== "extension-application") fail(`${id}.referenceDateKind is unrecognized`);
     const content = localizations(entry.content, `${id}.content`, true) as Record<string, LocalizedLicenseContent>;
     if (!content[defaultLanguage]) fail(`${id} has no ${defaultLanguage} default translation`);
     const requirements = array(entry.requirements, `${id}.requirements`).map((item, requirementIndex) => {
@@ -134,7 +154,9 @@ export function createComplianceCatalog(value: unknown): ComplianceCatalog {
         for (const key of ["boatType", "propulsion"] as const) {
           if (rawFilters[key] !== undefined && rawFilters[key] !== "sail" && rawFilters[key] !== "motor") fail(`${base.id}.filters.${key} must be sail or motor`);
         }
+        if (rawFilters.dateWindow !== undefined && rawFilters.withinYears !== undefined) fail(`${base.id} cannot combine dateWindow and withinYears`);
         filters = {
+          ...(rawFilters.dateWindow === undefined ? {} : { dateWindow: parseDateWindow(rawFilters.dateWindow, `${base.id}.filters.dateWindow`) }),
           ...(rawFilters.boatType === undefined ? {} : { boatType: rawFilters.boatType as BoatType }),
           ...(rawFilters.propulsion === undefined ? {} : { propulsion: rawFilters.propulsion as PropulsionType }),
           ...(rawFilters.withinYears === undefined ? {} : { withinYears: typeof rawFilters.withinYears === "number" ? rawFilters.withinYears : fail(`${base.id}.filters.withinYears must be a number`) }),
@@ -147,7 +169,7 @@ export function createComplianceCatalog(value: unknown): ComplianceCatalog {
       return { ...base, threshold: requirement.threshold, unit: requirement.unit, ...(filters === undefined ? {} : { filters }) } as TrackedRequirement;
     });
     unique(requirements.map(({ id: requirementId }) => requirementId), `requirement IDs in ${id}`);
-    return { id, countryCode, ...(entry.variant === undefined ? {} : { variant: string(entry.variant, `${id}.variant`) }), defaultLanguage, content, requirements };
+    return { id, countryCode, ...(referenceDateKind === undefined ? {} : { referenceDateKind: referenceDateKind as ReferenceDateKind }), ...(entry.variant === undefined ? {} : { variant: string(entry.variant, `${id}.variant`) }), defaultLanguage, content, requirements };
   });
   unique(licenses.map(({ id }) => id), "license IDs");
   return { legalLogbookRequirements: countries, licenses };
@@ -169,4 +191,9 @@ export function licenseLanguages(licenseId: string): string[] {
 }
 export function withLanguageFallback<T>(content: Record<string, T>, preferredLanguage: string | undefined, defaultLanguage: string): T | undefined {
   return (preferredLanguage ? content[preferredLanguage] : undefined) ?? content[defaultLanguage];
+}
+
+export function referenceDateLabelKey(license: Pick<License, "referenceDateKind">): TranslationKey {
+  return license.referenceDateKind === "theory-exam" ? "compliance.theoryExamDate"
+    : license.referenceDateKind === "extension-application" ? "compliance.extensionApplicationDate" : "compliance.startDate";
 }

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import type { Boat, LogSheet } from "../../../models/logbook";
 import { calculateLicenseProgress, summarizeRequirementProgress, type RequirementStatusSummary } from "../../../domain/compliance/license-progress";
-import { findLicense, withLanguageFallback } from "../../../domain/compliance/catalog";
+import { referenceDateLabelKey, findLicense, withLanguageFallback } from "../../../domain/compliance/catalog";
+import { useDateTimeFormat } from "../../../lib/DateTimeFormatProvider";
 import { useI18n } from "../../../lib/i18n";
 import { LicenseStatusPie } from "./LicenseStatusPie";
 
@@ -10,6 +11,7 @@ const empty = (): RequirementStatusSummary => ({ fulfilled: 0, inProgress: 0, op
 
 export function DashboardComplianceProgress({ sheets, boats = [], language, onOpenCompliance }: { sheets: readonly LogSheet[]; boats?: readonly Boat[]; language: string; onOpenCompliance: () => void }) {
   const { t } = useI18n();
+  const { formatDate } = useDateTimeFormat();
   const [tracked, setTracked] = useState<TrackedLicense[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -41,7 +43,7 @@ export function DashboardComplianceProgress({ sheets, boats = [], language, onOp
     {items.length ? <div className="dashboard-license-overall"><h3>{t("compliance.overallStatus")}</h3><LicenseStatusPie summary={overall} compact /></div> : null}
     <div className="dashboard-license-grid">{items.map(({ entry, license, summary }) => {
       const content = withLanguageFallback(license.content, language, license.defaultLanguage)!;
-      return <article key={license.id}><div><small>{license.countryCode}</small><h3>{content.licenseName}</h3>{entry.startDate ? <p>{t("compliance.startDate")}: {entry.startDate}</p> : null}</div><LicenseStatusPie summary={summary} compact /></article>;
+      return <article key={license.id}><div><small>{license.countryCode}</small><h3>{content.licenseName}</h3>{entry.startDate ? <p>{t(referenceDateLabelKey(license))}: {formatDate(entry.startDate)}</p> : license.requirements.some(requirement => requirement.filters?.dateWindow) ? <p>{t("compliance.referenceDateRequired")}</p> : null}</div><LicenseStatusPie summary={summary} compact /></article>;
     })}</div>
   </section>;
 }

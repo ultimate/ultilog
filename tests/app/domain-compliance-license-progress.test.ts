@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { calculateLicenseProgress, summarizeRequirementProgress } from "../../app/domain/compliance/license-progress";
+import { resolveRequirementWindow } from "../../app/domain/compliance/date-window";
 import { complianceCatalog, type Requirement } from "../../app/domain/compliance/catalog";
 import type { Boat, LogSheet } from "../../app/models/logbook";
 
@@ -47,9 +48,45 @@ describe("calculateLicenseProgress", () => {
       for (const req of license.requirements) expect(req.filters?.propulsion).toBeUndefined();
       const miles = license.requirements.filter(req => req.type === "miles");
       expect(miles.length).toBeGreaterThan(0);
-      const results = calculateLicenseProgress(miles, sheets, [], null, new Date("2026-02-01"), boats);
+      const results = calculateLicenseProgress(miles, sheets, [], "2026-02-01", new Date("2026-02-01"), boats);
       expect(results.map(item => item.achievedValue)).toEqual(miles.map(req => req.filters?.boatType === "sail" ? 10 : 0));
     }
+  });
+
+  it("resolves the catalog windows for initial, post-exam, and extension requirements", () => {
+    const expected = [
+      ["ch-7-a-2-1", "2017-01-01", "2025-12-31"],
+      ["ch-7-a-2-2", "2021-07-01", "2025-12-31"],
+      ["ch-8-a-2", "2017-01-01", "2021-07-01"],
+      ["ch-7-b-2-1", "2017-01-01", "2025-12-31"],
+      ["ch-7-b-2-2", "2021-07-01", "2025-12-31"],
+      ["ch-8-b-2", "2017-01-01", "2021-07-01"],
+    ];
+    const requirements = complianceCatalog.licenses.flatMap(license => license.requirements);
+    for (const [id, from, through] of expected) {
+      const req = requirements.find(req => req.id === id)!;
+      expect(resolveRequirementWindow(req.filters, "2021-07-01")).toEqual({ from, through });
+    }
+  });
+
+  it.each(["miles", "days-sailing", "days-underway", "days-at-sea"] as const)("uses inclusive calendar boundaries for %s", type => {
+    const req = requirement("window", type, 100, { dateWindow: { from: { yearOffset: -4, boundary: "year-start" }, through: { yearOffset: 4, boundary: "year-end" } } });
+    const sheets = [sheet("2016-12-31", 1, 0, true), sheet("2017-01-01", 2, 0, true), sheet("2025-12-31", 4, 0, true), sheet("2026-01-01", 8, 0, true)];
+    expect(calculateLicenseProgress([req], sheets, [], "2021-07-01")[0].achievedValue).toBe(type === "miles" ? 6 : 2);
+  });
+
+  it("requires the reference date for automatic windows without clearing manual confirmations", () => {
+    const dateWindow = { from: { yearOffset: -4, boundary: "year-start" }, through: { yearOffset: 4, boundary: "year-end" } } as const;
+    const requirements = [requirement("miles", "miles", 100, { dateWindow }), requirement("manual", "manual", 700, { dateWindow })];
+    const result = calculateLicenseProgress(requirements, [sheet("2026-01-01", 10)], ["manual"]);
+    expect(result[0]).toMatchObject({ achievedValue: 0, completed: false, automatic: false, verification: "reference-date-required" });
+    expect(result[1]).toMatchObject({ completed: true, verification: "manual" });
+  });
+
+  it("supports exact-date approximation and clamps February 29", () => {
+    const filters = { dateWindow: { from: { yearOffset: -1, boundary: "date" }, through: { yearOffset: 1, boundary: "date" } } } as const;
+    expect(resolveRequirementWindow(filters, "2024-02-29")).toEqual({ from: "2023-02-28", through: "2025-02-28" });
+    expect(resolveRequirementWindow(filters, null)).toBeUndefined();
   });
 
   it("returns zero progress for an empty logbook", () => {
