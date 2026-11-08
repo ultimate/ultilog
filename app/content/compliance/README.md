@@ -30,7 +30,7 @@ tracked requirements additionally require `unit`; supported units are `days` and
 `nautical-miles`. `filters` is optional counting context represented as `null` when
 there is none; its current optional fields are `boatType`, `propulsion`, `dateWindow`, and legacy `withinYears`.
 Quantitative manual requirements also supply `unit` so their targets are visible
-(e.g. 700 nautical miles after the theory exam). Boolean checklist requirements
+for distances or days that cannot be verified from logged data. Boolean checklist requirements
 omit `unit`; their threshold of one represents confirmation, not a distance.
 The tracking view displays numeric targets and all configured counting filters.
 
@@ -70,8 +70,9 @@ Exact February 29 anniversaries clamp to February 28 in non-leap years. Both
 boundaries are required and must be in chronological order.
 
 For an exam on 2021-07-01, Swiss initial-license experience counts from 2017-01-01
-through 2025-12-31. The manual 700/400-mile checks instead start at the exact exam
-date (`0/date`) and end at `4/year-end`. Swiss extensions count from
+through 2025-12-31. The automatic 700/400-mile counters instead start at the exact exam
+date (`0/date`) and end at `4/year-end`. They use `type: "miles"`, count all
+propulsion mileage on the matching boat type, and ignore former manual checkmarks. Swiss extensions count from
 `-4/year-start` through `0/date`, relative to the extension application date.
 
 An automatic requirement with a date window and no reference date is shown as

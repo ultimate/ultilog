@@ -338,7 +338,7 @@ export const de: Dictionary = {
   "compliance.requirement.firstAidTraining": "Nachweis einer Ausbildung in lebensrettenden Sofortmaßnahmen",
   "compliance.requirement.visionAndHearing": "Bestätigung eines ausreichenden Seh- und Hörvermögens",
   "compliance.requirement.mentalAndPhysicalFitness": "Bestätigung der geistigen und körperlichen Eignung",
-  "compliance.requirement.afterTheoryExam": "Nach bestandener Theorieprüfung absolviert",
+  "compliance.requirement.afterTheoryExam": "Seemeilen nach bestandener Theorieprüfung",
   "compliance.requirement.holdsSwissMotorLicense": "Schweizer Hochseeausweis für Motorschiffe vorhanden",
   "compliance.requirement.holdsSwissSailLicense": "Schweizer Hochseeausweis für Segelschiffe vorhanden",
   "compliance.requirement.practicalExamPassed": "Praktische Prüfung bestanden",

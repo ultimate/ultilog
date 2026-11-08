@@ -288,7 +288,7 @@
         },
         {
           "id": "ch-7-a-2-2",
-          "type": "manual",
+          "type": "miles",
           "threshold": 700,
           "filters": {
             "boatType": "sail",
@@ -499,7 +499,7 @@
         },
         {
           "id": "ch-7-b-2-2",
-          "type": "manual",
+          "type": "miles",
           "threshold": 400,
           "filters": {
             "boatType": "motor",

@@ -39,6 +39,24 @@ describe("user compliance state", () => {
     expect((await getUserComplianceState("user-1", db)).licenses.map(({ licenseId }) => licenseId)).toEqual(["de-sss"]);
   });
 
+  it("cleans obsolete post-theory checkmarks while preserving handwritten-logbook confirmations", async () => {
+    const db = await database();
+    const entries = [["ch-hochseeausweis-sail", "ch-7-a-2-2"], ["ch-hochseeausweis-motor", "ch-7-b-2-2"]];
+    for (const [licenseId] of entries) {
+      await selectUserComplianceLicense("user-1", licenseId, true, db);
+      await setUserComplianceLicenseStartDate("user-1", licenseId, "2021-07-01", db);
+    }
+    await setManualRequirementCompleted("user-1", entries[0][0], `${entries[0][0]}-handwritten-logbook`, true, db);
+    for (const [licenseId, requirementId] of entries) {
+      await db.query("insert into user_compliance_manual_requirements (user_id, license_id, requirement_id) values (?, ?, ?)", ["user-1", licenseId, requirementId]);
+      await expect(setManualRequirementCompleted("user-1", licenseId, requirementId, true, db)).rejects.toThrow("Only manual requirements");
+    }
+    const state = await getUserComplianceState("user-1", db);
+    expect(state.licenses).toHaveLength(2);
+    expect(state.licenses).toEqual(expect.arrayContaining(entries.map(([licenseId], index) => ({ licenseId, startDate: "2021-07-01", completedManualRequirementIds: index === 0 ? [`${licenseId}-handwritten-logbook`] : [] }))));
+    expect((await db.query("select requirement_id from user_compliance_manual_requirements")).rows).toEqual([{ requirement_id: "ch-hochseeausweis-sail-handwritten-logbook" }]);
+  });
+
   it("clears stale selected and completed catalog IDs", async () => {
     const db = await database();
     await db.query("insert into user_compliance_licenses (user_id, license_id) values (?, ?)", ["user-1", "retired-license"]);
