@@ -70,8 +70,8 @@ export function calculateLicenseProgress(
       return progress(requirement, 0, targetValue, false, false, "not-automatically-verifiable");
     }
 
-    const cutoff = effectiveCutoff(startDate, requirement.filters?.withinYears, asOf);
-    const eligible = sheetsAfter(sheets, cutoff).filter(sheet => !requirement.filters?.boatType || boatsById.get(sheet.boatId)?.type === requirement.filters.boatType);
+    const window = effectiveWindow(startDate, requirement.filters?.withinYears, asOf);
+    const eligible = sheetsWithin(sheets, window).filter(sheet => !requirement.filters?.boatType || boatsById.get(sheet.boatId)?.type === requirement.filters.boatType);
     const statistics = collectStatistics(eligible);
     const propulsion = requirement.filters?.propulsion;
     const counter = requirement.type === "miles" && propulsion ? (propulsion === "sail" ? "sailMiles" : "motorMiles") : statistic;
@@ -95,22 +95,31 @@ function hasUnsupportedQualifiers(requirement: Requirement) {
   return requirement.type !== "miles" || (propulsion !== "sail" && propulsion !== "motor");
 }
 
-function effectiveCutoff(startDate: string | null | undefined, withinYears: number | undefined, asOf: Date) {
-  const cutoffs: string[] = [];
-  if (startDate) cutoffs.push(startDate);
-  if (withinYears) {
-    const date = new Date(asOf);
-    date.setUTCFullYear(date.getUTCFullYear() - withinYears);
-    cutoffs.push(date.toISOString().slice(0, 10));
+type ProgressWindow = { from?: string; through?: string };
+
+function effectiveWindow(startDate: string | null | undefined, withinYears: number | undefined, asOf: Date): ProgressWindow {
+  if (startDate) {
+    return { from: startDate, ...(withinYears ? { through: shiftYears(startDate, withinYears) } : {}) };
   }
-  return cutoffs.sort().at(-1);
+  return withinYears ? { from: shiftYears(asOf.toISOString().slice(0, 10), -withinYears) } : {};
 }
 
-function sheetsAfter(sheets: readonly LogSheet[], cutoff: string | undefined) {
-  if (!cutoff) return sheets;
+/** Clamp leap-day anniversaries to the last day of February. */
+function shiftYears(isoDate: string, years: number) {
+  const date = new Date(`${isoDate}T00:00:00Z`);
+  const month = date.getUTCMonth();
+  date.setUTCFullYear(date.getUTCFullYear() + years);
+  if (date.getUTCMonth() !== month) date.setUTCDate(0);
+  return date.toISOString().slice(0, 10);
+}
+
+function sheetsWithin(sheets: readonly LogSheet[], { from, through }: ProgressWindow) {
+  if (!from && !through) return sheets;
   return sheets.filter((sheet) => {
-    const dates = [sheet.route.departed, sheet.route.arrived, ...sheet.lines.map(({ time }) => time)].filter(Boolean).sort();
-    return dates[0]?.slice(0, 10) >= cutoff;
+    const dates = [sheet.route.departed, sheet.route.arrived, ...sheet.lines.map(({ time }) => time)]
+      .filter(Boolean).map(date => date.slice(0, 10)).sort();
+    if (!dates.length) return false;
+    return (!from || dates[0] >= from) && (!through || dates[dates.length - 1] <= through);
   });
 }
 
