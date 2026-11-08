@@ -85,9 +85,11 @@ start date through its anniversary, or a rolling lookback from today when no
 date is selected. A requirement cannot combine `withinYears` and `dateWindow`.
 Without either filter, a selected date remains a lower bound.
 
-The four Swiss checklists also include a unitless manual confirmation that the
-logbook is kept daily at sea and signed on every page by the skipper. Its wording
-follows section 9 of the Swiss legal-logbook entry in this catalog.
+The four Swiss checklists include a unitless manual confirmation that the logbook
+is handwritten for voyages counted toward the license or its extension. This
+follows [Annex 3, paragraph 5 of the Hochseeausweis-Verordnung](https://www.fedlex.admin.ch/eli/cc/2007/130/de#annex_3/lvl_u1),
+which expressly covers voyages credited under Articles 7 and 8. It is separate
+from the general Swiss-flag logbook provisions on daily entries and signatures.
 
 ## Current localization
 

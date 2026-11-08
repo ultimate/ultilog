@@ -56,14 +56,17 @@ describe("compliance catalog authoring contract", () => {
     }
   });
 
-  it("includes daily entries and per-page skipper signatures as a manual check on all four Swiss licenses", () => {
+  it("requires a handwritten logbook as a manual check on all four Swiss licenses", () => {
     const swiss = complianceCatalog.licenses.filter(license => license.countryCode === "CH");
     expect(swiss).toHaveLength(4);
     for (const license of swiss) {
-      const checks = license.requirements.filter(requirement => requirement.translationKey === "compliance.requirement.dailySignedLogbook");
-      expect(checks).toEqual([{ id: `${license.id}-daily-signed-logbook`, type: "manual", threshold: 1, filters: null, translationKey: "compliance.requirement.dailySignedLogbook" }]);
+      const checks = license.requirements.filter(requirement => requirement.translationKey === "compliance.requirement.handwrittenLogbook");
+      expect(checks).toEqual([{ id: `${license.id}-handwritten-logbook`, type: "manual", threshold: 1, filters: null, translationKey: "compliance.requirement.handwrittenLogbook" }]);
+      const source = license.content.de.sections.find(section => section.id === "annex-3-5-handwritten-logbook");
+      expect(source?.citation).toContain("Artikel 7 und 8");
+      expect(source?.citation).toContain("handschriftlich zu führen");
     }
-    expect(complianceCatalog.licenses.filter(license => license.countryCode !== "CH").flatMap(license => license.requirements).some(requirement => requirement.translationKey === "compliance.requirement.dailySignedLogbook")).toBe(false);
+    expect(complianceCatalog.licenses.filter(license => license.countryCode !== "CH").flatMap(license => license.requirements).some(requirement => requirement.translationKey === "compliance.requirement.handwrittenLogbook")).toBe(false);
   });
 
   it("resolves every requirement label in every application language", () => {

@@ -128,6 +128,12 @@
               "id": "Art. 7",
               "heading": "Praxis für die Erstausstellung eines Hochseeausweises",
               "citation": "Für die Erstausstellung eines Hochseeausweises ist ein Nachweis über folgende minimale Erfahrung zu erbringen:\n<ol type='a'>\n<li value='a'>für den Hochseeausweis für Segelschiffe mit und ohne Maschinenantrieb:\n<ol>\n<li>drei Wochen Seefahrt, davon mindestens 18 Tage auf See, und</li>\n<li>1000 gefahrene Seemeilen, davon mindestens 700 Seemeilen gemäss Fahrtennachweis nach Anhang 4 nach bestandener Theorieprüfung;</li>\n</ol>\n</li>\n</ol>\nDie Praxis kann bis vier Jahre vor und bis vier Jahre nach (volles Kalenderjahr) der bestandenen theoretischen Prüfung erworben werden."
+            },
+            {
+              "id": "annex-3-5-handwritten-logbook",
+              "heading": "Handschriftliche Logbuchführung (Anhang 3 Ziff. 5)",
+              "textKind": "official-excerpt",
+              "citation": "<p>Für Fahrten, die nach Artikel 7 und 8 dieser Verordnung an die Praxis auf See angerechnet werden sollen, ist das Logbuch handschriftlich zu führen.</p>"
             }
           ]
         },
@@ -148,6 +154,12 @@
               "id": "Art. 7",
               "heading": "Pratique exigée pour l’octroi du certificat de conduite en mer",
               "citation": "Les candidats au certificat de conduite en mer doivent justifier au moins de l’expérience suivante:\n<ol type='a'>\n<li value='a'>pour la conduite de yachts à voiles, avec ou sans propulsion mécanique:\n<ol>\n<li>3 semaines de navigation comprenant au moins 18 jours en mer, et</li>\n<li>1000 milles marins parcourus, dont 700 au moins après avoir réussi l’examen théorique;</li>\n</ol>\n</li>\n</ol>\nEst prise en compte l’expérience acquise au maximum quatre années (civiles) complètes avant et quatre années (civiles) complètes après le succès à l’examen théorique."
+            },
+            {
+              "id": "annex-3-5-handwritten-logbook",
+              "heading": "Livre de bord manuscrit (annexe 3, ch. 5 — résumé)",
+              "textKind": "editorial-summary",
+              "citation": "<p>Le livre de bord doit être tenu à la main pour les voyages pris en compte comme expérience en mer au titre des articles 7 et 8.</p>"
             }
           ]
         },
@@ -168,6 +180,12 @@
               "id": "Art. 7",
               "heading": "Pratica per l’ottenimento della licenza di navigazione d’altura",
               "citation": "Per ottenere una licenza di navigazione d’altura si devono certificare le esperienze minime seguenti:\n<ol type='a'>\n<li value='a'>per una licenza di navigazione d’altura per natanti a vela con o senza motore:\n<ol>\n<li>tre settimane di navigazione, di cui almeno 18 giorni in mare, e</li>\n<li>la percorrenza di 1000 miglia nautiche, di cui almeno 700 secondo l’attestato di navigazione conformemente all’allegato 4 dopo il superamento dell’esame teorico;</li>\n</ol>\n</li>\n</ol>\nLa pratica può essere acquisita in un periodo di tempo compreso tra i quattro anni precedenti e i quattro anni (anno civile completo) successivi al superamento dell’esame teorico."
+            },
+            {
+              "id": "annex-3-5-handwritten-logbook",
+              "heading": "Giornale di bordo manoscritto (allegato 3, n. 5 — sintesi)",
+              "textKind": "editorial-summary",
+              "citation": "<p>Il giornale di bordo deve essere compilato a mano per i viaggi conteggiati come pratica in mare ai sensi degli articoli 7 e 8.</p>"
             }
           ]
         }
@@ -289,11 +307,11 @@
           "unit": "nautical-miles"
         },
         {
-          "id": "ch-hochseeausweis-sail-daily-signed-logbook",
+          "id": "ch-hochseeausweis-sail-handwritten-logbook",
           "type": "manual",
           "threshold": 1,
           "filters": null,
-          "translationKey": "compliance.requirement.dailySignedLogbook"
+          "translationKey": "compliance.requirement.handwrittenLogbook"
         }
       ],
       "referenceDateKind": "theory-exam"
@@ -321,6 +339,12 @@
               "id": "Art. 7",
               "heading": "Praxis für die Erstausstellung eines Hochseeausweises",
               "citation": "Für die Erstausstellung eines Hochseeausweises ist ein Nachweis über folgende minimale Erfahrung zu erbringen:\n<ol type='a'>\n<li value='b'>für den Hochseeausweis für Motorschiffe:\n<ol>\n<li>zwei Wochen Seefahrt, davon mindestens zehn Tage auf See, und</li>\n<li>500 gefahrene Seemeilen, davon mindestens 400 Seemeilen gemäss Fahrtennachweis nach Anhang 4 nach bestandener Theorieprüfung.</li>\n</ol>\n</li>\n</ol>\nDie Praxis kann bis vier Jahre vor und bis vier Jahre nach (volles Kalenderjahr) der bestandenen theoretischen Prüfung erworben werden."
+            },
+            {
+              "id": "annex-3-5-handwritten-logbook",
+              "heading": "Handschriftliche Logbuchführung (Anhang 3 Ziff. 5)",
+              "textKind": "official-excerpt",
+              "citation": "<p>Für Fahrten, die nach Artikel 7 und 8 dieser Verordnung an die Praxis auf See angerechnet werden sollen, ist das Logbuch handschriftlich zu führen.</p>"
             }
           ]
         },
@@ -341,6 +365,12 @@
               "id": "Art. 7",
               "heading": "Pratique exigée pour l’octroi du certificat de conduite en mer",
               "citation": "Les candidats au certificat de conduite en mer doivent justifier au moins de l’expérience suivante:\n<ol type='a'>\n<li value='b'>pour la conduite de yachts à moteur:\n<ol>\n<li>2 semaines de navigation comprenant au moins 10 jours en mer, et</li>\n<li>500 milles marins parcourus, dont au moins 400 après avoir réussi l’examen théorique.</li>\n</ol>\n</li>\n</ol>\nEst prise en compte l’expérience acquise au maximum quatre années (civiles) complètes avant et quatre années (civiles) complètes après le succès à l’examen théorique."
+            },
+            {
+              "id": "annex-3-5-handwritten-logbook",
+              "heading": "Livre de bord manuscrit (annexe 3, ch. 5 — résumé)",
+              "textKind": "editorial-summary",
+              "citation": "<p>Le livre de bord doit être tenu à la main pour les voyages pris en compte comme expérience en mer au titre des articles 7 et 8.</p>"
             }
           ]
         },
@@ -361,6 +391,12 @@
               "id": "Art. 7",
               "heading": "Pratica per l’ottenimento della licenza di navigazione d’altura",
               "citation": "Per ottenere una licenza di navigazione d’altura si devono certificare le esperienze minime seguenti:\n<ol type='a'>\n<li value='b'>per la licenza di navigazione d’altura per natanti motorizzati:\n<ol>\n<li>due settimane di navigazione, di cui almeno dieci giorni in mare, e</li>\n<li>la percorrenza di 500 miglia nautiche, di cui almeno 400 secondo l’attestato di navigazione conformemente all’allegato 4 dopo il superamento dell’esame teorico.</li>\n</ol>\n</li>\n</ol>\nLa pratica può essere acquisita in un periodo di tempo compreso tra i quattro anni precedenti e i quattro anni (anno civile completo) successivi al superamento dell’esame teorico."
+            },
+            {
+              "id": "annex-3-5-handwritten-logbook",
+              "heading": "Giornale di bordo manoscritto (allegato 3, n. 5 — sintesi)",
+              "textKind": "editorial-summary",
+              "citation": "<p>Il giornale di bordo deve essere compilato a mano per i viaggi conteggiati come pratica in mare ai sensi degli articoli 7 e 8.</p>"
             }
           ]
         }
@@ -482,11 +518,11 @@
           "unit": "nautical-miles"
         },
         {
-          "id": "ch-hochseeausweis-motor-daily-signed-logbook",
+          "id": "ch-hochseeausweis-motor-handwritten-logbook",
           "type": "manual",
           "threshold": 1,
           "filters": null,
-          "translationKey": "compliance.requirement.dailySignedLogbook"
+          "translationKey": "compliance.requirement.handwrittenLogbook"
         }
       ],
       "referenceDateKind": "theory-exam"
@@ -509,6 +545,12 @@
               "id": "Art. 8",
               "heading": "Praxis für die Ergänzung eines bestehenden Hochseeausweises",
               "citation": "Für die Ergänzung eines bestehenden Hochseeausweises für die jeweils andere Schiffskategorie ist ein Nachweis über folgende minimale Erfahrung zu erbringen:\n<ol type='a'>\n<li value='a'>für die Ergänzung des Hochseeausweises für Motorschiffe zusätzlich für Segelschiffe mit und ohne Maschinenantrieb:\n<ol>\n<li>zehn Tage auf See, und</li>\n<li>500 gefahrene Seemeilen gemäss Fahrtennachweis nach Anhang 4;</li>\n</ol>\n</li>\n</ol>\nDie Praxis muss innerhalb von vier Jahren vor der Einreichung des Ergänzungsantrages (volles Kalenderjahr) erworben werden."
+            },
+            {
+              "id": "annex-3-5-handwritten-logbook",
+              "heading": "Handschriftliche Logbuchführung (Anhang 3 Ziff. 5)",
+              "textKind": "official-excerpt",
+              "citation": "<p>Für Fahrten, die nach Artikel 7 und 8 dieser Verordnung an die Praxis auf See angerechnet werden sollen, ist das Logbuch handschriftlich zu führen.</p>"
             }
           ]
         },
@@ -524,6 +566,12 @@
               "id": "Art. 8",
               "heading": "Pratique exigée pour l’extension du certificat de conduite en mer à une autre catégorie de bateaux",
               "citation": "Les titulaires d’un certificat de conduite en mer qui souhaitent obtenir l’extension de ce certificat à une autre catégorie de bateaux doivent justifier au moins de l’expérience suivante:\n<ol type='a'>\n<li value='a'>s’ils possèdent le certificat autorisant la conduite de yachts à moteur et qu’ils souhaitent l’étendre aux yachts à voiles, avec ou sans propulsion mécanique:\n<ol>\n<li>10 jours en mer, et</li>\n<li>500 milles marins parcourus selon l’attestation de parcours conformément à l’annexe 4;</li>\n</ol>\n</li>\n</ol>\nEst prise en compte l’expérience acquise durant les quatre ans (années civiles complètes) qui ont précédé le dépôt de la demande d’extension du certificat de conduite en mer."
+            },
+            {
+              "id": "annex-3-5-handwritten-logbook",
+              "heading": "Livre de bord manuscrit (annexe 3, ch. 5 — résumé)",
+              "textKind": "editorial-summary",
+              "citation": "<p>Le livre de bord doit être tenu à la main pour les voyages pris en compte comme expérience en mer au titre des articles 7 et 8.</p>"
             }
           ]
         },
@@ -539,6 +587,12 @@
               "id": "Art. 8",
               "heading": "Pratica per l’estensione di una licenza di navigazione d’altura già rilasciata",
               "citation": "Per estendere una licenza di navigazione d’altura già rilasciata per le altre categorie di natanti si devono certificare le esperienze minime seguenti:\n<ol type='a'>\n<li value='a'>per l’estensione della licenza di navigazione d’altura per natanti motorizzati a natanti a vela con o senza motore:\n<ol>\n<li>dieci giorni in mare, e</li>\n<li>la percorrenza di 500 miglia nautiche secondo l’attestato di navigazione conformemente all’allegato 4;</li>\n</ol>\n</li>\n</ol>\nLa pratica deve essere acquisita in un periodo di tempo limitato ai quattro anni (anno civile completo) precedenti la presentazione dell’istanza d’estensione."
+            },
+            {
+              "id": "annex-3-5-handwritten-logbook",
+              "heading": "Giornale di bordo manoscritto (allegato 3, n. 5 — sintesi)",
+              "textKind": "editorial-summary",
+              "citation": "<p>Il giornale di bordo deve essere compilato a mano per i viaggi conteggiati come pratica in mare ai sensi degli articoli 7 e 8.</p>"
             }
           ]
         }
@@ -592,11 +646,11 @@
           "unit": "nautical-miles"
         },
         {
-          "id": "ch-hochseeausweis-sail-addon-daily-signed-logbook",
+          "id": "ch-hochseeausweis-sail-addon-handwritten-logbook",
           "type": "manual",
           "threshold": 1,
           "filters": null,
-          "translationKey": "compliance.requirement.dailySignedLogbook"
+          "translationKey": "compliance.requirement.handwrittenLogbook"
         }
       ],
       "referenceDateKind": "extension-application"
@@ -619,6 +673,12 @@
               "id": "Art. 8",
               "heading": "Praxis für die Ergänzung eines bestehenden Hochseeausweises",
               "citation": "Für die Ergänzung eines bestehenden Hochseeausweises für die jeweils andere Schiffskategorie ist ein Nachweis über folgende minimale Erfahrung zu erbringen:\n<ol type='a'>\n<li value='b'>für die Ergänzung des Hochseeausweises für Segelschiffe mit und ohne Maschinenantrieb zusätzlich für Motorschiffe:\n<ol>\n<li>fünf Tage auf See, und</li>\n<li>100 gefahrene Seemeilen gemäss Fahrtennachweis nach Anhang 4.</li>\n</ol>\n</li>\n</ol>\nDie Praxis muss innerhalb von vier Jahren vor der Einreichung des Ergänzungsantrages (volles Kalenderjahr) erworben werden."
+            },
+            {
+              "id": "annex-3-5-handwritten-logbook",
+              "heading": "Handschriftliche Logbuchführung (Anhang 3 Ziff. 5)",
+              "textKind": "official-excerpt",
+              "citation": "<p>Für Fahrten, die nach Artikel 7 und 8 dieser Verordnung an die Praxis auf See angerechnet werden sollen, ist das Logbuch handschriftlich zu führen.</p>"
             }
           ]
         },
@@ -634,6 +694,12 @@
               "id": "Art. 8",
               "heading": "Pratique exigée pour l’extension du certificat de conduite en mer à une autre catégorie de bateaux",
               "citation": "Les titulaires d’un certificat de conduite en mer qui souhaitent obtenir l’extension de ce certificat à une autre catégorie de bateaux doivent justifier au moins de l’expérience suivante:\n<ol type='a'>\n<li value='b'>s’ils possèdent le certificat autorisant la conduite de yachts à voiles, avec ou sans propulsion mécanique et qu’ils souhaitent l’étendre aux yachts à moteur:\n<ol>\n<li>5 jours en mer, et</li>\n<li>100 milles marins parcourus selon l’attestation de parcours conformément à l’annexe 4.</li>\n</ol>\n</li>\n</ol>\nEst prise en compte l’expérience acquise durant les quatre ans (années civiles complètes) qui ont précédé le dépôt de la demande d’extension du certificat de conduite en mer."
+            },
+            {
+              "id": "annex-3-5-handwritten-logbook",
+              "heading": "Livre de bord manuscrit (annexe 3, ch. 5 — résumé)",
+              "textKind": "editorial-summary",
+              "citation": "<p>Le livre de bord doit être tenu à la main pour les voyages pris en compte comme expérience en mer au titre des articles 7 et 8.</p>"
             }
           ]
         },
@@ -649,6 +715,12 @@
               "id": "Art. 8",
               "heading": "Pratica per l’estensione di una licenza di navigazione d’altura già rilasciata",
               "citation": "Per estendere una licenza di navigazione d’altura già rilasciata per le altre categorie di natanti si devono certificare le esperienze minime seguenti:\n<ol type='a'>\n<li value='b'>per l’estensione della licenza di navigazione d’altura per natanti a vela con o senza motore a natanti motorizzati:\n<ol>\n<li>cinque giorni in mare, e</li>\n<li>la percorrenza di 100 miglia nautiche secondo l’attestato di navigazione conformemente all’allegato 4.</li>\n</ol>\n</li>\n</ol>\nLa pratica deve essere acquisita in un periodo di tempo limitato ai quattro anni (anno civile completo) precedenti la presentazione dell’istanza d’estensione."
+            },
+            {
+              "id": "annex-3-5-handwritten-logbook",
+              "heading": "Giornale di bordo manoscritto (allegato 3, n. 5 — sintesi)",
+              "textKind": "editorial-summary",
+              "citation": "<p>Il giornale di bordo deve essere compilato a mano per i viaggi conteggiati come pratica in mare ai sensi degli articoli 7 e 8.</p>"
             }
           ]
         }
@@ -702,11 +774,11 @@
           "unit": "nautical-miles"
         },
         {
-          "id": "ch-hochseeausweis-motor-addon-daily-signed-logbook",
+          "id": "ch-hochseeausweis-motor-addon-handwritten-logbook",
           "type": "manual",
           "threshold": 1,
           "filters": null,
-          "translationKey": "compliance.requirement.dailySignedLogbook"
+          "translationKey": "compliance.requirement.handwrittenLogbook"
         }
       ],
       "referenceDateKind": "extension-application"
