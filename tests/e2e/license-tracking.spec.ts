@@ -28,11 +28,11 @@ for (const dateFormat of ["dd/MM/yyyy", "yyyy-MM-dd"]) {
     await expect(manualDetails).toBeVisible();
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await page.setViewportSize({ width: 1280, height: 720 });
-    const signedLogbook = page.locator(".tracked-license").first().getByRole("checkbox", { name: "Logbook kept daily at sea, with every page signed by the skipper", exact: true });
-    await expect(signedLogbook).not.toBeChecked();
-    await signedLogbook.click();
-    await expect(signedLogbook).toBeChecked();
-    await expect.poll(async () => (await (await page.request.get("/api/compliance")).json()).licenses[0].completedManualRequirementIds).toContain("ch-hochseeausweis-sail-daily-signed-logbook");
+    const handwrittenLogbook = page.locator(".tracked-license").first().getByRole("checkbox", { name: "Handwritten logbook for voyages counted toward the license", exact: true });
+    await expect(handwrittenLogbook).not.toBeChecked();
+    await handwrittenLogbook.click();
+    await expect(handwrittenLogbook).toBeChecked();
+    await expect.poll(async () => (await (await page.request.get("/api/compliance")).json()).licenses[0].completedManualRequirementIds).toContain("ch-hochseeausweis-sail-handwritten-logbook");
     const saves: string[] = [];
     page.on("request", request => {
       if (request.url().endsWith("/api/compliance") && request.method() === "PATCH") saves.push(request.postData() ?? "");
@@ -49,7 +49,7 @@ for (const dateFormat of ["dd/MM/yyyy", "yyyy-MM-dd"]) {
     await expect.poll(async () => (await (await page.request.get("/api/compliance")).json()).licenses[0].startDate).toBe("2025-04-02");
     await page.reload();
     await expect(input).toHaveValue(dateFormat === "yyyy-MM-dd" ? "2025-04-02" : "02/04/2025");
-    await expect(signedLogbook).toBeChecked();
+    await expect(handwrittenLogbook).toBeChecked();
     await input.fill("invalid");
     await input.press("Tab");
     await expect(input).toHaveAttribute("aria-invalid", "true");
@@ -73,7 +73,7 @@ for (const dateFormat of ["dd/MM/yyyy", "yyyy-MM-dd"]) {
     await page.locator("#compliance-license").selectOption("ch-hochseeausweis-sail-addon");
     const extensionDate = page.locator("#license-start-ch-hochseeausweis-sail-addon");
     await expect(extensionDate).toHaveAttribute("aria-label", "Extension application date");
-    await expect(page.locator(".tracked-license").nth(1).getByRole("checkbox", { name: "Logbook kept daily at sea, with every page signed by the skipper", exact: true })).not.toBeChecked();
+    await expect(page.locator(".tracked-license").nth(1).getByRole("checkbox", { name: "Handwritten logbook for voyages counted toward the license", exact: true })).not.toBeChecked();
     await extensionDate.fill(dateFormat === "yyyy-MM-dd" ? "2021-07-01" : "01/07/2021");
     await extensionDate.press("Enter");
     await expect(page.locator("#requirement-copy-ch-8-a-2")).toContainText(dateFormat === "yyyy-MM-dd" ? "2017-01-01 – 2021-07-01" : "01/01/2017 – 01/07/2021");

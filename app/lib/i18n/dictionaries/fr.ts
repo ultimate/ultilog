@@ -332,7 +332,7 @@ export const fr: Dictionary = {
   "crew.addMember": "Ajouter un membre d’équipage",
   "crew.select": "Sélectionner l’équipage…",
   "crew.skipper": "Skipper",
-  "compliance.requirement.dailySignedLogbook": "Livre de bord tenu quotidiennement en mer, avec chaque page signée par le skipper",
+  "compliance.requirement.handwrittenLogbook": "Livre de bord tenu à la main pour les voyages pris en compte pour le permis",
   "compliance.requirement.theoryExamPassed": "Examen théorique réussi",
   "compliance.requirement.nauticalBasicTraining": "Preuve d’une formation nautique de base",
   "compliance.requirement.firstAidTraining": "Preuve d’une formation aux premiers secours vitaux",
