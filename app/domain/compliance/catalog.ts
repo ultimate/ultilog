@@ -140,6 +140,7 @@ export function createComplianceCatalog(value: unknown): ComplianceCatalog {
           ...(rawFilters.withinYears === undefined ? {} : { withinYears: typeof rawFilters.withinYears === "number" ? rawFilters.withinYears : fail(`${base.id}.filters.withinYears must be a number`) }),
         };
       }
+      if (requirement.unit !== undefined && (typeof requirement.unit !== "string" || !units.has(requirement.unit))) fail(`${base.id} must have a recognized unit`);
       if (type === "manual") return { ...base, ...(requirement.threshold === undefined ? {} : { threshold: requirement.threshold as number }), ...(filters === undefined ? {} : { filters }), ...(requirement.unit === undefined ? {} : { unit: requirement.unit as "days" | "nautical-miles" }) } as ManualRequirement;
       if (typeof requirement.threshold !== "number" || !Number.isFinite(requirement.threshold) || requirement.threshold <= 0) fail(`${base.id} must have a positive threshold`);
       if (typeof requirement.unit !== "string" || !units.has(requirement.unit)) fail(`${base.id} must have a recognized unit`);

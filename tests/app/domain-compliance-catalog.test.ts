@@ -71,6 +71,14 @@ describe("compliance catalog domain", () => {
     expect(() => createComplianceCatalog(input)).toThrow(/must be sail or motor/);
   });
 
+  it("preserves explicit units on quantitative manual requirements and rejects unknown units", () => {
+    const input = fixture();
+    input.licenses[0].requirements = [{ id: "after-exam", type: "manual", threshold: 700, unit: "nautical-miles", translationKey: "example.key" }];
+    expect(createComplianceCatalog(input).licenses[0].requirements[0]).toMatchObject({ threshold: 700, unit: "nautical-miles" });
+    input.licenses[0].requirements[0].unit = "kilometers";
+    expect(() => createComplianceCatalog(input)).toThrow(/recognized unit/);
+  });
+
   it("allows manual progress metadata to be absent and strips author metadata", () => {
     const catalog = createComplianceCatalog(fixture());
     expect(catalog.licenses[0].requirements[0]).toEqual({ id: "check", type: "manual", translationKey: "example.key" });
