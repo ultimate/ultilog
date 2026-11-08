@@ -47,6 +47,14 @@ Swiss requirements use boat-type filters, including day, manual, and extension
 requirements, without restricting propulsion. Propulsion-qualified day counters
 are not automatically verifiable. Manual requirements remain user-confirmed.
 
+`withinYears` defines an inclusive window from the selected “Count progress from”
+date through its anniversary that many years later. For example, a four-year
+window starting on 2021-01-01 excludes sheets from 2026. Leap-day anniversaries
+fall on February 28 in non-leap years. With no selected start date, the filter
+retains a rolling lookback from today. Without `withinYears`, the selected date
+is only a lower bound. Dated sheets must fall entirely inside the window;
+undated sheets are excluded when a date filter is active.
+
 ## Current localization
 
 The Swiss legal document is authored in German, French, Italian, and English. Swiss

@@ -116,6 +116,36 @@ describe("calculateLicenseProgress", () => {
     expect(result).toMatchObject({ achievedValue: 7, verification: "automatic" });
   });
 
+  it.each(["miles", "days-sailing", "days-underway", "days-at-sea"] as const)("excludes 2026 %s from a four-year window starting in 2021", type => {
+    const result = calculateLicenseProgress([requirement("window", type, 10, { withinYears: 4 })],
+      [sheet("2026-01-01", 6, 4, true)], [], "2021-01-01", new Date("2026-11-08"))[0];
+    expect(result).toMatchObject({ achievedValue: 0, remainingValue: 10, percentage: 0, completed: false });
+  });
+
+  it("anchors an inclusive window to the selected date rather than today", () => {
+    const result = calculateLicenseProgress([requirement("window", "miles", 100, { withinYears: 4 })], [
+      sheet("2020-05-31", 1), sheet("2020-06-01", 2), sheet("2021-01-01", 3),
+      sheet("2024-06-01", 4), sheet("2024-06-02", 8),
+    ], [], "2020-06-01", new Date("2026-11-08"))[0];
+    expect(result.achievedValue).toBe(9);
+  });
+
+  it("retains the rolling lookback when no start date is selected", () => {
+    const result = calculateLicenseProgress([requirement("window", "miles", 100, { withinYears: 4 })], [
+      sheet("2022-11-07", 1), sheet("2022-11-08", 2), sheet("2026-01-01", 3),
+    ], [], null, new Date("2026-11-08"))[0];
+    expect(result.achievedValue).toBe(5);
+  });
+
+  it("clamps leap-day anniversaries and excludes sheets crossing the end date", () => {
+    const crossing = sheet("2025-02-28", 8);
+    crossing.route.arrived = "2025-03-01T10:00:00Z";
+    const result = calculateLicenseProgress([requirement("window", "miles", 100, { withinYears: 1 })], [
+      sheet("2025-02-28", 2), sheet("2025-03-01", 4), crossing,
+    ], [], "2024-02-29")[0];
+    expect(result.achievedValue).toBe(2);
+  });
+
   it("summarizes requirements as fulfilled, in progress, or open", () => {
     const progress = calculateLicenseProgress([
       requirement("fulfilled", "miles", 5),

@@ -16,6 +16,9 @@ for (const dateFormat of ["dd/MM/yyyy", "yyyy-MM-dd"]) {
     await page.getByRole("button", { name: "Compliance", exact: true }).click();
     const input = page.locator('input[type="text"][id="license-start-ch-hochseeausweis-sail"]');
     await expect(input).toBeVisible();
+    const achieved = page.locator(".requirement-progress dl > div:first-child dd");
+    await expect(achieved).toHaveCount(3);
+    expect((await achieved.allTextContents()).some(value => Number(value) > 0)).toBe(true);
     const saves: string[] = [];
     page.on("request", request => {
       if (request.url().endsWith("/api/compliance") && request.method() === "PATCH") saves.push(request.postData() ?? "");
@@ -42,5 +45,11 @@ for (const dateFormat of ["dd/MM/yyyy", "yyyy-MM-dd"]) {
     await picker.fill("2024-03-01");
     await picker.press("Enter");
     await expect.poll(async () => (await (await page.request.get("/api/compliance")).json()).licenses[0].startDate).toBe("2024-03-01");
+    await input.fill(dateFormat === "yyyy-MM-dd" ? "2021-01-01" : "01/01/2021");
+    await input.press("Enter");
+    await expect.poll(async () => (await (await page.request.get("/api/compliance")).json()).licenses[0].startDate).toBe("2021-01-01");
+    await expect(achieved).toHaveText(["0", "0", "0"]);
+    await page.reload();
+    await expect(achieved).toHaveText(["0", "0", "0"]);
   });
 }
