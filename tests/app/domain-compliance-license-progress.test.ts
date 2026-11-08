@@ -48,9 +48,28 @@ describe("calculateLicenseProgress", () => {
       for (const req of license.requirements) expect(req.filters?.propulsion).toBeUndefined();
       const miles = license.requirements.filter(req => req.type === "miles");
       expect(miles.length).toBeGreaterThan(0);
-      const results = calculateLicenseProgress(miles, sheets, [], "2026-02-01", new Date("2026-02-01"), boats);
+      const results = calculateLicenseProgress(miles, sheets, [], "2026-01-01", new Date("2026-02-01"), boats);
       expect(results.map(item => item.achievedValue)).toEqual(miles.map(req => req.filters?.boatType === "sail" ? 10 : 0));
     }
+  });
+
+  it.each([
+    ["ch-hochseeausweis-sail", "ch-7-a-2-2", "sail", 700],
+    ["ch-hochseeausweis-motor", "ch-7-b-2-2", "motor", 400],
+  ] as const)("automatically calculates post-theory miles for %s", (licenseId, id, boatType, target) => {
+    const req = complianceCatalog.licenses.find(license => license.id === licenseId)!.requirements.find(req => req.id === id)!;
+    expect(req).toMatchObject({ type: "miles", threshold: target, unit: "nautical-miles", filters: { boatType } });
+    const boats = [{ id: "eligible", type: boatType }, { id: "other", type: boatType === "sail" ? "motor" : "sail" }] as Boat[];
+    const voyage = (day: string, miles: number, boatId = "eligible") => ({
+      ...sheet(day, boatType === "sail" ? miles * 0.6 : 0, boatType === "sail" ? miles * 0.4 : miles), boatId,
+    });
+    const sheets = [voyage("2021-06-30", 500), voyage("2021-07-01", 100), voyage("2025-12-31", 200), voyage("2026-01-01", 800), voyage("2022-01-01", 900, "other")];
+    const result = calculateLicenseProgress([req], sheets, [id], "2021-07-01", undefined, boats)[0];
+    expect(result).toMatchObject({ achievedValue: 300, targetValue: target, remainingValue: target - 300, automatic: true, verification: "automatic", completed: false });
+    expect(calculateLicenseProgress([req], [voyage("2022-01-01", target)], [], "2021-07-01", undefined, boats)[0]).toMatchObject({ achievedValue: target, completed: true, percentage: 100, remainingValue: 0 });
+    // Legacy manual confirmations cannot fulfill a calculated requirement.
+    expect(calculateLicenseProgress([req], [], [id], "2021-07-01", undefined, boats)[0]).toMatchObject({ achievedValue: 0, completed: false, verification: "automatic" });
+    expect(calculateLicenseProgress([req], sheets, [id], null, undefined, boats)[0]).toMatchObject({ achievedValue: 0, completed: false, verification: "reference-date-required" });
   });
 
   it("resolves the catalog windows for initial, post-exam, and extension requirements", () => {

@@ -337,7 +337,7 @@ export const en = {
   "compliance.requirement.firstAidTraining": "Proof of lifesaving first-aid training",
   "compliance.requirement.visionAndHearing": "Confirmation of sufficient vision and hearing",
   "compliance.requirement.mentalAndPhysicalFitness": "Confirmation of mental and physical fitness",
-  "compliance.requirement.afterTheoryExam": "Completed after passing the theory exam",
+  "compliance.requirement.afterTheoryExam": "Miles after passing the theory exam",
   "compliance.requirement.holdsSwissMotorLicense": "Holds a Swiss motor-yacht offshore licence",
   "compliance.requirement.holdsSwissSailLicense": "Holds a Swiss sailing-yacht offshore licence",
   "compliance.requirement.practicalExamPassed": "Practical exam passed",

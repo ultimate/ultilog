@@ -17,15 +17,18 @@ for (const dateFormat of ["dd/MM/yyyy", "yyyy-MM-dd"]) {
     const input = page.locator('input[type="text"][id="license-start-ch-hochseeausweis-sail"]');
     await expect(input).toBeVisible();
     const achieved = page.locator(".requirement-progress dl > div:first-child dd");
-    await expect(achieved).toHaveCount(3);
-    await expect(achieved).toHaveText(["0", "0", "0"]);
+    await expect(achieved).toHaveCount(4);
+    await expect(achieved).toHaveText(["0", "0", "0", "0"]);
     await expect(input).toHaveAttribute("aria-label", "Theory exam date");
-    const manualDetails = page.locator("#requirement-copy-ch-7-a-2-2");
-    await expect(manualDetails).toContainText("700 nautical miles");
-    await expect(manualDetails).toContainText("4 years after the reference date");
-    await expect(manualDetails).toContainText("Boat type");
+    const afterTheoryDetails = page.locator("#requirement-copy-ch-7-a-2-2");
+    await expect(afterTheoryDetails).toContainText("700 nautical miles");
+    await expect(afterTheoryDetails).toContainText("4 years after the reference date");
+    await expect(afterTheoryDetails).toContainText("Boat type");
+    const afterTheoryRow = page.locator(".requirement-row").filter({ has: afterTheoryDetails });
+    await expect(afterTheoryRow.getByRole("progressbar")).toBeVisible();
+    await expect(afterTheoryRow.getByRole("checkbox")).toHaveCount(0);
     await page.setViewportSize({ width: 375, height: 812 });
-    await expect(manualDetails).toBeVisible();
+    await expect(afterTheoryDetails).toBeVisible();
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await page.setViewportSize({ width: 1280, height: 720 });
     const handwrittenLogbook = page.locator(".tracked-license").first().getByRole("checkbox", { name: "Handwritten logbook for voyages counted toward the license", exact: true });
@@ -44,6 +47,8 @@ for (const dateFormat of ["dd/MM/yyyy", "yyyy-MM-dd"]) {
     await input.press("Enter");
     await expect.poll(async () => (await (await page.request.get("/api/compliance")).json()).licenses[0].startDate).toBe("2026-04-02");
     await expect(input).toBeEnabled();
+    // Overall experience includes the 2025 cruise, but it predates a 2026 exam.
+    await expect(achieved).toHaveText(["4", "4", "87.8", "0"]);
     await input.fill(dateFormat === "yyyy-MM-dd" ? "2025-04-02" : "02/04/2025");
     await input.press("Tab");
     await expect.poll(async () => (await (await page.request.get("/api/compliance")).json()).licenses[0].startDate).toBe("2025-04-02");
@@ -64,11 +69,11 @@ for (const dateFormat of ["dd/MM/yyyy", "yyyy-MM-dd"]) {
     await input.press("Enter");
     await expect.poll(async () => (await (await page.request.get("/api/compliance")).json()).licenses[0].startDate).toBe("2021-07-01");
     // The demo sailing cruise is in September 2025: the entire final year now counts.
-    await expect(achieved).toHaveText(["4", "4", "87.8"]);
-    await expect(manualDetails).toContainText(dateFormat === "yyyy-MM-dd" ? "2021-07-01 – 2025-12-31" : "01/07/2021 – 31/12/2025");
+    await expect(achieved).toHaveText(["4", "4", "87.8", "87.8"]);
+    await expect(afterTheoryDetails).toContainText(dateFormat === "yyyy-MM-dd" ? "2021-07-01 – 2025-12-31" : "01/07/2021 – 31/12/2025");
     await page.reload();
     // The demo sailing cruise is in September 2025: the entire final year now counts.
-    await expect(achieved).toHaveText(["4", "4", "87.8"]);
+    await expect(achieved).toHaveText(["4", "4", "87.8", "87.8"]);
     await expect(page.locator("#requirement-copy-ch-7-a-2-1")).toContainText(dateFormat === "yyyy-MM-dd" ? "2017-01-01 – 2025-12-31" : "01/01/2017 – 31/12/2025");
     await page.locator("#compliance-license").selectOption("ch-hochseeausweis-sail-addon");
     const extensionDate = page.locator("#license-start-ch-hochseeausweis-sail-addon");
