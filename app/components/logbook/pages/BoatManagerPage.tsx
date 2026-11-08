@@ -110,7 +110,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                     <strong>{boat.name}</strong>
                     {boat.archived && <small>{t("boats.archived")}</small>}
                     <small>
-                      {boat.type} · {boat.registration || t("boats.noRegistration")}
+                      {t(boat.type === "sail" ? "boats.sail" : "boats.motor")} · {boat.registration || t("boats.noRegistration")}
                     </small>
                   </span>
                 </button>
@@ -144,8 +144,8 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                   setBoatForm({ ...boatForm, type: e.target.value as BoatType })
                 }
               >
-                <option>{t("boats.sail")}</option>
-                <option>{t("boats.motor")}</option>
+                <option value="sail">{t("boats.sail")}</option>
+                <option value="motor">{t("boats.motor")}</option>
               </select>
             </label>
             <label>

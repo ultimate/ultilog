@@ -28,9 +28,27 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
         [owner, "Contract owner", `${owner}@example.test`, "", other, "Other owner", `${other}@example.test`, ""],
       );
       const database = resource.database.forUser(owner);
-      const boat = await database.upsertBoat({ id: "boat", name: "Contract boat", type: "Sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, deviationTable: defaultDeviationTable() });
+      const boat = await database.upsertBoat({ id: "boat", name: "Contract boat", type: "sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, deviationTable: defaultDeviationTable() });
       return { ...resource, database, owner, other, boat: boat! };
     }
+
+    it("migrates legacy boat types to lowercase and preserves boat data", async () => {
+      const context = await setup();
+      try {
+        const db = context.database;
+        await db.upsertBoat({ ...context.boat, id: "motor", name: "Motorboat", type: "motor", archived: true });
+        const p = (index: number) => db.placeholder(index);
+        await db.query(`update boats set type = ${p(1)} where name = ${p(2)}`, ["Sail", context.boat.name]);
+        await db.query(`update boats set type = ${p(1)} where name = ${p(2)}`, ["Motor", "Motorboat"]);
+        await db.query(`delete from schema_migrations where id = ${p(1)}`, ["056_lowercase_boat_types"]);
+        await db.migrate();
+        const boats = (await db.readLogbook()).boats;
+        expect(boats.find(boat => boat.id === "boat")).toMatchObject({ type: "sail", name: context.boat.name });
+        expect(boats.find(boat => boat.id === "motor")).toMatchObject({ type: "motor", name: "Motorboat", archived: true });
+        await db.migrate();
+        expect((await db.readLogbook()).boats).toEqual(boats);
+      } finally { await context.cleanup(); }
+    });
 
     it("migrates named positions into remarks and removes obsolete warning targets without losing line data", async () => {
       const context = await setup();
@@ -612,8 +630,8 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
         expect(calculateLogbookStatistics(recipientSheets)).toEqual({ sailMiles: 18, motorMiles: 12, totalMiles: 30, sailingDays: 3, daysAtSea: 3 });
 
         const requirements = [
-          automaticRequirement("sail", "sail-miles"), automaticRequirement("motor", "motor-miles"),
-          automaticRequirement("total", "total-miles"), automaticRequirement("sailing-days", "days-sailing"),
+          automaticRequirement("sail", "miles", { propulsion: "sail" }), automaticRequirement("motor", "miles", { propulsion: "motor" }),
+          automaticRequirement("total", "miles"), automaticRequirement("sailing-days", "days-sailing"),
           automaticRequirement("sea-days", "days-at-sea"),
         ];
         expect(calculateLicenseProgress(requirements, [recipientCopy]).map(item => item.achievedValue)).toEqual([9, 6, 15, 3, 3]);
@@ -639,7 +657,7 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
         expect(recipientCopy.lines).toEqual([]);
         expect(calculateLogSheetMetrics(recipientCopy.lines, recipientCopy.route)).toMatchObject({ sailMiles: 0, motorMiles: 0, totalMiles: 0 });
         expect(calculateLogbookStatistics([recipientCopy])).toEqual({ sailMiles: 0, motorMiles: 0, totalMiles: 0, sailingDays: 0, daysAtSea: 0 });
-        expect(calculateLicenseProgress([automaticRequirement("miles", "total-miles")], [recipientCopy])[0].achievedValue).toBe(0);
+        expect(calculateLicenseProgress([automaticRequirement("miles", "miles")], [recipientCopy])[0].achievedValue).toBe(0);
       } finally { await context.cleanup(); }
     });
 
@@ -723,6 +741,6 @@ function voyageLines(): LogLine[] {
   ];
 }
 
-function automaticRequirement(id: string, type: Requirement["type"]): Requirement {
-  return { id, type, threshold: 100, filters: null, translationKey: "dashboard.totalMiles", unit: type.includes("miles") ? "nautical-miles" : "days" } as Requirement;
+function automaticRequirement(id: string, type: Requirement["type"], filters: Requirement["filters"] = null): Requirement {
+  return { id, type, threshold: 100, filters, translationKey: "dashboard.totalMiles", unit: type.includes("miles") ? "nautical-miles" : "days" } as Requirement;
 }

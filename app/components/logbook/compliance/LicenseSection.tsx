@@ -1,12 +1,12 @@
 import { PreferenceDateInput } from "../PreferenceDateInput";
 import { useEffect, useMemo, useState } from "react";
-import type { LogSheet } from "../../../models/logbook";
+import type { Boat, LogSheet } from "../../../models/logbook";
 import { calculateLicenseProgress, summarizeRequirementProgress } from "../../../domain/compliance/license-progress";
 import { complianceCatalog, findLicense, licenseLanguages, withLanguageFallback } from "../../../domain/compliance/catalog";
 import { localeLabels, useI18n, type Locale } from "../../../lib/i18n";
 import { LicenseStatusPie } from "./LicenseStatusPie";
 
-type Props = { requestedLanguage: string; sheets: readonly LogSheet[] };
+type Props = { requestedLanguage: string; sheets: readonly LogSheet[]; boats?: readonly Boat[] };
 type TrackedLicense = { licenseId: string; startDate: string | null; completedManualRequirementIds: string[] };
 type ComplianceState = { licenses: TrackedLicense[] };
 
@@ -22,7 +22,7 @@ const countryName = (countryCode: string, language: string) => {
   catch { return countryCode; }
 };
 
-export function LicenseSection({ requestedLanguage, sheets }: Props) {
+export function LicenseSection({ requestedLanguage, sheets, boats = [] }: Props) {
   const { t } = useI18n();
   const [state, setState] = useState<ComplianceState>({ licenses: [] });
   const [languages, setLanguages] = useState<Record<string, string>>({});
@@ -77,7 +77,7 @@ export function LicenseSection({ requestedLanguage, sheets }: Props) {
       const preferred = languages[license.id] ?? requestedLanguage;
       const resolvedLanguage = options.includes(preferred) ? preferred : license.defaultLanguage;
       const content = withLanguageFallback(license.content, resolvedLanguage, license.defaultLanguage)!;
-      const progress = calculateLicenseProgress(license.requirements, sheets, tracked.completedManualRequirementIds, tracked.startDate);
+      const progress = calculateLicenseProgress(license.requirements, sheets, tracked.completedManualRequirementIds, tracked.startDate, undefined, boats);
       const summary = summarizeRequirementProgress(progress);
       return <article className="tracked-license" key={license.id}>
         <header className="tracked-license-heading"><div><small>{countryName(license.countryCode, requestedLanguage)}</small><h3>{content.licenseName}</h3></div>
@@ -86,7 +86,7 @@ export function LicenseSection({ requestedLanguage, sheets }: Props) {
         <LicenseStatusPie summary={summary} />
         <div className="compliance-selectors license-selectors">
           <label htmlFor={`license-language-${license.id}`}>{t("compliance.licenseLanguage")}<select id={`license-language-${license.id}`} value={resolvedLanguage} onChange={(event) => setLanguages((current) => ({ ...current, [license.id]: event.target.value }))}>{options.map((code) => <option key={code} value={code}>{localeLabels[code as Locale] ?? code.toUpperCase()}</option>)}</select></label>
-          <label htmlFor={`license-start-${license.id}`}>{t("compliance.startDate")}<PreferenceDateInput aria-label={t("compliance.startDate")} id={`license-start-${license.id}`} value={tracked.startDate ?? ""} disabled={savingId === license.id} onChange={(event) => void update({ action: "license-start-date", licenseId: license.id, startDate: event.target.value || null }, license.id)} /></label>
+          <label htmlFor={`license-start-${license.id}`}>{t("compliance.startDate")}<PreferenceDateInput commitOnBlur aria-label={t("compliance.startDate")} id={`license-start-${license.id}`} value={tracked.startDate ?? ""} disabled={savingId === license.id} onChange={(event) => void update({ action: "license-start-date", licenseId: license.id, startDate: event.target.value || null }, license.id)} /></label>
         </div>
         <details className="license-document"><summary>{t("compliance.licenseLegalDetails")}</summary><div className="license-document-content"><p>{content.title}</p><dl className="source-metadata">{content.authority ? <div><dt>{t("compliance.authority")}</dt><dd>{content.authority}</dd></div> : null}{content.checkedAt ? <div><dt>{t("compliance.checkedAt")}</dt><dd>{content.checkedAt}</dd></div> : null}{content.effectiveFrom ? <div><dt>{t("compliance.effectiveFrom")}</dt><dd>{content.effectiveFrom}</dd></div> : null}</dl>{content.sections.map((section) => <section key={section.id}><h4>{section.heading}</h4>{section.citation ? <div className="legal-text" dangerouslySetInnerHTML={{ __html: section.citation }} /> : null}</section>)}<a href={content.sourceUrl} target="_blank" rel="noopener noreferrer">{t("compliance.officialSource")}</a></div></details>
         <section className="requirement-panel"><h4>{t("compliance.checklist")}</h4>{progress.map((item) => <article className={`requirement-row requirement-${item.verification} requirement-status-${item.completed ? "fulfilled" : item.requirement.type !== "manual" && item.achievedValue > 0 ? "in-progress" : "open"}`} key={item.requirement.id}>

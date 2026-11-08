@@ -9,7 +9,7 @@ const boat: Boat = {
   id: "boat-1",
   archived: false,
   name: "Aurora",
-  type: "Sail",
+  type: "sail",
   registration: "CH-1",
   flagState: "CH",
   homePort: "Basel",

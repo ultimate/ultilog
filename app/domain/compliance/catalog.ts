@@ -1,3 +1,4 @@
+import type { BoatType } from "../../models/boat";
 import catalogJson from "../../content/compliance/catalog.json";
 import type { TranslationKey } from "../../lib/i18n";
 
@@ -18,7 +19,8 @@ export type LocalizedLegalContent = {
 
 export type LocalizedLicenseContent = LocalizedLegalContent & { licenseName: string };
 
-export type RequirementFilters = { propulsion?: string; withinYears?: number };
+export type PropulsionType = "sail" | "motor";
+export type RequirementFilters = { boatType?: BoatType; propulsion?: PropulsionType; withinYears?: number };
 export type ManualRequirement = {
   id: string;
   type: "manual";
@@ -57,15 +59,13 @@ export type ComplianceCatalog = {
 
 export type ProgressType =
   | "manual"
-  | "sail-miles"
-  | "motor-miles"
-  | "total-miles"
+  | "miles"
   | "days-sailing"
   | "days-underway"
   | "days-at-sea";
 
 const progressTypes = new Set<ProgressType>([
-  "manual", "sail-miles", "motor-miles", "total-miles",
+  "manual", "miles",
   "days-sailing", "days-underway", "days-at-sea",
 ]);
 const units = new Set(["days", "nautical-miles"]);
@@ -131,8 +131,12 @@ export function createComplianceCatalog(value: unknown): ComplianceCatalog {
       let filters: RequirementFilters | null | undefined = requirement.filters == null ? requirement.filters : {};
       if (requirement.filters != null) {
         const rawFilters = object(requirement.filters, `${base.id}.filters`);
+        for (const key of ["boatType", "propulsion"] as const) {
+          if (rawFilters[key] !== undefined && rawFilters[key] !== "sail" && rawFilters[key] !== "motor") fail(`${base.id}.filters.${key} must be sail or motor`);
+        }
         filters = {
-          ...(rawFilters.propulsion === undefined ? {} : { propulsion: string(rawFilters.propulsion, `${base.id}.filters.propulsion`) }),
+          ...(rawFilters.boatType === undefined ? {} : { boatType: rawFilters.boatType as BoatType }),
+          ...(rawFilters.propulsion === undefined ? {} : { propulsion: rawFilters.propulsion as PropulsionType }),
           ...(rawFilters.withinYears === undefined ? {} : { withinYears: typeof rawFilters.withinYears === "number" ? rawFilters.withinYears : fail(`${base.id}.filters.withinYears must be a number`) }),
         };
       }

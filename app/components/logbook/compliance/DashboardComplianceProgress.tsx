@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { LogSheet } from "../../../models/logbook";
+import type { Boat, LogSheet } from "../../../models/logbook";
 import { calculateLicenseProgress, summarizeRequirementProgress, type RequirementStatusSummary } from "../../../domain/compliance/license-progress";
 import { findLicense, withLanguageFallback } from "../../../domain/compliance/catalog";
 import { useI18n } from "../../../lib/i18n";
@@ -8,7 +8,7 @@ import { LicenseStatusPie } from "./LicenseStatusPie";
 type TrackedLicense = { licenseId: string; startDate: string | null; completedManualRequirementIds: string[] };
 const empty = (): RequirementStatusSummary => ({ fulfilled: 0, inProgress: 0, open: 0, total: 0 });
 
-export function DashboardComplianceProgress({ sheets, language, onOpenCompliance }: { sheets: readonly LogSheet[]; language: string; onOpenCompliance: () => void }) {
+export function DashboardComplianceProgress({ sheets, boats = [], language, onOpenCompliance }: { sheets: readonly LogSheet[]; boats?: readonly Boat[]; language: string; onOpenCompliance: () => void }) {
   const { t } = useI18n();
   const [tracked, setTracked] = useState<TrackedLicense[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,7 +28,7 @@ export function DashboardComplianceProgress({ sheets, language, onOpenCompliance
   const items = tracked.flatMap((entry) => {
     const license = findLicense(entry.licenseId);
     if (!license) return [];
-    const progress = calculateLicenseProgress(license.requirements, sheets, entry.completedManualRequirementIds, entry.startDate);
+    const progress = calculateLicenseProgress(license.requirements, sheets, entry.completedManualRequirementIds, entry.startDate, undefined, boats);
     return [{ entry, license, summary: summarizeRequirementProgress(progress) }];
   });
   const overall = items.reduce((total, item) => ({ fulfilled: total.fulfilled + item.summary.fulfilled, inProgress: total.inProgress + item.summary.inProgress, open: total.open + item.summary.open, total: total.total + item.summary.total }), empty());

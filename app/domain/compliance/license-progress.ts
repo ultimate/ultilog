@@ -1,4 +1,4 @@
-import type { LogSheet } from "../../models/logbook";
+import type { Boat, LogSheet } from "../../models/logbook";
 import type { Requirement } from "./catalog";
 import { calculateLogbookStatistics } from "../logbook/logbook-statistics";
 
@@ -25,16 +25,14 @@ export function summarizeRequirementProgress(progressItems: readonly Requirement
   }, { fulfilled: 0, inProgress: 0, open: 0, total: 0 });
 }
 
-type AutomaticProgressType = "sail-miles" | "motor-miles" | "total-miles" | "days-sailing" | "days-underway" | "days-at-sea";
+type AutomaticProgressType = "miles" | "days-sailing" | "days-underway" | "days-at-sea";
 
 /**
  * The catalog vocabulary is intentionally translated here rather than making
  * authored compliance content conform to names used by the statistics domain.
  */
 const statisticForProgressType: Record<AutomaticProgressType, keyof AutomaticStatistics> = {
-  "sail-miles": "sailMiles",
-  "motor-miles": "motorMiles",
-  "total-miles": "totalMiles",
+  "miles": "totalMiles",
   "days-sailing": "sailingDays",
   "days-underway": "sailingDays",
   "days-at-sea": "daysAtSea",
@@ -55,7 +53,9 @@ export function calculateLicenseProgress(
   completedManualRequirementIds: readonly string[] = [],
   startDate?: string | null,
   asOf = new Date(),
+  boats: readonly Boat[] = [],
 ): RequirementProgress[] {
+  const boatsById = new Map(boats.map(boat => [boat.id, boat]));
   const manuallyCompleted = new Set(completedManualRequirementIds);
 
   return requirements.map((requirement) => {
@@ -71,8 +71,11 @@ export function calculateLicenseProgress(
     }
 
     const cutoff = effectiveCutoff(startDate, requirement.filters?.withinYears, asOf);
-    const statistics = collectStatistics(sheetsAfter(sheets, cutoff));
-    const achievedValue = statistics[statistic];
+    const eligible = sheetsAfter(sheets, cutoff).filter(sheet => !requirement.filters?.boatType || boatsById.get(sheet.boatId)?.type === requirement.filters.boatType);
+    const statistics = collectStatistics(eligible);
+    const propulsion = requirement.filters?.propulsion;
+    const counter = requirement.type === "miles" && propulsion ? (propulsion === "sail" ? "sailMiles" : "motorMiles") : statistic;
+    const achievedValue = statistics[counter];
     return progress(requirement, achievedValue, targetValue, achievedValue >= targetValue, true, "automatic");
   });
 }
@@ -88,9 +91,8 @@ function positiveTarget(value: number | undefined) {
 function hasUnsupportedQualifiers(requirement: Requirement) {
   const propulsion = requirement.filters?.propulsion;
   if (!propulsion) return false;
-  if (propulsion === "sail") return requirement.type !== "sail-miles" && requirement.type !== "days-sailing" && requirement.type !== "days-at-sea";
-  if (propulsion === "motor") return requirement.type !== "motor-miles" && requirement.type !== "days-underway" && requirement.type !== "days-at-sea";
-  return true;
+  // Day counters do not yet distinguish time spent under each propulsion.
+  return requirement.type !== "miles" || (propulsion !== "sail" && propulsion !== "motor");
 }
 
 function effectiveCutoff(startDate: string | null | undefined, withinYears: number | undefined, asOf: Date) {
