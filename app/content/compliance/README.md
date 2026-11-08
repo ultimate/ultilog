@@ -85,6 +85,10 @@ start date through its anniversary, or a rolling lookback from today when no
 date is selected. A requirement cannot combine `withinYears` and `dateWindow`.
 Without either filter, a selected date remains a lower bound.
 
+The four Swiss checklists also include a unitless manual confirmation that the
+logbook is kept daily at sea and signed on every page by the skipper. Its wording
+follows section 9 of the Swiss legal-logbook entry in this catalog.
+
 ## Current localization
 
 The Swiss legal document is authored in German, French, Italian, and English. Swiss

@@ -56,6 +56,16 @@ describe("compliance catalog authoring contract", () => {
     }
   });
 
+  it("includes daily entries and per-page skipper signatures as a manual check on all four Swiss licenses", () => {
+    const swiss = complianceCatalog.licenses.filter(license => license.countryCode === "CH");
+    expect(swiss).toHaveLength(4);
+    for (const license of swiss) {
+      const checks = license.requirements.filter(requirement => requirement.translationKey === "compliance.requirement.dailySignedLogbook");
+      expect(checks).toEqual([{ id: `${license.id}-daily-signed-logbook`, type: "manual", threshold: 1, filters: null, translationKey: "compliance.requirement.dailySignedLogbook" }]);
+    }
+    expect(complianceCatalog.licenses.filter(license => license.countryCode !== "CH").flatMap(license => license.requirements).some(requirement => requirement.translationKey === "compliance.requirement.dailySignedLogbook")).toBe(false);
+  });
+
   it("resolves every requirement label in every application language", () => {
     for (const requirement of complianceCatalog.licenses.flatMap(({ requirements }) => requirements)) {
       for (const dictionary of Object.values(translations)) {
