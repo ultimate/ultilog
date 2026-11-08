@@ -46,6 +46,16 @@ describe("compliance catalog authoring contract", () => {
     }
   });
 
+  it("uses explicit reference kinds and date windows for every Swiss temporal requirement", () => {
+    for (const license of complianceCatalog.licenses.filter(license => license.countryCode === "CH")) {
+      expect(license.referenceDateKind).toBe(license.id.endsWith("-addon") ? "extension-application" : "theory-exam");
+      for (const requirement of license.requirements) {
+        expect(requirement.filters?.withinYears).toBeUndefined();
+        if (requirement.filters?.boatType) expect(requirement.filters.dateWindow).toBeDefined();
+      }
+    }
+  });
+
   it("resolves every requirement label in every application language", () => {
     for (const requirement of complianceCatalog.licenses.flatMap(({ requirements }) => requirements)) {
       for (const dictionary of Object.values(translations)) {

@@ -16,15 +16,15 @@ describe("LicenseSection", () => {
 
   it("shows quantitative manual requirements with their units and counting filters", async () => {
     vi.stubGlobal("fetch", vi.fn(() => response({ licenses: [
-      { licenseId: "ch-hochseeausweis-sail", startDate: null, completedManualRequirementIds: [] },
-      { licenseId: "ch-hochseeausweis-motor", startDate: null, completedManualRequirementIds: [] },
+      { licenseId: "ch-hochseeausweis-sail", startDate: "2021-07-01", completedManualRequirementIds: [] },
+      { licenseId: "ch-hochseeausweis-motor", startDate: "2021-07-01", completedManualRequirementIds: [] },
     ] })));
     let root!: ReturnType<typeof create>;
     await act(async () => { root = create(<I18nProvider><LicenseSection requestedLanguage="en" sheets={[]} /></I18nProvider>); });
     const sail = root.root.findByProps({ id: "requirement-copy-ch-7-a-2-2" });
-    expect(sail.findAllByType("dd").map(node => node.children.join(""))).toEqual(["700 nautical miles", "Within 4 years", "Sail"]);
+    expect(sail.findAllByType("dd").map(node => node.children.join(""))).toEqual(["700 nautical miles", "Reference date", "End of year · 4 years after the reference date", "01/07/2021 – 31/12/2025", "Sail"]);
     const motor = root.root.findByProps({ id: "requirement-copy-ch-7-b-2-2" });
-    expect(motor.findAllByType("dd").map(node => node.children.join(""))).toEqual(["400 nautical miles", "Within 4 years", "Motor"]);
+    expect(motor.findAllByType("dd").map(node => node.children.join(""))).toEqual(["400 nautical miles", "Reference date", "End of year · 4 years after the reference date", "01/07/2021 – 31/12/2025", "Motor"]);
     expect(root.root.findByProps({ id: "requirement-copy-ch-2-b" }).findAllByType("dl")).toHaveLength(0);
     expect(root.root.findAllByProps({ "aria-describedby": sail.props.id })).toHaveLength(1);
   });

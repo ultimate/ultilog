@@ -28,7 +28,7 @@ Each requirement requires a globally unique, stable `id`, `type` (the progress
 type), numeric `threshold`, nullable `filters`, and `translationKey`. Automatically
 tracked requirements additionally require `unit`; supported units are `days` and
 `nautical-miles`. `filters` is optional counting context represented as `null` when
-there is none; its current optional fields are `boatType`, `propulsion`, and `withinYears`.
+there is none; its current optional fields are `boatType`, `propulsion`, `dateWindow`, and legacy `withinYears`.
 Quantitative manual requirements also supply `unit` so their targets are visible
 (e.g. 700 nautical miles after the theory exam). Boolean checklist requirements
 omit `unit`; their threshold of one represents confirmation, not a distance.
@@ -50,13 +50,40 @@ Swiss requirements use boat-type filters, including day, manual, and extension
 requirements, without restricting propulsion. Propulsion-qualified day counters
 are not automatically verifiable. Manual requirements remain user-confirmed.
 
-`withinYears` defines an inclusive window from the selected “Count progress from”
-date through its anniversary that many years later. For example, a four-year
-window starting on 2021-01-01 excludes sheets from 2026. Leap-day anniversaries
-fall on February 28 in non-leap years. With no selected start date, the filter
-retains a rolling lookback from today. Without `withinYears`, the selected date
-is only a lower bound. Dated sheets must fall entirely inside the window;
-undated sheets are excluded when a date filter is active.
+## Reference dates and date windows
+
+Licenses can set `referenceDateKind` to `theory-exam` or `extension-application`.
+This changes the date label, not the existing saved `startDate` API/storage field.
+
+A requirement can configure inclusive boundaries relative to that reference date:
+
+```json
+"dateWindow": {
+  "from": { "yearOffset": -4, "boundary": "year-start" },
+  "through": { "yearOffset": 4, "boundary": "year-end" }
+}
+```
+
+Each boundary requires an integer `yearOffset` and `boundary`: `date` keeps the
+shifted date, `year-start` selects January 1, and `year-end` selects December 31.
+Exact February 29 anniversaries clamp to February 28 in non-leap years. Both
+boundaries are required and must be in chronological order.
+
+For an exam on 2021-07-01, Swiss initial-license experience counts from 2017-01-01
+through 2025-12-31. The manual 700/400-mile checks instead start at the exact exam
+date (`0/date`) and end at `4/year-end`. Swiss extensions count from
+`-4/year-start` through `0/date`, relative to the extension application date.
+
+An automatic requirement with a date window and no reference date is shown as
+requiring that date, never calculated relative to today. Manual confirmations
+remain unchanged. The UI shows relative boundary descriptions and the resolved
+period using the user's date-format preference. Sheets must fall entirely inside
+the period; undated sheets are excluded when a date filter is active.
+
+Non-Swiss `withinYears` rules retain their existing behavior: from a selected
+start date through its anniversary, or a rolling lookback from today when no
+date is selected. A requirement cannot combine `withinYears` and `dateWindow`.
+Without either filter, a selected date remains a lower bound.
 
 ## Current localization
 

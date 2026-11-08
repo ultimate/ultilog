@@ -12,7 +12,8 @@
       "days-at-sea"
     ],
     "progress": "For tracked requirements, provide a numeric threshold and unit. Use the progress type to select the counter; use filters only for additional qualification rules. Manual requirements use checkboxes. Quantitative manual requirements include a unit; boolean confirmations omit it.",
-    "placeholders": "Replace all TODO values. Duplicate the example section or requirement objects as needed; do not reuse an id within the same document or license."
+    "placeholders": "Replace all TODO values. Duplicate the example section or requirement objects as needed; do not reuse an id within the same document or license.",
+    "dateWindows": "Use referenceDateKind to label the saved reference date. dateWindow.from and .through each require integer yearOffset and boundary date, year-start, or year-end. Boundaries are inclusive. Do not combine dateWindow with legacy withinYears."
   },
   "legalLogbookRequirements": [
     {
@@ -212,8 +213,17 @@
           "type": "days-sailing",
           "threshold": 21,
           "filters": {
-            "withinYears": 4,
-            "boatType": "sail"
+            "boatType": "sail",
+            "dateWindow": {
+              "from": {
+                "yearOffset": -4,
+                "boundary": "year-start"
+              },
+              "through": {
+                "yearOffset": 4,
+                "boundary": "year-end"
+              }
+            }
           },
           "translationKey": "dashboard.sailingDays",
           "unit": "days"
@@ -223,8 +233,17 @@
           "type": "days-at-sea",
           "threshold": 18,
           "filters": {
-            "withinYears": 4,
-            "boatType": "sail"
+            "boatType": "sail",
+            "dateWindow": {
+              "from": {
+                "yearOffset": -4,
+                "boundary": "year-start"
+              },
+              "through": {
+                "yearOffset": 4,
+                "boundary": "year-end"
+              }
+            }
           },
           "translationKey": "dashboard.daysAtSea",
           "unit": "days"
@@ -234,8 +253,17 @@
           "type": "miles",
           "threshold": 1000,
           "filters": {
-            "withinYears": 4,
-            "boatType": "sail"
+            "boatType": "sail",
+            "dateWindow": {
+              "from": {
+                "yearOffset": -4,
+                "boundary": "year-start"
+              },
+              "through": {
+                "yearOffset": 4,
+                "boundary": "year-end"
+              }
+            }
           },
           "translationKey": "compliance.milesOnSailingBoats",
           "unit": "nautical-miles"
@@ -245,13 +273,23 @@
           "type": "manual",
           "threshold": 700,
           "filters": {
-            "withinYears": 4,
-            "boatType": "sail"
+            "boatType": "sail",
+            "dateWindow": {
+              "from": {
+                "yearOffset": 0,
+                "boundary": "date"
+              },
+              "through": {
+                "yearOffset": 4,
+                "boundary": "year-end"
+              }
+            }
           },
           "translationKey": "compliance.requirement.afterTheoryExam",
           "unit": "nautical-miles"
         }
-      ]
+      ],
+      "referenceDateKind": "theory-exam"
     },
     {
       "id": "ch-hochseeausweis-motor",
@@ -361,8 +399,17 @@
           "type": "days-underway",
           "threshold": 14,
           "filters": {
-            "withinYears": 4,
-            "boatType": "motor"
+            "boatType": "motor",
+            "dateWindow": {
+              "from": {
+                "yearOffset": -4,
+                "boundary": "year-start"
+              },
+              "through": {
+                "yearOffset": 4,
+                "boundary": "year-end"
+              }
+            }
           },
           "translationKey": "dashboard.sailingDays",
           "unit": "days"
@@ -372,8 +419,17 @@
           "type": "days-at-sea",
           "threshold": 10,
           "filters": {
-            "withinYears": 4,
-            "boatType": "motor"
+            "boatType": "motor",
+            "dateWindow": {
+              "from": {
+                "yearOffset": -4,
+                "boundary": "year-start"
+              },
+              "through": {
+                "yearOffset": 4,
+                "boundary": "year-end"
+              }
+            }
           },
           "translationKey": "dashboard.daysAtSea",
           "unit": "days"
@@ -383,8 +439,17 @@
           "type": "miles",
           "threshold": 500,
           "filters": {
-            "withinYears": 4,
-            "boatType": "motor"
+            "boatType": "motor",
+            "dateWindow": {
+              "from": {
+                "yearOffset": -4,
+                "boundary": "year-start"
+              },
+              "through": {
+                "yearOffset": 4,
+                "boundary": "year-end"
+              }
+            }
           },
           "translationKey": "compliance.milesOnMotorBoats",
           "unit": "nautical-miles"
@@ -394,13 +459,23 @@
           "type": "manual",
           "threshold": 400,
           "filters": {
-            "withinYears": 4,
-            "boatType": "motor"
+            "boatType": "motor",
+            "dateWindow": {
+              "from": {
+                "yearOffset": 0,
+                "boundary": "date"
+              },
+              "through": {
+                "yearOffset": 4,
+                "boundary": "year-end"
+              }
+            }
           },
           "translationKey": "compliance.requirement.afterTheoryExam",
           "unit": "nautical-miles"
         }
-      ]
+      ],
+      "referenceDateKind": "theory-exam"
     },
     {
       "id": "ch-hochseeausweis-sail-addon",
@@ -467,8 +542,17 @@
           "type": "days-at-sea",
           "threshold": 10,
           "filters": {
-            "withinYears": 4,
-            "boatType": "sail"
+            "boatType": "sail",
+            "dateWindow": {
+              "from": {
+                "yearOffset": -4,
+                "boundary": "year-start"
+              },
+              "through": {
+                "yearOffset": 0,
+                "boundary": "date"
+              }
+            }
           },
           "translationKey": "dashboard.daysAtSea",
           "unit": "days"
@@ -478,13 +562,23 @@
           "type": "miles",
           "threshold": 500,
           "filters": {
-            "withinYears": 4,
-            "boatType": "sail"
+            "boatType": "sail",
+            "dateWindow": {
+              "from": {
+                "yearOffset": -4,
+                "boundary": "year-start"
+              },
+              "through": {
+                "yearOffset": 0,
+                "boundary": "date"
+              }
+            }
           },
           "translationKey": "compliance.milesOnSailingBoats",
           "unit": "nautical-miles"
         }
-      ]
+      ],
+      "referenceDateKind": "extension-application"
     },
     {
       "id": "ch-hochseeausweis-motor-addon",
@@ -551,8 +645,17 @@
           "type": "days-at-sea",
           "threshold": 5,
           "filters": {
-            "withinYears": 4,
-            "boatType": "motor"
+            "boatType": "motor",
+            "dateWindow": {
+              "from": {
+                "yearOffset": -4,
+                "boundary": "year-start"
+              },
+              "through": {
+                "yearOffset": 0,
+                "boundary": "date"
+              }
+            }
           },
           "translationKey": "dashboard.daysAtSea",
           "unit": "days"
@@ -562,13 +665,23 @@
           "type": "miles",
           "threshold": 100,
           "filters": {
-            "withinYears": 4,
-            "boatType": "motor"
+            "boatType": "motor",
+            "dateWindow": {
+              "from": {
+                "yearOffset": -4,
+                "boundary": "year-start"
+              },
+              "through": {
+                "yearOffset": 0,
+                "boundary": "date"
+              }
+            }
           },
           "translationKey": "compliance.milesOnMotorBoats",
           "unit": "nautical-miles"
         }
-      ]
+      ],
+      "referenceDateKind": "extension-application"
     },
     {
       "id": "de-sbf",

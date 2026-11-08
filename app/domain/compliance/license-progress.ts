@@ -1,5 +1,6 @@
 import type { Boat, LogSheet } from "../../models/logbook";
 import type { Requirement } from "./catalog";
+import { resolveRequirementWindow, type ProgressWindow } from "./date-window";
 import { calculateLogbookStatistics } from "../logbook/logbook-statistics";
 
 export type RequirementProgress = {
@@ -10,7 +11,7 @@ export type RequirementProgress = {
   percentage: number;
   completed: boolean;
   automatic: boolean;
-  verification: "automatic" | "manual" | "not-automatically-verifiable";
+  verification: "automatic" | "manual" | "not-automatically-verifiable" | "reference-date-required";
 };
 
 export type RequirementStatusSummary = { fulfilled: number; inProgress: number; open: number; total: number };
@@ -70,7 +71,8 @@ export function calculateLicenseProgress(
       return progress(requirement, 0, targetValue, false, false, "not-automatically-verifiable");
     }
 
-    const window = effectiveWindow(startDate, requirement.filters?.withinYears, asOf);
+    const window = resolveRequirementWindow(requirement.filters, startDate, asOf);
+    if (!window) return progress(requirement, 0, targetValue, false, false, "reference-date-required");
     const eligible = sheetsWithin(sheets, window).filter(sheet => !requirement.filters?.boatType || boatsById.get(sheet.boatId)?.type === requirement.filters.boatType);
     const statistics = collectStatistics(eligible);
     const propulsion = requirement.filters?.propulsion;
@@ -93,24 +95,6 @@ function hasUnsupportedQualifiers(requirement: Requirement) {
   if (!propulsion) return false;
   // Day counters do not yet distinguish time spent under each propulsion.
   return requirement.type !== "miles" || (propulsion !== "sail" && propulsion !== "motor");
-}
-
-type ProgressWindow = { from?: string; through?: string };
-
-function effectiveWindow(startDate: string | null | undefined, withinYears: number | undefined, asOf: Date): ProgressWindow {
-  if (startDate) {
-    return { from: startDate, ...(withinYears ? { through: shiftYears(startDate, withinYears) } : {}) };
-  }
-  return withinYears ? { from: shiftYears(asOf.toISOString().slice(0, 10), -withinYears) } : {};
-}
-
-/** Clamp leap-day anniversaries to the last day of February. */
-function shiftYears(isoDate: string, years: number) {
-  const date = new Date(`${isoDate}T00:00:00Z`);
-  const month = date.getUTCMonth();
-  date.setUTCFullYear(date.getUTCFullYear() + years);
-  if (date.getUTCMonth() !== month) date.setUTCDate(0);
-  return date.toISOString().slice(0, 10);
 }
 
 function sheetsWithin(sheets: readonly LogSheet[], { from, through }: ProgressWindow) {

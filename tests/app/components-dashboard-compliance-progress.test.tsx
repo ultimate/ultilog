@@ -13,6 +13,13 @@ describe("DashboardComplianceProgress", () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
+  it("prompts for missing reference dates instead of implying automatic progress", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => response({ licenses: [{ licenseId: "ch-hochseeausweis-sail", startDate: null, completedManualRequirementIds: [] }] })));
+    let root!: ReturnType<typeof create>;
+    await act(async () => { root = create(<I18nProvider><DashboardComplianceProgress sheets={[]} language="en" onOpenCompliance={() => {}} /></I18nProvider>); });
+    expect(JSON.stringify(root.toJSON())).toContain("Enter the reference date to calculate progress.");
+  });
+
   it("shows every persisted license, an overall pie, and a compliance details action", async () => {
     vi.stubGlobal("fetch", vi.fn(() => response({ licenses: [
       { licenseId: "de-sks", startDate: null, completedManualRequirementIds: ["de-SportSeeSchV-6-1-1"] },
