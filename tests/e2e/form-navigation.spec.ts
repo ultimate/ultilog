@@ -27,7 +27,10 @@ test("new boat and crew forms have their own routes, related records and actions
   await openModule(page, "Boat manager");
   await page.locator(".manager-list button").first().click();
   await expect(page.getByText(/This boat cannot be deleted/)).toBeVisible();
+  const selectedBoatName = await page.getByLabel("Name", { exact: true }).inputValue();
+  await page.locator('.list-search input').fill(selectedBoatName);
   await page.getByRole("button", { name: "New boat", exact: true }).click();
+  await expect(page.locator('.list-search input')).toHaveValue(selectedBoatName);
   await expect(page).toHaveURL(/\/boats\/new$/);
   await expect(page.getByLabel("Name", { exact: true })).toHaveValue("");
   await expect(page.locator(".info-card .stack-list li")).toHaveCount(0);
@@ -125,8 +128,11 @@ test("line and technical drafts stay with their sheet through adjacent, list and
   await editor.getByRole("button", { name: "Save line", exact: true }).click();
   expect((await saved).ok()).toBeTruthy();
   await expect(editor).toHaveCount(0);
+  await expect.poll(async () => {
+    const stored = (await (await page.request.get("/api/logbook")).json()) as PersistedLogbook;
+    return stored.sheets.find(sheet => sheet.id === sheets[0].id)?.lines.length;
+  }).toBe(sheets[0].lines.length + 1);
   const stored = (await (await page.request.get("/api/logbook")).json()) as PersistedLogbook;
-  expect(stored.sheets.find(sheet => sheet.id === sheets[0].id)?.lines).toHaveLength(sheets[0].lines.length + 1);
   expect(stored.sheets.find(sheet => sheet.id === sheets[1].id)?.lines).toHaveLength(sheets[1].lines.length);
 });
 

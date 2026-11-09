@@ -20,7 +20,7 @@ function nonNegativeInputValue(value: string) {
 
 export function BoatManagerPage(props: BoatManagerPageProps) {
   const { t } = useI18n();
-  const beginImageRequest = useEditorRequest();
+  const beginImageRequest = useEditorRequest(props.editorKey);
   const { formatDateRange } = useDateTimeFormat();
   const {
     showBoatManager,
@@ -108,8 +108,8 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
           </>
         }
         form={
-          showBoatManager || editingBoatId ? (
-          <form className="inline-edit-grid" onSubmit={saveBoat}>
+          props.isEditorReady !== false && (showBoatManager || editingBoatId) ? (
+          <form key={props.editorKey} className="inline-edit-grid" onSubmit={saveBoat}>
             <p className="eyebrow">
               {showBoatManager ? t("boats.new") : t("boats.form")}
             </p>

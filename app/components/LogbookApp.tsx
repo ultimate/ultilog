@@ -2111,9 +2111,10 @@ export function LogbookApp({
             />
           )}
 
-          {activeModule === "boats" && editorRoutePath === routePath && (
+          {activeModule === "boats" && (
             <BoatManagerPage
-              key={routePath}
+              editorKey={routePath}
+              isEditorReady={editorRoutePath === routePath}
               isDemo={userGroups.includes("demo")}
               onDemoFeatureBlocked={setDemoRestrictedFeature}
               logbook={logbook}
@@ -2132,9 +2133,10 @@ export function LogbookApp({
             />
           )}
 
-          {activeModule === "crew" && editorRoutePath === routePath && (
+          {activeModule === "crew" && (
             <CrewManagerPage
-              key={routePath}
+              editorKey={routePath}
+              isEditorReady={editorRoutePath === routePath}
               isDemo={userGroups.includes("demo")}
               onDemoFeatureBlocked={setDemoRestrictedFeature}
               selectedCrewIndex={selectedCrewIndex}
