@@ -80,7 +80,7 @@ describe("log sheet actions and warning review", () => {
   });
   function props() {
     const sheet = { ...sampleLogSheets[0], crew: [], lines: [], technicalChecks: [], source: "scanner", scannerWarnings: [{ id: "missing-target", code: "missingFields", row: 99, fields: ["variation"] }] };
-    return { isBackendReady: true, hasSelectedSheet: true, activeSheet: sheet, activeBoat: sampleBoats[0], logbook: { boats: sampleBoats, crewMembers: [], sheets: [sheet] }, lineForms: {}, technicalCheckSuggestions: [], coordinateFormat: "decimal", activeSheetSummary: { motorMiles: 0, sailMiles: 0, totalMiles: 0, duration: "", motionDuration: "", motorHoursDuration: "00:00" }, renderInlineTextField: (_field: string, text: string) => text, renderInlineBoatField: () => "Boat", renderInlineDateField: (_field: string, text: string) => text, previousSheetId: undefined, nextSheetId: "next", onNavigateSheet: vi.fn(), onPrintSheet: vi.fn(), updateScannerWarningDismissal: vi.fn().mockResolvedValue(true) };
+    return { isBackendReady: true, hasSelectedSheet: true, activeSheet: sheet, activeBoat: sampleBoats[0], logbook: { boats: sampleBoats, crewMembers: [], sheets: [sheet] }, lineForms: {}, technicalDraft: { newCheck: "", checks: {} as Record<number, string> }, setTechnicalDraft: vi.fn(), technicalCheckSuggestions: [], coordinateFormat: "decimal", activeSheetSummary: { motorMiles: 0, sailMiles: 0, totalMiles: 0, duration: "", motionDuration: "", motorHoursDuration: "00:00" }, renderInlineTextField: (_field: string, text: string) => text, renderInlineBoatField: () => "Boat", renderInlineDateField: (_field: string, text: string) => text, previousSheetId: undefined, nextSheetId: "next", onNavigateSheet: vi.fn(), onPrintSheet: vi.fn(), updateScannerWarningDismissal: vi.fn().mockResolvedValue(true) };
   }
   const button = (label: string) => root.root.findAllByType("button").find(button => button.props["aria-label"] === label)!;
   it("uses icon labels, disables boundary arrows and remembers collapsed actions", async () => {
@@ -112,9 +112,9 @@ describe("log sheet actions and warning review", () => {
     const text = root.root.findAllByType("input").find(input => input.props["aria-label"] === "New technical log entry")!;
     await act(async () => text.props.onChange({ target: { value: "Check coolant" } }));
     await act(async () => button("Next log sheet").props.onClick());
-    expect(input.onNavigateSheet).not.toHaveBeenCalled();
-    expect(root.root.findByProps({ role: "alert" }).children.join("")).toContain("Save or cancel");
-    expect(root.root.findAllByType("input").find(input => input.props["aria-label"] === "New technical log entry")!.props.value).toBe("Check coolant");
+    expect(input.onNavigateSheet).toHaveBeenCalledWith("next");
+    const update = input.setTechnicalDraft.mock.calls[0][0];
+    expect(update(input.technicalDraft)).toEqual({ newCheck: "Check coolant", checks: {} });
   });
 
   it("excludes incomplete stored warnings from the list, count, and dismissal requirement", async () => {

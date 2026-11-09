@@ -1,4 +1,5 @@
 import { SaveButton } from "../SaveButton";
+import { useEditorRequest } from "../use-editor-request";
 import { LogTextPopover } from "../LogTextPopover";
 import { WeatherDataAttribution } from "../WeatherDataAttribution";
 import { CrewSearchSelect } from "../CrewSearchSelect";
@@ -29,7 +30,7 @@ import type {
   ScannerWarning,
 } from "../../../models/logbook";
 import { coordinateToInput, decimalToDdmParts, decimalToDmsParts, dmsPartsToDecimal, nextCoordinateFormat, parseCoordinate, type CoordinateFormat, type DmsParts } from "../../../domain/nautical/coordinates";
-import { boatToForm, sheetToForm } from "../forms";
+import { sheetToForm } from "../forms";
 import { dateTimeLocalFromParts, isoDateTimeWithTimezone, splitDateTimeLocal, timeZoneOffsetOptions, timezoneOffsetFromStamp, dateTimeLocalFromStamp } from "../date-utils";
 import { applyLogLineInput, recalculateLogLineCourses, courseCalculationKey } from "../../../domain/log-lines/log-line-editor";
 import { LogLinesMapView } from "../OpenSeaMapView";
@@ -40,7 +41,7 @@ import { uploadStoredImage } from "../persistence";
 import { indexScannerWarnings } from "../../../lib/logbook-scanner/warning-fields";
 import { isActionableScannerWarning } from "../../../lib/logbook-scanner/actionable-warning";
 import { formatScannerWarning } from "../../../lib/logbook-scanner/format-warning";
-import type { LineFormField } from "../../../models/logbook-forms";
+import type { LineFormField, TechnicalLogDraft } from "../../../models/logbook-forms";
 import { EmbedCodeBuilder } from "../EmbedCodeBuilder";
 
 type CourseColumn = {
@@ -89,6 +90,7 @@ type LogbookDetailsPageProps = Record<string, any>;
 
 export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const { t, locale } = useI18n();
+  const beginImageRequest = useEditorRequest();
   const displayNumber = (value: number | null, unit = "") => value == null ? "" : `${value.toLocaleString(locale)}${unit ? ` ${unit}` : ""}`;
   const { formatTime, formatDateTime } = useDateTimeFormat();
   const {
@@ -99,10 +101,6 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     saveSheet,
     sheetForm,
     setSheetForm,
-    setSelectedBoatId,
-    setEditingBoatId,
-    setBoatForm,
-    setShowBoatManager,
     navigate,
     cancelSheetEdit,
     renderInlineTextField,
@@ -169,9 +167,10 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const [deleteError, setDeleteError] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [shareDraftState, setShareDraftState] = useState<{ sheetId: string; share: LogSheetShareSettings }>({ sheetId: "", share: defaultLogSheetShareSettings });
-  const [newTechnicalCheck, setNewTechnicalCheck] = useState("");
-  const [sheetNavigationError, setSheetNavigationError] = useState("");
-  const [technicalCheckDraftState, setTechnicalCheckDraftState] = useState<{ sheetId: string; drafts: Record<number, string> }>({ sheetId: "", drafts: {} });
+  const technicalDraft = props.technicalDraft as TechnicalLogDraft;
+  const setTechnicalDraft = props.setTechnicalDraft as (update: (current: typeof technicalDraft) => typeof technicalDraft) => void;
+  const newTechnicalCheck = technicalDraft.newCheck;
+  const setNewTechnicalCheck = (newCheck: string) => setTechnicalDraft(current => ({ ...current, newCheck }));
   const [openCourseTooltip, setOpenCourseTooltip] = useState<TranslationKey | null>(null);
   const courseTooltipTriggerRef = useRef<HTMLButtonElement>(null);
   const [courseTooltipPosition, setCourseTooltipPosition] = useState({ left: 0, top: 0 });
@@ -187,15 +186,10 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   const [acknowledgedWarningVisibility, setAcknowledgedWarningVisibility] = useState({ sheetId: "", show: false });
   const [coordinateFormatOverride, setCoordinateFormatOverride] = useState<{ sheetId: string; format: CoordinateFormat } | null>(null);
   const coordinateFormat = coordinateFormatOverride?.sheetId === activeSheet.id ? coordinateFormatOverride.format : defaultCoordinateFormat;
-  const technicalCheckDrafts = technicalCheckDraftState.sheetId === activeSheet.id ? technicalCheckDraftState.drafts : {};
+  const technicalCheckDrafts = technicalDraft.checks;
   const navigateSheet = (id: string | undefined, event?: MouseEvent<HTMLButtonElement>) => {
-    if (newTechnicalCheck.trim() || Object.keys(technicalCheckDrafts).length) {
-      setSheetNavigationError(t("details.unsavedEdits"));
-      return;
-    }
     const invalid = event?.currentTarget.closest(".sheet-detail")?.querySelector<HTMLInputElement>("input:invalid");
     if (invalid) { invalid.reportValidity(); return; }
-    setSheetNavigationError("");
     void props.onNavigateSheet(id);
   };
   const scannerWarnings = (activeSheet.scannerWarnings ?? []).filter(isActionableScannerWarning);
@@ -302,31 +296,28 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     const value = newTechnicalCheck.trim();
     if (!value) return;
     await addTechnicalCheck(value);
-    setNewTechnicalCheck("");
+    setTechnicalDraft(current => current.newCheck.trim() === value ? { ...current, newCheck: "" } : current);
   }
 
   function updateTechnicalCheckDraft(index: number, value: string) {
-    setTechnicalCheckDraftState((current) => ({
-      sheetId: activeSheet.id,
-      drafts: { ...(current.sheetId === activeSheet.id ? current.drafts : {}), [index]: value },
-    }));
+    setTechnicalDraft(current => ({ ...current, checks: { ...current.checks, [index]: value } }));
   }
 
   async function saveTechnicalCheckDraft(index: number) {
     const submitted = technicalCheckDrafts[index] ?? activeSheet.technicalChecks[index]?.text ?? "";
     const saved = await updateTechnicalCheck(index, submitted);
     if (saved === false) return;
-    setTechnicalCheckDraftState((current) => {
-      if (current.sheetId !== activeSheet.id || (current.drafts[index] !== undefined && current.drafts[index] !== submitted)) return current;
-      const { [index]: _discarded, ...next } = current.sheetId === activeSheet.id ? current.drafts : {};
-      return { sheetId: activeSheet.id, drafts: next };
+    setTechnicalDraft(current => {
+      if (current.checks[index] !== undefined && current.checks[index] !== submitted) return current;
+      const { [index]: _discarded, ...checks } = current.checks;
+      return { ...current, checks };
     });
   }
 
   function cancelTechnicalCheckDraft(index: number) {
-    setTechnicalCheckDraftState((current) => {
-      const { [index]: _discarded, ...next } = current.sheetId === activeSheet.id ? current.drafts : {};
-      return { sheetId: activeSheet.id, drafts: next };
+    setTechnicalDraft(current => {
+      const { [index]: _discarded, ...checks } = current.checks;
+      return { ...current, checks };
     });
   }
 
@@ -778,13 +769,6 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                       type="button"
                       className="edit-chip"
                       onClick={() => {
-                        setSelectedBoatId(sheetForm.boatId);
-                        setEditingBoatId(sheetForm.boatId);
-                        const boat = logbook.boats.find(
-                          (candidate) => candidate.id === sheetForm.boatId,
-                        );
-                        if (boat) setBoatForm(boatToForm(boat));
-                        setShowBoatManager(false);
                         navigate("boats", sheetForm.boatId);
                       }}
                     >
@@ -870,15 +854,17 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                     accept="image/*"
                     className="visually-hidden-file-input"
                     onChange={async (e) => {
-                      const file = e.target.files?.[0];
+                      const input = e.currentTarget;
+                      const file = input.files?.[0];
                       if (!file) return;
+                      const isCurrent = beginImageRequest();
                       try {
                         const image = await uploadStoredImage(await fileToStoredImage(file));
-                        setSheetForm((current: SheetForm) => ({ ...current, image }));
+                        if (isCurrent()) setSheetForm((current: SheetForm) => ({ ...current, image }));
                       } catch (error) {
-                        alert(error instanceof Error ? error.message : "Image could not be processed.");
+                        if (isCurrent()) alert(error instanceof Error ? error.message : "Image could not be processed.");
                       } finally {
-                        e.currentTarget.value = "";
+                        input.value = "";
                       }
                     }}
                   />
@@ -887,7 +873,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                       {sheetForm.image ? "Change image" : "Upload image"}
                     </button>
                     {sheetForm.image ? (
-                      <button type="button" className="ghost-button" onClick={() => setSheetForm((current: SheetForm) => ({ ...current, image: undefined }))}>
+                      <button type="button" className="ghost-button" onClick={() => { beginImageRequest(); setSheetForm((current: SheetForm) => ({ ...current, image: undefined })); }}>
                         Remove image
                       </button>
                     ) : null}
@@ -951,14 +937,15 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                     event.currentTarget.value = "";
                     if (!file || isDemo || isActiveSheetLocked) return;
                     const sheetId = activeSheet.id;
+                    const isCurrent = beginImageRequest();
                     setIsUploadingSheetImage(true);
                     try {
                       const image = await uploadStoredImage(await fileToStoredImage(file));
-                      await props.updateSheetImage(sheetId, image);
+                      if (isCurrent()) await props.updateSheetImage(sheetId, image);
                     } catch (error) {
-                      alert(error instanceof Error ? error.message : "Image could not be processed.");
+                      if (isCurrent()) alert(error instanceof Error ? error.message : "Image could not be processed.");
                     } finally {
-                      setIsUploadingSheetImage(false);
+                      if (isCurrent()) setIsUploadingSheetImage(false);
                     }
                   }}
                 />
@@ -993,10 +980,6 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                       aria-label={t("details.jumpToBoat")}
                       title={t("details.jumpToBoat")}
                       onClick={() => {
-                        setSelectedBoatId(activeBoat.id);
-                        setEditingBoatId(activeBoat.id);
-                        setBoatForm(boatToForm(activeBoat));
-                        setShowBoatManager(false);
                         navigate("boats", activeBoat.id);
                       }}
                     >
@@ -1052,7 +1035,6 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                   <div><h3>{t("details.sharedSource.heading")}</h3><p>{sharedSourceNotice}</p></div>
                 </aside>
               )}
-              {sheetNavigationError && <p role="alert" className="save-error">{sheetNavigationError}</p>}
               {incompleteLines && <p role="alert" className="save-error">{t("details.requiredLineFields")}</p>}
               {activeSheet.source === "scanner" && !showScannerDraftNotice && <button type="button" className="edit-chip" onClick={() => setWarningHistorySheetId(activeSheet.id)}>{t("details.warningHistory")}</button>}
               {showScannerDraftNotice && (

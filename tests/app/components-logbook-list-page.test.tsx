@@ -43,7 +43,6 @@ describe("logsheet date filter", () => {
         calculateSheetSummary={() => ({ motorMiles: 2, sailMiles: 3, totalMiles: 5, duration: "1h 30m", motionDuration: "1h 00m", durationMinutes: 90, motionDurationMinutes: 60, motorHours: 0.5, motorHoursDuration: "", propulsionDuration: "" })}
         logbook={{ boats: [], crewMembers: [], sheets }} boatFilterId={boatFilterId} onBoatFilterChange={vi.fn()} navigate={vi.fn()}
         onScanFilesSelected={vi.fn()} onScannerUploadConfirmed={vi.fn()} onScannerUploadCanceled={vi.fn()} onScannerBoatChange={vi.fn()} onCreateBoatRequested={vi.fn()}
-        setActiveSheetId={vi.fn()} setEditingSheetId={vi.fn()} setSheetForm={vi.fn()} setShowNewSheet={vi.fn()} createDefaultSheetForm={vi.fn()}
         defaultPageSize={5} onPrintSheet={vi.fn()} onPrintEmptySheet={vi.fn()} isDemo={false} onDemoFeatureBlocked={vi.fn()}
       />);
     });
