@@ -44,6 +44,31 @@ test("translated login content stays inside the card and both bottom bars remain
   await expect(page.locator(".public-legal-bar")).toBeInViewport({ ratio: .99 });
 });
 
+test("desktop landing fits below browser bars without scrolling in every language", async ({ page }, testInfo) => {
+  await page.addInitScript(() => localStorage.setItem("ultilog-cookie-notice-acknowledged", "true"));
+  await page.goto("/login");
+  // Full HD with browser/task bars, plus a common 125% display-scaling viewport.
+  for (const viewport of [{ width: 1920, height: 960 }, { width: 1920, height: 900 }, { width: 1536, height: 760 }]) {
+    await page.setViewportSize(viewport);
+    for (const locale of ["en", "de", "fr", "it"]) {
+      await page.locator(".auth-locale-select select").selectOption(locale);
+      await expect(page.locator("html")).toHaveAttribute("lang", locale);
+      const size = await page.evaluate(() => ({ width: document.documentElement.scrollWidth, height: document.documentElement.scrollHeight }));
+      expect(size.width, `${locale} at ${viewport.width}×${viewport.height}`).toBeLessThanOrEqual(viewport.width);
+      expect(size.height, `${locale} at ${viewport.width}×${viewport.height}`).toBeLessThanOrEqual(viewport.height + 1);
+      await expect(page.locator(".public-legal-bar")).toBeInViewport({ ratio: .99 });
+      await expectInside(page.locator(".auth-card h1, .auth-card input, .auth-card select, .auth-card button, .auth-footer"), page.locator(".auth-card"));
+    }
+  }
+  await page.setViewportSize({ width: 1920, height: 900 });
+  await page.locator(".auth-locale-select select").selectOption("de");
+  await page.screenshot({ path: testInfo.outputPath("landing-full-hd-de.png") });
+  // Larger text must remain accessible even when it requires a taller document.
+  await page.addStyleTag({ content: "html { font-size: 24px; }" });
+  await page.locator(".public-legal-bar").scrollIntoViewIfNeeded();
+  await expect(page.locator(".public-legal-bar")).toBeInViewport({ ratio: .99 });
+});
+
 test("daily changelog keeps commit identifiers with their entries", async ({ page }) => {
   const entries = ["a", "b"].map((letter, index) => ({
     id: `fix-${letter}`, category: "fix", title: { en: `Layout fix ${letter}` },
