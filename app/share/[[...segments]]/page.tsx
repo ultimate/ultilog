@@ -135,7 +135,7 @@ export default async function SharedLogbookPage({ params, searchParams }: { para
         ) : null}
 
         {sheet.remarks ? <article className="info-card logbook-section"><h3>Log sheet remarks</h3><p className="shared-log-text">{sheet.remarks}</p></article> : null}
-        {hasLogLines ? <SharedLogSheetDetails sheet={sheet} engineLabels={shared.engineLabels} initialCoordinateFormat={viewer?.coordinateFormat ?? "decimal"} initialShowCourseColumns={viewer?.showCourseConversionTable ?? false} /> : null}
+        {hasLogLines ? <SharedLogSheetDetails boatType={shared.boatType} sheet={sheet} engineLabels={shared.engineLabels} initialCoordinateFormat={viewer?.coordinateFormat ?? "decimal"} initialShowCourseColumns={viewer?.showCourseConversionTable ?? false} /> : null}
 
         {hasSupportContent ? (
           <section className="sheet-support-grid logbook-section" aria-label="Shared logbook support information">

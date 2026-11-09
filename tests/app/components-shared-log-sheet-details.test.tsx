@@ -16,6 +16,16 @@ vi.mock("../../app/components/logbook/OpenSeaMapView", () => ({ LogSheetsMapView
 function content(root: ReactTestRenderer) { return JSON.stringify(root.toJSON()); }
 
 describe("shared log sheet presentation", () => {
+  it("hides the sail column for motor boats and keeps table cells aligned", async () => {
+    let root!: ReactTestRenderer;
+    await act(async () => { root = create(<SharedLogSheetDetails sheet={sampleLogSheets[1]} boatType="motor" />); });
+    expect(root.root.findAllByType("th").some(cell => cell.children.join("") === "Sail")).toBe(false);
+    const header = root.root.findAllByType("thead")[0].findAllByType("tr")[1];
+    for (const row of root.root.findByType("tbody").findAllByType("tr")) expect(row.findAllByType("td")).toHaveLength(header.findAllByType("th").length);
+    await act(async () => root.update(<SharedLogSheetDetails sheet={sampleLogSheets[0]} boatType="sail" />));
+    expect(root.root.findAllByType("th").some(cell => cell.children.join("") === "Sail")).toBe(true);
+    await act(async () => root.unmount());
+  });
   it("shows logline details and switches course columns and all coordinate formats", async () => {
     const sheet = { ...sampleLogSheets[0], lines: [{ ...sampleLogSheets[0].lines[0], latitude: 49.456, longitude: -2.534, weatherRemark: "Visibility note", sailNote: "Sail note", motorNote: "Motor note", engineHours: { main: 1.5 } }] };
     let root!: ReactTestRenderer;

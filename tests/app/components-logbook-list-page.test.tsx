@@ -11,7 +11,11 @@ import type { LogSheet } from "../../app/models/logbook";
 vi.mock("../../app/components/logbook/ModalLayer", () => ({
   ModalLayer: (props: ComponentProps<"div">) => createElement("div", props),
 }));
-vi.mock("../../app/lib/i18n", () => ({ useI18n: () => ({ t: (key: string) => key, locale: "en" }) }));
+const language = vi.hoisted(() => ({ locale: "en" }));
+vi.mock("../../app/lib/i18n", async () => {
+  const { t } = await import("../../app/lib/i18n/translations");
+  return { useI18n: () => ({ t: (key: Parameters<typeof t>[1]) => key.startsWith("sheet.status.") ? t(language.locale as Parameters<typeof t>[0], key) : key, locale: language.locale }) };
+});
 vi.mock("../../app/components/logbook/OpenSeaMapView", () => ({ LogSheetsMapView: () => null }));
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -53,6 +57,21 @@ describe("logsheet date filter", () => {
   function tableIds() {
     return renderer.root.findAllByProps({ className: "table-title-button" }).map((button) => button.findByProps({ className: "table-vessel" }).children.at(-1));
   }
+
+  it.each([['en', 'Draft', 'Locked'], ['de', 'Entwurf', 'Gesperrt'], ['fr', 'Brouillon', 'Verrouillé'], ['it', 'Bozza', 'Bloccato']])("searches the displayed status in %s", async (locale, draft, locked) => {
+    language.locale = locale;
+    sheets[0].status = "Locked";
+    try {
+      await render();
+      const search = renderer.root.findByProps({ type: "search" });
+      await act(async () => search.props.onChange({ target: { value: locked.toUpperCase() } }));
+      expect(tableIds()).toEqual(["before"]);
+      expect(renderer.root.findAllByProps({ className: "status-pill sheet-list-status" })[0].children).toEqual([locked]);
+      await act(async () => search.props.onChange({ target: { value: draft } }));
+      expect(tableIds()).not.toContain("before");
+      expect(tableIds().length).toBeGreaterThan(0);
+    } finally { language.locale = "en"; sheets[0].status = "Draft"; }
+  });
 
   it("includes overlapping voyages and whole boundary dates in both the table and map, then resets", async () => {
     await render();

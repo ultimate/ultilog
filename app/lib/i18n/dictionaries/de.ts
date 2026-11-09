@@ -75,6 +75,8 @@ export const de: Dictionary = {
   "nav.profile": "Profil",
   "nav.noEmail": "Keine E-Mail",
   "nav.logout": "Abmelden",
+  "sheet.status.draft": "Entwurf",
+  "sheet.status.locked": "Gesperrt",
   "nav.saving": "Speichern…",
   "nav.signingOut": "Abmelden…",
   "nav.synced": "Alle Daten sind synchronisiert",

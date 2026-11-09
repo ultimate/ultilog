@@ -12,6 +12,10 @@ const boatWithDeviation = {
 } as Pick<Boat, "deviationTable">;
 
 describe("log line editor business logic", () => {
+  it("calculates courses for older boats with an empty stored wind drift table", () => {
+    const boat = { deviationTable: [], windDriftTable: [] } as unknown as Pick<Boat, "deviationTable" | "windDriftTable">;
+    expect(updateLogLineFormForInput({ ...defaultLineForm, compassCourse: "10", deviation: "2" }, { field: "compassCourse", value: "20" }, { boat })).toMatchObject({ magneticCourse: "22" });
+  });
   it("normalizes coordinate edits before returning the updated form", async () => {
     await expect(Promise.resolve(updateLogLineFormForInput(defaultLineForm, { field: "latitude", value: "91" }))).resolves.toMatchObject({ latitude: "90" });
     const updated = await Promise.resolve(updateLogLineFormForInput(defaultLineForm, { field: "longitude", value: "180.1" }));

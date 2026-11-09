@@ -15,7 +15,7 @@ import { canAccessRegisteredShares } from "../registered-share-access";
 import { referencedBoatDeletionError, sheetBoatMutationError } from "../../domain/boats/boat-policy";
 import { sectionVisibility, sharedSheetCapability, type SectionVisibility, type SharedSheetCapability } from "../../domain/logbook/share-policy";
 
-export type SharedLogSheet = { sheet: LogSheet; boatName: string; engineLabels?: Record<string, string>; capability: SharedSheetCapability; sourceOwnerId?: string; ownerName?: string; ownerAvatar?: string; showOwnerAvatarOnPrint?: boolean };
+export type SharedLogSheet = { sheet: LogSheet; boatName: string; boatType?: Boat["type"]; engineLabels?: Record<string, string>; capability: SharedSheetCapability; sourceOwnerId?: string; ownerName?: string; ownerAvatar?: string; showOwnerAvatarOnPrint?: boolean };
 export type SharedLogSheetCollection = { ownerId: string; ownerName: string; ownerAvatar?: string; sheets: SharedLogSheet[] };
 export type CopySharedLogSheetOptions = { destinationBoatId: string; includeCrew?: boolean; includePicture?: boolean; allowDuplicate?: boolean; action?: "create" | "update"; targetCopyId?: string; expectedRevision?: number; expectedContentVersion?: string };
 export type PreviousCopySummary = { id: string; title: string; copiedAt: string };
@@ -334,7 +334,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
         ? `data:${owner.avatar_mime_type};base64,${owner.avatar_data}`
         : `https://secure.gravatar.com/avatar/${createHash("sha256").update(owner.email.trim().toLowerCase()).digest("hex")}?s=256&d=mp`
       : undefined;
-    return { sheet: filterSharedSheet(sheet, visibility), boatName: visibility.masterData ? boat?.name ?? "" : "", engineLabels: boat ? Object.fromEntries((boat.engines ?? []).map(engine => [engine.id, engine.label])) : undefined, capability, sourceOwnerId: sharedRow.owner_id, ownerName: owner?.name, ownerAvatar, showOwnerAvatarOnPrint };
+    return { sheet: filterSharedSheet(sheet, visibility), boatName: visibility.masterData ? boat?.name ?? "" : "", boatType: visibility.masterData ? boat?.type : undefined, engineLabels: boat ? Object.fromEntries((boat.engines ?? []).map(engine => [engine.id, engine.label])) : undefined, capability, sourceOwnerId: sharedRow.owner_id, ownerName: owner?.name, ownerAvatar, showOwnerAvatarOnPrint };
   }
 
   async readSharedSheets(ownerId: string, isAuthenticated: boolean): Promise<SharedLogSheetCollection | undefined> {

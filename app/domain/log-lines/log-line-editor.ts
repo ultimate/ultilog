@@ -158,7 +158,8 @@ function deviationTableFromBoat(boat: Pick<Boat, "deviationTable">): DeviationTa
 }
 
 function windDriftTableFromBoat(boat: Pick<Boat, "windDriftTable">): WindDriftTable | undefined {
-  if (!boat.windDriftTable) return undefined;
+  // Older boats store an empty array when no drift table was configured.
+  if (!boat.windDriftTable || !Array.isArray(boat.windDriftTable.rows)) return undefined;
   const rows = boat.windDriftTable.rows.map((row) => {
     const values = Object.fromEntries(Object.entries(row.values).map(([key, value]) => [key, optionalNumber(value)]));
     return [row.angle, values];

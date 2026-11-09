@@ -1,3 +1,4 @@
+import { SaveButton } from "../SaveButton";
 import { LogTextPopover } from "../LogTextPopover";
 import { WeatherDataAttribution } from "../WeatherDataAttribution";
 import { CrewSearchSelect } from "../CrewSearchSelect";
@@ -312,8 +313,11 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   }
 
   async function saveTechnicalCheckDraft(index: number) {
-    await updateTechnicalCheck(index, technicalCheckDrafts[index] ?? activeSheet.technicalChecks[index]?.text ?? "");
+    const submitted = technicalCheckDrafts[index] ?? activeSheet.technicalChecks[index]?.text ?? "";
+    const saved = await updateTechnicalCheck(index, submitted);
+    if (saved === false) return;
     setTechnicalCheckDraftState((current) => {
+      if (current.sheetId !== activeSheet.id || (current.drafts[index] !== undefined && current.drafts[index] !== submitted)) return current;
       const { [index]: _discarded, ...next } = current.sheetId === activeSheet.id ? current.drafts : {};
       return { sheetId: activeSheet.id, drafts: next };
     });
@@ -393,6 +397,9 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
   };
 
 
+  const [courseHighlights, setCourseHighlights] = useState<Record<string, Partial<Record<keyof LineForm, number>>>>({});
+  const showSail = activeBoat.type !== "motor";
+
   const updateLineFormField = (draftId: string, field: Exclude<keyof LineForm, "engineHours" | "id">, value: string) => {
     const lineForm = lineForms[draftId].form;
     const sequence = (courseConversionSequences.current[draftId] ?? 0) + 1;
@@ -402,6 +409,8 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     Promise.resolve(updated)
       .then((result) => {
         if (courseConversionSequences.current[draftId] !== sequence) return;
+        const changed = Object.fromEntries(courseConversionColumns.filter(column => column.field !== field && result[column.field] !== lineForm[column.field]).map(column => [column.field, sequence]));
+        setCourseHighlights(current => ({ ...current, [draftId]: changed }));
         setDraftLineForm(draftId, current => ({ ...current, [field]: result[field], ...Object.fromEntries(courseConversionColumns.map(column => [column.field, result[column.field]])) }));
       })
       .catch(() => setDraftLineForm(draftId, current => ({ ...current, [field]: value })));
@@ -411,7 +420,8 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     const lineForm = lineForms[draftId].form;
     return <span className="smart-field-wrap">
     <LogNumberInput
-      className="course-number-input"
+      className={`course-number-input${courseHighlights[draftId]?.[field] ? ` course-autofilled course-autofilled-${courseHighlights[draftId]?.[field] % 2}` : ""}`}
+      onAnimationEnd={() => setCourseHighlights(current => ({ ...current, [draftId]: { ...current[draftId], [field]: undefined } }))}
       min={options.min}
       max={options.max}
       step="1"
@@ -624,13 +634,13 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
           {renderCourseInput(draftId, column.field, { min: column.min, max: column.max })}
         </td>
       ))}<td><span className="smart-field-wrap">{renderNumberInput(draftId, "speedKn", { step: "0.1" })}{smartMotionStatus === "tracking" && smartLineProgress?.draftId === draftId ? <span className="smart-field-spinner" role="status" aria-label={t("details.trackingMotion")} /> : null}</span></td><td>{renderNumberInput(draftId, "logNm", { step: "0.1" })}</td>
-      <td><div className="compound-inputs labeled-inputs"><label><span>[nm]</span>{renderNumberInput(draftId, "sailMiles", { step: "0.1" })}</label><label><span>[note]</span>{renderTextInput(draftId, "sailNote", t("details.sailNote"))}</label></div></td>
+      {showSail && <td><div className="compound-inputs labeled-inputs"><label><span>[nm]</span>{renderNumberInput(draftId, "sailMiles", { step: "0.1" })}</label><label><span>[note]</span>{renderTextInput(draftId, "sailNote", t("details.sailNote"))}</label></div></td>}
       <td><div className="compound-inputs labeled-inputs"><label><span>[nm]</span>{renderNumberInput(draftId, "motorMiles", { step: "0.1" })}</label>{logLineEngines.map((engine) => <label key={engine.id}><span>{engine.label} [HH:mm]</span><LogNumberInput hours aria-label={`${engine.name} ${t("details.engineRuntime")}`} min="0" value={lineForm.engineHours?.[engine.id] ?? ""} onChange={(event) => setLineForm({ ...lineForm, engineHours: { ...lineForm.engineHours, [engine.id]: event.target.value } })} /></label>)}<label><span>[note]</span>{renderTextInput(draftId, "motorNote", t("details.motorNote"))}</label></div></td>
-      <td>{renderTextInput(draftId, "remarks")}</td><td colSpan={2}><div className="table-actions"><button type="button" onClick={(event) => {
+      <td>{renderTextInput(draftId, "remarks")}</td><td colSpan={2}><div className="table-actions"><SaveButton saveKey={`line:${draftId}`} type="button" onClick={(event) => {
         const invalid = event.currentTarget.closest("tr")?.querySelector<HTMLInputElement>("input:invalid");
         if (invalid) { invalid.reportValidity(); return; }
         void saveLineFromFields(draftId);
-      }}>{isNew ? t("details.saveLine") : "💾"}</button><button type="button" className="ghost-button" onClick={() => cancelLineEdit(draftId)}>{t("common.cancel")}</button></div></td>
+      }}>{isNew ? t("details.saveLine") : "💾"}</SaveButton><button type="button" className="ghost-button" onClick={() => cancelLineEdit(draftId)}>{t("common.cancel")}</button></div></td>
     </tr>
     );
   };
@@ -846,7 +856,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                   {sheetForm.image ? <small>{sheetForm.image.width} × {sheetForm.image.height} · {sheetForm.image.mimeType}</small> : null}
                 </div>
               <div className="inline-edit-actions">
-                <button type="submit">{t("common.save")}</button>
+                <SaveButton saveKey="sheet" type="submit">{t("common.save")}</SaveButton>
                 {showNewSheet ? (
                   <button
                     type="button"
@@ -923,7 +933,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                   </h2>
                 </div>
                 <div className="inline-edit-actions sheet-master-actions" role="group" aria-label={t("details.edit")}>
-                  <span className="status-pill">{activeSheet.status}</span>
+                  <span className="status-pill">{t(activeSheet.status === "Locked" ? "sheet.status.locked" : "sheet.status.draft")}</span>
                   <SheetAction className="edit-chip compact-chip" label={t(actionsCollapsed ? "details.expandActions" : "details.collapseActions")} aria-expanded={!actionsCollapsed} aria-controls="sheet-action-buttons" onClick={toggleActions}>{actionsCollapsed ? "⋯" : "⌃"}</SheetAction>
                   <div id="sheet-action-buttons" className="sheet-action-buttons" hidden={actionsCollapsed}>
                     <SheetAction className="edit-chip compact-chip" label={t("details.previousSheet")} disabled={!props.previousSheetId} onClick={(event) => navigateSheet(props.previousSheetId, event)}>←</SheetAction>
@@ -1194,10 +1204,10 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                   <table className={showCourseColumns ? "log-lines-table with-course-columns" : "log-lines-table"}>
                     <thead>
                       <tr className="column-groups">
-                        <th colSpan={4}>{t("details.timePos")}</th><th colSpan={8}>{t("details.weatherSea")}</th>{renderCourseHeader()}<th colSpan={4}>{t("details.travel")}</th><th>{t("details.remarks")}</th><th colSpan={2}>{t("details.actions")}</th>
+                        <th colSpan={4}>{t("details.timePos")}</th><th colSpan={8}>{t("details.weatherSea")}</th>{renderCourseHeader()}<th colSpan={showSail ? 4 : 3}>{t("details.travel")}</th><th>{t("details.remarks")}</th><th colSpan={2}>{t("details.actions")}</th>
                       </tr>
                       <tr>
-                        <th scope="col" aria-label="Log line number">#</th><th>{t("details.time")}</th><th>{t("details.lat")}</th><th>{t("details.lon")}</th><th>{t("details.weather")}</th><th>{t("details.weatherRemark")}</th><th>{t("details.temperature")}</th><th>{t("details.baro")}</th><th>{t("details.wind")}</th><th>{t("details.sea")}</th><th>{t("details.tide")}</th><th>{t("details.moon")}</th>{courseConversionColumns.map((column) => (!column.isOptional || showCourseColumns) && <th key={column.field}>{t(column.labelKey)}</th>)}<th>{t("details.speed")}</th><th>{t("details.log")}</th><th>{t("details.sail")}</th><th>{t("details.motor")}</th><th>{t("details.remarksEvent")}</th><th>{t("details.edit")}</th><th>{t("common.delete")}</th>
+                        <th scope="col" aria-label="Log line number">#</th><th>{t("details.time")}</th><th>{t("details.lat")}</th><th>{t("details.lon")}</th><th>{t("details.weather")}</th><th>{t("details.weatherRemark")}</th><th>{t("details.temperature")}</th><th>{t("details.baro")}</th><th>{t("details.wind")}</th><th>{t("details.sea")}</th><th>{t("details.tide")}</th><th>{t("details.moon")}</th>{courseConversionColumns.map((column) => (!column.isOptional || showCourseColumns) && <th key={column.field}>{t(column.labelKey)}</th>)}<th>{t("details.speed")}</th><th>{t("details.log")}</th>{showSail && <th>{t("details.sail")}</th>}<th>{t("details.motor")}</th><th>{t("details.remarksEvent")}</th><th>{t("details.edit")}</th><th>{t("common.delete")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1207,7 +1217,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                           {courseConversionColumns.map((column) => (!column.isOptional || showCourseColumns) && (
                             <td {...scannerWarningCellProps(index + 1, [column.field], column.isOptional ? "optional-course-cell" : undefined)} key={`${line.id}-${column.field}`}>{displayNumber(line[column.field])}</td>
                           ))}
-                          <td {...scannerWarningCellProps(index + 1, ["speedKn"])}>{displayNumber(line.speedKn)}</td><td {...scannerWarningCellProps(index + 1, ["logNm"])}>{displayNumber(line.logNm)}</td><td {...scannerWarningCellProps(index + 1, ["sailMiles", "sailNote"])}><span className="log-line-distance-summary">{displayNumber(line.sailMiles, "nm")}</span>{renderClampedLogText(t("details.sailNote"), line.sailNote)}</td><td {...scannerWarningCellProps(index + 1, ["motorMiles", "motorHours", "motorNote"])}><span className="log-line-distance-summary">{displayNumber(line.motorMiles, "nm")} {Object.entries(line.engineHours ?? {}).map(([id, hours]) => `${activeBoat.engines?.find((engine) => engine.id === id)?.label ?? id} ${formatEngineHours(hours)}`).join(" · ")}</span>{renderClampedLogText(t("details.motorNote"), line.motorNote)}</td><td {...scannerWarningCellProps(index + 1, ["remarks"])}>{renderClampedLogText(t("details.remarksEvent"), line.remarks)}</td>
+                          <td {...scannerWarningCellProps(index + 1, ["speedKn"])}>{displayNumber(line.speedKn)}</td><td {...scannerWarningCellProps(index + 1, ["logNm"])}>{displayNumber(line.logNm)}</td>{showSail && <td {...scannerWarningCellProps(index + 1, ["sailMiles", "sailNote"])}><span className="log-line-distance-summary">{displayNumber(line.sailMiles, "nm")}</span>{renderClampedLogText(t("details.sailNote"), line.sailNote)}</td>}<td {...scannerWarningCellProps(index + 1, ["motorMiles", "motorHours", "motorNote"])}><span className="log-line-distance-summary">{displayNumber(line.motorMiles, "nm")} {Object.entries(line.engineHours ?? {}).map(([id, hours]) => `${activeBoat.engines?.find((engine) => engine.id === id)?.label ?? id} ${formatEngineHours(hours)}`).join(" · ")}</span>{renderClampedLogText(t("details.motorNote"), line.motorNote)}</td><td {...scannerWarningCellProps(index + 1, ["remarks"])}>{renderClampedLogText(t("details.remarksEvent"), line.remarks)}</td>
                           <td><button type="button" className="edit-chip" disabled={isActiveSheetLocked} onClick={() => startEditingLine(line)}>✏️</button></td>
                           <td><button type="button" className="edit-chip" disabled={isActiveSheetLocked} onClick={() => deleteLine(line.id)}>🗑️</button></td>
                         </tr>
@@ -1402,18 +1412,18 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
                               onChange={(event) => updateTechnicalCheckDraft(index, event.target.value)}
                             />
                             <span className="inline-value-actions">
-                              <button
+                              <SaveButton saveKey={`technical:${activeSheet.id}:${index}`}
                                 type="button"
                                 aria-label={`${t("common.save")} ${t("details.technicalLogEntry")} ${index + 1}`}
-                                disabled={isActiveSheetLocked || draft === item.text}
+                                disabled={isActiveSheetLocked || (draft === item.text && technicalCheckDrafts[index] === undefined)}
                                 onClick={() => saveTechnicalCheckDraft(index)}
                               >
                                 💾
-                              </button>
+                              </SaveButton>
                               <button
                                 type="button"
                                 aria-label={`${t("common.cancel")} ${t("details.technicalLogEntry")} ${index + 1}`}
-                                disabled={isActiveSheetLocked || draft === item.text}
+                                disabled={isActiveSheetLocked || (draft === item.text && technicalCheckDrafts[index] === undefined)}
                                 onClick={() => cancelTechnicalCheckDraft(index)}
                               >
                                 ❎
