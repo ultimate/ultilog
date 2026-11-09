@@ -353,6 +353,7 @@ h1 { margin:0 0 .45rem; font-size:1.8rem; line-height:1.1; letter-spacing:-.04em
   mix-blend-mode:multiply;
 }
 .app-shell[data-theme="dark"] .module-tabs .tab-icon img,
+.app-shell[data-theme="dark"] .mobile-bottom-nav .tab-icon img,
 .app-shell[data-theme="dark"] .profile-card img,
 .app-shell[data-theme="dark"] .mobile-profile-action img {
   filter:invert(1) hue-rotate(180deg) brightness(1.65) contrast(.9);
@@ -361,7 +362,8 @@ h1 { margin:0 0 .45rem; font-size:1.8rem; line-height:1.1; letter-spacing:-.04em
 .module-tabs button.active { background:color-mix(in srgb, var(--blue) 12%, transparent); }
 .module-tabs button.active .tab-icon { background:transparent!important; box-shadow:none!important; }
 .module-tabs button.active .tab-icon img { filter:sepia(1) saturate(4) hue-rotate(185deg) brightness(.9); }
-.app-shell[data-theme="dark"] .module-tabs button.active .tab-icon img { filter:invert(48%) sepia(88%) saturate(1801%) hue-rotate(204deg) brightness(108%) contrast(96%); }
+.app-shell[data-theme="dark"] .module-tabs button.active .tab-icon img,
+.app-shell[data-theme="dark"] .mobile-bottom-nav button.active .tab-icon img { filter:invert(48%) sepia(88%) saturate(1801%) hue-rotate(204deg) brightness(108%) contrast(96%); }
 
 .sync-card { display:none!important; }
 .sync-icon-card {
@@ -560,7 +562,8 @@ h3 { margin-block:.25rem .55rem; }
 }
 .module-tabs button.active .nav-label { color:var(--blue); }
 .module-tabs button.active .tab-icon img { filter:sepia(1) saturate(4) hue-rotate(185deg) brightness(.9); }
-.app-shell[data-theme="dark"] .module-tabs button.active .tab-icon img { filter:invert(48%) sepia(88%) saturate(1801%) hue-rotate(204deg) brightness(108%) contrast(96%); }
+.app-shell[data-theme="dark"] .module-tabs button.active .tab-icon img,
+.app-shell[data-theme="dark"] .mobile-bottom-nav button.active .tab-icon img { filter:invert(48%) sepia(88%) saturate(1801%) hue-rotate(204deg) brightness(108%) contrast(96%); }
 
 @media (min-width: 1001px), (orientation: landscape) and (max-width: 1000px) {
   .app-shell { min-height:100dvh; }
@@ -601,6 +604,7 @@ h3 { margin-block:.25rem .55rem; }
 .profile-card img,
 .mobile-profile-action img { mix-blend-mode:multiply; }
 .app-shell[data-theme="dark"] .module-tabs .tab-icon img,
+.app-shell[data-theme="dark"] .mobile-bottom-nav .tab-icon img,
 .app-shell[data-theme="dark"] .profile-card img,
 .app-shell[data-theme="dark"] .mobile-profile-action img {
   mix-blend-mode:screen;

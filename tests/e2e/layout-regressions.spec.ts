@@ -78,6 +78,10 @@ test("navigation follows the dark palette across desktop, collapsed, and mobile 
   const navigation = page.locator(".app-sidebar .module-tabs button").first();
   await expect(navigation).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   await expect(page.locator(".app-sidebar .module-tabs button").nth(1)).toHaveCSS("color", "rgb(238, 246, 255)");
+  const inactiveIconFilter = await page.locator(".app-sidebar .module-tabs button").nth(1).locator("img").evaluate(icon => getComputedStyle(icon).filter);
+  const activeIconFilter = await navigation.locator("img").evaluate(icon => getComputedStyle(icon).filter);
+  expect(inactiveIconFilter).not.toBe("none");
+  expect(activeIconFilter).not.toBe(inactiveIconFilter);
   const whatsNew = page.locator(".changelog-navigation");
   await whatsNew.click();
   await expect(whatsNew).toHaveClass(/active/);
@@ -93,5 +97,16 @@ test("navigation follows the dark palette across desktop, collapsed, and mobile 
     const nav = page.locator(viewport.width === 390 ? ".mobile-bottom-nav" : ".app-sidebar");
     await expect(nav).toBeVisible();
     await expect(nav.locator("button").first()).toHaveCSS("color", "rgb(238, 246, 255)");
+    await expect(nav.getByRole("button", { name: "Dashboard", exact: true }).locator("img")).toHaveCSS("filter", inactiveIconFilter);
+    await nav.getByRole("button", { name: "Dashboard", exact: true }).press("Enter");
+    await expect(nav.locator("button.active .tab-icon img")).toHaveCSS("filter", activeIconFilter);
+    // Leave both navigation variants with an inactive Dashboard for the next size.
+    if (viewport.width === 390) {
+      await nav.locator(".mobile-theme-action").click();
+      await expect(page.locator(".app-shell")).toHaveAttribute("data-theme", "light");
+      await expect(nav.getByRole("button", { name: "Boat manager", exact: true }).locator("img")).toHaveCSS("filter", "none");
+      await nav.locator(".mobile-theme-action").click();
+    }
+    await nav.getByRole("button", { name: "Boat manager", exact: true }).press("Enter");
   }
 });
