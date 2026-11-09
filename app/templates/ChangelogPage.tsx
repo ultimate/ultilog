@@ -25,10 +25,8 @@ type ChangelogPageProps = {
   locale?: Locale;
 };
 
-type CommitGroup = {
-  commitSha: string;
-  shortSha: string;
-  introducedAt: string;
+type DateGroup = {
+  date: string;
   entries: GeneratedChangelogEntry[];
 };
 
@@ -96,17 +94,16 @@ export function ChangelogPage({
       ) : null}
       <div className="changelog-groups">
         {groups.map((group) => (
-          <article className="changelog-group" key={group.commitSha}>
+          <article className="changelog-group" key={group.date}>
             <header>
               <h2>
-                <code>{group.shortSha}</code>
+                <time dateTime={group.date}>
+                  {new Intl.DateTimeFormat(locale, {
+                    dateStyle: "long",
+                    timeZone: "UTC",
+                  }).format(new Date(`${group.date}T00:00:00Z`))}
+                </time>
               </h2>
-              <time dateTime={group.introducedAt}>
-                {new Intl.DateTimeFormat(locale, {
-                  dateStyle: "long",
-                  timeZone: "UTC",
-                }).format(new Date(group.introducedAt))}
-              </time>
             </header>
             {categoryOrder.map((category) => {
               const categoryEntries = group.entries.filter(
@@ -117,15 +114,16 @@ export function ChangelogPage({
                 <section
                   className="changelog-category"
                   key={category}
-                  aria-labelledby={`${group.commitSha}-${category}`}
+                  aria-labelledby={`${group.date}-${category}`}
                 >
-                  <h3 id={`${group.commitSha}-${category}`}>
+                  <h3 id={`${group.date}-${category}`}>
                     {t(`changelog.category.${category}`)}
                   </h3>
                   <ul>
                     {categoryEntries.map((entry) => (
                       <li key={entry.id}>
-                        {entry.title[locale] ?? entry.title.en}
+                        {entry.title[locale] ?? entry.title.en}{" "}
+                        <code className="changelog-commit" title={entry.introduction.commitSha}>{entry.introduction.shortSha}</code>
                       </li>
                     ))}
                   </ul>
@@ -141,25 +139,16 @@ export function ChangelogPage({
 
 export function groupByIntroduction(
   entries: GeneratedChangelogEntry[],
-): CommitGroup[] {
-  const groups = new Map<string, CommitGroup>();
+): DateGroup[] {
+  const groups = new Map<string, DateGroup>();
   for (const entry of entries) {
-    const { commitSha, shortSha, introducedAt } = entry.introduction;
-    const group = groups.get(commitSha) ?? {
-      commitSha,
-      shortSha,
-      introducedAt,
-      entries: [],
-    };
+    const date = new Date(entry.introduction.introducedAt).toISOString().slice(0, 10);
+    const group = groups.get(date) ?? { date, entries: [] };
     group.entries.push(entry);
-    groups.set(commitSha, group);
+    groups.set(date, group);
   }
   return [...groups.values()]
-    .sort(
-      (left, right) =>
-        right.introducedAt.localeCompare(left.introducedAt) ||
-        right.commitSha.localeCompare(left.commitSha),
-    )
+    .sort((left, right) => right.date.localeCompare(left.date))
     .map((group) => ({
       ...group,
       entries: [...group.entries].sort(

@@ -90,6 +90,16 @@
     }
   },
   {
+    "id": "fix-translated-landing-navigation-changelog-and-chart-layouts",
+    "category": "fix",
+    "title": {
+      "en": "Improve translated landing layouts, navigation and import buttons, daily changelog grouping, and chart spacing",
+      "de": "Übersetzte Startseiten, Navigation und Import-Schaltflächen, tägliche Changelog-Gruppierung und Diagrammabstände verbessern",
+      "fr": "Améliorer les pages d’accueil traduites, la navigation et les boutons d’import, le regroupement quotidien des nouveautés et l’espacement des graphiques",
+      "it": "Migliora le pagine iniziali tradotte, la navigazione e i pulsanti di importazione, il raggruppamento giornaliero delle novità e la spaziatura dei grafici"
+    }
+  },
+  {
     "id": "improve-boat-details-and-engine-ordering",
     "category": "improvement",
     "title": {

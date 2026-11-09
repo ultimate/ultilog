@@ -62,7 +62,7 @@ export const de: Dictionary = {
   "changelog.aria": "Änderungsprotokoll der Anwendung",
   "changelog.eyebrow": "Quellcode-Revisionen",
   "changelog.title": "Neuigkeiten",
-  "changelog.subtitle": "Sichtbare Änderungen, gruppiert nach dem Commit, der sie eingeführt hat.",
+  "changelog.subtitle": "Sichtbare Änderungen nach Datum gruppiert, mit den zugehörigen Commits.",
   "changelog.englishFallback": "Einige Einträge sind noch nicht übersetzt und werden auf Englisch angezeigt.",
   "changelog.loading": "Änderungsprotokoll wird geladen…",
   "changelog.empty": "Es sind noch keine öffentlichen Änderungseinträge verfügbar.",
