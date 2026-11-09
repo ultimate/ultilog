@@ -164,6 +164,8 @@ test("repeated creation saves separate new entities and does not modify the prev
 });
 
 async function loginWithUploads(page: Page) {
+  // Isolate this account's request quota from other registration-heavy suites.
+  await page.context().setExtraHTTPHeaders({ "X-Real-IP": "192.0.2.201" });
   const { sampleBoats, sampleLogSheets } = await import("../fixtures/logbook");
   await page.addInitScript(() => localStorage.setItem("ultilog-cookie-notice-acknowledged", "true"));
   const email = `form-navigation-${Date.now()}@example.test`;
