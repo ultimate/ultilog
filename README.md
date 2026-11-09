@@ -55,6 +55,8 @@ npm run dev
 
 For local development, leave `POSTGRES_URL` empty. The app creates `.data/ultilog.sqlite` automatically on first use. New accounts start with only their own primary crew profile so the onboarding checklist can guide them through creating their first boat and log sheet. For Vercel/PostgreSQL deployments, set `POSTGRES_URL` (or `DATABASE_URL`) from your deployment secrets.
 
+Vercel/Neon integration-managed connection URLs can stay unchanged. Before creating the PostgreSQL pool, Ultilog converts `sslmode=prefer`, `require`, or `verify-ca` to `verify-full`, preserving certificate and hostname verification and avoiding the driver's SSL mode deprecation warning. Other SSL modes and URLs without `sslmode` are left unchanged.
+
 Open [http://localhost:3000](http://localhost:3000) to view the app.
 
 
