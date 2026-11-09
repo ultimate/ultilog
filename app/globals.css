@@ -2453,3 +2453,18 @@ img.entity-image--preview {
 }
 .app-shell[data-theme="dark"] :is(.leaflet-control-attribution a, .leaflet-popup-content a, .leaflet-popup-close-button) { color: var(--primary); }
 .app-shell[data-theme="dark"] a:not([class]) { color: var(--primary); }
+
+/* Fit the desktop landing page within the usable height below browser chrome. */
+@media (min-width: 1100px) and (orientation: landscape) {
+  .landing-layout { padding-block: clamp(1rem, 3vh, 3rem); }
+  .landing-hero h1 { font-size: clamp(2.8rem, 7.5vh, 5.4rem); margin-bottom: .75rem; text-wrap: balance; }
+  .landing-lead { font-size: clamp(1rem, 1.85vh, 1.12rem); line-height: 1.5; }
+  .landing-promise { margin-block: clamp(.75rem, 1.8vh, 1.5rem) clamp(.85rem, 2vh, 2rem); padding: .7rem .9rem; }
+  .landing-feature { min-height: 0; padding: clamp(.7rem, 1.6vh, 1rem); }
+  .landing-login .auth-card { gap: clamp(.55rem, 1.2vh, 1rem); padding: clamp(1rem, 2.5vh, 2rem); }
+  .landing-login .auth-card h1 { font-size: clamp(1.8rem, 4.4vh, 2.8rem); margin-bottom: .5rem; }
+  .landing-login .auth-card > div > p:last-child, .landing-login .auth-footer p { margin-bottom: 0; }
+  .landing-login .auth-card input { min-height: 2.75rem; padding: clamp(.65rem, 1.5vh, .9rem) .85rem; }
+  .landing-login .auth-card button { min-height: 2.75rem; padding: clamp(.7rem, 1.5vh, .95rem) .9rem; }
+  .landing-shell .partner-banner { padding-block: clamp(.5rem, 1vh, 1rem); }
+}
