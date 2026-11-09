@@ -88,6 +88,11 @@ the period. Only valid calendar dates participate in the date comparison; time-o
 log entries do not invalidate a voyage with dated route boundaries. Fully undated
 sheets are excluded when a date filter is active.
 
+Days at sea count distinct dated log entries with positive sail or motor mileage,
+as well as dates covered by detected movement intervals. A single dated entry
+with traveled miles can therefore count without a second entry. Route dates
+alone do not establish days at sea, and overlapping entries count each date once.
+
 Non-Swiss `withinYears` rules retain their existing behavior: from a selected
 start date through its anniversary, or a rolling lookback from today when no
 date is selected. A requirement cannot combine `withinYears` and `dateWindow`.

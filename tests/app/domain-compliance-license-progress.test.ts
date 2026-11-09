@@ -72,6 +72,16 @@ describe("calculateLicenseProgress", () => {
     expect(calculateLicenseProgress([req], sheets, [id], null, new Date("2026-11-09T12:00:00Z"), boats)[0]).toMatchObject({ achievedValue: 0, completed: false, verification: "automatic" });
   });
 
+  it("counts a single motor-mileage entry toward the motor add-on's days at sea", () => {
+    const voyage = sheet("2026-11-07", 0, 27);
+    voyage.route.departed = "2026-11-06T08:00:00Z";
+    voyage.lines = [voyage.lines[1]];
+    const license = complianceCatalog.licenses.find(license => license.id === "ch-hochseeausweis-motor-addon")!;
+    const progress = calculateLicenseProgress(license.requirements, [voyage], [], null, new Date("2026-11-09T12:00:00Z"), [{ id: "boat", type: "motor" } as Boat]);
+    expect(progress.find(item => item.requirement.type === "days-at-sea")).toMatchObject({ achievedValue: 1, targetValue: 5, verification: "automatic" });
+    expect(progress.find(item => item.requirement.type === "miles")).toMatchObject({ achievedValue: 27 });
+  });
+
   it("counts mileage on dated voyages whose log lines contain only times", () => {
     const voyage = sheet("2025-09-08", 6, 4);
     voyage.lines[0].time = "08:00";

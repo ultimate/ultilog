@@ -60,6 +60,27 @@ describe("calculateLogbookDayStatistics", () => {
     expect(calculateLogbookDayStatistics([dated])).toEqual({ sailingDays: 1, daysAtSea: 0 });
   });
 
+  it("counts the date with entered miles when positions and cumulative log are unchanged", () => {
+    const voyage = sheet("2026-11-06T08:00:00Z", "2026-11-07T10:00:00Z", [
+      line("2026-11-06T08:00:00Z", 0),
+      { ...line("2026-11-07T10:00:00Z", 0), motorMiles: 27 },
+    ]);
+    expect(calculateLogbookStatistics([voyage])).toMatchObject({ motorMiles: 27, daysAtSea: 1 });
+  });
+
+  it.each(["motorMiles", "sailMiles"] as const)("counts one dated line with positive %s as one day at sea", field => {
+    const voyage = sheet("2026-11-06T08:00:00Z", "2026-11-07T10:00:00Z", [
+      { ...line("2026-11-07T10:00:00Z", 0), [field]: 27 },
+    ]);
+    expect(calculateLogbookDayStatistics([voyage, { ...voyage, id: "overlapping" }])).toEqual({ sailingDays: 2, daysAtSea: 1 });
+  });
+
+  it("does not infer a day at sea from undated mileage or a cumulative reading alone", () => {
+    const undated = sheet("2026-11-06", "2026-11-07", [{ ...line("10:00", 0), motorMiles: 27 }]);
+    const readingOnly = sheet("2026-11-06", "2026-11-07", [line("2026-11-07T10:00:00Z", 27)]);
+    expect(calculateLogbookDayStatistics([undated, readingOnly]).daysAtSea).toBe(0);
+  });
+
   it("does not count stationary sheets as days at sea", () => {
     const voyage = sheet("2026-06-01T08:00:00Z", "2026-06-01T10:00:00Z", [line("2026-06-01T08:00:00Z", 0), line("2026-06-01T10:00:00Z", 0)]);
     expect(calculateLogbookDayStatistics([voyage], 0.1).daysAtSea).toBe(0);
