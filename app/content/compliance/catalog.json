@@ -13,7 +13,7 @@
     ],
     "progress": "For tracked requirements, provide a numeric threshold and unit. Use the progress type to select the counter; use filters only for additional qualification rules. Manual requirements use checkboxes. Quantitative manual requirements include a unit; boolean confirmations omit it.",
     "placeholders": "Replace all TODO values. Duplicate the example section or requirement objects as needed; do not reuse an id within the same document or license.",
-    "dateWindows": "Use referenceDateKind to label the saved reference date. dateWindow.from and .through each require integer yearOffset and boundary date, year-start, or year-end. Boundaries are inclusive. Do not combine dateWindow with legacy withinYears."
+    "dateWindows": "Use referenceDateKind to label the saved reference date. dateWindow.from and .through each require integer yearOffset and boundary date, year-start, or year-end. Boundaries are inclusive. Do not combine dateWindow with legacy withinYears. Use dateWindow.referenceDateFallback=today for license windows that default to the current date."
   },
   "legalLogbookRequirements": [
     {
@@ -240,7 +240,8 @@
               "through": {
                 "yearOffset": 4,
                 "boundary": "year-end"
-              }
+              },
+              "referenceDateFallback": "today"
             }
           },
           "translationKey": "dashboard.sailingDays",
@@ -260,7 +261,8 @@
               "through": {
                 "yearOffset": 4,
                 "boundary": "year-end"
-              }
+              },
+              "referenceDateFallback": "today"
             }
           },
           "translationKey": "dashboard.daysAtSea",
@@ -280,7 +282,8 @@
               "through": {
                 "yearOffset": 4,
                 "boundary": "year-end"
-              }
+              },
+              "referenceDateFallback": "today"
             }
           },
           "translationKey": "compliance.milesOnSailingBoats",
@@ -300,7 +303,8 @@
               "through": {
                 "yearOffset": 4,
                 "boundary": "year-end"
-              }
+              },
+              "referenceDateFallback": "today"
             }
           },
           "translationKey": "compliance.requirement.afterTheoryExam",
@@ -451,7 +455,8 @@
               "through": {
                 "yearOffset": 4,
                 "boundary": "year-end"
-              }
+              },
+              "referenceDateFallback": "today"
             }
           },
           "translationKey": "dashboard.sailingDays",
@@ -471,7 +476,8 @@
               "through": {
                 "yearOffset": 4,
                 "boundary": "year-end"
-              }
+              },
+              "referenceDateFallback": "today"
             }
           },
           "translationKey": "dashboard.daysAtSea",
@@ -491,7 +497,8 @@
               "through": {
                 "yearOffset": 4,
                 "boundary": "year-end"
-              }
+              },
+              "referenceDateFallback": "today"
             }
           },
           "translationKey": "compliance.milesOnMotorBoats",
@@ -511,7 +518,8 @@
               "through": {
                 "yearOffset": 4,
                 "boundary": "year-end"
-              }
+              },
+              "referenceDateFallback": "today"
             }
           },
           "translationKey": "compliance.requirement.afterTheoryExam",
@@ -619,7 +627,8 @@
               "through": {
                 "yearOffset": 0,
                 "boundary": "date"
-              }
+              },
+              "referenceDateFallback": "today"
             }
           },
           "translationKey": "dashboard.daysAtSea",
@@ -639,7 +648,8 @@
               "through": {
                 "yearOffset": 0,
                 "boundary": "date"
-              }
+              },
+              "referenceDateFallback": "today"
             }
           },
           "translationKey": "compliance.milesOnSailingBoats",
@@ -747,7 +757,8 @@
               "through": {
                 "yearOffset": 0,
                 "boundary": "date"
-              }
+              },
+              "referenceDateFallback": "today"
             }
           },
           "translationKey": "dashboard.daysAtSea",
@@ -767,7 +778,8 @@
               "through": {
                 "yearOffset": 0,
                 "boundary": "date"
-              }
+              },
+              "referenceDateFallback": "today"
             }
           },
           "translationKey": "compliance.milesOnMotorBoats",

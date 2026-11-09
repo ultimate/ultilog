@@ -398,6 +398,7 @@ export const en = {
   "compliance.youHave": "You have",
   "compliance.theoryExamDate": "Theory exam date",
   "compliance.extensionApplicationDate": "Extension application date",
+  "compliance.referenceDateToday": "Uses today when left blank.",
   "compliance.referenceDateRequired": "Enter the reference date to calculate progress.",
   "compliance.referenceDate": "Reference date",
   "compliance.referenceYear": "Reference year",

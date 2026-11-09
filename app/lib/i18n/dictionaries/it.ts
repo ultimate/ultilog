@@ -399,6 +399,7 @@ export const it: Dictionary = {
   "compliance.youHave": "Hai",
   "compliance.theoryExamDate": "Data dell’esame teorico",
   "compliance.extensionApplicationDate": "Data della domanda di estensione",
+  "compliance.referenceDateToday": "Se il campo è vuoto, viene usata la data odierna.",
   "compliance.referenceDateRequired": "Inserisci la data di riferimento per calcolare i progressi.",
   "compliance.referenceDate": "Data di riferimento",
   "compliance.referenceYear": "Anno di riferimento",

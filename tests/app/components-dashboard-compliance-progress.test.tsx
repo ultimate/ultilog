@@ -13,11 +13,20 @@ describe("DashboardComplianceProgress", () => {
   });
   afterEach(() => vi.unstubAllGlobals());
 
-  it("prompts for missing reference dates instead of implying automatic progress", async () => {
+  it("shows the today fallback for an initial license with no reference date", async () => {
     vi.stubGlobal("fetch", vi.fn(() => response({ licenses: [{ licenseId: "ch-hochseeausweis-sail", startDate: null, completedManualRequirementIds: [] }] })));
     let root!: ReturnType<typeof create>;
     await act(async () => { root = create(<I18nProvider><DashboardComplianceProgress sheets={[]} language="en" onOpenCompliance={() => {}} /></I18nProvider>); });
-    expect(JSON.stringify(root.toJSON())).toContain("Enter the reference date to calculate progress.");
+    expect(JSON.stringify(root.toJSON())).toContain("Uses today when left blank.");
+  });
+
+  it("uses today for an add-on with no application date instead of prompting for one", async () => {
+    vi.stubGlobal("fetch", vi.fn(() => response({ licenses: [{ licenseId: "ch-hochseeausweis-sail-addon", startDate: null, completedManualRequirementIds: [] }] })));
+    let root!: ReturnType<typeof create>;
+    await act(async () => { root = create(<I18nProvider><DashboardComplianceProgress sheets={[]} language="en" onOpenCompliance={() => {}} /></I18nProvider>); });
+    const text = JSON.stringify(root.toJSON());
+    expect(text).toContain("Uses today when left blank.");
+    expect(text).not.toContain("Enter the reference date to calculate progress.");
   });
 
   it("shows every persisted license, an overall pie, and a compliance details action", async () => {

@@ -69,7 +69,40 @@ describe("calculateLicenseProgress", () => {
     expect(calculateLicenseProgress([req], [voyage("2022-01-01", target)], [], "2021-07-01", undefined, boats)[0]).toMatchObject({ achievedValue: target, completed: true, percentage: 100, remainingValue: 0 });
     // Legacy manual confirmations cannot fulfill a calculated requirement.
     expect(calculateLicenseProgress([req], [], [id], "2021-07-01", undefined, boats)[0]).toMatchObject({ achievedValue: 0, completed: false, verification: "automatic" });
-    expect(calculateLicenseProgress([req], sheets, [id], null, undefined, boats)[0]).toMatchObject({ achievedValue: 0, completed: false, verification: "reference-date-required" });
+    expect(calculateLicenseProgress([req], sheets, [id], null, new Date("2026-11-09T12:00:00Z"), boats)[0]).toMatchObject({ achievedValue: 0, completed: false, verification: "automatic" });
+  });
+
+  it("counts mileage on dated voyages whose log lines contain only times", () => {
+    const voyage = sheet("2025-09-08", 6, 4);
+    voyage.lines[0].time = "08:00";
+    voyage.lines[1].time = "10:00";
+    const req = complianceCatalog.licenses.find(license => license.id === "ch-hochseeausweis-sail")!.requirements.find(req => req.id === "ch-7-a-2-2")!;
+    const result = calculateLicenseProgress([req], [voyage], [], "2021-07-01", undefined, [{ id: "boat", type: "sail" } as Boat])[0];
+    expect(result).toMatchObject({ achievedValue: 10, verification: "automatic" });
+  });
+
+  it.each(["ch-hochseeausweis-sail-addon", "ch-hochseeausweis-motor-addon"])("defaults the unset application date to today for %s", licenseId => {
+    const license = complianceCatalog.licenses.find(license => license.id === licenseId)!;
+    const req = license.requirements.find(req => req.type === "miles")!;
+    const asOf = new Date("2026-11-09T12:00:00Z");
+    expect(resolveRequirementWindow(req.filters, null, asOf)).toEqual({ from: "2022-01-01", through: "2026-11-09" });
+    const boats = [{ id: "boat", type: req.filters!.boatType }] as Boat[];
+    const voyages = [sheet("2021-12-31", 100), sheet("2022-01-01", 2), sheet("2026-11-09", 3), sheet("2026-11-10", 100)];
+    expect(calculateLicenseProgress([req], voyages, [], null, asOf, boats)[0]).toMatchObject({ achievedValue: 5, verification: "automatic" });
+    expect(resolveRequirementWindow(req.filters, "2021-07-01", asOf)).toEqual({ from: "2017-01-01", through: "2021-07-01" });
+    expect(calculateLicenseProgress([req], voyages, [], "2021-07-01", asOf, boats)[0].achievedValue).toBe(0);
+  });
+
+  it.each(["ch-hochseeausweis-sail", "ch-hochseeausweis-motor"])("defaults all initial-license windows to today for %s", licenseId => {
+    const license = complianceCatalog.licenses.find(license => license.id === licenseId)!;
+    const asOf = new Date("2026-11-09T12:00:00Z");
+    const boats = [{ id: "boat", type: license.requirements.find(req => req.type === "miles")!.filters!.boatType }] as Boat[];
+    const progress = calculateLicenseProgress(license.requirements, [sheet("2026-07-12", 10), sheet("2026-11-09", 5)], [], null, asOf, boats);
+    for (const item of progress.filter(item => item.requirement.type !== "manual")) {
+      expect(item.verification).toBe("automatic");
+      expect(resolveRequirementWindow(item.requirement.filters, null, asOf)).toEqual({ from: item.requirement.filters!.dateWindow!.from.yearOffset === 0 ? "2026-11-09" : "2022-01-01", through: "2030-12-31" });
+      if (item.requirement.type === "miles") expect(item.achievedValue).toBe(item.requirement.filters!.dateWindow!.from.yearOffset === 0 ? 5 : 15);
+    }
   });
 
   it("resolves the catalog windows for initial, post-exam, and extension requirements", () => {

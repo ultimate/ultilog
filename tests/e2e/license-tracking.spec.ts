@@ -18,7 +18,8 @@ for (const dateFormat of ["dd/MM/yyyy", "yyyy-MM-dd"]) {
     await expect(input).toBeVisible();
     const achieved = page.locator(".requirement-progress dl > div:first-child dd");
     await expect(achieved).toHaveCount(4);
-    await expect(achieved).toHaveText(["0", "0", "0", "0"]);
+    await expect(achieved).toHaveText(["4", "4", "87.8", "0"]);
+    await expect(page.locator(".tracked-license").first()).toContainText("Uses today when left blank.");
     await expect(input).toHaveAttribute("aria-label", "Theory exam date");
     const afterTheoryDetails = page.locator("#requirement-copy-ch-7-a-2-2");
     await expect(afterTheoryDetails).toContainText("700 nautical miles");
@@ -78,9 +79,22 @@ for (const dateFormat of ["dd/MM/yyyy", "yyyy-MM-dd"]) {
     await page.locator("#compliance-license").selectOption("ch-hochseeausweis-sail-addon");
     const extensionDate = page.locator("#license-start-ch-hochseeausweis-sail-addon");
     await expect(extensionDate).toHaveAttribute("aria-label", "Extension application date");
+    const extension = page.locator(".tracked-license").nth(1);
+    const extensionMiles = extension.locator(".requirement-progress dl > div:first-child dd").last();
+    await expect(extensionDate).toHaveValue("");
+    await expect(extension).toContainText("Uses today when left blank.");
+    await expect(extensionMiles).toHaveText("87.8");
     await expect(page.locator(".tracked-license").nth(1).getByRole("checkbox", { name: "Handwritten logbook for voyages counted toward the license", exact: true })).not.toBeChecked();
     await extensionDate.fill(dateFormat === "yyyy-MM-dd" ? "2021-07-01" : "01/07/2021");
     await extensionDate.press("Enter");
     await expect(page.locator("#requirement-copy-ch-8-a-2")).toContainText(dateFormat === "yyyy-MM-dd" ? "2017-01-01 – 2021-07-01" : "01/01/2017 – 01/07/2021");
+    await expect(extensionMiles).toHaveText("0");
+    await extensionDate.fill("");
+    await extensionDate.press("Enter");
+    await expect(extensionMiles).toHaveText("87.8");
+    await expect.poll(async () => (await (await page.request.get("/api/compliance")).json()).licenses.find((license: { licenseId: string }) => license.licenseId === "ch-hochseeausweis-sail-addon").startDate).toBeNull();
+    await page.reload();
+    await expect(extensionDate).toHaveValue("");
+    await expect(extensionMiles).toHaveText("87.8");
   });
 }

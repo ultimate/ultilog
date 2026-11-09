@@ -9,10 +9,11 @@ export function resolveRequirementWindow(
   asOf = new Date(),
 ): ProgressWindow | undefined {
   if (filters?.dateWindow) {
-    if (!referenceDate) return undefined;
+    const effectiveDate = referenceDate || (filters.dateWindow.referenceDateFallback === "today" ? asOf.toISOString().slice(0, 10) : undefined);
+    if (!effectiveDate) return undefined;
     return {
-      from: resolveBoundary(referenceDate, filters.dateWindow.from),
-      through: resolveBoundary(referenceDate, filters.dateWindow.through),
+      from: resolveBoundary(effectiveDate, filters.dateWindow.from),
+      through: resolveBoundary(effectiveDate, filters.dateWindow.through),
     };
   }
   // Preserve the existing non-Swiss counting contract.
