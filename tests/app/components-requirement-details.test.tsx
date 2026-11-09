@@ -41,6 +41,15 @@ describe("requirement details", () => {
     expect(root.root.findAllByType("dd")).toHaveLength(3);
   });
 
+  it("shows the rolling eligible period when the date window defaults to today", async () => {
+    const requirement: Requirement = { ...manual, filters: { dateWindow: { from: { yearOffset: -4, boundary: "year-start" }, through: { yearOffset: 0, boundary: "date" }, referenceDateFallback: "today" } } };
+    let root!: ReturnType<typeof create>;
+    await act(async () => { root = create(<I18nProvider><RequirementDetails requirement={requirement} language="en" /></I18nProvider>); });
+    const today = new Date().toISOString().slice(0, 10);
+    const [year, month, day] = today.split("-");
+    expect(root.root.findAllByType("dd").map(node => node.children.join(""))).toContain(`01/01/${Number(year) - 4} – ${day}/${month}/${year}`);
+  });
+
   it("shows a singular time filter without turning a boolean check into mileage", async () => {
     let root!: ReturnType<typeof create>;
     await act(async () => { root = create(<I18nProvider><RequirementDetails requirement={{ ...manual, threshold: 1, unit: undefined, filters: { withinYears: 1 } }} language="en" /></I18nProvider>); });

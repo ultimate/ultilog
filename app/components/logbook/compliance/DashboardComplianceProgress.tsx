@@ -43,7 +43,7 @@ export function DashboardComplianceProgress({ sheets, boats = [], language, onOp
     {items.length ? <div className="dashboard-license-overall"><h3>{t("compliance.overallStatus")}</h3><LicenseStatusPie summary={overall} compact /></div> : null}
     <div className="dashboard-license-grid">{items.map(({ entry, license, summary }) => {
       const content = withLanguageFallback(license.content, language, license.defaultLanguage)!;
-      return <article key={license.id}><div><small>{license.countryCode}</small><h3>{content.licenseName}</h3>{entry.startDate ? <p>{t(referenceDateLabelKey(license))}: {formatDate(entry.startDate)}</p> : license.requirements.some(requirement => requirement.filters?.dateWindow) ? <p>{t("compliance.referenceDateRequired")}</p> : null}</div><LicenseStatusPie summary={summary} compact /></article>;
+      return <article key={license.id}><div><small>{license.countryCode}</small><h3>{content.licenseName}</h3>{entry.startDate ? <p>{t(referenceDateLabelKey(license))}: {formatDate(entry.startDate)}</p> : license.requirements.some(requirement => requirement.filters?.dateWindow?.referenceDateFallback === "today") ? <p>{t(referenceDateLabelKey(license))}: {formatDate(new Date().toISOString().slice(0, 10))}<br />{t("compliance.referenceDateToday")}</p> : license.requirements.some(requirement => requirement.filters?.dateWindow) ? <p>{t("compliance.referenceDateRequired")}</p> : null}</div><LicenseStatusPie summary={summary} compact /></article>;
     })}</div>
   </section>;
 }

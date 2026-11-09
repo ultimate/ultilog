@@ -75,11 +75,18 @@ date (`0/date`) and end at `4/year-end`. They use `type: "miles"`, count all
 propulsion mileage on the matching boat type, and ignore former manual checkmarks. Swiss extensions count from
 `-4/year-start` through `0/date`, relative to the extension application date.
 
-An automatic requirement with a date window and no reference date is shown as
-requiring that date, never calculated relative to today. Manual confirmations
-remain unchanged. The UI shows relative boundary descriptions and the resolved
+A date window may set `referenceDateFallback: "today"` to use today when no
+reference date is saved. All Swiss licenses use this setting. Initial licenses
+keep their ±4 calendar-year window around today; after-theory mileage starts today.
+Add-ons run from January 1 four years before today through today. Explicit dates
+override this fallback, and clearing a date restores it without persisting today.
+An automatic requirement without a reference date or fallback is shown as
+requiring that date. Manual confirmations remain unchanged. The UI shows
+relative boundary descriptions and the resolved
 period using the user's date-format preference. Sheets must fall entirely inside
-the period; undated sheets are excluded when a date filter is active.
+the period. Only valid calendar dates participate in the date comparison; time-only
+log entries do not invalidate a voyage with dated route boundaries. Fully undated
+sheets are excluded when a date filter is active.
 
 Non-Swiss `withinYears` rules retain their existing behavior: from a selected
 start date through its anniversary, or a rolling lookback from today when no

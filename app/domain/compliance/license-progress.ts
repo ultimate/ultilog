@@ -1,3 +1,4 @@
+import { normalizeIsoDate } from "../../lib/iso-date";
 import type { Boat, LogSheet } from "../../models/logbook";
 import type { Requirement } from "./catalog";
 import { resolveRequirementWindow, type ProgressWindow } from "./date-window";
@@ -101,7 +102,7 @@ function sheetsWithin(sheets: readonly LogSheet[], { from, through }: ProgressWi
   if (!from && !through) return sheets;
   return sheets.filter((sheet) => {
     const dates = [sheet.route.departed, sheet.route.arrived, ...sheet.lines.map(({ time }) => time)]
-      .filter(Boolean).map(date => date.slice(0, 10)).sort();
+      .map(normalizeIsoDate).filter((date): date is string => date !== undefined).sort();
     if (!dates.length) return false;
     return (!from || dates[0] >= from) && (!through || dates[dates.length - 1] <= through);
   });

@@ -21,7 +21,7 @@ export type LocalizedLicenseContent = LocalizedLegalContent & { licenseName: str
 
 export type PropulsionType = "sail" | "motor";
 export type DateWindowBoundary = { yearOffset: number; boundary: "date" | "year-start" | "year-end" };
-export type DateWindow = { from: DateWindowBoundary; through: DateWindowBoundary };
+export type DateWindow = { from: DateWindowBoundary; through: DateWindowBoundary; referenceDateFallback?: "today" };
 export type ReferenceDateKind = "theory-exam" | "extension-application";
 export type RequirementFilters = { boatType?: BoatType; propulsion?: PropulsionType; withinYears?: number; dateWindow?: DateWindow };
 export type ManualRequirement = {
@@ -114,7 +114,8 @@ function parseDateWindow(value: unknown, at: string): DateWindow {
     if (!["date", "year-start", "year-end"].includes(raw.boundary as string)) fail(`${at}.boundary must be date, year-start, or year-end`);
     return { yearOffset: raw.yearOffset as number, boundary: raw.boundary as DateWindowBoundary["boundary"] };
   };
-  const result = { from: endpoint(raw.from, `${at}.from`), through: endpoint(raw.through, `${at}.through`) };
+  if (raw.referenceDateFallback !== undefined && raw.referenceDateFallback !== "today") fail(`${at}.referenceDateFallback must be today`);
+  const result: DateWindow = { from: endpoint(raw.from, `${at}.from`), through: endpoint(raw.through, `${at}.through`), ...(raw.referenceDateFallback === "today" ? { referenceDateFallback: "today" } : {}) };
   const order = { "year-start": 0, date: 1, "year-end": 2 };
   if (result.from.yearOffset > result.through.yearOffset || result.from.yearOffset === result.through.yearOffset && order[result.from.boundary] > order[result.through.boundary]) fail(`${at} must run from an earlier boundary through a later boundary`);
   return result;

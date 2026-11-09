@@ -87,6 +87,7 @@ describe("compliance catalog domain", () => {
     expect(createComplianceCatalog(input).licenses[0]).toMatchObject({ referenceDateKind: "theory-exam", requirements: [{ filters: { dateWindow } }] });
     for (const filters of [
       { dateWindow, withinYears: 4 },
+      { dateWindow: { ...dateWindow, referenceDateFallback: "yesterday" } },
       { dateWindow: { ...dateWindow, from: { yearOffset: -1.5, boundary: "date" } } },
       { dateWindow: { from: dateWindow.from } },
       { dateWindow: { ...dateWindow, through: { yearOffset: 4, boundary: "unknown" } } },
