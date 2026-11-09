@@ -61,7 +61,7 @@ export const en = {
   "changelog.aria": "Application changelog",
   "changelog.eyebrow": "Source revisions",
   "changelog.title": "What's new",
-  "changelog.subtitle": "User-visible changes grouped by the commit that introduced them.",
+  "changelog.subtitle": "User-visible changes grouped by date, with their source commits.",
   "changelog.englishFallback": "Some entries are not yet translated and are shown in English.",
   "changelog.loading": "Loading changelog…",
   "changelog.empty": "No public changelog entries are available yet.",

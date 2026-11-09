@@ -116,13 +116,20 @@ function ChartGrid({ maxValue, unit, labels }: { maxValue: number; unit: string;
   );
 }
 
-function buildMonthlyTimeline(points: TimelinePoint[]) {
+export function buildMonthlyTimeline(points: TimelinePoint[]) {
   const months = new Map<string, TimelinePoint>();
   for (const point of points) {
     const current = months.get(point.label) ?? { label: point.label, totalNm: 0, sailNm: 0, motorNm: 0, overallMinutes: 0, motionMinutes: 0, motorMinutes: 0 };
     months.set(point.label, { label: point.label, totalNm: current.totalNm + point.totalNm, sailNm: current.sailNm + point.sailNm, motorNm: current.motorNm + point.motorNm, overallMinutes: current.overallMinutes + point.overallMinutes, motionMinutes: current.motionMinutes + point.motionMinutes, motorMinutes: current.motorMinutes + point.motorMinutes });
   }
-  return [...months.values()].sort((a, b) => a.label.localeCompare(b.label));
+  const sorted = [...months.values()].sort((a, b) => a.label.localeCompare(b.label));
+  if (sorted.length === 0) return sorted;
+  // A zero baseline in the preceding calendar month keeps real bars off the Y-axis.
+  const firstMonth = new Date(`${sorted[0].label}-01T00:00:00Z`);
+  // Draft sheets can have no usable month yet; preserve their existing chart data.
+  if (!Number.isFinite(firstMonth.getTime())) return sorted;
+  firstMonth.setUTCMonth(firstMonth.getUTCMonth() - 1);
+  return [{ label: firstMonth.toISOString().slice(0, 7), totalNm: 0, sailNm: 0, motorNm: 0, overallMinutes: 0, motionMinutes: 0, motorMinutes: 0 }, ...sorted];
 }
 
 function buildMilesChart(points: TimelinePoint[]) {

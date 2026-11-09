@@ -2219,7 +2219,7 @@ img.entity-image--preview {
 .technical-template-options input { width: auto; }
 
 
-/* Commit-oriented public changelog. */
+/* Public changelog grouped by date, with source commit identifiers. */
 .changelog-navigation { width: 100%; justify-content: flex-start; gap: .55rem; }
 .changelog-navigation.active { font-weight: 800; }
 .changelog-groups { display: grid; gap: 1rem; }
@@ -2373,3 +2373,40 @@ img.entity-image--preview {
 
 .shared-logbook-table .shared-selection-cell { vertical-align: middle; border-bottom: 1px solid var(--line, var(--border)); }
 .shared-logbook-table .shared-selection-reason { max-width: none; white-space: normal; }
+
+/* Let translated login content wrap inside its card and keep both footer rows in flow. */
+.landing-shell { grid-template-rows: minmax(min-content, 1fr) auto auto; }
+.landing-login, .landing-login .auth-card, .landing-login .auth-card > * { min-width: 0; }
+.landing-login .auth-card { grid-template-columns: minmax(0, 1fr); }
+.landing-login .auth-card h1 { font-size: clamp(2rem, 3vw, 2.8rem); line-height: 1.1; overflow-wrap: anywhere; }
+.landing-login .auth-card input, .landing-login .auth-card select { min-width: 0; max-width: 100%; width: 100%; }
+.landing-login .auth-card button, .landing-login .auth-footer { overflow-wrap: anywhere; }
+.landing-shell .partner-banner, .landing-shell .public-legal-bar { min-width: 0; }
+.landing-shell .public-legal-bar { flex-wrap: wrap; overflow-wrap: anywhere; }
+
+/* Override the older global pill-button rules with the navigation's theme palette. */
+.app-sidebar .module-tabs button, .app-sidebar .changelog-navigation {
+  display: flex; align-items: center; gap: .65rem; min-height: 2.75rem;
+  border: 0; border-radius: 10px; padding: .55rem .75rem;
+  background: transparent; color: var(--text); box-shadow: none;
+  font: inherit; font-size: .88rem; font-weight: 750; cursor: pointer;
+}
+.app-sidebar .module-tabs button.active, .app-sidebar .changelog-navigation.active { color: var(--blue); }
+.app-sidebar .module-tabs button:not(:disabled):hover, .app-sidebar .changelog-navigation:hover { background: var(--blue-soft); }
+.app-sidebar .changelog-navigation .tab-icon { display: grid; place-items: center; flex: 0 0 2.15rem; height: 2.15rem; font-size: 1.4rem; }
+.app-sidebar .changelog-navigation.active .tab-icon { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 12px; }
+.app-shell[data-nav="slim"] .changelog-navigation { justify-content: center; padding-inline: 0; }
+.app-shell[data-nav="slim"] .changelog-navigation .nav-label { display: none; }
+.app-sidebar button:focus-visible, .mobile-bottom-nav button:focus-visible, .shared-copy-action .primary-action:focus-visible {
+  outline: 2px solid var(--blue); outline-offset: 3px;
+}
+.shared-copy-action .primary-action:not(:disabled):hover { filter: brightness(.9); }
+.changelog-commit { display: inline-block; color: var(--subtle); font-size: .8em; white-space: nowrap; }
+/* Keep sidebar controls in the scroll flow on shorter screens. */
+.app-sidebar { overflow-y: auto; overflow-x: hidden; }
+.app-sidebar > * { flex-shrink: 0; }
+.app-sidebar .sidebar-spacer { flex-shrink: 1; }
+.app-sidebar .logout-chip { position: static; }
+.app-shell[data-theme="dark"] .app-sidebar, .app-shell[data-theme="dark"] .mobile-bottom-nav { --blue: #8fb8ff; }
+/* Keep the edge toggle outside the scrolling sidebar's clipping boundary. */
+.app-sidebar .nav-edge-toggle { position: fixed; left: calc(var(--nav-w) - .85rem); right: auto; }

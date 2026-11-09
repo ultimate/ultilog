@@ -83,16 +83,28 @@ describe("ChangelogPage", () => {
     },
   );
 
-  it("groups by exact introduction commit with newest commits first", () => {
-    const groups = groupByIntroduction(entries);
-    expect(groups.map(({ commitSha }) => commitSha)).toEqual([
-      newerSha,
-      olderSha,
+  it("groups different commits on the same UTC date and keeps each identifier visible", () => {
+    const sameDay = entry("another-fix", "fix", olderSha, "2026-10-03T01:00:00Z", { en: "Another fix" });
+    const groups = groupByIntroduction([...entries, sameDay]);
+    expect(groups.map(({ date }) => date)).toEqual(["2026-10-03", "2026-09-01"]);
+    expect(groups[0].entries.map(({ id }) => id)).toEqual([
+      "feature-entry", "improvement-entry", "another-fix", "fix-entry", "security-entry",
     ]);
-    const markup = renderPage("en");
-    expect(markup.indexOf(newerSha.slice(0, 7))).toBeLessThan(
-      markup.indexOf(olderSha.slice(0, 7)),
-    );
+    const markup = renderPage("en", [...entries, sameDay]);
+    expect(markup.match(/October 3, 2026/g)).toHaveLength(1);
+    expect(markup).toContain(`title="${olderSha}">${olderSha.slice(0, 7)}</code>`);
+    expect(markup).toContain(`title="${newerSha}">${newerSha.slice(0, 7)}</code>`);
+  });
+
+  it("uses UTC calendar dates across offsets and midnight boundaries", () => {
+    const groups = groupByIntroduction([
+      entry("before", "fix", olderSha, "2026-10-03T23:59:59Z", { en: "Before" }),
+      entry("after", "fix", newerSha, "2026-10-04T00:00:00Z", { en: "After" }),
+      entry("offset", "fix", olderSha, "2026-10-04T01:00:00+02:00", { en: "Offset" }),
+    ]);
+    expect(groups.map(group => [group.date, group.entries.map(item => item.id)])).toEqual([
+      ["2026-10-04", ["after"]], ["2026-10-03", ["before", "offset"]],
+    ]);
   });
 
   it("renders categories in the fixed order and tolerates missing categories", () => {

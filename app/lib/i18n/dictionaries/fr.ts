@@ -62,7 +62,7 @@ export const fr: Dictionary = {
   "changelog.aria": "Journal des modifications de l’application",
   "changelog.eyebrow": "Révisions du code source",
   "changelog.title": "Nouveautés",
-  "changelog.subtitle": "Modifications visibles regroupées selon le commit qui les a introduites.",
+  "changelog.subtitle": "Modifications visibles regroupées par date, avec leurs commits sources.",
   "changelog.englishFallback": "Certaines entrées ne sont pas encore traduites et sont affichées en anglais.",
   "changelog.loading": "Chargement du journal des modifications…",
   "changelog.empty": "Aucune entrée publique n’est encore disponible.",
