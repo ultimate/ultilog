@@ -24,7 +24,7 @@ type CrewManagerPageProps = Record<string, any>;
 
 export function CrewManagerPage(props: CrewManagerPageProps) {
   const { t } = useI18n();
-  const beginImageRequest = useEditorRequest();
+  const beginImageRequest = useEditorRequest(props.editorKey);
   const { formatDateRange } = useDateTimeFormat();
   const {
     selectedCrewIndex,
@@ -96,8 +96,9 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
           </>
         }
         form={
-          selectedCrewIndex >= -1 ? (
+          props.isEditorReady !== false && selectedCrewIndex >= -1 ? (
           <form
+            key={props.editorKey}
             className="inline-edit-grid"
             onSubmit={async (event) => {
               event.preventDefault();
