@@ -1,3 +1,4 @@
+import { SaveButton } from "../SaveButton";
 import { PreferenceDateInput } from "../PreferenceDateInput";
 import { EntityImage } from "../EntityImage";
 import { useI18n } from "../../../lib/i18n";
@@ -261,7 +262,7 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
               </ul>
             </article>
             <div className="inline-edit-actions">
-              <button type="submit">{t("crew.save")}</button>
+              <SaveButton saveKey="crew" type="submit">{t("crew.save")}</SaveButton>
               <button
                 type="button"
                 className="ghost-button"

@@ -180,6 +180,16 @@
     }
   },
   {
+    "id": "logsheet-editing-feedback-and-status",
+    "category": "improvement",
+    "title": {
+      "en": "Clearer logsheet saving and course autofill feedback, searchable sheet status labels, and sail columns hidden for motor boats.",
+      "de": "Klarere Rückmeldungen beim Speichern und automatischen Ausfüllen von Kursen, durchsuchbare Statusanzeigen und ausgeblendete Segelspalten für Motorboote.",
+      "fr": "Indicateurs d’enregistrement et de calcul des caps plus clairs, statuts recherchables et colonnes de voile masquées pour les bateaux à moteur.",
+      "it": "Indicatori più chiari per il salvataggio e il calcolo delle rotte, etichette di stato ricercabili e colonne vela nascoste per le barche a motore."
+    }
+  },
+  {
     "id": "preserve-postgres-ssl-verification",
     "category": "security",
     "title": {

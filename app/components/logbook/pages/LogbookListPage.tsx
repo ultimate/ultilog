@@ -123,6 +123,7 @@ export function LogbookListPage({
   const columns = useMemo(() => [
     { key: "startDate", value: (row: SheetListRow) => row.sheet.route.departed },
     { key: "endDate", value: (row: SheetListRow) => row.sheet.route.arrived },
+    { key: "status", value: (row: SheetListRow) => t(row.sheet.status === "Locked" ? "sheet.status.locked" : "sheet.status.draft") },
     { key: "entry", value: (row: SheetListRow) => row.sheet.title },
     { key: "vessel", value: (row: SheetListRow) => row.boat?.name },
     { key: "route", value: (row: SheetListRow) => [row.sheet.route.from, row.sheet.route.to] },
@@ -132,7 +133,7 @@ export function LogbookListPage({
     { key: "duration", value: (row: SheetListRow) => row.summary.duration },
     { key: "motionDuration", value: (row: SheetListRow) => row.summary.motionDuration },
     { key: "motorHours", value: (row: SheetListRow) => row.summary.motorHours },
-  ], []);
+  ], [t]);
   const list = useSortableList(rows, columns, defaultPageSize, "", overviewState);
   const totals = list.pageItems.reduce((sum, { summary }) => ({
     sailMiles: sum.sailMiles + summary.sailMiles,
@@ -360,6 +361,7 @@ export function LogbookListPage({
                       <td colSpan={9}><a className="table-title-button" href={modulePath("details", sheet.id)}
                         onClick={(event) => { if (event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) { event.preventDefault(); openSheet(sheet); } }}><span className="table-vessel">{sheet.title}</span></a>
                         <span className="logbook-sheet-route">({sheet.route.from} → {sheet.route.to})</span>
+                        <span className="status-pill sheet-list-status">{t(sheet.status === "Locked" ? "sheet.status.locked" : "sheet.status.draft")}</span>
                       </td>
                       <td rowSpan={2} className="logbook-sheet-actions-cell">
                         <div className="table-row-actions">

@@ -7,7 +7,7 @@ import { formatEngineHours } from "../../lib/log-input";
 import { translatedWindDirection } from "./wind-directions";
 
 import { useState } from "react";
-import type { LogSheet } from "../../models/logbook";
+import type { BoatType, LogSheet } from "../../models/logbook";
 import { coordinateToInput, nextCoordinateFormat, type CoordinateFormat } from "../../domain/nautical/coordinates";
 import { useDateTimeFormat } from "../../lib/DateTimeFormatProvider";
 import { useI18n } from "../../lib/i18n";
@@ -18,13 +18,14 @@ const courseColumns = [
   ["courseThroughWater", "throughWater"], ["currentDrift", "currentDrift"], ["courseOverGround", "overGround"],
 ] as const;
 
-type Props = { sheet: LogSheet; engineLabels?: Record<string, string> };
+type Props = { sheet: LogSheet; boatType?: BoatType; engineLabels?: Record<string, string> };
 
-export function SharedLogSheetDetails({ sheet, engineLabels = {}, initialCoordinateFormat = "decimal", initialShowCourseColumns = false }: Props & { initialCoordinateFormat?: CoordinateFormat; initialShowCourseColumns?: boolean }) {
+export function SharedLogSheetDetails({ sheet, boatType, engineLabels = {}, initialCoordinateFormat = "decimal", initialShowCourseColumns = false }: Props & { initialCoordinateFormat?: CoordinateFormat; initialShowCourseColumns?: boolean }) {
   const { t, locale } = useI18n();
   const { formatTime } = useDateTimeFormat();
   const [coordinateFormat, setCoordinateFormat] = useState(initialCoordinateFormat);
   const [showCourseColumns, setShowCourseColumns] = useState(initialShowCourseColumns);
+  const showSail = boatType !== "motor";
   const columns = courseColumns.filter(([field]) => showCourseColumns || field === "compassCourse" || field === "courseOverGround");
   return <article className="table-card">
     <div className="table-header"><h3>{t("details.logTitle")}</h3><div className="table-actions">
@@ -33,16 +34,16 @@ export function SharedLogSheetDetails({ sheet, engineLabels = {}, initialCoordin
     </div></div>
     <WeatherDataAttribution />
     <div className="table-scroll"><table className={showCourseColumns ? "log-lines-table with-course-columns" : "log-lines-table"}>
-      <thead><tr className="column-groups"><th colSpan={4}>{t("details.timePos")}</th><th colSpan={8}>{t("details.weatherSea")}</th><th colSpan={columns.length}>{t("details.course")}</th><th colSpan={4}>{t("details.travel")}</th><th>{t("details.remarks")}</th></tr>
+      <thead><tr className="column-groups"><th colSpan={4}>{t("details.timePos")}</th><th colSpan={8}>{t("details.weatherSea")}</th><th colSpan={columns.length}>{t("details.course")}</th><th colSpan={showSail ? 4 : 3}>{t("details.travel")}</th><th>{t("details.remarks")}</th></tr>
         <tr><th scope="col" aria-label="Log line number">#</th>{(["time", "lat", "lon", "weather", "weatherRemark", "temperature", "baro", "wind", "sea", "tide", "moon"] as const).map(key => <th scope="col" key={key}>{t(`details.${key}`)}</th>)}
           {columns.map(([field, key]) => <th scope="col" key={field} title={t(`details.course.${key}.description`)} className={field !== "compassCourse" && field !== "courseOverGround" ? "optional-course-cell" : undefined}>{t(`details.course.${key}`)}</th>)}
-          {(["speed", "log", "sail", "motor", "remarksEvent"] as const).map(key => <th scope="col" key={key}>{t(`details.${key}`)}</th>)}
+          {(["speed", "log", "sail", "motor", "remarksEvent"] as const).filter(key => showSail || key !== "sail").map(key => <th scope="col" key={key}>{t(`details.${key}`)}</th>)}
         </tr></thead>
       <tbody>{sheet.lines.map((line, index) => <tr key={line.id}>
         <td>{index + 1}</td><td>{formatTime(line.time)}</td><td>{coordinateToInput(line.latitude, "lat", coordinateFormat, locale)}</td><td>{coordinateToInput(line.longitude, "lon", coordinateFormat, locale)}</td>
         <td>{line.weather}</td><td className="shared-log-text">{line.weatherRemark}</td><td>{line.temperature == null ? "" : `${line.temperature} ${line.temperatureUnit}`}</td><td>{line.barometer}</td><td>{translatedWindDirection(line.windDirection, t)} {line.windStrength == null ? "" : `${line.windStrength} ${line.windUnit}`}</td><td>{line.waves == null ? "" : `${line.waves} ${line.seaUnit}`}</td><td>{line.tide == null ? "" : `${line.tide} ${line.tideUnit}`}</td><td>{line.moon}</td>
         {columns.map(([field]) => <td key={field} className={field !== "compassCourse" && field !== "courseOverGround" ? "optional-course-cell" : undefined}>{line[field]}</td>)}
-        <td>{line.speedKn}</td><td>{line.logNm}</td><td><span className="log-line-distance-summary">{line.sailMiles == null ? "" : `${line.sailMiles} nm`}</span><div className="shared-log-text">{line.sailNote}</div></td>
+        <td>{line.speedKn}</td><td>{line.logNm}</td>{showSail && <td><span className="log-line-distance-summary">{line.sailMiles == null ? "" : `${line.sailMiles} nm`}</span><div className="shared-log-text">{line.sailNote}</div></td>}
         <td><span className="log-line-distance-summary">{line.motorMiles == null ? "" : `${line.motorMiles} nm`}{Object.entries(line.engineHours ?? {}).map(([id, hours]) => ` · ${engineLabels[id] ?? id} ${formatEngineHours(hours)}`)}</span><div className="shared-log-text">{line.motorNote}</div></td><td className="shared-log-text">{line.remarks}</td>
       </tr>)}</tbody>
     </table></div>

@@ -1,3 +1,4 @@
+import { SaveButton } from "../SaveButton";
 import { EntityImage } from "../EntityImage";
 import { CountryFlagSelector } from "../../CountryFlagSelector";
 import { useI18n } from "../../../lib/i18n";
@@ -421,9 +422,9 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
               </ul>
             </article>
             <div className="inline-edit-actions">
-              <button type="submit">
+              <SaveButton saveKey="boat" type="submit">
                 {showBoatManager ? t("boats.create") : t("boats.save")}
-              </button>
+              </SaveButton>
               <button
                 type="button"
                 className="ghost-button"

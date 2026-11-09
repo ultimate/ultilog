@@ -1,5 +1,7 @@
 "use client";
 
+import { SaveButton, SavingContext, usePendingSaves } from "./logbook/SaveButton";
+
 import { OPEN_METEO_CREDIT } from "../domain/meteo/attribution";
 
 import { mergeScannerWarningState } from "./logbook/scanner-warning-state";
@@ -257,6 +259,7 @@ export function LogbookApp({
   const [selectedCrewIndex, setSelectedCrewIndex] = useState(-2);
   const [lastCrewIndex, setLastCrewIndex] = useState(0);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const saves = usePendingSaves();
   const [saveError, setSaveError] = useState<string | null>(null);
   const [smartLineStatus, setSmartLineStatus] = useState<"idle" | "loading" | "error">("idle");
   const [smartLineProgress, setSmartLineProgress] = useState<{ draftId: string; location: boolean; weather: boolean } | null>(null);
@@ -837,7 +840,7 @@ export function LogbookApp({
   const canEditActiveSheetMasterData = activeSheet.status === "Draft";
   const sheetInlineActions = editingSheetField ? (
     <span className="inline-value-actions">
-      <button
+      <SaveButton saveKey="sheet-inline"
         type="button"
         aria-label={t("details.approveChange")}
         onClick={(event) => {
@@ -847,7 +850,7 @@ export function LogbookApp({
         }}
       >
         ✅
-      </button>
+      </SaveButton>
       <button
         type="button"
         aria-label={t("details.cancelChange")}
@@ -1042,8 +1045,12 @@ export function LogbookApp({
     };
   }, [logbook, preferences.motionStationaryThresholdNm]);
 
-  async function saveBoat(event: FormEvent<HTMLFormElement>) {
+  function saveBoat(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    return saves.run("boat", () => performSaveBoat());
+  }
+
+  async function performSaveBoat() {
     const id = editingBoatId ?? createId();
     const currentLogbook = logbookRef.current;
     const previousBoat = currentLogbook.boats.find((boat) => boat.id === id);
@@ -1083,8 +1090,12 @@ export function LogbookApp({
     setSheetForm((current) => ({ ...current, boatId: id }));
   }
 
-  async function saveSheet(event: FormEvent<HTMLFormElement>) {
+  function saveSheet(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    return saves.run("sheet", () => performSaveSheet());
+  }
+
+  async function performSaveSheet() {
     const currentLogbook = logbookRef.current;
     const existingSheet = editingSheetId
       ? currentLogbook.sheets.find((sheet) => sheet.id === editingSheetId)
@@ -1305,7 +1316,11 @@ export function LogbookApp({
     setSheetInlineTimezoneDraft(timezone);
   }
 
-  async function saveSheetInlineField() {
+  function saveSheetInlineField() {
+    return saves.run("sheet-inline", () => performSaveSheetInlineField());
+  }
+
+  async function performSaveSheetInlineField() {
     if (!editingSheetField || activeSheet.status !== "Draft") return;
     const field = editingSheetField;
     const value = sheetInlineDraft;
@@ -1340,9 +1355,8 @@ export function LogbookApp({
         };
       }),
     };
-    setEditingSheetField(null);
-    setSheetInlineDraft("");
-    await saveLogbookNow(nextLogbook, { kind: "sheet", entity: nextLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)! });
+    const saved = await saveLogbookNow(nextLogbook, { kind: "sheet", entity: nextLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)! });
+    if (saved) { setEditingSheetField(null); setSheetInlineDraft(""); }
   }
 
   function cancelSheetInlineEdit() {
@@ -1357,7 +1371,11 @@ export function LogbookApp({
     setShowNewSheet(false);
   }
 
-  async function saveLineFromFields(draftId: string) {
+  function saveLineFromFields(draftId: string) {
+    return saves.run(`line:${draftId}`, () => performSaveLineFromFields(draftId));
+  }
+
+  async function performSaveLineFromFields(draftId: string) {
     if (activeSheet.status === "Locked") return;
     const draft = lineForms[draftId];
     if (!draft) return;
@@ -1535,11 +1553,15 @@ export function LogbookApp({
     }, { kind: "sheet", id: activeSheet.id });
   }
 
-  async function updateTechnicalCheck(indexToUpdate: number, value: string, status?: string) {
+  function updateTechnicalCheck(indexToUpdate: number, value: string, status?: string) {
+    return saves.run(`technical:${activeSheet.id}:${indexToUpdate}`, () => performUpdateTechnicalCheck(indexToUpdate, value, status));
+  }
+
+  async function performUpdateTechnicalCheck(indexToUpdate: number, value: string, status?: string) {
     if (activeSheet.status === "Locked") return;
     const technicalCheck = value.trim();
     const currentLogbook = logbookRef.current;
-    await saveLogbookNow({
+    return await saveLogbookNow({
       ...currentLogbook,
       sheets: currentLogbook.sheets.map((sheet) => {
         if (sheet.id !== activeSheet.id) return sheet;
@@ -1581,7 +1603,11 @@ export function LogbookApp({
     }, { kind: "sheet", id: activeSheet.id });
   }
 
-  async function saveCrew() {
+  function saveCrew() {
+    return saves.run("crew", () => performSaveCrew());
+  }
+
+  async function performSaveCrew() {
     const id = selectedCrewIndex === -1 ? createId() : crewForm.id;
     const previousCrew = logbookRef.current.crewMembers.find((candidate) => candidate.id === id);
     const crew = {
@@ -2000,7 +2026,7 @@ export function LogbookApp({
   }
 
   return (
-    <DateTimeFormatProvider dateFormat={preferences.dateFormat} timeFormat={preferences.timeFormat}>
+    <SavingContext.Provider value={saves.pending}><DateTimeFormatProvider dateFormat={preferences.dateFormat} timeFormat={preferences.timeFormat}>
       <main
       className="app-shell"
       data-theme={theme}
@@ -2423,7 +2449,7 @@ export function LogbookApp({
           <LogSheetPrintView mode="filled" sheet={printSheet} boat={printBoat} summary={printSummary} avatar={preferences.showAvatarOnPrint ? profileAvatar : undefined} showCourseColumns={printTarget?.showCourseColumns ?? preferences.showCourseConversionTable} />
         ) : null}
       </div>
-    </DateTimeFormatProvider>
+    </DateTimeFormatProvider></SavingContext.Provider>
   );
 }
 

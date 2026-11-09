@@ -51,7 +51,7 @@ export function LogSheetPrintView(props: LogSheetPrintViewProps) {
   const { formatDateTime, formatTime } = useDateTimeFormat();
   const showCourseColumns = props.showCourseColumns ?? true;
   const templateVariant: LogSheetPrintVariant = showCourseColumns ? "full" : "compact";
-  const logColumns = getPrintLogColumns(templateVariant);
+  const logColumns = getPrintLogColumns(templateVariant).filter(column => props.boat?.type !== "motor" || column.id !== "sailMiles");
   const templateMarker = formatLogSheetPrintTemplateMarker(templateVariant, locale);
   const linesPerPage = Math.max(1, props.linesPerPage ?? PRINT_LOG_ROWS_PER_PAGE);
   const sheet = props.sheet;
@@ -102,7 +102,7 @@ export function LogSheetPrintView(props: LogSheetPrintViewProps) {
           <table className={showCourseColumns ? "print-log-table print-loglines with-course-columns" : "print-log-table print-loglines compact-course"}>
             <colgroup>
               {logColumns.map((column) => (
-                <col className={column.className} key={column.id} style={{ width: `${column.width[templateVariant]}%` }} />
+                <col className={column.className} key={column.id} style={{ width: `${column.width[templateVariant] / logColumns.reduce((sum, column) => sum + column.width[templateVariant], 0) * 100}%` }} />
               ))}
             </colgroup>
             <thead>

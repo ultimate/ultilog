@@ -74,6 +74,8 @@ export const en = {
   "nav.profile": "Profile",
   "nav.noEmail": "No email",
   "nav.logout": "Logout",
+  "sheet.status.draft": "Draft",
+  "sheet.status.locked": "Locked",
   "nav.saving": "Saving…",
   "nav.signingOut": "Signing out…",
   "nav.synced": "All data is synced",

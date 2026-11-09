@@ -2468,3 +2468,12 @@ img.entity-image--preview {
   .landing-login .auth-card button { min-height: 2.75rem; padding: clamp(.7rem, 1.5vh, .95rem) .9rem; }
   .landing-shell .partner-banner { padding-block: clamp(.5rem, 1vh, 1rem); }
 }
+
+.save-spinner { display: inline-block; width: .85em; height: .85em; margin-inline-end: .4em; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: save-spin .8s linear infinite; }
+@keyframes save-spin { to { transform: rotate(360deg); } }
+.sheet-list-status { display: inline-block; margin-inline-start: .6rem; padding: .2rem .5rem; vertical-align: middle; font-size: .75rem; }
+.course-autofilled-0 { animation: course-fill-even 1.5s ease-out; }
+.course-autofilled-1 { animation: course-fill-odd 1.5s ease-out; }
+@keyframes course-fill-even { from { box-shadow: inset 0 0 0 2px #b77900; background-color: #fff0b3; color: #242424; } }
+@keyframes course-fill-odd { from { box-shadow: inset 0 0 0 2px #b77900; background-color: #fff0b3; color: #242424; } }
+@media (prefers-reduced-motion: reduce) { .save-spinner { animation: none; } .course-autofilled { animation-timing-function: steps(1, end); } }

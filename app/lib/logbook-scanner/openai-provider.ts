@@ -267,6 +267,7 @@ export function formatTemplateRecognitionInstructions() {
 - Only apply the fixed template mapping when that marker and the visible table structure agree. Otherwise use multilingual header mapping.
 - For a recognized template, correct for rotation and perspective, locate its grid, and map cells by the following canonical column order:
 ${variants}
+- Motor-boat printouts omit the sailMiles column in either variant. Confirm its absence from the visible headings and grid, and map the remaining columns without shifting motor or remarks into sailMiles.
 - Printed headings vary with the marker locale (${locales.join(", ")}); use the locale-specific headings and field terminology together.
 - Add a warning if an UltiLog marker has an unsupported revision or unknown variant, then fall back to visible headings.
 - Add a warning if a recognized page has a cropped header, table edge, row region, or populated-looking cell that cannot be read reliably.

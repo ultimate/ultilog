@@ -75,6 +75,8 @@ export const it: Dictionary = {
   "nav.profile": "Profilo",
   "nav.noEmail": "Nessuna e-mail",
   "nav.logout": "Esci",
+  "sheet.status.draft": "Bozza",
+  "sheet.status.locked": "Bloccato",
   "nav.saving": "Salvataggio…",
   "nav.signingOut": "Disconnessione…",
   "nav.synced": "Tutti i dati sono sincronizzati",
