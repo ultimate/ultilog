@@ -55,6 +55,13 @@ export function calculateLogbookDayStatistics(
       .filter((line): line is LogLine & { time: string } => absoluteLocalDate(line.time) !== undefined)
       .slice()
       .sort((a, b) => Date.parse(a.time) - Date.parse(b.time));
+    // Entered propulsion miles describe travel on this date even without a
+    // second log line from which to derive a timed movement interval.
+    for (const line of datedLines) {
+      if ([line.sailMiles, line.motorMiles].some(miles => typeof miles === "number" && Number.isFinite(miles) && miles > 0)) {
+        atSeaDates.add(absoluteLocalDate(line.time)!);
+      }
+    }
     for (let index = 1; index < datedLines.length; index += 1) {
       const previous = datedLines[index - 1];
       const current = datedLines[index];
