@@ -1,11 +1,11 @@
 import { SaveButton } from "../SaveButton";
+import { useEditorRequest } from "../use-editor-request";
 import { EntityImage } from "../EntityImage";
 import { CountryFlagSelector } from "../../CountryFlagSelector";
 import { useI18n } from "../../../lib/i18n";
 import { useDateTimeFormat } from "../../../lib/DateTimeFormatProvider";
 import { useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { windDriftSailSettings, type Boat, type BoatEngineRole, type BoatForm, type BoatType, type PersistedLogbook } from "../../../models/logbook";
-import { boatToForm, defaultBoatForm } from "../forms";
 import { modulePath, uploadStoredImage } from "../persistence";
 import { ManagerShell } from "../../managers/ManagerShell";
 import { fileToStoredImage } from "../image-utils";
@@ -20,6 +20,7 @@ function nonNegativeInputValue(value: string) {
 
 export function BoatManagerPage(props: BoatManagerPageProps) {
   const { t } = useI18n();
+  const beginImageRequest = useEditorRequest();
   const { formatDateRange } = useDateTimeFormat();
   const {
     showBoatManager,
@@ -33,24 +34,15 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
   } = props;
   const boatForm = props.boatForm as BoatForm;
   const logbook = props.logbook as PersistedLogbook;
-  const selectedBoat = props.selectedBoat as Boat;
+  const selectedBoat = !showBoatManager && props.selectedBoat?.id === editingBoatId ? props.selectedBoat as Boat : undefined;
   const setBoatForm = props.setBoatForm as Dispatch<SetStateAction<BoatForm>>;
-  const setEditingBoatId = props.setEditingBoatId as Dispatch<
-    SetStateAction<string | null>
-  >;
-  const setSelectedBoatId = props.setSelectedBoatId as Dispatch<
-    SetStateAction<string>
-  >;
-  const setShowBoatManager = props.setShowBoatManager as Dispatch<
-    SetStateAction<boolean>
-  >;
   const isDemo = Boolean(props.isDemo);
   const onDemoFeatureBlocked = props.onDemoFeatureBlocked as (feature: "images") => void;
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [showArchived, setShowArchived] = useState(false);
   const selectedBoatSheets = useMemo(
-    () => logbook.sheets.filter((sheet) => sheet.boatId === (editingBoatId ?? selectedBoat.id)),
-    [editingBoatId, logbook.sheets, selectedBoat.id],
+    () => editingBoatId ? logbook.sheets.filter((sheet) => sheet.boatId === editingBoatId) : [],
+    [editingBoatId, logbook.sheets],
   );
   const visibleBoats = useMemo(
     () => logbook.boats.filter((boat) => showArchived || !boat.archived),
@@ -72,9 +64,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
         title={t("boats.title")}
         newLabel={t("boats.new")}
         onNew={() => {
-          setEditingBoatId(null);
-          setBoatForm(defaultBoatForm);
-          setShowBoatManager(true);
+          pushAppPath(modulePath("boats", "new"));
         }}
         list={
           <>
@@ -94,10 +84,6 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                   type="button"
                   className={boat.id === editingBoatId ? "active" : ""}
                   onClick={() => {
-                    setSelectedBoatId(boat.id);
-                    setEditingBoatId(boat.id);
-                    setBoatForm(boatToForm(boat));
-                    setShowBoatManager(false);
                     pushAppPath(modulePath("boats", boat.id));
                   }}
                 >
@@ -255,15 +241,17 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                 accept="image/*"
                 className="visually-hidden-file-input"
                 onChange={async (e) => {
-                  const file = e.target.files?.[0];
+                  const input = e.currentTarget;
+                  const file = input.files?.[0];
                   if (!file) return;
+                  const isCurrent = beginImageRequest();
                   try {
                     const image = await uploadStoredImage(await fileToStoredImage(file));
-                    setBoatForm((current) => ({ ...current, image }));
+                    if (isCurrent()) setBoatForm((current) => ({ ...current, image }));
                   } catch (error) {
-                    alert(error instanceof Error ? error.message : "Image could not be processed.");
+                    if (isCurrent()) alert(error instanceof Error ? error.message : "Image could not be processed.");
                   } finally {
-                    e.currentTarget.value = "";
+                    input.value = "";
                   }
                 }}
               />
@@ -272,7 +260,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                   {boatForm.image ? "Change image" : "Upload image"}
                 </button>
                 {boatForm.image ? (
-                  <button type="button" className="ghost-button" onClick={() => setBoatForm((current) => ({ ...current, image: undefined }))}>
+                  <button type="button" className="ghost-button" onClick={() => { beginImageRequest(); setBoatForm((current) => ({ ...current, image: undefined })); }}>
                     Remove image
                   </button>
                 ) : null}
@@ -432,7 +420,7 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
               >
                 {t("common.cancel")}
               </button>
-              {selectedBoat.archived ? (
+              {selectedBoat && (selectedBoat.archived ? (
                 <button type="button" className="ghost-button" onClick={() => setSelectedBoatArchived(false)}>
                   {t("boats.restore")}
                 </button>
@@ -440,14 +428,14 @@ export function BoatManagerPage(props: BoatManagerPageProps) {
                 <button type="button" className="ghost-button" onClick={() => setSelectedBoatArchived(true)}>
                   {t("boats.archive")}
                 </button>
-              )}
-              {selectedBoatSheets.length === 0 && (
+              ))}
+              {selectedBoat && selectedBoatSheets.length === 0 && (
                 <button type="button" className="ghost-button" onClick={deleteSelectedBoat}>
                   {t("boats.delete")}
                 </button>
               )}
             </div>
-            {selectedBoatSheets.length > 0 && (
+            {selectedBoat && selectedBoatSheets.length > 0 && (
               <p className="form-help wide-field" role="status">
                 {t("boats.deleteBlocked").replace("{count}", String(selectedBoatSheets.length))}{" "}
                 <button type="button" className="table-title-button" onClick={showSelectedBoatLogsheets}>{t("boats.viewLogSheets")}</button>

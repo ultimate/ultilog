@@ -8,15 +8,13 @@ import { EntityImage } from "../EntityImage";
 import { useI18n } from "../../../lib/i18n";
 import { useDateTimeFormat } from "../../../lib/DateTimeFormatProvider";
 import { formatMiles } from "../../../lib/format-number";
-import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   Boat,
   LogSheet,
   PersistedLogbook,
-  SheetForm,
 } from "../../../models/logbook";
 import { sheetListDate } from "../date-utils";
-import { sheetToForm } from "../forms";
 import { LogSheetsMapView } from "../OpenSeaMapView";
 import { ListPagination, ListSearch, SortableColumnHeader, useSortableList } from "../SortableList";
 
@@ -47,11 +45,6 @@ export function LogbookListPage({
   onScannerUploadCanceled,
   onScannerBoatChange,
   onCreateBoatRequested,
-  setActiveSheetId,
-  setEditingSheetId,
-  setSheetForm,
-  setShowNewSheet,
-  createDefaultSheetForm,
   defaultPageSize,
   onPrintSheet,
   onPrintEmptySheet,
@@ -76,11 +69,6 @@ export function LogbookListPage({
   onScannerUploadCanceled: () => void;
   onScannerBoatChange: (boatId: string) => void;
   onCreateBoatRequested: () => void;
-  setActiveSheetId: Dispatch<SetStateAction<string>>;
-  setEditingSheetId: Dispatch<SetStateAction<string | null>>;
-  setSheetForm: Dispatch<SetStateAction<SheetForm>>;
-  setShowNewSheet: Dispatch<SetStateAction<boolean>>;
-  createDefaultSheetForm: () => SheetForm;
   defaultPageSize: number;
   onPrintSheet: (sheetId: string) => void;
   onPrintEmptySheet: () => void;
@@ -172,8 +160,6 @@ export function LogbookListPage({
   function openSheet(sheet: LogSheet) {
     onOpenSequence?.(list.processedItems.map(row => row.sheet.id), { fromDate, toDate, query: list.query, sort: list.sort, page: list.page, pageSize: list.pageSize });
     setIsMapExpanded(false);
-    setActiveSheetId(sheet.id);
-    setSheetForm(sheetToForm(sheet));
     navigate("details", sheet.id);
   }
 
@@ -189,11 +175,8 @@ export function LogbookListPage({
             type="button"
             className="primary-action"
             onClick={() => {
-              setEditingSheetId(null);
               if (!activeBoat) return;
-              setSheetForm(createDefaultSheetForm());
-              setShowNewSheet(true);
-              navigate("details");
+              navigate("details", "new");
             }}
           >
             {t("logbooks.newSheet")}

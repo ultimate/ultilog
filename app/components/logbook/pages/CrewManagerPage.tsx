@@ -1,4 +1,5 @@
 import { SaveButton } from "../SaveButton";
+import { useEditorRequest } from "../use-editor-request";
 import { PreferenceDateInput } from "../PreferenceDateInput";
 import { EntityImage } from "../EntityImage";
 import { useI18n } from "../../../lib/i18n";
@@ -9,7 +10,6 @@ import type {
   LogSheet,
   PersistedLogbook,
 } from "../../../models/logbook";
-import { defaultCrewForm } from "../forms";
 import { sheetListDate } from "../date-utils";
 import { modulePath, uploadStoredImage } from "../persistence";
 import { ManagerShell } from "../../managers/ManagerShell";
@@ -24,13 +24,10 @@ type CrewManagerPageProps = Record<string, any>;
 
 export function CrewManagerPage(props: CrewManagerPageProps) {
   const { t } = useI18n();
+  const beginImageRequest = useEditorRequest();
   const { formatDateRange } = useDateTimeFormat();
   const {
     selectedCrewIndex,
-    lastCrewIndex,
-    setLastCrewIndex,
-    setSelectedCrewIndex,
-    selectCrew,
     pushAppPath,
     saveCrew,
     cancelCrewEdit,
@@ -57,13 +54,7 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
       <ManagerShell
         title={t("crew.title")}
         newLabel={t("crew.new")}
-        onNew={() => {
-          setLastCrewIndex(
-            selectedCrewIndex >= 0 ? selectedCrewIndex : lastCrewIndex,
-          );
-          setSelectedCrewIndex(-1);
-          setCrewForm(defaultCrewForm);
-        }}
+        onNew={() => pushAppPath(modulePath("crew", "new"))}
         list={
           <>
           <ListSearch value={list.query} onChange={list.setQuery} />
@@ -80,8 +71,7 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
                   type="button"
                   className={index === selectedCrewIndex ? "active" : ""}
                   onClick={() => {
-                    selectCrew(index);
-                    pushAppPath(modulePath("crew", index));
+                    pushAppPath(modulePath("crew", person.id));
                   }}
                 >
                   <EntityImage
@@ -219,15 +209,17 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
                 accept="image/*"
                 className="visually-hidden-file-input"
                 onChange={async (e) => {
-                  const file = e.target.files?.[0];
+                  const input = e.currentTarget;
+                  const file = input.files?.[0];
                   if (!file) return;
+                  const isCurrent = beginImageRequest();
                   try {
                     const image = await uploadStoredImage(await fileToStoredImage(file));
-                    setCrewForm((current) => ({ ...current, image }));
+                    if (isCurrent()) setCrewForm((current) => ({ ...current, image }));
                   } catch (error) {
-                    alert(error instanceof Error ? error.message : "Image could not be processed.");
+                    if (isCurrent()) alert(error instanceof Error ? error.message : "Image could not be processed.");
                   } finally {
-                    e.currentTarget.value = "";
+                    input.value = "";
                   }
                 }}
               />
@@ -236,7 +228,7 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
                   {crewForm.image ? "Change image" : "Upload image"}
                 </button>
                 {crewForm.image ? (
-                  <button type="button" className="ghost-button" onClick={() => setCrewForm((current) => ({ ...current, image: undefined }))}>
+                  <button type="button" className="ghost-button" onClick={() => { beginImageRequest(); setCrewForm((current) => ({ ...current, image: undefined })); }}>
                     Remove image
                   </button>
                 ) : null}
@@ -270,7 +262,7 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
               >
                 Cancel
               </button>
-              <button
+              {selectedCrewIndex >= 0 && <button
                 type="button"
                 className="ghost-button"
                 disabled={
@@ -285,7 +277,7 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
                 onClick={deleteSelectedCrew}
               >
                 Delete
-              </button>
+              </button>}
             </div>
           </form>
           ) : (

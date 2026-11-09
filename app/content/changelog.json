@@ -180,6 +180,16 @@
     }
   },
   {
+    "id": "keep-entry-forms-and-navigation-scoped-to-the-current-entity",
+    "category": "fix",
+    "title": {
+      "en": "Keep new entry forms, drafts and actions attached to the correct boat, crew member or logsheet when navigating",
+      "de": "Neue Eingabeformulare, Entwürfe und Aktionen beim Navigieren dem richtigen Boot, Crewmitglied oder Logblatt zuordnen",
+      "fr": "Conserver les formulaires de création, brouillons et actions associés au bon bateau, membre d’équipage ou feuille de journal lors de la navigation",
+      "it": "Mantieni moduli di creazione, bozze e azioni associati alla barca, al membro dell’equipaggio o al foglio di giornale corretto durante la navigazione"
+    }
+  },
+  {
     "id": "logsheet-editing-feedback-and-status",
     "category": "improvement",
     "title": {

@@ -62,7 +62,6 @@ export function ProfilePage(props: ProfilePageProps) {
     updatePassword,
     resetDemoData,
     deleteAccount,
-    selectCrew,
     navigate,
     theme,
     preferences,
@@ -253,8 +252,7 @@ export function ProfilePage(props: ProfilePageProps) {
                   (crew) => crew.isPrimary,
                 );
                 if (meIndex >= 0) {
-                  selectCrew(meIndex);
-                  navigate("crew", meIndex);
+                  navigate("crew", logbook.crewMembers[meIndex].id);
                 }
               }}
             >

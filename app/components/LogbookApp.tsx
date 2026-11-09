@@ -15,6 +15,7 @@ import type { SheetOverviewState } from "./logbook/pages/LogbookListPage";
 
 import { NotificationBanner } from "./NotificationBanner";
 import { ModalLayer } from "./logbook/ModalLayer";
+import type { TechnicalLogDraft } from "../models/logbook-forms";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState, type MouseEventHandler } from "react";
 import { signOut } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
@@ -226,6 +227,7 @@ export function LogbookApp({
   const [sheetNavigationIds, setSheetNavigationIds] = useState<string[] | null>(null);
   const [isBackendReady, setIsBackendReady] = useState(false);
   const [routePath, setRoutePath] = useState(pathname);
+  const [editorRoutePath, setEditorRoutePath] = useState<string | null>(null);
   const [activeModule, setActiveModule] = useState<ActiveView>("dashboard");
   const [showCourseColumnsOverride, setShowCourseColumnsOverride] = useState<{
     sheetId: string;
@@ -239,7 +241,8 @@ export function LogbookApp({
     defaultSheetForm(""),
   );
   const [boatForm, setBoatForm] = useState<BoatForm>(defaultBoatForm);
-  const [lineForms, setLineForms] = useState<Record<string, { form: LineForm; isNew: boolean }>>({});
+  const [technicalDrafts, setTechnicalDrafts] = useState<Record<string, TechnicalLogDraft>>({});
+  const [lineForms, setLineForms] = useState<Record<string, { sheetId: string; form: LineForm; isNew: boolean }>>({});
   const [crewForm, setCrewForm] = useState<CrewForm>(defaultCrewForm);
   const [editingBoatId, setEditingBoatId] = useState<string | null>(null);
   const [editingSheetId, setEditingSheetId] = useState<string | null>(null);
@@ -258,7 +261,6 @@ export function LogbookApp({
   const [isScanning, setIsScanning] = useState(false);
   const [scannerError, setScannerError] = useState<string | null>(null);
   const [selectedCrewIndex, setSelectedCrewIndex] = useState(-2);
-  const [lastCrewIndex, setLastCrewIndex] = useState(0);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const saves = usePendingSaves();
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -296,9 +298,16 @@ export function LogbookApp({
   const mutationQueuesRef = useRef(new Map<string, Promise<void>>());
   const lineMutationQueueRef = useRef(new LineMutationQueue());
   const mutationSequenceRef = useRef(0);
+  const editorSessionRef = useRef(0);
+  const initializedRouteRef = useRef<string | null>(null);
+
+  function isCurrentEditor(session: number, path: string) {
+    return editorSessionRef.current === session && window.location.pathname === path;
+  }
 
   function pushAppPath(path: string) {
     if (path === routePath) return;
+    editorSessionRef.current += 1;
     window.history.pushState(null, "", path);
     setRoutePath(path);
   }
@@ -528,18 +537,8 @@ export function LogbookApp({
       const storedLogbook = (await response.json()) as PersistedLogbook;
       if (!isMounted) return;
       const route = routeFromPathname(window.location.pathname);
-      const nextRoute = route;
-      const routedSheet =
-        nextRoute.itemId &&
-        (nextRoute.view === "details" || nextRoute.view === "logbooks")
-          ? storedLogbook.sheets.find(
-              (sheet) => sheet.id === nextRoute.itemId,
-            )
-          : undefined;
-      const routedBoat =
-        nextRoute.itemId && nextRoute.view === "boats"
-          ? storedLogbook.boats.find((boat) => boat.id === nextRoute.itemId)
-          : undefined;
+      const routedBoat = route.view === "boats"
+        ? storedLogbook.boats.find(boat => boat.id === route.itemId) : undefined;
       const availableStoredBoats = activeBoats(storedLogbook.boats);
       const fallbackBoat = availableStoredBoats[0] ?? storedLogbook.boats[0] ?? emptyBoat;
       const nextBoat = routedBoat ?? fallbackBoat;
@@ -550,39 +549,11 @@ export function LogbookApp({
       mutationQueuesRef.current.clear();
       lineMutationQueueRef.current.clear();
       setLogbook(storedLogbook);
-      setActiveSheetId(routedSheet?.id ?? "");
-      setSheetForm(
-        routedSheet
-          ? sheetToForm(routedSheet)
-          : (current) => ({ ...current, boatId: fallbackBoat.id }),
-      );
-      setSelectedBoatId(nextBoat.id);
       setScannerBoatId(
         availableStoredBoats.length === 1
           ? availableStoredBoats[0].id
           : (availableStoredBoats.some((boat) => boat.id === nextBoat.id) ? nextBoat.id : availableStoredBoats[0]?.id ?? ""),
       );
-      if (routedBoat) {
-        setEditingBoatId(routedBoat.id);
-        setBoatForm(boatToForm(routedBoat));
-        setShowBoatManager(false);
-      }
-      if (nextRoute.view === "crew" && nextRoute.itemId) {
-        const crewIndex = Number.parseInt(nextRoute.itemId, 10);
-        if (
-          Number.isInteger(crewIndex) &&
-          crewIndex >= 0 &&
-          crewIndex < storedLogbook.crewMembers.length
-        ) {
-          setSelectedCrewIndex(crewIndex);
-          setLastCrewIndex(crewIndex);
-          setCrewForm(
-            crewToForm(
-              storedLogbook.crewMembers[crewIndex] ?? defaultCrewForm,
-            ),
-          );
-        }
-      }
       setIsBackendReady(true);
     }
     loadLogbook().catch(() => setIsBackendReady(true));
@@ -599,68 +570,47 @@ export function LogbookApp({
   }, [pathname]);
 
   useEffect(() => {
-    const syncFromHistory = () => setRoutePath(window.location.pathname);
+    const syncFromHistory = () => {
+      editorSessionRef.current += 1;
+      setRoutePath(window.location.pathname);
+    };
     window.addEventListener("popstate", syncFromHistory);
     return () => window.removeEventListener("popstate", syncFromHistory);
   }, []);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && routePath !== window.location.pathname)
-      return;
+    if (!isBackendReady || routePath !== window.location.pathname) return;
+    // Initialize only when entering a route. Background saves must not overwrite
+    // an editor the user is still typing in.
     const { view, itemId } = routeFromPathname(routePath);
-    // Route changes are the source of truth for browser back/forward and bookmarks.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    const current = logbookRef.current;
+    const sheet = (view === "details" || view === "logbooks") && itemId !== "new"
+      ? current.sheets.find(candidate => candidate.id === itemId) : undefined;
+    const boat = view === "boats" && itemId !== "new"
+      ? current.boats.find(candidate => candidate.id === itemId) : undefined;
+    const crewIndex = view === "crew" && itemId && itemId !== "new"
+      ? (/^\d+$/.test(itemId) ? Number(itemId) : current.crewMembers.findIndex(member => member.id === itemId)) : -2;
+    const crew = current.crewMembers[crewIndex];
+    const identity = `${routePath}:${sheet?.id ?? boat?.id ?? crew?.id ?? ""}`;
+    if (initializedRouteRef.current === identity) return;
+    initializedRouteRef.current = identity;
+    setEditorRoutePath(routePath);
     setActiveModule(view);
-    if (
-      view === "details" &&
-      itemId &&
-      logbook.sheets.some((sheet) => sheet.id === itemId)
-    ) {
-      const sheet = logbook.sheets.find((candidate) => candidate.id === itemId);
-      setActiveSheetId(itemId);
-      if (sheet) setSheetForm(sheetToForm(sheet));
-    }
-    if (
-      view === "logbooks" &&
-      itemId &&
-      logbook.sheets.some((sheet) => sheet.id === itemId)
-    ) {
-      const sheet = logbook.sheets.find((candidate) => candidate.id === itemId);
-      setActiveSheetId(itemId);
-      if (sheet) setSheetForm(sheetToForm(sheet));
-    }
-    if (view === "boats" && !itemId && !showBoatManager) {
-      setEditingBoatId(null);
-      setShowBoatManager(false);
-    }
-    if (
-      view === "boats" &&
-      itemId &&
-      logbook.boats.some((boat) => boat.id === itemId)
-    ) {
-      const boat = logbook.boats.find((candidate) => candidate.id === itemId);
-      setSelectedBoatId(itemId);
-      setEditingBoatId(itemId);
-      if (boat) setBoatForm(boatToForm(boat));
-      setShowBoatManager(false);
-    }
-    if (view === "crew" && !itemId && selectedCrewIndex !== -1) {
-      setSelectedCrewIndex(-2);
-      setCrewForm(defaultCrewForm);
-    }
-    if (view === "crew" && itemId) {
-      const index = Number.parseInt(itemId, 10);
-      if (
-        Number.isInteger(index) &&
-        index >= 0 &&
-        index < logbook.crewMembers.length
-      ) {
-        setSelectedCrewIndex(index);
-        setLastCrewIndex(index);
-        setCrewForm(crewToForm(logbook.crewMembers[index] ?? defaultCrewForm));
-      }
-    }
-  }, [routePath, logbook, activeSheetId, selectedCrewIndex, showBoatManager]);
+    setShowNewSheet(view === "details" && itemId === "new");
+    setShowBoatManager(view === "boats" && itemId === "new");
+    setEditingSheetId(null);
+    setActiveSheetId(sheet?.id ?? "");
+    setSheetForm(sheet ? sheetToForm(sheet) : sheetDefaults);
+    setEditingBoatId(boat?.id ?? null);
+    setSelectedBoatId(boat?.id ?? "");
+    setBoatForm(boat ? boatToForm(boat) : defaultBoatForm);
+    setSelectedCrewIndex(view === "crew" && itemId === "new" ? -1 : crew ? crewIndex : -2);
+    setCrewForm(crew ? crewToForm(crew) : defaultCrewForm);
+    setEditingSheetField(null);
+    setSheetInlineDraft("");
+    setSheetInlineTimezoneDraft(timezoneOffsetFromStamp(""));
+    setSaveError(null);
+  }, [routePath, isBackendReady, sheetDefaults]);
 
   const loadAdminUsers = useCallback(async () => {
     await Promise.resolve();
@@ -784,7 +734,6 @@ export function LogbookApp({
 
   const activeSheet =
     logbook.sheets.find((sheet) => sheet.id === activeSheetId) ??
-    logbook.sheets[0] ??
     emptySheet;
   const activeBoat =
     logbook.boats.find((boat) => boat.id === activeSheet.boatId) ??
@@ -794,12 +743,9 @@ export function LogbookApp({
     showCourseColumnsOverride?.sheetId === activeSheet.id
       ? showCourseColumnsOverride.isVisible
       : preferences.showCourseConversionTable;
-  const selectedBoat =
-    logbook.boats.find((boat) => boat.id === selectedBoatId) ??
-    logbook.boats[0] ??
-    emptyBoat;
+  const selectedBoat = logbook.boats.find(boat => boat.id === editingBoatId && boat.id === selectedBoatId);
   const selectedCrew =
-    logbook.crewMembers[selectedCrewIndex] ?? logbook.crewMembers[0];
+    selectedCrewIndex >= 0 ? logbook.crewMembers.find(member => member.id === crewForm.id) : undefined;
   const availableBoats = activeBoats(logbook.boats);
   const effectiveScannerBoatId =
     availableBoats.length === 1
@@ -968,9 +914,10 @@ export function LogbookApp({
   const sheetNavigationIndex = navigationIds.indexOf(activeSheet.id);
   async function navigateAdjacentSheet(id?: string) {
     if (!id) return;
-    if (Object.keys(lineForms).length || editingSheetField || editingSheetId) { setSaveError(t("details.unsavedEdits")); return; }
+    const session = editorSessionRef.current;
+    const path = routePath;
     await Promise.all([...mutationQueuesRef.current.values(), lineMutationQueueRef.current.drain()]);
-    if (failedMutationsRef.current.size || pendingMutationsRef.current.size) return;
+    if (!isCurrentEditor(session, path) || failedMutationsRef.current.size || pendingMutationsRef.current.size) return;
     setActiveSheetId(id);
     navigate("details", id);
   }
@@ -1052,6 +999,9 @@ export function LogbookApp({
   }
 
   async function performSaveBoat() {
+    const session = editorSessionRef.current;
+    const savedPath = routePath;
+    if (!showBoatManager && !selectedBoat) return;
     const id = editingBoatId ?? createId();
     const currentLogbook = logbookRef.current;
     const previousBoat = currentLogbook.boats.find((boat) => boat.id === id);
@@ -1083,8 +1033,9 @@ export function LogbookApp({
         : [...currentLogbook.boats, boat],
     };
     if (!(await saveLogbookNow(nextLogbook, { kind: "boat", entity: boat, isNew: !editingBoatId }))) return;
-    setBoatForm(defaultBoatForm);
-    setEditingBoatId(null);
+    if (!isCurrentEditor(session, savedPath)) return;
+    setBoatForm(boatToForm(boat));
+    setEditingBoatId(id);
     setShowBoatManager(false);
     pushAppPath(modulePath("boats", id));
     setSelectedBoatId(id);
@@ -1097,6 +1048,9 @@ export function LogbookApp({
   }
 
   async function performSaveSheet() {
+    const session = editorSessionRef.current;
+    const savedPath = routePath;
+    if (!showNewSheet && !editingSheetId) return;
     const currentLogbook = logbookRef.current;
     const existingSheet = editingSheetId
       ? currentLogbook.sheets.find((sheet) => sheet.id === editingSheetId)
@@ -1168,6 +1122,7 @@ export function LogbookApp({
         : [sheet, ...currentLogbook.sheets],
     };
     if (!(await saveLogbookNow(nextLogbook, { kind: "sheet", entity: sheet, isNew: !editingSheetId }))) return;
+    if (!isCurrentEditor(session, savedPath)) return;
     setActiveSheetId(id);
     setEditingSheetId(null);
     setSheetForm(sheetToForm(sheet));
@@ -1188,8 +1143,7 @@ export function LogbookApp({
     );
     if (!(await saveLogbookNow({ ...logbookRef.current, boats: nextBoats }, { kind: "deletion", entityKind: "boat", id: selectedBoat.id, revision: selectedBoat.revision ?? 0 })))
       return;
-    setSelectedBoatId(nextBoats[0]?.id ?? "");
-    setEditingBoatId(nextBoats[0]?.id ?? null);
+    if (window.location.pathname === modulePath("boats", selectedBoat.id)) navigate("boats");
   }
 
   async function deleteActiveSheet(password: string) {
@@ -1220,24 +1174,8 @@ export function LogbookApp({
     navigate("logbooks");
   }
 
-  function startEditingBoat(boat: Boat) {
-    setShowBoatManager(false);
-    setEditingBoatId(boat.id);
-    setBoatForm(boatToForm(boat));
-  }
-
   function cancelBoatEdit() {
-    setShowBoatManager(false);
-    setEditingBoatId(selectedBoat.id);
-    setBoatForm(boatToForm(selectedBoat));
-  }
-
-  function startEditingSheet(sheet: LogSheet) {
-    if (sheet.status === "Locked") return;
-    setActiveSheetId(sheet.id);
-    setShowNewSheet(false);
-    setEditingSheetId(sheet.id);
-    setSheetForm(sheetToForm(sheet));
+    navigate("boats");
   }
 
   async function updateActiveSheetShare(share: LogSheetShareSettings) {
@@ -1283,7 +1221,7 @@ export function LogbookApp({
   }
 
   async function updateActiveSheetStatus(status: LogSheet["status"]) {
-    if (status === "Locked" && (Object.keys(lineForms).length || activeSheet.lines.some(line => !hasRequiredLogLineFields(line)))) {
+    if (status === "Locked" && (Object.values(lineForms).some(draft => draft.sheetId === activeSheet.id) || activeSheet.lines.some(line => !hasRequiredLogLineFields(line)))) {
       setSaveError(t("details.requiredLineFields"));
       return;
     }
@@ -1379,7 +1317,7 @@ export function LogbookApp({
   async function performSaveLineFromFields(draftId: string) {
     if (activeSheet.status === "Locked") return;
     const draft = lineForms[draftId];
-    if (!draft) return;
+    if (!draft || draft.sheetId !== activeSheet.id) return;
     let currentLogbook: PersistedLogbook;
     let previousLine: LogLine | undefined;
     let line: LogLine;
@@ -1422,14 +1360,14 @@ export function LogbookApp({
 
   function startEditingLine(line: LogLine) {
     if (activeSheet.status === "Locked") return;
-    setLineForms((current) => ({ ...current, [line.id]: { form: lineToForm(line), isNew: false } }));
+    setLineForms((current) => ({ ...current, [line.id]: { sheetId: activeSheet.id, form: lineToForm(line), isNew: false } }));
   }
 
   function startAddingLine() {
     if (activeSheet.status === "Locked") return;
     const form = lineDefaultsForActiveSheet();
     const id = createId();
-    setLineForms((current) => ({ ...current, [id]: { form: { ...form, id }, isNew: true } }));
+    setLineForms((current) => ({ ...current, [id]: { sheetId: activeSheet.id, form: { ...form, id }, isNew: true } }));
   }
 
   async function startAddingLineAtCoordinates(coordinate: { latitude: number; longitude: number }, selectedTime?: string) {
@@ -1444,7 +1382,7 @@ export function LogbookApp({
     const timestamp = isoDateTimeWithTimezone(time, timezoneOffsetFromStamp(activeSheet.route.departed));
     const initialFields = coordinate ? calculateSmartNavigationFields(activeSheet.lines, coordinate) : {};
     const draftId = createId();
-    setLineForms((current) => ({ ...current, [draftId]: { isNew: true, form: {
+    setLineForms((current) => ({ ...current, [draftId]: { sheetId: activeSheet.id, isNew: true, form: {
       ...lineDefaultsForActiveSheet(),
       id: draftId,
       ...initialFields,
@@ -1617,6 +1555,9 @@ export function LogbookApp({
   }
 
   async function performSaveCrew() {
+    const session = editorSessionRef.current;
+    const savedPath = routePath;
+    if (selectedCrewIndex !== -1 && !selectedCrew) return;
     const id = selectedCrewIndex === -1 ? createId() : crewForm.id;
     const previousCrew = logbookRef.current.crewMembers.find((candidate) => candidate.id === id);
     const crew = {
@@ -1648,8 +1589,10 @@ export function LogbookApp({
             ),
     };
     if (!(await saveLogbookNow(nextLogbook, { kind: "crew", entity: crew, isNew: selectedCrewIndex === -1 }))) return;
-    if (selectedCrewIndex === -1)
-      setSelectedCrewIndex(nextLogbook.crewMembers.length - 1);
+    if (!isCurrentEditor(session, savedPath)) return;
+    pushAppPath(modulePath("crew", id));
+    setSelectedCrewIndex(nextLogbook.crewMembers.findIndex(member => member.id === id));
+    setCrewForm(crewToForm(crew));
   }
 
   async function addCrewToActiveSheet(crewId: string) {
@@ -1761,22 +1704,11 @@ export function LogbookApp({
       }, { kind: "deletion", entityKind: "crew", id: selectedCrew.id, revision: selectedCrew.revision ?? 0 }))
     )
       return;
-    setSelectedCrewIndex(0);
-  }
-
-  function selectCrew(index: number) {
-    setSelectedCrewIndex(index);
-    setLastCrewIndex(index);
-    setCrewForm(crewToForm(logbook.crewMembers[index] ?? defaultCrewForm));
+    if (window.location.pathname === routePath) navigate("crew");
   }
 
   function cancelCrewEdit() {
-    const nextIndex = Math.min(
-      lastCrewIndex,
-      Math.max(logbook.crewMembers.length - 1, 0),
-    );
-    setSelectedCrewIndex(nextIndex);
-    setCrewForm(crewToForm(logbook.crewMembers[nextIndex] ?? defaultCrewForm));
+    navigate("crew");
   }
 
   function openOnboardingTask(taskId: OnboardingTaskId) {
@@ -1784,8 +1716,7 @@ export function LogbookApp({
     else if (taskId === "read_compliance") navigate("compliance");
     else if (taskId === "complete_primary_crew") {
       const meIndex = Math.max(logbookRef.current.crewMembers.findIndex((crew) => crew.isPrimary), 0);
-      selectCrew(meIndex);
-      navigate("crew", meIndex);
+      navigate("crew", logbookRef.current.crewMembers[meIndex]?.id);
     } else if (taskId === "personalize_view") navigate("profile");
     else if (taskId === "create_first_boat") navigate("boats");
     else if (taskId === "create_first_logsheet") navigate("logbooks");
@@ -2029,6 +1960,7 @@ export function LogbookApp({
     setEditingBoatId(null);
     setEditingSheetId(null);
     setLineForms({});
+    setTechnicalDrafts({});
     setSelectedCrewIndex(resetLogbook.crewMembers.length ? 0 : -2);
     setProfileMessage(t("profile.demoResetSuccess"));
     return true;
@@ -2107,25 +2039,16 @@ export function LogbookApp({
               onScannerUploadConfirmed={createSheetFromScan}
               onScannerUploadCanceled={cancelScannerUpload}
               onScannerBoatChange={setScannerBoatId}
-              onCreateBoatRequested={() => {
-                setShowBoatManager(true);
-                setEditingBoatId(null);
-                setBoatForm(defaultBoatForm);
-                navigate("boats");
-              }}
-              setActiveSheetId={setActiveSheetId}
-              setEditingSheetId={setEditingSheetId}
-              setSheetForm={setSheetForm}
-              setShowNewSheet={setShowNewSheet}
-              createDefaultSheetForm={() => sheetDefaults}
+              onCreateBoatRequested={() => navigate("boats", "new")}
               defaultPageSize={preferences.defaultPageSize}
               onPrintSheet={(sheetId) => setPrintTarget({ mode: "filled", sheetId, showCourseColumns: preferences.showCourseConversionTable })}
               onPrintEmptySheet={() => setPrintTarget({ mode: "empty", showCourseColumns: preferences.showCourseConversionTable })}
             />
           )}
 
-          {activeModule === "details" && (
+          {activeModule === "details" && editorRoutePath === routePath && (
             <LogbookDetailsPage
+              key={routePath}
               previousSheetId={sheetNavigationIndex > 0 ? navigationIds[sheetNavigationIndex - 1] : undefined}
               nextSheetId={sheetNavigationIndex >= 0 ? navigationIds[sheetNavigationIndex + 1] : undefined}
               onNavigateSheet={navigateAdjacentSheet}
@@ -2139,10 +2062,6 @@ export function LogbookApp({
               sheetForm={sheetForm}
               setSheetForm={setSheetForm}
               logbook={logbook}
-              setSelectedBoatId={setSelectedBoatId}
-              setEditingBoatId={setEditingBoatId}
-              setBoatForm={setBoatForm}
-              setShowBoatManager={setShowBoatManager}
               navigate={navigate}
               cancelSheetEdit={cancelSheetEdit}
               activeSheet={activeSheet}
@@ -2168,7 +2087,7 @@ export function LogbookApp({
               smartLineProgress={smartLineProgress}
               smartLineStatus={smartLineStatus}
               smartMotionStatus={smartMotionStatus}
-              lineForms={lineForms}
+              lineForms={Object.fromEntries(Object.entries(lineForms).filter(([, draft]) => draft.sheetId === activeSheet.id))}
               setLineForm={updateLineForm}
               saveLineFromFields={saveLineFromFields}
               cancelLineEdit={cancelLineEdit}
@@ -2182,20 +2101,24 @@ export function LogbookApp({
               updateTechnicalCheck={updateTechnicalCheck}
               deleteTechnicalCheck={deleteTechnicalCheck}
               updateEngineHourCounter={updateEngineHourCounter}
+              technicalDraft={technicalDrafts[activeSheet.id] ?? { newCheck: "", checks: {} }}
+              setTechnicalDraft={(update: (current: TechnicalLogDraft) => TechnicalLogDraft) => {
+                const sheetId = activeSheet.id;
+                setTechnicalDrafts(current => ({ ...current, [sheetId]: update(current[sheetId] ?? { newCheck: "", checks: {} }) }));
+              }}
               technicalCheckSuggestions={technicalCheckSuggestions}
               onPrintSheet={() => setPrintTarget({ mode: "filled", sheetId: activeSheet.id, showCourseColumns })}
             />
           )}
 
-          {activeModule === "boats" && (
+          {activeModule === "boats" && editorRoutePath === routePath && (
             <BoatManagerPage
+              key={routePath}
               isDemo={userGroups.includes("demo")}
               onDemoFeatureBlocked={setDemoRestrictedFeature}
               logbook={logbook}
               selectedBoat={selectedBoat}
-              setEditingBoatId={setEditingBoatId}
               setBoatForm={setBoatForm}
-              setShowBoatManager={setShowBoatManager}
               showBoatManager={showBoatManager}
               boatForm={boatForm}
               saveBoat={saveBoat}
@@ -2204,21 +2127,17 @@ export function LogbookApp({
               deleteSelectedBoat={deleteSelectedBoat}
               setSelectedBoatArchived={setSelectedBoatArchived}
               showSelectedBoatLogsheets={showSelectedBoatLogsheets}
-              setSelectedBoatId={setSelectedBoatId}
               pushAppPath={pushAppPath}
               defaultPageSize={preferences.defaultPageSize}
             />
           )}
 
-          {activeModule === "crew" && (
+          {activeModule === "crew" && editorRoutePath === routePath && (
             <CrewManagerPage
+              key={routePath}
               isDemo={userGroups.includes("demo")}
               onDemoFeatureBlocked={setDemoRestrictedFeature}
               selectedCrewIndex={selectedCrewIndex}
-              lastCrewIndex={lastCrewIndex}
-              setLastCrewIndex={setLastCrewIndex}
-              setSelectedCrewIndex={setSelectedCrewIndex}
-              selectCrew={selectCrew}
               pushAppPath={pushAppPath}
               saveCrew={saveCrew}
               cancelCrewEdit={cancelCrewEdit}
@@ -2253,7 +2172,6 @@ export function LogbookApp({
               updatePassword={updatePassword}
               resetDemoData={resetDemoData}
               deleteAccount={deleteAccount}
-              selectCrew={selectCrew}
               navigate={navigate}
               theme={theme}
               preferences={preferences}

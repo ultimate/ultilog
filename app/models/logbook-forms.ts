@@ -19,3 +19,6 @@ export type LineForm = Omit<Record<keyof LogLine, string>, "courseFieldSources" 
 export type LineFormField = Exclude<keyof LineForm, "engineHours" | "courseFieldSources" | "id">;
 
 export type CrewForm = CrewMember;
+
+/** Unsaved checks belong to one sheet, even while another sheet is open. */
+export type TechnicalLogDraft = { newCheck: string; checks: Record<number, string> };
