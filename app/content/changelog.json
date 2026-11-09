@@ -50,6 +50,16 @@
     }
   },
   {
+    "id": "crew-sheet-midnight-end-dates",
+    "category": "fix",
+    "title": {
+      "en": "Show midnight sheet end dates as the previous day in crew sheet lists",
+      "de": "Enddaten von Logblättern um Mitternacht in Crew-Listen als Vortag anzeigen",
+      "fr": "Afficher les dates de fin à minuit comme le jour précédent dans les listes de feuilles de l’équipage",
+      "it": "Mostra le date di fine a mezzanotte come il giorno precedente negli elenchi dei fogli dell’equipaggio"
+    }
+  },
+  {
     "id": "edit-and-display-logsheet-images",
     "category": "improvement",
     "title": {

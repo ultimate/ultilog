@@ -9,6 +9,7 @@ import type {
   PersistedLogbook,
 } from "../../../models/logbook";
 import { defaultCrewForm } from "../forms";
+import { sheetListDate } from "../date-utils";
 import { modulePath, uploadStoredImage } from "../persistence";
 import { ManagerShell } from "../../managers/ManagerShell";
 import { fileToStoredImage } from "../image-utils";
@@ -254,7 +255,7 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
                       {isSkipper ? `⭐ ${t("crew.skipper")} · ` : `${t("crew.label")} · `}
                       {sheet.title}
                     </strong>
-                    <small>{formatDateRange(sheet.route.departed, sheet.route.arrived)}</small>
+                    <small>{formatDateRange(sheetListDate(sheet.route.departed), sheetListDate(sheet.route.arrived, true))}</small>
                   </li>
                 ))}
               </ul>
