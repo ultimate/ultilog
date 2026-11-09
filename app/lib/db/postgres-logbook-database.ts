@@ -3,12 +3,22 @@ import type { PersistedLogbook } from "../../models/logbook";
 import { LogbookDatabase, type QueryResult } from "./logbook-database";
 import { runMigrations } from "./migrations";
 
+function normalizeSslMode(connectionString: string): string {
+  const url = new URL(connectionString);
+  const sslMode = url.searchParams.get("sslmode");
+  if (!sslMode || !["prefer", "require", "verify-ca"].includes(sslMode)) return connectionString;
+
+  // Preserve pg 8's certificate and hostname verification across driver upgrades.
+  url.searchParams.set("sslmode", "verify-full");
+  return url.toString();
+}
+
 export class PostgresLogbookDatabase extends LogbookDatabase {
   private pool: Pool;
 
   constructor(connectionString: string) {
     super();
-    this.pool = new Pool({ connectionString });
+    this.pool = new Pool({ connectionString: normalizeSslMode(connectionString) });
   }
 
   placeholder(index: number) {

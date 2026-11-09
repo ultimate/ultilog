@@ -180,6 +180,16 @@
     }
   },
   {
+    "id": "preserve-postgres-ssl-verification",
+    "category": "security",
+    "title": {
+      "en": "Preserve PostgreSQL certificate verification across driver upgrades",
+      "de": "PostgreSQL-Zertifikatsprüfung bei Treiberaktualisierungen beibehalten",
+      "fr": "Préserver la vérification des certificats PostgreSQL lors des mises à jour du pilote",
+      "it": "Mantieni la verifica dei certificati PostgreSQL durante gli aggiornamenti del driver"
+    }
+  },
+  {
     "id": "restrict-demo-shared-log-sheets-to-public-access",
     "category": "security",
     "title": {
