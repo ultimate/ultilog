@@ -1,8 +1,9 @@
+import { courseSourcesFor } from "../../../../app/models/course-field-sources";
 import { describe, expect, it } from "vitest";
 import { lineFormToLogLine } from "../../../../app/domain/log-lines/log-line-form";
 import type { LineForm } from "../../../../app/models/logbook";
 
-const baseLineForm: LineForm = {
+const baseLineForm: LineForm = { courseFieldSources: courseSourcesFor({}),
   id: "test-line",
   time: "2026-07-03T10:15",
   latitude: "47° 30.000' N",
@@ -42,6 +43,7 @@ const baseLineForm: LineForm = {
 describe("lineFormToLogLine", () => {
   it("normalizes scanned and manual line form values into persisted log lines", () => {
     expect(lineFormToLogLine(baseLineForm)).toEqual({
+      courseFieldSources: baseLineForm.courseFieldSources,
       id: "test-line",
       time: "2026-07-03T10:15",
       latitude: 47.5,

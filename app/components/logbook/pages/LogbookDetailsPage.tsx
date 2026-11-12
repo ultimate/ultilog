@@ -31,7 +31,7 @@ import type {
 import { coordinateToInput, decimalToDdmParts, decimalToDmsParts, dmsPartsToDecimal, nextCoordinateFormat, parseCoordinate, type CoordinateFormat, type DmsParts } from "../../../domain/nautical/coordinates";
 import { boatToForm, sheetToForm } from "../forms";
 import { dateTimeLocalFromParts, isoDateTimeWithTimezone, splitDateTimeLocal, timeZoneOffsetOptions, timezoneOffsetFromStamp, dateTimeLocalFromStamp } from "../date-utils";
-import { updateLogLineFormForInput } from "../../../domain/log-lines/log-line-editor";
+import { applyLogLineInput, recalculateLogLineCourses, courseCalculationKey } from "../../../domain/log-lines/log-line-editor";
 import { LogLinesMapView } from "../OpenSeaMapView";
 import type { TranslationKey } from "../../../lib/i18n";
 import { fileToStoredImage } from "../image-utils";
@@ -387,36 +387,57 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
     </span>;
   };
 
-  const renderNumberInput = (draftId: string, field: Exclude<keyof LineForm, "engineHours" | "id">, options?: { min?: number; max?: number; step?: string }) => {
+  const renderNumberInput = (draftId: string, field: LineFormField, options?: { min?: number; max?: number; step?: string }) => {
     const lineForm = lineForms[draftId].form;
     return renderSmartField(draftId, field, <LogNumberInput data-line-field={field} min={options?.min} max={options?.max} step={options?.step ?? "1"} value={lineForm[field]} onChange={(e) => setDraftLineForm(draftId, { ...lineForm, [field]: e.target.value })} />);
   };
-  const renderTextInput = (draftId: string, field: Exclude<keyof LineForm, "engineHours" | "id">, label?: string) => {
+  const renderTextInput = (draftId: string, field: LineFormField, label?: string) => {
     const lineForm = lineForms[draftId].form;
     return renderSmartField(draftId, field, <input aria-label={label} value={lineForm[field]} onChange={(e) => setDraftLineForm(draftId, { ...lineForm, [field]: e.target.value })} />);
   };
 
 
-  const [courseHighlights, setCourseHighlights] = useState<Record<string, Partial<Record<keyof LineForm, number>>>>({});
-  const showSail = activeBoat.type !== "motor";
+  const [courseHighlights, setCourseHighlights] = useState<Record<string, Partial<Record<LineFormField, number>>>>({});
+  const courseDraftsRef = useRef(new Map<string, string>());
 
-  const updateLineFormField = (draftId: string, field: Exclude<keyof LineForm, "engineHours" | "id">, value: string) => {
-    const lineForm = lineForms[draftId].form;
-    const sequence = (courseConversionSequences.current[draftId] ?? 0) + 1;
-    courseConversionSequences.current[draftId] = sequence;
-    setDraftLineForm(draftId, { ...lineForm, [field]: value });
-    const updated = updateLogLineFormForInput(lineForm, { field, value }, { boat: activeBoat });
-    Promise.resolve(updated)
-      .then((result) => {
-        if (courseConversionSequences.current[draftId] !== sequence) return;
-        const changed = Object.fromEntries(courseConversionColumns.filter(column => column.field !== field && result[column.field] !== lineForm[column.field]).map(column => [column.field, sequence]));
-        setCourseHighlights(current => ({ ...current, [draftId]: changed }));
-        setDraftLineForm(draftId, current => ({ ...current, [field]: result[field], ...Object.fromEntries(courseConversionColumns.map(column => [column.field, result[column.field]])) }));
-      })
-      .catch(() => setDraftLineForm(draftId, current => ({ ...current, [field]: value })));
+  const updateLineFormField = (draftId: string, field: LineFormField, value: string) => {
+    setDraftLineForm(draftId, applyLogLineInput(lineForms[draftId].form, { field, value }));
+  const showSail = activeBoat.type !== "motor";
   };
 
-  const renderCourseInput = (draftId: string, field: Exclude<keyof LineForm, "engineHours" | "id">, options: { min?: number; max?: number }) => {
+  // Recalculate on opening an editor and whenever its input or boat context changes.
+  // Ignore calculated cache values and unrelated text when detecting new inputs.
+  useEffect(() => {
+    for (const id of courseDraftsRef.current.keys()) {
+      if (!lineForms[id]) { courseDraftsRef.current.delete(id); courseConversionSequences.current[id] = (courseConversionSequences.current[id] ?? 0) + 1; }
+    }
+    for (const [draftId, draft] of Object.entries(lineForms)) {
+      const key = courseCalculationKey(draft.form, activeBoat);
+      if (courseDraftsRef.current.get(draftId) === key) continue;
+      courseDraftsRef.current.set(draftId, key);
+      const sequence = (courseConversionSequences.current[draftId] ?? 0) + 1;
+      courseConversionSequences.current[draftId] = sequence;
+      let lastResult = draft.form;
+      const applyResult = (result: LineForm) => {
+        if (courseConversionSequences.current[draftId] !== sequence) return;
+        const changed = courseConversionColumns.filter(column => result[column.field] !== lastResult[column.field]);
+        lastResult = result;
+        if (!changed.length) return;
+        setCourseHighlights(current => ({ ...current, [draftId]: Object.fromEntries(changed.map(column => [column.field, sequence])) }));
+        setDraftLineForm(draftId, current => {
+          if (courseCalculationKey(current, activeBoat) !== key) return current;
+          return { ...current, ...Object.fromEntries(courseConversionColumns.map(column => [column.field, result[column.field]])) };
+        });
+      };
+      applyResult(recalculateLogLineCourses(draft.form, { boat: activeBoat, lookupVariation: false }));
+      Promise.resolve().then(() => recalculateLogLineCourses(draft.form, { boat: activeBoat })).then(applyResult).catch(() => {
+        // The already-committed user input and provenance remain intact. Ignore stale failures.
+        if (courseConversionSequences.current[draftId] !== sequence) return;
+      });
+    }
+  }, [lineForms, activeBoat, setDraftLineForm]);
+
+  const renderCourseInput = (draftId: string, field: LineFormField, options: { min?: number; max?: number }) => {
     const lineForm = lineForms[draftId].form;
     return <span className="smart-field-wrap">
     <LogNumberInput

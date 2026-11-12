@@ -1,3 +1,4 @@
+import { courseFields, courseSourcesFor } from "../../app/models/course-field-sources";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "@playwright/test";
@@ -11,7 +12,7 @@ test("shows the actual Respocean voyage mileage for a March 7, 2026 theory exam"
   await page.getByRole("button", { name: "Try the demo" }).click();
   await expect(page.getByRole("button", { name: "Logout" })).toBeVisible({ timeout: 30_000 });
   const sheets = Array.from({ length: 6 }, (_, index) => load<LogSheetRow>(12 + index, "log_sheet")).flat();
-  const lines = Array.from({ length: 6 }, (_, index) => load<LogLineRow>(12 + index, "log_lines")).flat();
+  const lines = Array.from({ length: 6 }, (_, index) => load<LogLineRow>(12 + index, "log_lines")).flat().map(line => ({ ...line, course_field_sources: JSON.stringify(courseSourcesFor(Object.fromEntries(courseFields.map(field => [field, line[field.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`) as keyof LogLineRow]])))) }));
   const boat = { id: sheets[0].boat_id, name: "Lazy Bone", type: "sail", registration: "", flag_state: "", home_port: "", owner: "", dimensions: "" } as BoatRow;
   const logbook = LogSheetsRepository.toLogbook([boat], sheets, [], lines);
   // Supply the captured account records through the real bootstrap response shape.

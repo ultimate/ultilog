@@ -1,3 +1,4 @@
+import { courseSourcesFor, isCourseFieldSources } from "../../models/course-field-sources";
 import { appendNamedPosition } from "../../domain/log-lines/legacy-position";
 import { retirePositionWarnings } from "../logbook-scanner/retire-position-warnings";
 import type { LogSheetShareSettings, PersistedLogbook } from "../../models/logbook";
@@ -72,7 +73,7 @@ export function validateLine(v: unknown, path = "line") {
     v.remarks = appendNamedPosition(v.remarks as string, v.position as string);
     delete v.position;
   }
-  assert(record(v) && lineStringFields.every(k => string(v[k])) && lineNumberFields.every(k => v[k] === null || finite(v[k])) && optional(v.engineHours, value => numberRecord(value) && Object.values(value as Record<string, number>).every(hours => hours >= 0)), `${path} is malformed.`);
+  assert(record(v) && isCourseFieldSources(v.courseFieldSources) && lineStringFields.every(k => string(v[k])) && lineNumberFields.every(k => v[k] === null || finite(v[k])) && optional(v.engineHours, value => numberRecord(value) && Object.values(value as Record<string, number>).every(hours => hours >= 0)), `${path} is malformed.`);
 }
 
 export function validatePersistedLogbook(value: unknown): PersistedLogbook {
@@ -100,7 +101,10 @@ export function validatePersistedLogbook(value: unknown): PersistedLogbook {
     if (totalSheetCrew > LOGBOOK_LIMITS.crewMembers) throw new LogbookValidationError("Too many crew members.", "limit", "too_many_crew_members");
     assert(sheet.technicalChecks.every(check => record(check) && string(check.status) && string(check.text)), `sheets[${i}].technicalChecks is malformed.`);
     if (sheet.engineHourCounters !== undefined) assert(record(sheet.engineHourCounters) && Object.values(sheet.engineHourCounters).every(reading => record(reading) && optional(reading.start, finite) && optional(reading.end, finite) && (reading.start === undefined || Number(reading.start) >= 0) && (reading.end === undefined || Number(reading.end) >= 0)), `sheets[${i}].engineHourCounters is malformed.`);
-    sheet.lines.forEach((line, j) => validateLine(line, `sheets[${i}].lines[${j}]`)); totalLines += sheet.lines.length;
+    sheet.lines.forEach((line, j) => {
+      if (record(line) && line.courseFieldSources === undefined) line.courseFieldSources = courseSourcesFor(line);
+      validateLine(line, `sheets[${i}].lines[${j}]`);
+    }); totalLines += sheet.lines.length;
     if (totalLines > LOGBOOK_LIMITS.logLines) throw new LogbookValidationError("Too many log lines.", "limit", "too_many_log_lines");
     if (sheet.share !== undefined) {
       assert(record(sheet.share) && ["masterData", "picture", "logLines", "metrics", "technicalLog", "skipper", "crew"].every(k => ["private", "registered", "public"].includes((sheet.share as Record<string, unknown>)[k] as string)), `sheets[${i}].share is malformed.`);

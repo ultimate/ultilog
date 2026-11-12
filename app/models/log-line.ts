@@ -1,3 +1,5 @@
+import type { CourseFieldSources } from "./course-field-sources";
+
 export type DistanceUnit = "m" | "ft";
 export type WindUnit = "bft" | "kn" | "km/h" | "mp/h" | "m/s";
 export type TemperatureUnit = "c" | "f" | "°C" | "°F";
@@ -24,6 +26,7 @@ export type LogLine = {
   tide: number | null;
   tideUnit: DistanceUnit;
   moon: string;
+  courseFieldSources: CourseFieldSources;
   compassCourse: number | null;
   deviation: number | null;
   magneticCourse: number | null;

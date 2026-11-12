@@ -171,7 +171,7 @@ describe("runMigrations", () => {
   });
   it("discovers migrations in order", async () => {
     const migrations = await readMigrations();
-    expect(migrations.at(-1)?.id).toBe("056_lowercase_boat_types");
+    expect(migrations.at(-1)?.id).toBe("057_log_line_course_sources");
     expect(migrations.some(({ id }) => id === REMOVE_LOG_SHEET_SOURCE_DETAILS_MIGRATION_ID)).toBe(true);
     expect(migrations.some(({ id }) => id === "048_shared_sheet_source_details")).toBe(false);
     expect(migrations.find(({ id }) => id === USER_COMPLIANCE_MIGRATION_ID)?.sql).toContain("user_compliance_licenses");

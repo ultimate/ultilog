@@ -1,6 +1,7 @@
 "use client";
 
 import { SaveButton, SavingContext, usePendingSaves } from "./logbook/SaveButton";
+import { recalculateLogLineCourses, logLineInputKey } from "../domain/log-lines/log-line-editor";
 
 import { OPEN_METEO_CREDIT } from "../domain/meteo/attribution";
 
@@ -1379,12 +1380,16 @@ export function LogbookApp({
     if (activeSheet.status === "Locked") return;
     const draft = lineForms[draftId];
     if (!draft) return;
-    const currentLogbook = logbookRef.current;
-    const previousLine = currentLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)?.lines.find((candidate) => candidate.id === draftId);
+    let currentLogbook: PersistedLogbook;
+    let previousLine: LogLine | undefined;
     let line: LogLine;
     try {
+      const calculatedForm = await recalculateLogLineCourses(draft.form, { boat: activeBoat });
+      // Other lines may have saved while a variation lookup was pending.
+      currentLogbook = logbookRef.current;
+      previousLine = currentLogbook.sheets.find((sheet) => sheet.id === activeSheet.id)?.lines.find((candidate) => candidate.id === draftId);
       line = {
-        ...lineFormToLogLine({ ...draft.form, time: isoDateTimeWithTimezone(dateTimeLocalFromStamp(draft.form.time), timezoneOffsetFromStamp(draft.form.time)) }),
+        ...lineFormToLogLine({ ...calculatedForm, time: isoDateTimeWithTimezone(dateTimeLocalFromStamp(draft.form.time), timezoneOffsetFromStamp(draft.form.time)) }),
         ...(draft.isNew ? {} : concurrencyMetadata(previousLine)),
       };
       if (!hasRequiredLogLineFields(line)) { setSaveError(t("details.requiredLineFields")); return false; }
@@ -1407,9 +1412,9 @@ export function LogbookApp({
     const saved = await saveLogbookNow(nextLogbook, { kind: "line", sheetId: activeSheet.id, entity: line, isNew: draft.isNew && !previousLine?.revision, previousLineIds, lineIds: nextSheet.lines.map(candidate => candidate.id) });
     if (saved) setLineForms((current) => {
       if (!current[draftId]) return current;
-      // A user may continue typing while the request is pending. Only close
-      // the exact draft submitted by this save; retain subsequent edits.
-      if (current[draftId].form !== draft.form) return { ...current, [draftId]: { ...current[draftId], isNew: false } };
+      // Keep user edits made while saving. Automatic refreshes and equal-value
+      // re-renders do not create a new user draft.
+      if (logLineInputKey(current[draftId].form) !== logLineInputKey(draft.form)) return { ...current, [draftId]: { ...current[draftId], isNew: false } };
       return Object.fromEntries(Object.entries(current).filter(([id]) => id !== draftId));
     });
     return saved;
@@ -1467,7 +1472,7 @@ export function LogbookApp({
 
       setSmartLineProgress(current => current?.draftId === draftId ? { ...current, location: false } : current);
       if (initialPosition) setSmartMotionStatus("tracking");
-      const motionPromise = initialPosition ? trackDeviceMotion(sampleFromPosition(initialPosition)) : Promise.resolve({});
+      const motionPromise = initialPosition ? trackDeviceMotion(sampleFromPosition(initialPosition)) : Promise.resolve({} as Partial<LineForm>);
       const weatherPromise = fetch("/api/meteo/log-line-autofill", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1498,7 +1503,11 @@ export function LogbookApp({
       });
       const [weatherResult, motionResult] = await Promise.allSettled([settledWeather, motionPromise]);
       setSmartMotionStatus("idle");
-      if (motionResult.status === "fulfilled") updateLineForm(draftId, (current) => ({ ...current, ...motionResult.value }));
+      if (motionResult.status === "fulfilled") updateLineForm(draftId, (current) => ({ ...current,
+        ...motionResult.value,
+        courseOverGround: current.courseFieldSources.courseOverGround !== "calculated" ? current.courseOverGround : motionResult.value.courseOverGround ?? current.courseOverGround,
+        courseFieldSources: { ...current.courseFieldSources, ...(motionResult.value.courseOverGround && current.courseFieldSources.courseOverGround === "calculated" ? { courseOverGround: "input" as const } : {}) },
+      }));
       if (weatherResult.status === "rejected") throw weatherResult.reason;
       setSmartLineStatus("idle");
       setSmartLineProgress(null);

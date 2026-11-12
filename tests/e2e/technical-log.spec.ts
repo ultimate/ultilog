@@ -4,6 +4,8 @@ import { sampleBoats, sampleLogSheets } from "../fixtures/logbook";
 
 const targetSheet = sampleLogSheets[0];
 test("edits technical log entries and suggests previous checks", async ({ page }) => {
+  // Covers technical checks, parallel line saves, reload, locking, and a second boat.
+  test.setTimeout(180_000);
   await loginWithSeededDemoData(page);
   await page.goto(`/details/${targetSheet.id}`);
 
