@@ -399,6 +399,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
 
   const [courseHighlights, setCourseHighlights] = useState<Record<string, Partial<Record<LineFormField, number>>>>({});
   const courseDraftsRef = useRef(new Map<string, string>());
+  const focusedCourseRef = useRef<{ draftId: string; field: LineFormField } | null>(null);
   const showSail = activeBoat.type !== "motor";
 
   const updateLineFormField = (draftId: string, field: LineFormField, value: string) => {
@@ -420,13 +421,16 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
       let lastResult = draft.form;
       const applyResult = (result: LineForm) => {
         if (courseConversionSequences.current[draftId] !== sequence) return;
-        const changed = courseConversionColumns.filter(column => result[column.field] !== lastResult[column.field]);
+        // A focused field belongs to the user, even when cleared. Check the
+        // ref when results arrive so delayed lookups respect current focus.
+        const canAutofill = (field: LineFormField) => focusedCourseRef.current?.draftId !== draftId || focusedCourseRef.current.field !== field;
+        const changed = courseConversionColumns.filter(column => canAutofill(column.field) && result[column.field] !== lastResult[column.field]);
         lastResult = result;
         if (!changed.length) return;
         setCourseHighlights(current => ({ ...current, [draftId]: Object.fromEntries(changed.map(column => [column.field, sequence])) }));
         setDraftLineForm(draftId, current => {
           if (courseCalculationKey(current, activeBoat) !== key) return current;
-          return { ...current, ...Object.fromEntries(courseConversionColumns.map(column => [column.field, result[column.field]])) };
+          return { ...current, ...Object.fromEntries(courseConversionColumns.filter(column => canAutofill(column.field)).map(column => [column.field, result[column.field]])) };
         });
       };
       applyResult(recalculateLogLineCourses(draft.form, { boat: activeBoat, lookupVariation: false }));
@@ -447,6 +451,15 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
       max={options.max}
       step="1"
       value={lineForm[field]}
+      onFocus={() => { focusedCourseRef.current = { draftId, field }; }}
+      onBlur={event => {
+        focusedCourseRef.current = null;
+        if (!event.currentTarget.value.trim()) {
+          // Revisit an unchanged calculation key once an empty field is released.
+          courseDraftsRef.current.delete(draftId);
+          setDraftLineForm(draftId, current => ({ ...current }));
+        }
+      }}
       onChange={(e) => updateLineFormField(draftId, field, e.target.value)}
       aria-busy={field === "courseOverGround" && smartMotionStatus === "tracking" && smartLineProgress?.draftId === draftId}
     />
