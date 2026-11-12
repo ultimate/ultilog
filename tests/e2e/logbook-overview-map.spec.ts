@@ -66,7 +66,7 @@ test("opens a seeded logsheet detail page from the overview log sheet list", asy
   await expect(page.getByRole("menu")).toHaveCount(0);
 });
 
-test("fills a smart line from permitted device location and weather with Open-Meteo credits", async ({ page, context }) => {
+for (const format of ["DD (", "DDM (", "DMS ("]) test(`fills a smart line in ${format} coordinates from device location and weather`, async ({ page, context }) => {
   await context.grantPermissions(["geolocation"], { origin: "http://127.0.0.1:3000" });
   await context.setGeolocation({ latitude: 54.1, longitude: 10.2, accuracy: 5 });
   await page.route(/^https:\/\/(?:tile\.openstreetmap\.org|tiles\.openseamap\.org)\//, route => route.fulfill({ status: 204 }));
@@ -89,9 +89,9 @@ test("fills a smart line from permitted device location and weather with Open-Me
   await loginWithSeededDemoData(page);
   await openModule(page, "Logsheet list", "+ New sheet");
   await page.getByRole("link", { name: demoSheet.title }).click();
-  // Use decimal coordinate inputs so the browser-supplied position can be asserted directly.
+  // Exercise incoming GPS updates in each displayed coordinate format.
   const coordinates = page.getByRole("button", { name: /^Coordinates:/ });
-  for (let attempt = 0; attempt < 3 && !(await coordinates.innerText()).includes("Decimal"); attempt++) await coordinates.click();
+  for (let attempt = 0; attempt < 3 && !(await coordinates.innerText()).includes(format); attempt++) await coordinates.click();
   const request = page.waitForRequest("**/api/meteo/log-line-autofill");
   await page.getByRole("button", { name: "+ Add smart line", exact: true }).click();
   const draft = page.locator(".inline-line-row").first();
@@ -106,8 +106,20 @@ test("fills a smart line from permitted device location and weather with Open-Me
   await expect(draft.locator('[data-loading-field="latitude"] .smart-field-spinner')).toHaveCount(0);
   await expect(draft.locator('[data-loading-field="temperature"] .smart-field-spinner')).toBeVisible();
   releaseWeather();
-  await expect(draft.getByLabel("Lat", { exact: true })).toHaveValue("54.1");
-  await expect(draft.getByLabel("Lon", { exact: true })).toHaveValue("10.2");
+  if (format === "DD (") {
+    await expect(draft.getByLabel("Lat", { exact: true })).toHaveValue("54.1");
+    await expect(draft.getByLabel("Lon", { exact: true })).toHaveValue("10.2");
+  } else {
+    await expect(draft.getByLabel("Lat degrees", { exact: true })).toHaveValue("54");
+    await expect(draft.getByLabel("Lon degrees", { exact: true })).toHaveValue("10");
+    const minutes = format === "DDM (" ? "decimal minutes" : "minutes";
+    await expect(draft.getByLabel(`Lat ${minutes}`, { exact: true })).toHaveValue(format === "DDM (" ? "6.0000" : "6");
+    await expect(draft.getByLabel(`Lon ${minutes}`, { exact: true })).toHaveValue(format === "DDM (" ? "12.0000" : "12");
+    if (format === "DMS (") {
+      await expect(draft.getByLabel("Lat seconds", { exact: true })).toHaveValue("0.00");
+      await expect(draft.getByLabel("Lon seconds", { exact: true })).toHaveValue("0.00");
+    }
+  }
   await expect(draft.locator('[data-line-field="temperature"]')).toHaveValue("21");
   await expect(draft.locator('[data-loading-field="temperature"] .smart-field-spinner')).toHaveCount(0);
   await expect(draft.locator('[data-line-field="barometer"]')).toHaveValue("1014");
