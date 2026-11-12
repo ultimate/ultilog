@@ -61,7 +61,7 @@ export async function lookupNoaaMagneticVariation({
     url.searchParams.set("key", apiKey);
   }
 
-  const response = await fetcher(url);
+  const response = await fetcher(url, { signal: AbortSignal.timeout(8_000), cache: "no-store" });
   if (!response.ok) {
     throw new Error(`NOAA magnetic declination request failed with status ${response.status}.`);
   }

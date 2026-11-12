@@ -92,6 +92,10 @@ describe("source-aware course editor", () => {
     expect(failed).toMatchObject({ compassCourse: "20", magneticCourse: "22", variation: "", trueCourse: "" });
   });
 
+  it("looks up variation from coordinates before any course is entered", async () => {
+    const lookup = async () => 4;
+    expect(await recalculateLogLineCourses(inputForm({ latitude: "54.1", longitude: "10.2" }), { variationLookup: lookup })).toMatchObject({ variation: "4", compassCourse: "", magneticCourse: "" });
+  });
   it("normalizes coordinates and ignores legacy empty wind tables", async () => {
     expect(await updateLogLineFormForInput(defaultLineForm, { field: "latitude", value: "91" })).toMatchObject({ latitude: "90" });
     expect(await updateLogLineFormForInput(defaultLineForm, { field: "compassCourse", value: "10" }, { boat: { ...boat, windDriftTable: [] } as unknown as Boat })).toMatchObject({ magneticCourse: "12" });

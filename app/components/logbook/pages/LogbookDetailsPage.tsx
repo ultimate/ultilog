@@ -398,6 +398,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
 
 
   const [courseHighlights, setCourseHighlights] = useState<Record<string, Partial<Record<LineFormField, number>>>>({});
+  const [courseLookupErrors, setCourseLookupErrors] = useState<Record<string, boolean>>({});
   const courseDraftsRef = useRef(new Map<string, string>());
   const focusedCourseRef = useRef<{ draftId: string; field: LineFormField } | null>(null);
   const showSail = activeBoat.type !== "motor";
@@ -418,6 +419,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
       courseDraftsRef.current.set(draftId, key);
       const sequence = (courseConversionSequences.current[draftId] ?? 0) + 1;
       courseConversionSequences.current[draftId] = sequence;
+      setCourseLookupErrors(current => current[draftId] ? { ...current, [draftId]: false } : current);
       let lastResult = draft.form;
       const applyResult = (result: LineForm) => {
         if (courseConversionSequences.current[draftId] !== sequence) return;
@@ -434,7 +436,9 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
         });
       };
       applyResult(recalculateLogLineCourses(draft.form, { boat: activeBoat, lookupVariation: false }));
-      Promise.resolve().then(() => recalculateLogLineCourses(draft.form, { boat: activeBoat })).then(applyResult).catch(() => {
+      Promise.resolve().then(() => recalculateLogLineCourses(draft.form, { boat: activeBoat, onVariationLookupError: () => {
+        if (courseConversionSequences.current[draftId] === sequence) setCourseLookupErrors(current => ({ ...current, [draftId]: true }));
+      } })).then(applyResult).catch(() => {
         // The already-committed user input and provenance remain intact. Ignore stale failures.
         if (courseConversionSequences.current[draftId] !== sequence) return;
       });
@@ -463,6 +467,7 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
       onChange={(e) => updateLineFormField(draftId, field, e.target.value)}
       aria-busy={field === "courseOverGround" && smartMotionStatus === "tracking" && smartLineProgress?.draftId === draftId}
     />
+    {field === "variation" && courseLookupErrors[draftId] && lineForm.courseFieldSources.variation === "calculated" ? <small role="status">{t("details.variationLookupError")}</small> : null}
     {field === "courseOverGround" && smartMotionStatus === "tracking" && smartLineProgress?.draftId === draftId ? <span className="smart-field-spinner" role="status" aria-label={t("details.trackingMotion")} /> : null}
     </span>;
   };

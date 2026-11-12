@@ -530,6 +530,7 @@ export const it: Dictionary = {
   "details.gettingLocation": "Rilevamento della posizione del dispositivo…",
   "details.addSmartLineLoading": "Recupero meteo…",
   "details.trackingMotion": "Rilevamento del movimento del dispositivo",
+  "details.variationLookupError": "Impossibile recuperare la declinazione magnetica. Inseriscila manualmente o riprova più tardi.",
   "details.addSmartLineError": "La riga è pronta, ma non è stato possibile compilare automaticamente alcuni campi di posizione o meteo.",
   "details.timePos": "Ora & pos",
   "details.weatherSea": "Meteo & mare",

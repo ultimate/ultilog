@@ -530,6 +530,7 @@ export const de: Dictionary = {
   "details.gettingLocation": "Gerätestandort wird ermittelt…",
   "details.addSmartLineLoading": "Meteo wird geladen…",
   "details.trackingMotion": "Gerätebewegung wird erfasst",
+  "details.variationLookupError": "Die magnetische Missweisung konnte nicht abgerufen werden. Bitte manuell eingeben oder später erneut versuchen.",
   "details.addSmartLineError": "Die Zeile ist bereit, aber einige Positions- oder Wetterfelder konnten nicht automatisch ausgefüllt werden.",
   "details.timePos": "Zeit & Pos",
   "details.weatherSea": "Wetter & See",

@@ -13,6 +13,7 @@ export type LogLineFormUpdateContext = {
   boat?: Pick<Boat, "deviationTable" | "windDriftTable">;
   variationLookup?: CourseConversionLookupOptions["variationLookup"];
   lookupVariation?: boolean;
+  onVariationLookupError?: () => void;
 };
 
 
@@ -57,9 +58,9 @@ export function recalculateLogLineCourses(form: LineForm, context: LogLineFormUp
   const position = context.lookupVariation !== false && form.latitude.trim() && form.longitude.trim() && Number.isFinite(latitude) && Number.isFinite(longitude)
     ? { latitude, longitude } : undefined;
   const options = { position, date: form.time ? new Date(form.time) : undefined, variationLookup: context.variationLookup, windDirection: parseWindDirection(form.windDirection), windSpeedKnots: windSpeedKnotsFromForm(form), windDriftTable };
-  // With no fixed course input there is no basis for a new course chain.
+  // Coordinates alone can determine variation, even before a course is entered.
   const hasInput = courseFields.some(field => input[field] !== undefined);
-  const conversion = hasInput ? calculateCourseConversion(input, deviationTable, options) : {};
+  const conversion = hasInput || position ? calculateCourseConversion(input, deviationTable, options) : {};
   const merge = (result: CourseConversionInput): LineForm => {
     const next = { ...form, courseFieldSources: { ...form.courseFieldSources } };
     for (const field of courseFields) {
@@ -68,7 +69,10 @@ export function recalculateLogLineCourses(form: LineForm, context: LogLineFormUp
     return next;
   };
   return conversion instanceof Promise
-    ? conversion.then(merge, () => merge(calculateCourseConversion(input, deviationTable, { ...options, position: undefined }) as CourseConversionInput))
+    ? conversion.then(merge, () => {
+      context.onVariationLookupError?.();
+      return merge(calculateCourseConversion(input, deviationTable, { ...options, position: undefined }) as CourseConversionInput);
+    })
     : merge(conversion);
 }
 
