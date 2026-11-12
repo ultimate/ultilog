@@ -65,7 +65,45 @@ test("updates derived courses while typing, preserves overrides, and remembers s
 
 });
 
-async function loginWithSeededDemoData(page: Page) {
+test("restores automatic courses after clearing a migrated line and updates every digit on a new line", async ({ page }) => {
+  await page.addInitScript(() => {
+    const original = window.fetch.bind(window);
+    window.fetch = (input, init) => String(input).startsWith("https://www.ngdc.noaa.gov/")
+      ? Promise.resolve(new Response(JSON.stringify({ result: [{ declination: 4 }] }), { headers: { "content-type": "application/json" } }))
+      : original(input, init);
+  });
+  // Import without provenance to exercise the same conservative classification
+  // as the database migration: every populated legacy value starts protected.
+  await loginWithSeededDemoData(page, true);
+  await page.goto(`/details/${sampleLogSheets[0].id}`);
+  const row = page.locator(".log-lines-table tbody tr").first();
+  await row.getByRole("button", { name: "✏️" }).click();
+  const show = page.getByRole("button", { name: "Show course conversion columns", exact: true });
+  if (await show.count()) await show.click();
+  for (let index = 0; index < 9; index += 1) await row.locator(".course-number-input").nth(index).fill("");
+  for (const value of ["1", "12", "123"]) {
+    await row.locator(".course-number-input").nth(0).fill(value);
+    await expect(row.locator(".course-number-input").nth(1)).toHaveValue("2");
+    await expect(row.locator(".course-number-input").nth(2)).toHaveValue(String(Number(value) + 2));
+    await expect(row.locator(".course-number-input").nth(3)).toHaveValue("4");
+    await expect(row.locator(".course-number-input").nth(4)).toHaveValue(String(Number(value) + 6));
+  }
+  await row.getByRole("button", { name: "💾" }).click();
+  await expect(row.locator(".course-number-input")).toHaveCount(0);
+  await page.getByRole("button", { name: "+ Add line", exact: true }).click();
+  const editor = page.locator(".inline-line-row").last();
+  await editor.getByRole("textbox", { name: "Lat", exact: true }).fill("38.5");
+  await editor.getByRole("textbox", { name: "Lon", exact: true }).fill("20.5");
+  for (const value of ["1", "12", "123"]) {
+    await editor.locator(".course-number-input").nth(0).fill(value);
+    await expect(editor.locator(".course-number-input").nth(1)).toHaveValue("2");
+    await expect(editor.locator(".course-number-input").nth(2)).toHaveValue(String(Number(value) + 2));
+    await expect(editor.locator(".course-number-input").nth(3)).toHaveValue("4");
+    await expect(editor.locator(".course-number-input").nth(4)).toHaveValue(String(Number(value) + 6));
+  }
+});
+
+async function loginWithSeededDemoData(page: Page, legacy = false) {
   await page.goto("/login");
   const demoLogin = page.getByRole("button", { name: "Try the demo" });
   await expect(demoLogin).toBeVisible();
@@ -75,7 +113,7 @@ async function loginWithSeededDemoData(page: Page) {
   await page.waitForLoadState("networkidle");
   await removeDemoLogsheets(page);
   const seedResponse = await page.request.put("/api/logbook/import", { headers: { Origin: "http://127.0.0.1:3000", "X-Ultilog-Confirm-Replace": "replace-my-entire-logbook" },
-    data: { boats: sampleBoats.map((boat, index) => index === 0 ? { ...boat, deviationTable: [{ heading: 0, deviation: "2" }] } : boat), crewMembers: crewProfilesFromSheets(sampleLogSheets), sheets: sampleLogSheets.map((sheet, index) => index === 0 ? { ...sheet, lines: sheet.lines.map((line, row) => row === 0 ? { ...line, courseFieldSources: { ...courseSourcesFor({}), compassCourse: "input", variation: "input", windDrift: "input", currentDrift: "input" } } : line) } : sheet) },
+    data: { boats: sampleBoats.map((boat, index) => index === 0 ? { ...boat, deviationTable: [{ heading: 0, deviation: "2" }] } : boat), crewMembers: crewProfilesFromSheets(sampleLogSheets), sheets: sampleLogSheets.map((sheet, index) => index === 0 ? { ...sheet, lines: sheet.lines.map((line, row) => row === 0 ? legacy ? Object.fromEntries(Object.entries(line).filter(([key]) => key !== "courseFieldSources")) : { ...line, courseFieldSources: { ...courseSourcesFor({}), compassCourse: "input", variation: "input", windDrift: "input", currentDrift: "input" } } : line) } : sheet) },
   });
   expect(seedResponse.ok(), await seedResponse.text()).toBeTruthy();
   await page.reload();
