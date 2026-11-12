@@ -557,8 +557,8 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
             commitCoordinateParts(event.currentTarget, draftId, field);
           }}
         >
-          <label><span>[°]</span><LogNumberInput aria-label={`${label} degrees`} data-dms-part="degrees" defaultValue={parts.degrees} /></label>
-          <label><span>[&prime;]</span><LogNumberInput aria-label={`${label} decimal minutes`} data-dms-part="minutes" defaultValue={parts.minutes} /></label>
+          <label><span>[°]</span><LogNumberInput aria-label={`${label} degrees`} data-dms-part="degrees" syncDefaultValue defaultValue={parts.degrees} /></label>
+          <label><span>[&prime;]</span><LogNumberInput aria-label={`${label} decimal minutes`} data-dms-part="minutes" syncDefaultValue defaultValue={parts.minutes} /></label>
         </div>
       );
     }
@@ -572,9 +572,9 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
           commitCoordinateParts(event.currentTarget, draftId, field);
         }}
       >
-        <label><span>[°]</span><LogNumberInput aria-label={`${label} degrees`} data-dms-part="degrees" defaultValue={parts.degrees} /></label>
-        <label><span>[&prime;]</span><LogNumberInput aria-label={`${label} minutes`} data-dms-part="minutes" defaultValue={parts.minutes} /></label>
-        <label><span>[&Prime;]</span><LogNumberInput aria-label={`${label} seconds`} data-dms-part="seconds" defaultValue={parts.seconds} /></label>
+        <label><span>[°]</span><LogNumberInput aria-label={`${label} degrees`} data-dms-part="degrees" syncDefaultValue defaultValue={parts.degrees} /></label>
+        <label><span>[&prime;]</span><LogNumberInput aria-label={`${label} minutes`} data-dms-part="minutes" syncDefaultValue defaultValue={parts.minutes} /></label>
+        <label><span>[&Prime;]</span><LogNumberInput aria-label={`${label} seconds`} data-dms-part="seconds" syncDefaultValue defaultValue={parts.seconds} /></label>
       </div>
     );
   };

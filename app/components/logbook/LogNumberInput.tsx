@@ -2,11 +2,13 @@ import { useState, type InputHTMLAttributes } from "react";
 import { formatDecimalInput, formatEngineHours, parseDecimalInput, parseHourInput } from "../../lib/log-input";
 import { useI18n } from "../../lib/i18n";
 
-type Props = Omit<InputHTMLAttributes<HTMLInputElement>, "type"> & { hours?: boolean };
-export function LogNumberInput({ hours, value: controlledValue, defaultValue, onChange, onBlur, onFocus, ...props }: Props) {
+type Props = Omit<InputHTMLAttributes<HTMLInputElement>, "type"> & { hours?: boolean; syncDefaultValue?: boolean };
+export function LogNumberInput({ hours, syncDefaultValue = false, value: controlledValue, defaultValue, onChange, onBlur, onFocus, ...props }: Props) {
   const { t, locale } = useI18n();
-  const [localValue, setLocalValue] = useState(() => String(defaultValue ?? ""));
-  const [draft, setDraft] = useState<{ source: string; text: string } | null>(null);
+  const initialValue = String(defaultValue ?? "");
+  const [local, setLocal] = useState(() => ({ source: initialValue, value: initialValue }));
+  const [draft, setDraft] = useState<{ source: string; text: string; dirty?: boolean } | null>(null);
+  const localValue = syncDefaultValue && local.source !== initialValue && !draft?.dirty ? initialValue : local.value;
   const value = String(controlledValue ?? localValue);
   const format = (text: string) => {
     if (!hours) return formatDecimalInput(text, locale);
@@ -27,8 +29,8 @@ export function LogNumberInput({ hours, value: controlledValue, defaultValue, on
     onFocus={event => { setDraft({ source: value, text: event.currentTarget.value }); onFocus?.(event); }}
     onChange={event => {
       validate(event.currentTarget);
-      setDraft({ source: event.currentTarget.value, text: event.currentTarget.value });
-      if (controlledValue === undefined) setLocalValue(event.currentTarget.value);
+      setDraft({ source: event.currentTarget.value, text: event.currentTarget.value, dirty: true });
+      if (controlledValue === undefined) setLocal({ source: initialValue, value: event.currentTarget.value });
       onChange?.(event);
     }}
     onBlur={event => {
@@ -36,7 +38,7 @@ export function LogNumberInput({ hours, value: controlledValue, defaultValue, on
       if (parsed !== undefined) {
         const formatted = format(event.currentTarget.value.trim());
         event.currentTarget.value = formatted;
-        if (controlledValue === undefined) setLocalValue(formatted);
+        if (controlledValue === undefined) setLocal({ source: initialValue, value: formatted });
         if (formatted !== value) onChange?.(event);
       }
       setDraft(null);

@@ -183,10 +183,10 @@
     "id": "logsheet-editing-feedback-and-status",
     "category": "improvement",
     "title": {
-      "en": "Clearer logsheet saving, continuously updated calculated courses with protected manual and scanned values, searchable status labels, and sail columns hidden for motor boats.",
-      "de": "Klarere Rückmeldungen beim Speichern, laufend aktualisierte Kurse mit geschützten manuellen und gescannten Werten, durchsuchbare Statusanzeigen und ausgeblendete Segelspalten für Motorboote.",
-      "fr": "Enregistrement plus clair, caps calculés actualisés avec protection des valeurs saisies et numérisées, statuts recherchables et colonnes de voile masquées pour les bateaux à moteur.",
-      "it": "Salvataggio più chiaro, rotte calcolate aggiornate con valori manuali e scansionati protetti, stati ricercabili e colonne vela nascoste per le barche a motore."
+      "en": "Reliable logsheet saves, GPS coordinates and course autofill, protected manual and scanned values, searchable status labels, and motor-boat layouts.",
+      "de": "Zuverlässiges Speichern, GPS-Koordinaten und automatische Kursberechnung, geschützte manuelle und gescannte Werte, durchsuchbare Statusanzeigen und Ansichten für Motorboote.",
+      "fr": "Enregistrement fiable, coordonnées GPS et calcul des caps, valeurs saisies et numérisées protégées, statuts recherchables et affichage adapté aux bateaux à moteur.",
+      "it": "Salvataggio affidabile, coordinate GPS e calcolo delle rotte, valori manuali e scansionati protetti, stati ricercabili e viste per le barche a motore."
     }
   },
   {

@@ -78,6 +78,28 @@ describe("localized numeric editors", () => {
     await act(async () => input().props.onBlur(change));
     expect(input().props.value).toBe("12,3000");
   });
+  it("refreshes coordinate parts when GPS arrives after mounting", async () => {
+    await act(async () => { root = create(<LogNumberInput syncDefaultValue defaultValue="" />); });
+    await act(async () => { root.update(<LogNumberInput syncDefaultValue defaultValue="54" />); });
+    expect(input().props.value).toBe("54");
+    await act(async () => input().props.onFocus(event("54")));
+    expect(input().props.value).toBe("54");
+  });
+  it("preserves a coordinate part being edited when an external position arrives", async () => {
+    await act(async () => { root = create(<LogNumberInput syncDefaultValue defaultValue="" />); });
+    await act(async () => input().props.onFocus(event("")));
+    await act(async () => input().props.onChange(event("12")));
+    await act(async () => { root.update(<LogNumberInput syncDefaultValue defaultValue="54" />); });
+    expect(input().props.value).toBe("12");
+    await act(async () => input().props.onBlur(event("12")));
+    expect(input().props.value).toBe("12");
+  });
+  it("accepts incoming GPS values while focused but still untouched", async () => {
+    await act(async () => { root = create(<LogNumberInput syncDefaultValue defaultValue="" />); });
+    await act(async () => input().props.onFocus(event("")));
+    await act(async () => { root.update(<LogNumberInput syncDefaultValue defaultValue="54" />); });
+    expect(input().props.value).toBe("54");
+  });
   it("keeps empty, zero and negative values distinct", () => {
     expect(formatDecimalInput(null, "de")).toBe("");
     expect(formatDecimalInput("0", "de")).toBe("0");
