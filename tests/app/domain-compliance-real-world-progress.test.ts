@@ -1,3 +1,4 @@
+import { courseFields, courseSourcesFor } from "../../app/models/course-field-sources";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -8,7 +9,7 @@ import type { BoatRow, LogLineRow, LogSheetRow } from "../../app/models/logbook"
 
 const load = <T,>(day: number, suffix: string): T[] => JSON.parse(readFileSync(join(process.cwd(), "tests/fixtures/logbook-scanner/real-world", `2026-07-${day}_Respocean_${suffix}.json`), "utf8"));
 const sheets = Array.from({ length: 6 }, (_, index) => load<LogSheetRow>(12 + index, "log_sheet")).flat();
-const lines = Array.from({ length: 6 }, (_, index) => load<LogLineRow>(12 + index, "log_lines")).flat();
+const lines = Array.from({ length: 6 }, (_, index) => load<LogLineRow>(12 + index, "log_lines")).flat().map(line => ({ ...line, course_field_sources: JSON.stringify(courseSourcesFor(Object.fromEntries(courseFields.map(field => [field, line[field.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`) as keyof LogLineRow]])))) }));
 
 describe("Respocean compliance mileage", () => {
   it("counts 215.9 nm from the six July 2026 voyages after the March 7 exam", () => {

@@ -3,6 +3,16 @@ import { createScannedSheet } from "../../../app/lib/logbook-scanner/create-scan
 import type { ScannerResult } from "../../../app/models/logbook-scanner";
 
 describe("scanned log-line dates", () => {
+  it("marks extracted course fields scanned and empty fields automatic", () => {
+    const result = scannerResult({ dateText: "2026-07-01", times: ["10:00"] });
+    result.draft.lines[0].compassCourse = "0";
+    result.draft.lines[0].magneticCourse = "";
+    const line = createSheet(result).lines[0];
+    expect(line.courseFieldSources.compassCourse).toBe("scanned");
+    expect(line.courseFieldSources.magneticCourse).toBe("calculated");
+    expect(Object.keys(line.courseFieldSources)).toHaveLength(9);
+  });
+
   it("combines time-only log lines with the extracted sheet date", () => {
     const sheet = createSheet(scannerResult({ dateText: "2026-07-01", times: ["7:30", "07:45:15"] }));
 

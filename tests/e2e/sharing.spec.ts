@@ -59,7 +59,7 @@ test("returns from login to a filtered share and reviews a mixed batch of new co
     await seed(page, []);
     const destinationBoatId = sampleBoats[0].id;
     const firstCopyResponse = await page.request.post(`/api/shared/logbooks/${source.id}/${shared[0].id}/copy`, { headers, data: { destinationBoatId } });
-    expect(firstCopyResponse.ok(), await firstCopyResponse.text()).toBeTruthy();
+    if (!firstCopyResponse.ok()) throw new Error(`Copy failed: HTTP ${firstCopyResponse.status()} ${await firstCopyResponse.text()}`);
     const firstCopy = await firstCopyResponse.json() as { id: string };
     await page.reload();
     const cookieNotice = page.getByRole("button", { name: "Got it" });
@@ -80,11 +80,13 @@ test("returns from login to a filtered share and reviews a mixed batch of new co
     expect(stored.sheets).toHaveLength(2);
     expect(stored.sheets.some((sheet: { id: string }) => sheet.id === firstCopy.id)).toBe(true);
     await page.goto(`/share/${source.id}/${shared[0].id}`);
+    await page.waitForLoadState("networkidle");
     const importButton = page.locator(".shared-copy-action > button");
     await expect(importButton).toBeEnabled();
     await expect(importButton).toHaveClass(/primary-action/);
     await importButton.press("Tab");
     await page.keyboard.press("Shift+Tab");
+    await expect(importButton).toBeFocused();
     await expect(importButton).toHaveCSS("outline-style", "solid");
     await importButton.click();
     await expect(page.getByRole("dialog")).toBeVisible();

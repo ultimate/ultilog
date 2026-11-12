@@ -1,9 +1,8 @@
+import { courseFields, type CourseField } from "../../models/course-field-sources";
 import { parseDecimalInput } from "../../lib/log-input";
 import type { Boat, LineForm, LineFormField } from "../../models/logbook";
 import { calculateCourseConversion, type CourseConversionInput, type CourseConversionLookupOptions, type DeviationTable, type WindDriftTable } from "../nautical/course-conversion";
 import { normalizeCoordinate, parseCoordinate, type CoordinateAxis } from "../nautical/coordinates";
-
-type CourseFieldName = typeof courseInputFieldNames[number];
 
 export type LogLineFormUpdate = {
   field: LineFormField;
@@ -13,39 +12,64 @@ export type LogLineFormUpdate = {
 export type LogLineFormUpdateContext = {
   boat?: Pick<Boat, "deviationTable" | "windDriftTable">;
   variationLookup?: CourseConversionLookupOptions["variationLookup"];
+  lookupVariation?: boolean;
 };
 
-const courseInputFieldNames = ["compassCourse", "deviation", "magneticCourse", "variation", "trueCourse", "windDrift", "courseThroughWater", "currentDrift", "courseOverGround"] as const;
+
 const coordinateAxes: Partial<Record<LineFormField, CoordinateAxis>> = { latitude: "lat", longitude: "lon" };
 
 export function updateLogLineFormForInput(form: LineForm, update: LogLineFormUpdate, context: LogLineFormUpdateContext = {}) {
-  const nextForm = applyFieldUpdate(form, update);
-  if (!shouldRecalculateCourses(update.field, nextForm)) return nextForm;
-  const explicitlyClearedCourseField = courseInputFieldNames.includes(update.field as CourseFieldName) && !update.value.trim()
-    ? update.field as CourseFieldName
-    : undefined;
-
-  const deviationTable = context.boat ? deviationTableFromBoat(context.boat) : undefined;
-  const windDriftTable = context.boat ? windDriftTableFromBoat(context.boat) : undefined;
-  const input = courseInputFromForm(nextForm, Boolean(deviationTable), Boolean(windDriftTable));
-  const position = nextForm.latitude.trim() || nextForm.longitude.trim()
-    ? { latitude: parseCoordinate(nextForm.latitude), longitude: parseCoordinate(nextForm.longitude) }
-    : undefined;
-  const date = nextForm.time ? new Date(nextForm.time) : undefined;
-  const options = { position, date, variationLookup: context.variationLookup, windDirection: parseWindDirection(nextForm.windDirection), windSpeedKnots: windSpeedKnotsFromForm(nextForm), windDriftTable };
-  const conversion = calculateCourseConversion(input, deviationTable, options);
-
-  if (conversion instanceof Promise) {
-    return conversion.then((result) => mergeCourseConversion(nextForm, result, explicitlyClearedCourseField));
-  }
-
-  return mergeCourseConversion(nextForm, conversion, explicitlyClearedCourseField);
+  const nextForm = applyLogLineInput(form, update);
+  return shouldRecalculateCourses(update.field) ? recalculateLogLineCourses(nextForm, context) : nextForm;
 }
 
-function mergeCourseConversion(form: LineForm, conversion: CourseConversionInput, explicitlyClearedField?: CourseFieldName) {
-  const merged = { ...form, ...courseFormFromConversion(conversion) };
-  if (explicitlyClearedField) merged[explicitlyClearedField] = "";
-  return merged;
+/** Apply input and provenance synchronously, before any async lookup starts. */
+export function applyLogLineInput(form: LineForm, update: LogLineFormUpdate): LineForm {
+  const next = applyFieldUpdate(form, update);
+  if (courseFields.includes(update.field as CourseField)) {
+    next.courseFieldSources = { ...form.courseFieldSources, [update.field]: update.value.trim() ? "input" : "calculated" };
+  }
+  return next;
+}
+
+/** Compare user edits independently of automatic cache refreshes and object identity. */
+export function logLineInputKey(form: LineForm): string {
+  const inputs = Object.entries(form).filter(([field]) => field !== "courseFieldSources" && field !== "engineHours" && !(courseFields.includes(field as CourseField) && form.courseFieldSources[field as CourseField] === "calculated"));
+  return JSON.stringify([inputs.sort(([left], [right]) => left.localeCompare(right)), Object.entries(form.engineHours ?? {}).sort(([left], [right]) => left.localeCompare(right)), courseFields.map(field => form.courseFieldSources[field])]);
+}
+
+/** Calculated cache values and unrelated text cannot invalidate an in-flight calculation. */
+export function courseCalculationKey(form: LineForm, boat?: LogLineFormUpdateContext["boat"]): string {
+  return JSON.stringify([courseFields.map(field => [form.courseFieldSources[field], form.courseFieldSources[field] === "calculated" ? "" : form[field]]), form.latitude, form.longitude, form.time, form.windDirection, form.windStrength, form.windUnit, boat?.deviationTable, boat?.windDriftTable]);
+}
+
+export function recalculateLogLineCourses(form: LineForm, context: LogLineFormUpdateContext & { lookupVariation: false }): LineForm;
+export function recalculateLogLineCourses(form: LineForm, context?: LogLineFormUpdateContext): LineForm | Promise<LineForm>;
+export function recalculateLogLineCourses(form: LineForm, context: LogLineFormUpdateContext = {}): LineForm | Promise<LineForm> {
+  const input: CourseConversionInput = {};
+  for (const field of courseFields) {
+    if (form.courseFieldSources[field] !== "calculated") input[field] = optionalNumber(form[field]);
+  }
+  const deviationTable = context.boat ? deviationTableFromBoat(context.boat) : undefined;
+  const windDriftTable = context.boat ? windDriftTableFromBoat(context.boat) : undefined;
+  const latitude = parseCoordinate(form.latitude);
+  const longitude = parseCoordinate(form.longitude);
+  const position = context.lookupVariation !== false && form.latitude.trim() && form.longitude.trim() && Number.isFinite(latitude) && Number.isFinite(longitude)
+    ? { latitude, longitude } : undefined;
+  const options = { position, date: form.time ? new Date(form.time) : undefined, variationLookup: context.variationLookup, windDirection: parseWindDirection(form.windDirection), windSpeedKnots: windSpeedKnotsFromForm(form), windDriftTable };
+  // With no fixed course input there is no basis for a new course chain.
+  const hasInput = courseFields.some(field => input[field] !== undefined);
+  const conversion = hasInput ? calculateCourseConversion(input, deviationTable, options) : {};
+  const merge = (result: CourseConversionInput): LineForm => {
+    const next = { ...form, courseFieldSources: { ...form.courseFieldSources } };
+    for (const field of courseFields) {
+      if (form.courseFieldSources[field] === "calculated") next[field] = result[field] === undefined ? "" : String(Math.round(result[field]!));
+    }
+    return next;
+  };
+  return conversion instanceof Promise
+    ? conversion.then(merge, () => merge(calculateCourseConversion(input, deviationTable, { ...options, position: undefined }) as CourseConversionInput))
+    : merge(conversion);
 }
 
 function applyFieldUpdate(form: LineForm, { field, value }: LogLineFormUpdate): LineForm {
@@ -56,8 +80,8 @@ function applyFieldUpdate(form: LineForm, { field, value }: LogLineFormUpdate): 
   return { ...form, [field]: Number.isFinite(parsed) ? String(normalizeCoordinate(parsed, axis)) : value };
 }
 
-function shouldRecalculateCourses(field: keyof LineForm, form: LineForm) {
-  return (courseInputFieldNames.includes(field as CourseFieldName) || field === "windDirection" || field === "windStrength" || field === "windUnit" || field === "latitude" || field === "longitude" || field === "time") && hasAnyCourseInput(form);
+function shouldRecalculateCourses(field: keyof LineForm) {
+  return courseFields.includes(field as CourseField) || ["windDirection", "windStrength", "windUnit", "latitude", "longitude", "time"].includes(field);
 }
 
 const cardinalWindDirections: Record<string, number> = {
@@ -112,42 +136,6 @@ function beaufortToKnots(beaufort: number) {
 function optionalNumber(value: string) {
   if (!value.trim()) return undefined;
   try { return parseDecimalInput(value) ?? undefined; } catch { return undefined; }
-}
-
-function hasAnyCourseInput(form: LineForm) {
-  return courseInputFieldNames.some((field) => form[field].trim());
-}
-
-function courseInputFromForm(form: LineForm, forceDeviationFromTable = false, forceWindDriftFromTable = false): CourseConversionInput {
-  return {
-    compassCourse: optionalNumber(form.compassCourse),
-    deviation: forceDeviationFromTable ? undefined : optionalNumber(form.deviation),
-    magneticCourse: optionalNumber(form.magneticCourse),
-    variation: optionalNumber(form.variation),
-    trueCourse: optionalNumber(form.trueCourse),
-    windDrift: forceWindDriftFromTable ? undefined : optionalNumber(form.windDrift),
-    courseThroughWater: optionalNumber(form.courseThroughWater),
-    currentDrift: optionalNumber(form.currentDrift),
-    courseOverGround: optionalNumber(form.courseOverGround),
-  };
-}
-
-function courseFormFromConversion(conversion: CourseConversionInput): Partial<LineForm> {
-  const updates: Partial<LineForm> = {};
-  setCourseFormValue(updates, "compassCourse", conversion.compassCourse);
-  setCourseFormValue(updates, "deviation", conversion.deviation);
-  setCourseFormValue(updates, "magneticCourse", conversion.magneticCourse);
-  setCourseFormValue(updates, "variation", conversion.variation);
-  setCourseFormValue(updates, "trueCourse", conversion.trueCourse);
-  setCourseFormValue(updates, "windDrift", conversion.windDrift);
-  setCourseFormValue(updates, "courseThroughWater", conversion.courseThroughWater);
-  setCourseFormValue(updates, "currentDrift", conversion.currentDrift);
-  setCourseFormValue(updates, "courseOverGround", conversion.courseOverGround);
-  return updates;
-}
-
-function setCourseFormValue(updates: Partial<LineForm>, field: LineFormField, value: number | undefined) {
-  if (value !== undefined) updates[field] = String(Math.round(value));
 }
 
 function deviationTableFromBoat(boat: Pick<Boat, "deviationTable">): DeviationTable | undefined {

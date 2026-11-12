@@ -57,6 +57,7 @@ export function lineFormToLogLine(lineForm: LineForm, options: { scannerDraft?: 
     tide: parseDecimalInput(lineForm.tide),
     tideUnit: lineForm.tideUnit === "ft" ? "ft" : "m",
     moon: lineForm.moon,
+    courseFieldSources: { ...lineForm.courseFieldSources },
     compassCourse: lineForm.compassCourse.trim() ? bearing(lineForm.compassCourse) : null,
     deviation: lineForm.deviation.trim() ? signedCourse(lineForm.deviation) : null,
     magneticCourse: lineForm.magneticCourse.trim() ? bearing(lineForm.magneticCourse) : null,

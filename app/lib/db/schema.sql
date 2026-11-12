@@ -230,6 +230,7 @@ create table if not exists log_lines (
   latitude real,
   longitude real,
   log_nm real,
+  course_field_sources text not null default '{"compassCourse":"input","deviation":"input","magneticCourse":"input","variation":"input","trueCourse":"input","windDrift":"input","courseThroughWater":"input","currentDrift":"input","courseOverGround":"input"}',
   compass_course integer,
   waves real,
   barometer text,

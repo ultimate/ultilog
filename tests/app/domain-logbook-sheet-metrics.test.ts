@@ -1,8 +1,9 @@
+import { withCourseSources } from "../../app/models/course-field-sources";
 import { describe, expect, it } from "vitest";
 import { calculateLogSheetMetrics } from "../../app/domain/logbook/sheet-metrics";
 import type { LogLine } from "../../app/models/logbook";
 
-const baseLine: LogLine = {
+const baseLine: LogLine = withCourseSources({
   id: "base-line",
   time: "00:00",
 
@@ -37,7 +38,7 @@ const baseLine: LogLine = {
   motorMiles: 0,
   motorNote: "",
   remarks: "",
-};
+});
 
 describe("calculateLogSheetMetrics", () => {
   it("calculates route, motion, and motor durations independently", () => {

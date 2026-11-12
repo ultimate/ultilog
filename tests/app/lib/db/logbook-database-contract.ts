@@ -1,3 +1,4 @@
+import { courseSourcesFor } from "../../../../app/models/course-field-sources";
 import { canAccessRegisteredShares } from "../../../../app/lib/registered-share-access";
 import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
@@ -31,6 +32,41 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
       const boat = await database.upsertBoat({ id: "boat", name: "Contract boat", type: "sail", registration: "", flagState: "", homePort: "", owner: "", dimensions: "", logfactor: 1, deviationTable: defaultDeviationTable() });
       return { ...resource, database, owner, other, boat: boat! };
     }
+
+    it("backfills every legacy line conservatively and requires non-null source maps", async () => {
+      const context = await setup();
+      try {
+        const db = context.database;
+        const line = { ...sampleLogSheets[0].lines[0], compassCourse: 0, deviation: null, magneticCourse: null };
+        await db.upsertLogSheet({ ...sheet([line]), source: "scanner" });
+        const before = (await db.readLogbook()).sheets[0].lines[0];
+        await db.query("alter table log_lines drop column course_field_sources");
+        const p = (index: number) => db.placeholder(index);
+        await db.query(`delete from schema_migrations where id = ${p(1)}`, ["057_log_line_course_sources"]);
+        await db.migrate();
+        const migrated = (await db.readLogbook()).sheets[0].lines[0];
+        expect(migrated).toEqual({ ...before, courseFieldSources: courseSourcesFor(before) });
+        expect(migrated.courseFieldSources).toMatchObject({ compassCourse: "input", deviation: "calculated", magneticCourse: "calculated" });
+        await expect(db.query("update log_lines set course_field_sources = null")).rejects.toThrow();
+        await db.migrate();
+        expect((await db.readLogbook()).sheets[0].lines[0]).toEqual(migrated);
+      } finally { await context.cleanup(); }
+    });
+
+    it("round-trips all sources through focused writes and aggregate reads", async () => {
+      const context = await setup();
+      try {
+        const db = context.database;
+        const line = { ...sampleLogSheets[0].lines[0], id: "sources", courseFieldSources: { ...sampleLogSheets[0].lines[0].courseFieldSources, deviation: "scanned" as const, magneticCourse: "calculated" as const } };
+        await db.upsertLogSheet(sheet([line]));
+        let stored = (await db.readLogbook()).sheets[0].lines[0];
+        expect(stored.courseFieldSources).toEqual(line.courseFieldSources);
+        const saved = await db.updateLogLine("sheet", stored.id, { ...stored, compassCourse: 123 });
+        expect(saved?.courseFieldSources).toEqual(line.courseFieldSources);
+        stored = (await db.readLogbook()).sheets[0].lines[0];
+        expect(stored.courseFieldSources).toEqual(line.courseFieldSources);
+      } finally { await context.cleanup(); }
+    });
 
     it("migrates legacy boat types to lowercase and preserves boat data", async () => {
       const context = await setup();
@@ -428,7 +464,7 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
         await sourceDb.upsertBoat({ ...context.boat, id: "source-boat", revision: undefined });
         const sourceImageId = randomUUID();
         await sourceDb.createStoredImage(sourceImageId, { data: "data:image/png;base64,Y29weQ==", mimeType: "image/png", width: 2, height: 3 });
-        const sourceLine = { ...sampleLogSheets[0].lines[0], id: "source-line", revision: undefined, createdAt: undefined, updatedAt: undefined };
+        const sourceLine = { ...sampleLogSheets[0].lines[0], courseFieldSources: { ...sampleLogSheets[0].lines[0].courseFieldSources, deviation: "scanned" as const, magneticCourse: "calculated" as const }, id: "source-line", revision: undefined, createdAt: undefined, updatedAt: undefined };
         await sourceDb.upsertCrewMember({ id: "sailor", name: "Sailor", nationality: "GB", role: "Crew" });
         await sourceDb.upsertLogSheet({
           ...sheet([sourceLine]), boatId: "source-boat", title: "Shared voyage", remarks: "A smooth crossing.", technicalChecks: [{ status: "ok", text: "Rig" }],
@@ -442,6 +478,7 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
         expect(new Date(copied!.copyProvenance!.copiedAt).toISOString()).toBe(copied!.copyProvenance!.copiedAt);
         expect(copied!.id).not.toBe("sheet");
         expect(copied!.lines[0].id).not.toBe("source-line");
+        expect(copied!.lines[0].courseFieldSources).toEqual(sourceLine.courseFieldSources);
         expect(copied!.crew).toHaveLength(1);
         expect(copied!.crew[0].id).not.toBe("sailor");
         expect(copied!.imageId).not.toBe(sourceImageId);

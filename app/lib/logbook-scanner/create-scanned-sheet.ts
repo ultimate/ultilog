@@ -1,3 +1,4 @@
+import { courseSourcesFor } from "../../models/course-field-sources";
 import { sortLogLinesByTime } from "../../domain/log-lines/log-line-order";
 import { updateScannerWarnings } from "./update-warnings";
 import { normalizeScannerRows } from "./normalize-result";
@@ -37,7 +38,7 @@ type ScannerUnitPreferences = Pick<UserPreferences, "windUnit" | "waterHeightUni
 const verificationNote = "Please verify scanned information before locking this sheet.";
 const rolloverEndDateWarning = { code: "rolloverExceededEndDate" } as const;
 
-const defaultLineForm: LineForm = {
+const defaultLineForm: LineForm = { courseFieldSources: courseSourcesFor({}),
   id: "",
   time: "",
   latitude: "",
@@ -201,6 +202,7 @@ function scannedLineToLogLine(scannedLine: ScannerResult["draft"]["lines"][numbe
     ...defaultLineForm,
     ...scannerUnitDefaults(userPreferences),
     ...scannedLine,
+    courseFieldSources: courseSourcesFor(scannedLine, "scanned"),
     time: normalizedTime,
     weather: normalizeScannedWeather(scannedLine.weather),
     ...missingScannerUnitDefaults(scannedLine, userPreferences),
