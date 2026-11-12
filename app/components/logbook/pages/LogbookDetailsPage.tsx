@@ -399,10 +399,10 @@ export function LogbookDetailsPage(props: LogbookDetailsPageProps) {
 
   const [courseHighlights, setCourseHighlights] = useState<Record<string, Partial<Record<LineFormField, number>>>>({});
   const courseDraftsRef = useRef(new Map<string, string>());
+  const showSail = activeBoat.type !== "motor";
 
   const updateLineFormField = (draftId: string, field: LineFormField, value: string) => {
     setDraftLineForm(draftId, applyLogLineInput(lineForms[draftId].form, { field, value }));
-  const showSail = activeBoat.type !== "motor";
   };
 
   // Recalculate on opening an editor and whenever its input or boat context changes.
