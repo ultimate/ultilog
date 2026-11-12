@@ -11,8 +11,8 @@ test("updates derived courses while typing, preserves overrides, and remembers s
     const lookups: Array<(declination: number) => void> = [];
     (window as unknown as { courseLookups: typeof lookups }).courseLookups = lookups;
     window.fetch = (input, init) => {
-      if (String(input).startsWith("https://www.ngdc.noaa.gov/")) return new Promise<Response>(resolve => {
-        lookups.push(declination => resolve(new Response(JSON.stringify({ result: [{ declination }] }), { headers: { "content-type": "application/json" } })));
+      if (String(input).startsWith("/api/navigation/magnetic-variation?")) return new Promise<Response>(resolve => {
+        lookups.push(declination => resolve(new Response(JSON.stringify({ variation: declination }), { headers: { "content-type": "application/json" } })));
       });
       return original(input, init);
     };
@@ -39,7 +39,10 @@ test("updates derived courses while typing, preserves overrides, and remembers s
   await expect(magnetic).toHaveValue("");
   await magnetic.blur();
   await expect(magnetic).toHaveValue("126");
+  const savedResponse = page.waitForResponse(response => response.request().method() === "PUT" && response.url().endsWith(`/lines/${sampleLogSheets[0].lines[0].id}`), { timeout: 30_000 });
   await row.getByRole("button", { name: "💾" }).click();
+  const saved = await savedResponse;
+  expect(saved.ok(), `Save failed: HTTP ${saved.status()} ${await saved.text()}`).toBeTruthy();
   await expect(row.locator("input")).toHaveCount(0);
   await expect.poll(async () => {
     const book = await (await page.request.get("/api/logbook")).json();
@@ -54,9 +57,14 @@ test("updates derived courses while typing, preserves overrides, and remembers s
   const variation = row.locator(".course-number-input").nth(3);
   await variation.fill("");
   await expect.poll(() => page.evaluate(() => (window as unknown as { courseLookups: unknown[] }).courseLookups.length)).toBe(1);
+  await row.getByRole("textbox", { name: "Lat", exact: true }).fill("39");
   await row.locator(".course-number-input").nth(0).fill("130");
   await expect.poll(() => page.evaluate(() => (window as unknown as { courseLookups: unknown[] }).courseLookups.length)).toBeGreaterThanOrEqual(2);
+  await variation.focus();
   await page.evaluate(() => (window as unknown as { courseLookups: Array<(value: number) => void> }).courseLookups.at(-1)!(4));
+  await expect(row.locator(".course-number-input").nth(4)).toHaveValue("136");
+  await expect(variation).toHaveValue("");
+  await variation.blur();
   await expect(variation).toHaveValue("4");
   await page.evaluate(async () => {
     (window as unknown as { courseLookups: Array<(value: number) => void> }).courseLookups[0](9);
@@ -67,28 +75,17 @@ test("updates derived courses while typing, preserves overrides, and remembers s
   await variation.fill("2");
   await row.locator(".course-number-input").nth(0).fill("131");
   await expect(variation).toHaveValue("2");
-  const beforeFocusedLookup = await page.evaluate(() => (window as unknown as { courseLookups: unknown[] }).courseLookups.length);
   await variation.fill("");
-  await expect.poll(() => page.evaluate(() => (window as unknown as { courseLookups: unknown[] }).courseLookups.length)).toBeGreaterThan(beforeFocusedLookup);
-  await page.evaluate(() => (window as unknown as { courseLookups: Array<(value: number) => void> }).courseLookups.at(-1)!(6));
-  await expect(row.locator(".course-number-input").nth(4)).toHaveValue("139");
+  await expect(row.locator(".course-number-input").nth(4)).toHaveValue("137");
   await expect(variation).toBeFocused();
   await expect(variation).toHaveValue("");
-  const beforeBlurLookup = await page.evaluate(() => (window as unknown as { courseLookups: unknown[] }).courseLookups.length);
   await variation.blur();
-  await expect.poll(() => page.evaluate(() => (window as unknown as { courseLookups: unknown[] }).courseLookups.length)).toBeGreaterThan(beforeBlurLookup);
-  await page.evaluate(() => (window as unknown as { courseLookups: Array<(value: number) => void> }).courseLookups.at(-1)!(6));
-  await expect(variation).toHaveValue("6");
+  await expect(variation).toHaveValue("4");
 
 });
 
 test("restores automatic courses after clearing a migrated line and updates every digit on a new line", async ({ page }) => {
-  await page.addInitScript(() => {
-    const original = window.fetch.bind(window);
-    window.fetch = (input, init) => String(input).startsWith("https://www.ngdc.noaa.gov/")
-      ? Promise.resolve(new Response(JSON.stringify({ result: [{ declination: 4 }] }), { headers: { "content-type": "application/json" } }))
-      : original(input, init);
-  });
+  await page.route("**/api/navigation/magnetic-variation?**", route => route.fulfill({ json: { variation: 4 } }));
   // Import without provenance to exercise the same conservative classification
   // as the database migration: every populated legacy value starts protected.
   await loginWithSeededDemoData(page, true);
@@ -111,6 +108,7 @@ test("restores automatic courses after clearing a migrated line and updates ever
   const editor = page.locator(".inline-line-row").last();
   await editor.getByRole("textbox", { name: "Lat", exact: true }).fill("38.5");
   await editor.getByRole("textbox", { name: "Lon", exact: true }).fill("20.5");
+  await expect(editor.locator(".course-number-input").nth(3)).toHaveValue("4");
   for (const value of ["1", "12", "123"]) {
     await editor.locator(".course-number-input").nth(0).fill(value);
     await expect(editor.locator(".course-number-input").nth(1)).toHaveValue("2");
@@ -118,6 +116,26 @@ test("restores automatic courses after clearing a migrated line and updates ever
     await expect(editor.locator(".course-number-input").nth(3)).toHaveValue("4");
     await expect(editor.locator(".course-number-input").nth(4)).toHaveValue(String(Number(value) + 6));
   }
+});
+
+test("reports failed variation lookups and still accepts a protected manual value", async ({ page }) => {
+  await page.route("**/api/navigation/magnetic-variation?**", route => route.fulfill({ status: 503, json: { error: "Magnetic variation provider is not configured." } }));
+  await loginWithSeededDemoData(page);
+  await page.goto(`/details/${sampleLogSheets[0].id}`);
+  const row = page.locator(".log-lines-table tbody tr").first();
+  await row.getByRole("button", { name: "✏️" }).click();
+  const show = page.getByRole("button", { name: "Show course conversion columns", exact: true });
+  if (await show.count()) await show.click();
+  const variation = row.locator(".course-number-input").nth(3);
+  await variation.fill("");
+  await variation.blur();
+  await expect(row.getByText("Magnetic variation could not be retrieved. Enter it manually or retry later.")).toBeVisible();
+  await expect(variation).toHaveValue("");
+  await variation.fill("2");
+  await row.locator(".course-number-input").nth(0).fill("123");
+  await expect(variation).toHaveValue("2");
+  await expect(row.locator(".course-number-input").nth(4)).toHaveValue("127");
+  await expect(row.getByText("Magnetic variation could not be retrieved. Enter it manually or retry later.")).toHaveCount(0);
 });
 
 async function loginWithSeededDemoData(page: Page, legacy = false) {

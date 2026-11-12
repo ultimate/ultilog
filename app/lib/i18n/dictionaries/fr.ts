@@ -530,6 +530,7 @@ export const fr: Dictionary = {
   "details.gettingLocation": "Localisation de l’appareil…",
   "details.addSmartLineLoading": "Récupération météo…",
   "details.trackingMotion": "Suivi du mouvement de l’appareil",
+  "details.variationLookupError": "La déclinaison magnétique n’a pas pu être récupérée. Saisissez-la manuellement ou réessayez plus tard.",
   "details.addSmartLineError": "La ligne est prête, mais certains champs de position ou de météo n’ont pas pu être remplis automatiquement.",
   "details.timePos": "Temps & pos",
   "details.weatherSea": "Météo & mer",

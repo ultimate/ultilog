@@ -529,6 +529,7 @@ export const en = {
   "details.gettingLocation": "Getting device location…",
   "details.addSmartLineLoading": "Fetching meteo…",
   "details.trackingMotion": "Tracking device motion",
+  "details.variationLookupError": "Magnetic variation could not be retrieved. Enter it manually or retry later.",
   "details.addSmartLineError": "The line is ready, but some location or weather fields could not be filled automatically.",
   "details.timePos": "Time & Pos",
   "details.weatherSea": "Weather & Sea",

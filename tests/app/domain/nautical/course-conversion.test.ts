@@ -202,6 +202,7 @@ describe("NOAA magnetic variation lookup", () => {
       expect(url.searchParams.get("lon1")).toBe("4");
       expect(url.searchParams.get("resultFormat")).toBe("json");
       expect(url.searchParams.get("model")).toBe("WMM");
+      expect(url.searchParams.get("key")).toBe("test-key");
       expect(url.searchParams.get("startYear")).toBe("2026");
       expect(url.searchParams.get("startMonth")).toBe("6");
       expect(url.searchParams.get("startDay")).toBe("27");
@@ -212,6 +213,7 @@ describe("NOAA magnetic variation lookup", () => {
     await expect(lookupNoaaMagneticVariation({
       latitude: 52,
       longitude: 4,
+      apiKey: "test-key",
       date: new Date(Date.UTC(2026, 5, 27)),
       fetcher: fetcher as typeof fetch,
     })).resolves.toBe(3.25);

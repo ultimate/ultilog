@@ -283,8 +283,8 @@ export function calculateCourseConversion(
   }
 
   return (async () => {
-    const { lookupNoaaMagneticVariation } = await import("./noaa-magnetic-variation");
-    const variationLookup = options.variationLookup ?? lookupNoaaMagneticVariation;
+    const { lookupMagneticVariation } = await import("./magnetic-variation");
+    const variationLookup = options.variationLookup ?? lookupMagneticVariation;
 
     return calculateCourseConversionValues({
       ...input,
