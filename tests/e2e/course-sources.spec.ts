@@ -29,10 +29,15 @@ test("updates derived courses while typing, preserves overrides, and remembers s
     await compass.fill(value);
     await expect(magnetic).toHaveValue(String(Number(value) + 2));
   }
-  await magnetic.fill("200");
+  await magnetic.fill("");
+  await expect(magnetic).toBeFocused();
+  await expect(magnetic).toHaveValue("");
+  await magnetic.pressSequentially("200");
   await compass.fill("124");
   await expect(magnetic).toHaveValue("200");
   await magnetic.fill("");
+  await expect(magnetic).toHaveValue("");
+  await magnetic.blur();
   await expect(magnetic).toHaveValue("126");
   await row.getByRole("button", { name: "💾" }).click();
   await expect(row.locator("input")).toHaveCount(0);
@@ -50,8 +55,8 @@ test("updates derived courses while typing, preserves overrides, and remembers s
   await variation.fill("");
   await expect.poll(() => page.evaluate(() => (window as unknown as { courseLookups: unknown[] }).courseLookups.length)).toBe(1);
   await row.locator(".course-number-input").nth(0).fill("130");
-  await expect.poll(() => page.evaluate(() => (window as unknown as { courseLookups: unknown[] }).courseLookups.length)).toBe(2);
-  await page.evaluate(() => (window as unknown as { courseLookups: Array<(value: number) => void> }).courseLookups[1](4));
+  await expect.poll(() => page.evaluate(() => (window as unknown as { courseLookups: unknown[] }).courseLookups.length)).toBeGreaterThanOrEqual(2);
+  await page.evaluate(() => (window as unknown as { courseLookups: Array<(value: number) => void> }).courseLookups.at(-1)!(4));
   await expect(variation).toHaveValue("4");
   await page.evaluate(async () => {
     (window as unknown as { courseLookups: Array<(value: number) => void> }).courseLookups[0](9);
@@ -62,6 +67,18 @@ test("updates derived courses while typing, preserves overrides, and remembers s
   await variation.fill("2");
   await row.locator(".course-number-input").nth(0).fill("131");
   await expect(variation).toHaveValue("2");
+  const beforeFocusedLookup = await page.evaluate(() => (window as unknown as { courseLookups: unknown[] }).courseLookups.length);
+  await variation.fill("");
+  await expect.poll(() => page.evaluate(() => (window as unknown as { courseLookups: unknown[] }).courseLookups.length)).toBeGreaterThan(beforeFocusedLookup);
+  await page.evaluate(() => (window as unknown as { courseLookups: Array<(value: number) => void> }).courseLookups.at(-1)!(6));
+  await expect(row.locator(".course-number-input").nth(4)).toHaveValue("139");
+  await expect(variation).toBeFocused();
+  await expect(variation).toHaveValue("");
+  const beforeBlurLookup = await page.evaluate(() => (window as unknown as { courseLookups: unknown[] }).courseLookups.length);
+  await variation.blur();
+  await expect.poll(() => page.evaluate(() => (window as unknown as { courseLookups: unknown[] }).courseLookups.length)).toBeGreaterThan(beforeBlurLookup);
+  await page.evaluate(() => (window as unknown as { courseLookups: Array<(value: number) => void> }).courseLookups.at(-1)!(6));
+  await expect(variation).toHaveValue("6");
 
 });
 
