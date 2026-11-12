@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { sampleBoats, sampleLogSheets } from "../fixtures/logbook";
 
 async function expectReadable(page: Page, selector: string) {
+  await expect(page.locator(selector).filter({ visible: true }).first()).toBeVisible();
   const results = await page.locator(selector).evaluateAll(elements => {
     const canvas = document.createElement("canvas");
     canvas.width = canvas.height = 1;
