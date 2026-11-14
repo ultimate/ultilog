@@ -41,14 +41,14 @@ export class PostgresLogbookDatabase extends LogbookDatabase {
     finally { client.release(); }
   }
 
-  override async writeLogbook(logbook: PersistedLogbook) {
+  override async writeLogbook(logbook: PersistedLogbook): Promise<PersistedLogbook> {
     await this.ensureSchemaAndBackfill();
     const client = await this.pool.connect();
     try {
       await client.query("begin");
-      await new PostgresTransactionLogbookDatabase(client, this.ownerId).writeLogbook(logbook);
+      const stored = await new PostgresTransactionLogbookDatabase(client, this.ownerId).writeLogbook(logbook);
       await client.query("commit");
-      return logbook;
+      return stored;
     } catch (error) {
       await client.query("rollback");
       throw error;

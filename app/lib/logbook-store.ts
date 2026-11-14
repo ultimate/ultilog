@@ -46,6 +46,8 @@ function mutate<T>(userId: string, operation: (database: LogbookDatabase) => Pro
   return pending;
 }
 
+export const mutateTurns = (revision: number, action: import("../models/turn").TurnAction, userId: string) => mutate(userId, db => db.mutateTurns(revision, action));
+
 export const upsertBoat = (boat: Boat, userId: string) => mutate(userId, db => db.upsertBoat(boat));
 export const deleteBoat = (id: string, revision: number, userId: string) => mutate(userId, db => db.deleteBoat(id, revision));
 export const upsertCrewMember = (crew: CrewMember, userId: string) => mutate(userId, db => db.upsertCrewMember(crew));

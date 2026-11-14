@@ -1,3 +1,4 @@
+import { emptyTurnState } from "../../models/turn";
 import initSqlJs, { type Database as SqlJsDatabase, type SqlValue } from "sql.js";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
@@ -46,18 +47,20 @@ export class SqliteLogbookDatabase extends LogbookDatabase {
     await this.persist();
   }
 
-  override async writeLogbook(logbook: PersistedLogbook) {
+  override async writeLogbook(logbook: PersistedLogbook): Promise<PersistedLogbook> {
     return this.serializeTransaction(async () => {
       await this.ensureSchemaAndBackfill();
       const db = await this.getDb();
       try {
         db.run("begin");
+        await this.turns.lock(this.requireOwnerId());
         await this.deleteTables();
         await this.insertSqliteLogbook(logbook);
         await this.crew.ensurePrimaryProfile(this.requireOwnerId());
+        const turnState = await this.reconcileStoredTurns(logbook.turnState ?? emptyTurnState());
         db.run("commit");
         await this.persist();
-        return logbook;
+        return {...logbook,turnState};
       } catch (error) {
         db.run("rollback");
         throw error;

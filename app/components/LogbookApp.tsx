@@ -1,5 +1,8 @@
 "use client";
 
+import { TurnsPage } from "./logbook/pages/TurnsPage";
+import { turnPortions } from "../domain/logbook/turns";
+import { emptyTurnState, type TurnAction, type TurnState } from "../models/turn";
 import { SaveButton, SavingContext, usePendingSaves } from "./logbook/SaveButton";
 import { recalculateLogLineCourses, logLineInputKey } from "../domain/log-lines/log-line-editor";
 
@@ -222,6 +225,8 @@ export function LogbookApp({
   const router = useRouter();
   const pathname = usePathname();
   const [logbook, setLogbook] = useState<PersistedLogbook>(defaultLogbook);
+  const [turnFilterId, setTurnFilterId] = useState("");
+  const [turnClock, setTurnClock] = useState(0);
   const [activeSheetId, setActiveSheetId] = useState("");
   const [sheetOverviewState, setSheetOverviewState] = useState<SheetOverviewState | undefined>();
   const [sheetNavigationIds, setSheetNavigationIds] = useState<string[] | null>(null);
@@ -611,6 +616,41 @@ export function LogbookApp({
     setSheetInlineTimezoneDraft(timezoneOffsetFromStamp(""));
     setSaveError(null);
   }, [routePath, isBackendReady, sheetDefaults]);
+
+  useEffect(() => {
+    const tick = () => setTurnClock(Date.now()); tick();
+    const timer = window.setInterval(tick, 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!isBackendReady) return;
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => {
+      void fetch("/api/logbook/turns", { signal: controller.signal }).then(async response => {
+        if (!response.ok) return;
+        const state = await response.json() as TurnState;
+        if (!controller.signal.aborted) setLogbook(current => (current.turnState?.revision ?? 0) > state.revision ? current : ({ ...current, turnState: state }));
+      }).catch(() => undefined);
+    }, 500);
+    return () => { window.clearTimeout(timer); controller.abort(); };
+  }, [isBackendReady, logbook.sheets]);
+
+  async function mutateTurn(operation: TurnAction) {
+    const response = await fetch("/api/logbook/turns", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ revision: logbookRef.current.turnState?.revision, operation }) });
+    if (!response.ok) {
+      const fresh = await fetch("/api/logbook/turns");
+      if (fresh.ok) { const state = await fresh.json() as TurnState; setLogbook(current => ({...current,turnState:state})); }
+      throw new Error(t("turns.error"));
+    }
+    const state = await response.json() as TurnState;
+    setLogbook(current => ({...current,turnState:state}));
+    if (operation.action === "merge") setTurnFilterId(current => current === operation.nextId ? operation.turnId : current);
+  }
+
+  function openTurnSheets(id: string) {
+    setTurnFilterId(id); setLogsheetBoatFilterId(""); setSheetOverviewState(undefined); navigate("logbooks");
+  }
 
   const loadAdminUsers = useCallback(async () => {
     await Promise.resolve();
@@ -2001,6 +2041,9 @@ export function LogbookApp({
           <DashboardPage
             boats={logbook.boats}
             stats={stats}
+            turnState={logbook.turnState}
+            now={turnClock}
+            onOpenTurns={(id) => navigate("turns", id)}
             sheets={logbook.sheets}
             language={preferences.language}
             onOpenCompliance={() => navigate("compliance")}
@@ -2018,8 +2061,12 @@ export function LogbookApp({
         )}
 
         <section className="workspace module-workspace">
+          {activeModule === "turns" && <TurnsPage key={routePath} logbook={logbook} turnId={routeFromPathname(routePath).itemId} now={turnClock} threshold={preferences.motionStationaryThresholdNm} onOpen={id => navigate("turns",id)} onSheets={openTurnSheets} onSheet={id => navigate("details",id)} onMutate={mutateTurn} />}
           {activeModule === "logbooks" && (
             <LogbookListPage
+              threshold={preferences.motionStationaryThresholdNm}
+              turnFilterId={turnFilterId}
+              onTurnFilterChange={setTurnFilterId}
               overviewState={sheetOverviewState}
               onOpenSequence={(ids, state) => { setSheetNavigationIds(ids); setSheetOverviewState(state); }}
               isDemo={userGroups.includes("demo")}
@@ -2047,6 +2094,8 @@ export function LogbookApp({
           )}
 
           {activeModule === "details" && editorRoutePath === routePath && (
+            <>
+            <div className="turn-actions">{turnPortions(activeSheet,logbook.turnState ?? emptyTurnState()).map(portion => <button type="button" key={portion.turnId} onClick={() => navigate("turns",portion.turnId)}>{logbook.turnState?.turns.find(turn => turn.id === portion.turnId)?.name || t("turns.unnamed")} {portion.partial && `· ${t("turns.partial")}`}</button>)}</div>
             <LogbookDetailsPage
               key={routePath}
               previousSheetId={sheetNavigationIndex > 0 ? navigationIds[sheetNavigationIndex - 1] : undefined}
@@ -2109,6 +2158,7 @@ export function LogbookApp({
               technicalCheckSuggestions={technicalCheckSuggestions}
               onPrintSheet={() => setPrintTarget({ mode: "filled", sheetId: activeSheet.id, showCourseColumns })}
             />
+            </>
           )}
 
           {activeModule === "boats" && (

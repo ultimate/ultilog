@@ -1,7 +1,9 @@
+import { applyTurnAction, sheetFingerprint } from "../../domain/logbook/turns";
+import { validateTurnState } from "./turns";
 import { courseSourcesFor, isCourseFieldSources } from "../../models/course-field-sources";
 import { appendNamedPosition } from "../../domain/log-lines/legacy-position";
 import { retirePositionWarnings } from "../logbook-scanner/retire-position-warnings";
-import type { LogSheetShareSettings, PersistedLogbook } from "../../models/logbook";
+import type { LogSheet, LogSheetShareSettings, PersistedLogbook } from "../../models/logbook";
 import { StoredImageValidationError, validateStoredImage } from "./stored-image";
 import { scannerWarningCodes } from "../logbook-scanner/warning-codes";
 import { scannerFieldAliases } from "../logbook-scanner/field-aliases";
@@ -78,6 +80,7 @@ export function validateLine(v: unknown, path = "line") {
 
 export function validatePersistedLogbook(value: unknown): PersistedLogbook {
   assert(record(value), "Logbook must be an object.");
+  if (value.turnState !== undefined) validateTurnState(value.turnState);
   count(value.boats, LOGBOOK_LIMITS.boats, "boats"); count(value.crewMembers, LOGBOOK_LIMITS.crewMembers, "crew members"); count(value.sheets, LOGBOOK_LIMITS.sheets, "sheets");
   value.boats.forEach((boat, i) => {
     // Normalize exports created before boat types became lowercase.
@@ -131,6 +134,16 @@ export function validatePersistedLogbook(value: unknown): PersistedLogbook {
     image(sheet.image, `sheets[${i}].image`);
     assert(optional(sheet.imageId, string), `sheets[${i}].imageId must be a string.`);
   });
+  if (value.turnState !== undefined) {
+    const state = value.turnState as import("../../models/turn").TurnState;
+    const sheets = value.sheets as LogSheet[];
+    for (const correction of state.corrections) {
+      const sheet = sheets.find(sheet => sheet.id === correction.sheetId);
+      if (sheet && correction.fingerprint === sheetFingerprint(sheet,state.turns.filter(turn=>correction.portions.some(portion=>portion.turnId===turn.id)),correction.threshold ?? .1)) {
+        applyTurnAction(sheets,{...state,corrections:[]},{action:"correct",sheetId:sheet.id,portions:correction.portions},correction.threshold ?? .1);
+      }
+    }
+  }
   let aggregate = 0;
   const walk = (v: unknown): void => { if (typeof v === "string") { if (v.length > LOGBOOK_LIMITS.string) throw new LogbookValidationError("A string exceeds the length limit.", "limit"); aggregate += v.length; } else if (Array.isArray(v)) v.forEach(walk); else if (record(v)) Object.entries(v).forEach(([k, x]) => { walk(k); walk(x); }); };
   walk(value);

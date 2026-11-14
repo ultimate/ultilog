@@ -2,6 +2,7 @@ import type { TranslationKey } from "../lib/i18n";
 
 export const moduleTabs = [
   { id: "dashboard", labelKey: "nav.dashboard" },
+  { id: "turns", labelKey: "nav.turns" },
   { id: "logbooks", labelKey: "nav.logbooks" },
   { id: "details", labelKey: "nav.details" },
   { id: "boats", labelKey: "nav.boats" },

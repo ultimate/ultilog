@@ -107,6 +107,7 @@ describe("users preferences", () => {
     const user = await registerUser({ name: "Fresh User", email: "fresh@example.test", password: "Harbor lantern atlas 2026" });
 
     await expect(readLogbook(user.id)).resolves.toEqual({
+      turnState: expect.objectContaining({turns: [], revision: expect.any(Number)}),
       boats: [],
       crewMembers: [expect.objectContaining({ id: "me", name: "Fresh User", nationality: "", role: "", address: "", certificate: "", dateOfBirth: "", placeOfBirth: "", gender: "", identityDocumentType: "", identityDocumentNumber: "", identityDocumentIssuingDate: "", identityDocumentExpiryDate: "", isPrimary: true, revision: 1, createdAt: expect.any(String), updatedAt: expect.any(String) })],
       sheets: [],
