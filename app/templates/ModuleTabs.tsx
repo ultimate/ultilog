@@ -22,6 +22,7 @@ type ModuleTabsProps = {
 };
 
 const icons: Record<ModuleTab, string> = {
+  turns: "/icons/icon_logbook-list.svg",
   dashboard: "/icons/icon_dashboard.svg",
   logbooks: "/icons/icon_logbook-list.svg",
   details: "/icons/icon_compass.svg",

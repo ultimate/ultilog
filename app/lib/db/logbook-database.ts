@@ -1,3 +1,6 @@
+import { TurnsRepository } from "../repositories/turns-repository";
+import { emptyTurnState, type TurnAction } from "../../models/turn";
+import { reconcileTurns, applyTurnAction } from "../../domain/logbook/turns";
 import { isActionableScannerWarning } from "../logbook-scanner/actionable-warning";
 import { hasRequiredLogLineFields } from "../../domain/log-lines/required-fields";
 import { updateScannerWarnings } from "../logbook-scanner/update-warnings";
@@ -32,6 +35,7 @@ export interface QueryableDatabase {
 const emptyLogbook: PersistedLogbook = { boats: [], crewMembers: [], sheets: [] };
 
 export abstract class LogbookDatabase implements QueryableDatabase {
+  protected readonly turns = new TurnsRepository(this);
   protected readonly boats = new BoatsRepository(this);
   protected ownerId: string | undefined;
   protected readonly sheets = new LogSheetsRepository(this);
@@ -85,14 +89,18 @@ export abstract class LogbookDatabase implements QueryableDatabase {
   async readLogbook(): Promise<PersistedLogbook> {
     await this.ensureSchemaAndBackfill();
     await this.crew.ensurePrimaryProfile(this.requireOwnerId());
-    const logbook = await this.readTables();
-    return logbook.boats.length || logbook.sheets.length || logbook.crewMembers.length ? logbook : emptyLogbook;
+    return this.withTransaction(async database => {
+      await database.turns.lock(database.requireOwnerId());
+      const logbook = await database.readTables();
+      const turnState = await database.reconcileStoredTurns();
+      return { ...(logbook.boats.length || logbook.sheets.length || logbook.crewMembers.length ? logbook : emptyLogbook), turnState };
+    });
   }
 
-  async writeLogbook(logbook: PersistedLogbook) {
+  async writeLogbook(logbook: PersistedLogbook): Promise<PersistedLogbook> {
     await this.ensureSchemaAndBackfill();
     await this.replaceTables(logbook);
-    return logbook;
+    return {...logbook,turnState:await this.turns.read(this.requireOwnerId())};
   }
 
   async createStoredImage(id: string, image: import("../../models/stored-image").StoredImage) {
@@ -115,7 +123,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
     // backfill here made an otherwise valid boat create depend on the crew
     // encryption key and could reject it before the boat transaction even began.
     await this.ensureSchema();
-    return this.withTransaction(async (database) => {
+    return this.withTurnTransaction(async (database) => {
       const ownerId = database.requireOwnerId();
       const previousImageId = (await database.boats.findById(boat.id, ownerId))?.image_id ?? undefined;
       const nextImageId = boat.imageId ?? boat.image?.id;
@@ -130,7 +138,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
   async deleteBoat(id: string, revision: number) {
     // Like upserts, focused boat deletions never access crew data.
     await this.ensureSchema();
-    return this.withTransaction(async (database) => {
+    return this.withTurnTransaction(async (database) => {
       const ownerId = database.requireOwnerId();
       const row = await database.boats.findById(id, ownerId);
       if (!row) return undefined;
@@ -147,7 +155,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
 
   async upsertCrewMember(crew: CrewMember) {
     await this.ensureSchemaAndBackfill();
-    return this.withTransaction(async (database) => {
+    return this.withTurnTransaction(async (database) => {
       const ownerId = database.requireOwnerId();
       const previousImageId = (await database.crew.findProfile(crew.id, ownerId))?.image_id ?? undefined;
       const nextImageId = crew.imageId ?? crew.image?.id;
@@ -161,7 +169,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
 
   async deleteCrewMember(id: string, revision: number) {
     await this.ensureSchemaAndBackfill();
-    return this.withTransaction(async (database) => {
+    return this.withTurnTransaction(async (database) => {
       const ownerId = database.requireOwnerId();
       const row = await database.crew.findProfile(id, ownerId);
       if (!row) return undefined;
@@ -175,7 +183,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
 
   async upsertLogSheet(sheet: LogSheet | FocusedLogSheet) {
     await this.ensureSchemaAndBackfill();
-    return this.withTransaction(async (database) => {
+    return this.withTurnTransaction(async (database) => {
       const ownerId = database.requireOwnerId();
       const boatRow = await database.boats.findById(sheet.boatId, ownerId);
       const prior = await database.sheets.findById(sheet.id, ownerId);
@@ -214,7 +222,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
   /** Creates a new sheet and its independently addressable lines atomically. */
   async createLogSheetAggregate(sheet: Omit<LogSheet, "lines">, lines: LogLine[]) {
     await this.ensureSchemaAndBackfill();
-    return this.withTransaction(async (database) => {
+    return this.withTurnTransaction(async (database) => {
       const ownerId = database.requireOwnerId();
       if (await database.sheets.findById(sheet.id, ownerId)) throw new Error("A log sheet with this id already exists.");
 
@@ -249,7 +257,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
 
   async deleteLogSheet(id: string, revision: number) {
     await this.ensureSchemaAndBackfill();
-    return this.withTransaction(async (database) => {
+    return this.withTurnTransaction(async (database) => {
       const ownerId = database.requireOwnerId();
       const row = await database.sheets.findById(id, ownerId);
       if (!row) return undefined;
@@ -282,7 +290,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
     // Line mutations only read sheet metadata and line rows. Crew encryption is
     // deliberately outside this focused persistence path.
     await this.ensureSchema();
-    return this.withTransaction(async database => {
+    return this.withTurnTransaction(async database => {
       const ownerId = database.requireOwnerId();
       const sheetRow = await database.sheets.findById(sheetId, ownerId, true);
       if (!sheetRow) return undefined;
@@ -378,7 +386,7 @@ export abstract class LogbookDatabase implements QueryableDatabase {
   /** Copies a shared sheet into the currently scoped owner's logbook in one transaction. */
   async copySharedSheet(sourceOwnerId: string, sourceSheetId: string, options: CopySharedLogSheetOptions): Promise<LogSheet | undefined> {
     await this.ensureSchemaAndBackfill();
-    return this.withTransaction(async database => {
+    return this.withTurnTransaction(async database => {
       const recipientId = database.requireOwnerId();
       const sourceRow = await database.sheets.findSharedByScopedId(scopedId(sourceOwnerId, sourceSheetId));
       if (!sourceRow?.owner_id || sourceRow.owner_id !== sourceOwnerId) return undefined;
@@ -481,6 +489,41 @@ export abstract class LogbookDatabase implements QueryableDatabase {
     });
   }
 
+  private async withTurnTransaction<T>(operation: (database: LogbookDatabase) => Promise<T>): Promise<T> {
+    return this.withTransaction(async database => {
+      const ownerId = database.requireOwnerId();
+      await database.turns.lock(ownerId);
+      const result = await operation(database);
+      await database.reconcileStoredTurns();
+      return result;
+    });
+  }
+
+  protected async reconcileStoredTurns(imported?: import("../../models/turn").TurnState) {
+    const ownerId = this.requireOwnerId();
+    await this.turns.lock(ownerId);
+    const previous = await this.turns.read(ownerId);
+    const [sheets, lines] = await Promise.all([this.sheets.findAll(ownerId), this.lines.findAll(ownerId)]);
+    const logbook = LogSheetsRepository.toLogbook([], sheets, [], lines);
+    const assignments = (await this.query(`select sheet_id, crew_member_id, embarkation_datetime, disembarkation_datetime from sheet_crew_members where sheet_id in (select id from log_sheets where owner_id = ${this.placeholder(1)}) order by sheet_id, crew_member_id`, [ownerId])).rows;
+    const sourceVersion = createHash("sha256").update(JSON.stringify([sheets.map(sheet => [sheet.id,sheet.title,sheet.boat_id,sheet.route]).sort((a,b)=>String(a[0]).localeCompare(String(b[0]))),lines.map(line=>[line.sheet_id,line.id,line.time,line.log_nm,line.sail_miles,line.motor_miles,line.latitude,line.longitude,line.engineHours]),assignments])).digest("hex");
+    if (!imported && previous.sourceVersion === sourceVersion) return previous;
+    return this.turns.save(ownerId, {...reconcileTurns(logbook.sheets, imported ?? previous),sourceVersion}, previous);
+  }
+
+  async mutateTurns(revision: number, action: TurnAction) {
+    await this.ensureSchemaAndBackfill();
+    return this.withTransaction(async database => {
+      const ownerId = database.requireOwnerId();
+      await database.turns.lock(ownerId);
+      const previous = await database.turns.read(ownerId);
+      if (revision !== previous.revision) throw Object.assign(new Error("Turns changed. Refresh and retry."), { code: "revision_conflict" });
+      const logbook = await database.readTables();
+      const next = applyTurnAction(logbook.sheets, previous, action, await database.motionStationaryThresholdNm());
+      return database.turns.save(ownerId, next, previous);
+    });
+  }
+
   protected async readTables(): Promise<PersistedLogbook> {
     const ownerId = this.requireOwnerId();
     const [boats, sheets, crewProfiles, crew, lines] = await Promise.all([
@@ -502,9 +545,11 @@ export abstract class LogbookDatabase implements QueryableDatabase {
   }
 
   private async replaceTables(logbook: PersistedLogbook) {
+    await this.turns.lock(this.requireOwnerId());
     await this.deleteTables();
     await this.insertLogbook(logbook);
     await this.crew.ensurePrimaryProfile(this.requireOwnerId());
+    await this.reconcileStoredTurns(logbook.turnState ?? emptyTurnState());
   }
 }
 
