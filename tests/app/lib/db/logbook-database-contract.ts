@@ -33,6 +33,46 @@ export function logbookDatabaseContract(name: string, harness: ContractHarness) 
       return { ...resource, database, owner, other, boat: boat! };
     }
 
+    it("persists owner-defined turns, rejects stale revisions and isolates accounts", async () => {
+      const context = await setup();
+      try {
+        const db = context.database;
+        const first = sheet([]);
+        first.route = {from:"",to:"",departed:"2026-07-12T08:00:00Z",arrived:"2026-07-12T18:00:00Z"};
+        await db.upsertLogSheet(first);
+        const initial = (await db.readLogbook()).turnState!;
+        expect(initial.turns).toHaveLength(1);
+        const split = await db.mutateTurns(initial.revision,{action:"split",turnId:initial.turns[0].id,at:"2026-07-12T15:35:00Z"});
+        expect(split.turns).toHaveLength(2);
+        await expect(db.mutateTurns(initial.revision,{action:"rename",turnId:initial.turns[0].id,name:"Stale"})).rejects.toMatchObject({code:"revision_conflict"});
+        const named = await db.mutateTurns(split.revision,{action:"rename",turnId:split.turns[1].id,name:"Second week"});
+        const saved = (await db.readLogbook()).sheets[0];
+        await db.upsertLogSheet({...saved,title:"Updated daily title"});
+        expect((await db.readLogbook()).turnState!.turns[1]).toMatchObject({id:named.turns[1].id,name:"Second week",nameMode:"manual"});
+        const other = await db.forUser(context.other).readLogbook();
+        expect(other.turnState!.turns).toEqual([]);
+        await expect(db.mutateTurns(other.turnState!.revision,{action:"rename",turnId:named.turns[1].id,name:"Forbidden"})).rejects.toThrow();
+        const original = await db.forUser(context.owner).readLogbook();
+        await db.writeLogbook(original);
+        expect((await db.readLogbook()).turnState!.turns).toEqual(original.turnState!.turns);
+        expect((await db.readLogbook()).turnState!.splits).toEqual(original.turnState!.splits);
+      } finally { await context.cleanup(); }
+    });
+
+    it("reconciles line date changes atomically and removes empty turns", async () => {
+      const context = await setup();
+      try {
+        const db = context.database;
+        const first = {...sheet([]),route:{from:"",to:"",departed:"",arrived:""}};
+        await db.upsertLogSheet(first);
+        expect((await db.readLogbook()).turnState!.turns).toEqual([]);
+        const line = await db.createLogLine(first.id,{...sampleLogSheets[0].lines[0],id:randomUUID(),time:"2026-07-12T09:17:00Z"});
+        expect((await db.readLogbook()).turnState!.turns).toHaveLength(1);
+        await db.deleteLogLine(first.id,line!.id,line!.revision!);
+        expect((await db.readLogbook()).turnState!.turns).toEqual([]);
+      } finally { await context.cleanup(); }
+    });
+
     it("backfills every legacy line conservatively and requires non-null source maps", async () => {
       const context = await setup();
       try {

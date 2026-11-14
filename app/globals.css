@@ -2477,3 +2477,23 @@ img.entity-image--preview {
 @keyframes course-fill-even { from { box-shadow: inset 0 0 0 2px #b77900; background-color: #fff0b3; color: #242424; } }
 @keyframes course-fill-odd { from { box-shadow: inset 0 0 0 2px #b77900; background-color: #fff0b3; color: #242424; } }
 @media (prefers-reduced-motion: reduce) { .save-spinner { animation: none; } .course-autofilled { animation-timing-function: steps(1, end); } }
+
+/* Turns use labels and spacing as well as color. */
+.turns-page { width: 100%; padding: 1rem; }
+.turn-cards { display: grid; gap: 1rem; }
+.turn-card { padding: 1rem; min-width: 0; }
+.turn-actions, .turn-row-labels { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin: .5rem 0; }
+.turn-row > td:first-child { border-left: 4px solid #438caa; }
+.turn-color-1 > td:first-child { border-left-color: #a9854b; }
+.turn-group-start > td { border-top: 10px solid var(--background, transparent); }
+.turn-totals { display: flex; flex-wrap: wrap; gap: 1rem; }
+.turn-totals dd { margin: .25rem 0; }
+.turn-editor { padding: 1rem; margin-top: 1rem; }
+.turn-editor form, .turn-editor fieldset { display: grid; gap: .75rem; }
+.turn-editor label, .turn-filter { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+.turn-editor input[type=number] { max-width: 12rem; }
+.turn-filter { margin-bottom: .75rem; }
+.turn-filter select { max-width: 100%; }
+.turn-suggestion { border-top: 1px solid currentColor; margin-top: 1rem; padding-top: .75rem; }
+.turn-dashboard { padding: 1rem; margin: 1rem 0; }
+@media (max-width: 640px) { .turn-actions > button { width: 100%; } .turn-row-labels button { white-space: normal; text-align: left; } }

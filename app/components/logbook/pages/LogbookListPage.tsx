@@ -1,3 +1,5 @@
+import { turnPortions, filteredTurnPortions } from "../../../domain/logbook/turns";
+import { emptyTurnState } from "../../../models/turn";
 import { formatEngineHours } from "../../../lib/log-input";
 import { DateFilterInput } from "../DateFilterInput";
 import { ModalLayer } from "../ModalLayer";
@@ -28,6 +30,9 @@ type SheetSummary = { motorMiles: number; sailMiles: number; totalMiles: number;
 type SheetListRow = { sheet: LogSheet; boat?: Boat; summary: SheetSummary };
 
 export function LogbookListPage({
+  threshold = .1,
+  turnFilterId = "",
+  onTurnFilterChange,
   overviewState,
   onOpenSequence,
   activeBoat,
@@ -51,6 +56,9 @@ export function LogbookListPage({
   isDemo,
   onDemoFeatureBlocked,
 }: {
+  threshold?: number;
+  turnFilterId?: string;
+  onTurnFilterChange?: (id: string) => void;
   overviewState?: SheetOverviewState;
   onOpenSequence?: (ids: string[], state: SheetOverviewState) => void;
   activeBoat?: Boat;
@@ -76,7 +84,7 @@ export function LogbookListPage({
   onDemoFeatureBlocked: (feature: "scanner") => void;
 }) {
   const { t } = useI18n();
-  const { formatDate } = useDateTimeFormat();
+  const { formatDate, formatDateTime } = useDateTimeFormat();
   const [showScanSource, setShowScanSource] = useState(false);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const importInputRef = useRef<HTMLInputElement>(null);
@@ -90,8 +98,15 @@ export function LogbookListPage({
   const [fromDate, setFromDate] = useState(overviewState?.fromDate ?? "");
   const [toDate, setToDate] = useState(overviewState?.toDate ?? "");
   const invalidDateRange = Boolean(fromDate && toDate && fromDate > toDate);
+  const portionsBySheet = useMemo(() => new Map(logbook.sheets.map(sheet => [sheet.id,turnPortions(sheet,logbook.turnState ?? emptyTurnState(),threshold)])),[logbook.sheets,logbook.turnState,threshold]);
+  const sheetCountsByTurn = useMemo(() => {
+    const counts = new Map<string,number>();
+    for (const portions of portionsBySheet.values()) for (const part of portions) counts.set(part.turnId,(counts.get(part.turnId) ?? 0)+1);
+    return counts;
+  },[portionsBySheet]);
   const filteredSheets = useMemo(
     () => logbook.sheets.filter((sheet) => {
+      if (turnFilterId && !filteredTurnPortions(sheet,logbook.turnState ?? emptyTurnState(),fromDate,toDate,threshold).some(part => part.turnId === turnFilterId)) return false;
       if (boatFilterId && sheet.boatId !== boatFilterId) return false;
       if (!fromDate && !toDate) return true;
       if (invalidDateRange) return false;
@@ -101,13 +116,20 @@ export function LogbookListPage({
       if (!departed) return false;
       return (!fromDate || arrived >= fromDate) && (!toDate || departed <= toDate);
     }),
-    [boatFilterId, fromDate, toDate, invalidDateRange, logbook.sheets],
+    [boatFilterId, fromDate, toDate, invalidDateRange, logbook.sheets, logbook.turnState, turnFilterId, threshold],
   );
   const rows = useMemo(() => filteredSheets.map((sheet) => ({
     sheet,
     boat: logbook.boats.find((candidate) => candidate.id === sheet.boatId),
-    summary: calculateSheetSummary(sheet),
-  })), [calculateSheetSummary, filteredSheets, logbook.boats]);
+    summary: (() => {
+      const summary = calculateSheetSummary(sheet);
+      if (!turnFilterId && !fromDate && !toDate) return summary;
+      const parts = filteredTurnPortions(sheet,logbook.turnState ?? emptyTurnState(),fromDate,toDate,threshold).filter(part => !turnFilterId || part.turnId === turnFilterId);
+      if (!parts.length) return summary;
+      const part = parts.reduce((sum,part) => ({sailMiles:sum.sailMiles+part.sailMiles,motorMiles:sum.motorMiles+part.motorMiles,totalMiles:sum.totalMiles+part.totalMiles,durationMinutes:sum.durationMinutes+part.durationMinutes,motionDurationMinutes:sum.motionDurationMinutes+part.motionDurationMinutes,motorHours:sum.motorHours+part.motorHours}),{sailMiles:0,motorMiles:0,totalMiles:0,durationMinutes:0,motionDurationMinutes:0,motorHours:0});
+      return {...summary,sailMiles:part.sailMiles,motorMiles:part.motorMiles,totalMiles:part.totalMiles,durationMinutes:part.durationMinutes,duration:formatLogSheetDuration(part.durationMinutes),motionDurationMinutes:part.motionDurationMinutes,motionDuration:formatLogSheetDuration(part.motionDurationMinutes),motorHours:part.motorHours,motorHoursDuration:formatEngineHours(part.motorHours)};
+    })(),
+  })), [calculateSheetSummary, filteredSheets, logbook.boats, logbook.turnState, turnFilterId, fromDate, toDate, threshold]);
   const columns = useMemo(() => [
     { key: "startDate", value: (row: SheetListRow) => row.sheet.route.departed },
     { key: "endDate", value: (row: SheetListRow) => row.sheet.route.arrived },
@@ -299,6 +321,7 @@ export function LogbookListPage({
           <option value="">{t("logbooks.allVessels")}</option>
           {logbook.boats.map((boat) => <option key={boat.id} value={boat.id}>{boat.name}</option>)}
         </select>
+        <label className="turn-filter">{t("nav.turns")}<select value={turnFilterId} onChange={event => { onTurnFilterChange?.(event.target.value); list.setPage(1); }}>{<option value="">{t("turns.all")}</option>}{logbook.turnState?.turns.slice().reverse().map(turn => <option key={turn.id} value={turn.id}>{turn.name || t("turns.unnamed")} · {formatDate(turn.start)}</option>)}</select></label>
         <div className="logbook-date-filter" role="group" aria-label={t("logbooks.timeFilter")}>
           <DateFilterInput label={t("logbooks.fromDate")} value={fromDate} max={toDate || undefined} invalid={invalidDateRange} describedBy={invalidDateRange ? "logbook-date-range-error" : undefined} onChange={(value) => { setFromDate(value); list.setPage(1); }} />
           <DateFilterInput label={t("logbooks.toDate")} value={toDate} min={fromDate || undefined} invalid={invalidDateRange} describedBy={invalidDateRange ? "logbook-date-range-error" : undefined} onChange={(value) => { setToDate(value); list.setPage(1); }} />
@@ -331,17 +354,31 @@ export function LogbookListPage({
                 </tr>
               </thead>
               <tbody>
-                {list.pageItems.map(({ sheet, boat, summary: sheetSummary }) => {
+                {list.pageItems.map(({ sheet, boat, summary: sheetSummary }, rowIndex) => {
+                  const portions = portionsBySheet.get(sheet.id) ?? [];
+                  const firstId = portions[0]?.turnId;
+                  const turnIndex = logbook.turnState?.turns.findIndex(turn => turn.id === firstId) ?? -1;
+                  const previous = list.pageItems[rowIndex-1]?.sheet;
+                  const previousId = previous ? portionsBySheet.get(previous.id)?.[0]?.turnId : undefined;
+                  const groupStart = firstId !== previousId || rowIndex === 0;
+                  const groupClass = firstId ? ` turn-row turn-color-${turnIndex % 2}${groupStart ? " turn-group-start" : ""}` : "";
                   return (
                     <Fragment key={sheet.id}>
-                    <tr className="logbook-sheet-title" onMouseEnter={() => setHighlightedRouteId(sheet.id)} onMouseLeave={() => setHighlightedRouteId(null)}>
+                    <tr className={`logbook-sheet-title${groupClass}`} onMouseEnter={() => setHighlightedRouteId(sheet.id)} onMouseLeave={() => setHighlightedRouteId(null)}>
                       <td rowSpan={2} className="logbook-sheet-image-cell">
                         <div className="logbook-sheet-images">
                           <EntityImage image={sheet.image} entityType="sheet" alt="" variant="thumb" className="logbook-sheet-thumbnail" />
                           {boat?.image?.data && <EntityImage image={boat.image} entityType="boat" alt={boat.name} variant="thumb" className="logbook-boat-badge" />}
                         </div>
                       </td>
-                      <td colSpan={9}><a className="table-title-button" href={modulePath("details", sheet.id)}
+                      <td colSpan={9}>{(groupStart || portions.length > 1) && <div className="turn-row-labels">{portions.map(part => {
+                        const turn = logbook.turnState?.turns.find(turn => turn.id === part.turnId);
+                        const total = sheetCountsByTurn.get(part.turnId) ?? 0;
+                        const visible = list.processedItems.filter(row => portionsBySheet.get(row.sheet.id)?.some(portion => portion.turnId === part.turnId)).length;
+                        return <button key={part.turnId} type="button" className="edit-chip" onClick={() => { onTurnFilterChange?.(part.turnId); list.setPage(1); }}>{turn?.name || t("turns.unnamed")} · {formatDate(turn?.start)} · {t("turns.visible")}: {visible}/{total}{part.partial && ` · ${t("turns.partial")}`}</button>;
+                      })}</div>}
+                      {turnFilterId && filteredTurnPortions(sheet,logbook.turnState ?? emptyTurnState(),fromDate,toDate,threshold).filter(part => part.turnId === turnFilterId && part.partial).map(part => <small key={part.turnId}>{formatDateTime(part.start)}–{formatDateTime(part.end)} UTC · {t("turns.partial")}{(part.estimated || part.estimatedCrew) && ` · ${t("turns.estimated")}`}</small>)}
+                      <a className="table-title-button" href={modulePath("details", sheet.id)}
                         onClick={(event) => { if (event.button === 0 && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) { event.preventDefault(); openSheet(sheet); } }}><span className="table-vessel">{sheet.title}</span></a>
                         <span className="logbook-sheet-route">({sheet.route.from} → {sheet.route.to})</span>
                         <span className="status-pill sheet-list-status">{t(sheet.status === "Locked" ? "sheet.status.locked" : "sheet.status.draft")}</span>
