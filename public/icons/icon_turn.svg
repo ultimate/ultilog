@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200" fill="none" aria-label="Nautical turn route map">
+  <g stroke="#102352" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="16" y="20" width="168" height="160" rx="15" stroke-width="5"/>
+    <g stroke="#cbd5e1" stroke-width="1.2" opacity=".65">
+      <path d="M40 28v144M83 28v144M124 28v144M166 28v144M24 48h152M24 88h152M24 128h152M24 165h152"/>
+    </g>
+    <path d="M184 51c-20-1-29 8-31 22-3 14-20 12-25 25-8 20 19 21 10 42-4 10-19 11-26 22-4 6-6 12-6 18" stroke-width="6"/>
+    <path d="M132 153c6-7 11-2 11 4 0 6-4 7-6 13-2 6-10 7-14 2-4-6 3-14 9-19z" stroke-width="5"/>
+    <path d="M39 57l5-15 5 15 15 5-15 5-5 15-5-15-15-5z" stroke-width="4.5"/>
+    <path d="M33 100q6 6 12 0t12 0M33 135q6 6 12 0t12 0" stroke-width="3.5"/>
+    <path d="M68 159 109 121 86 99 126 60" stroke-width="6.5"/>
+    <circle cx="68" cy="159" r="9" stroke-width="6"/>
+    <circle cx="126" cy="60" r="9" stroke-width="6"/>
+  </g>
+</svg>
