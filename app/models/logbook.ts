@@ -5,6 +5,7 @@ export type PersistedLogbook = {
   boats: Boat[];
   crewMembers: import("./crew-member").CrewMember[];
   sheets: LogSheet[];
+  turnState?: import("./turn").TurnState;
 };
 
 export { defaultDeviationTable, defaultMainEngine, defaultWindDriftTable, deviationTableHeadings, normalizeDeviationTable, normalizeWindDriftTable, windDriftAngles, windDriftSailSettings } from "./boat";
