@@ -12,6 +12,7 @@ export const en = {
   "turns.suggested": "Use suggested name",
   "turns.boundary": "Adjust start boundary",
   "turns.split": "Split at date and time",
+  "turns.mergePrevious": "Merge with previous turn",
   "turns.merge": "Merge with next turn",
   "turns.preview": "Preview changes",
   "turns.apply": "Apply changes",

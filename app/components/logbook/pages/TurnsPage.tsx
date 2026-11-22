@@ -1,10 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import type { PersistedLogbook } from "../../../models/logbook";
-import {
-  emptyTurnState,
-  type TurnAction,
-  type TurnAllocation,
-} from "../../../models/turn";
+import { emptyTurnState, type TurnAction } from "../../../models/turn";
 import {
   applyTurnAction,
   describeTurns,
@@ -22,7 +18,6 @@ export function TurnsPage({
   turnId,
   now,
   threshold,
-  onOpen,
   onSheets,
   onSheet,
   onMutate,
@@ -31,7 +26,6 @@ export function TurnsPage({
   turnId?: string;
   now: number;
   threshold: number;
-  onOpen: (id?: string) => void;
   onSheets: (id: string) => void;
   onSheet: (id: string) => void;
   onMutate: (action: TurnAction) => Promise<void>;
@@ -40,7 +34,35 @@ export function TurnsPage({
   const { formatDateTime } = useDateTimeFormat();
   const state = logbook.turnState ?? emptyTurnState();
   const descriptions = describeTurns(logbook.sheets, state, now, threshold);
-  const selected = descriptions.find((turn) => turn.id === turnId);
+  const [expanded, setExpanded] = useState<Set<string>>(
+    () => new Set(turnId ? [turnId] : []),
+  );
+  function toggleTurn(id: string) {
+    setExpanded((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+  function beginMerge(
+    earlier: (typeof descriptions)[number] | undefined,
+    later: (typeof descriptions)[number] | undefined,
+  ) {
+    if (!earlier || !later) return;
+    begin({
+      action: "merge",
+      turnId: earlier.id,
+      nextId: later.id,
+      name:
+        earlier.nameMode === "manual"
+          ? earlier.name
+          : later.nameMode === "manual"
+            ? later.name
+            : "",
+      automatic: earlier.nameMode !== "manual" && later.nameMode !== "manual",
+    });
+  }
   const [operation, setOperation] = useState<TurnAction | null>(null);
   const editor = useRef<HTMLElement>(null);
   const isEditing = operation !== null;
@@ -78,7 +100,7 @@ export function TurnsPage({
         operation.action === "split" ||
         operation.action === "boundary"
       )
-        onOpen(operation.turnId);
+        setExpanded((current) => new Set([...current, operation.turnId]));
     } catch {
       setError(t("turns.error"));
     } finally {
@@ -103,11 +125,6 @@ export function TurnsPage({
     <section className="module-panel turns-page">
       <div className="page-heading">
         <h1>{t("nav.turns")}</h1>
-        {selected && (
-          <button type="button" onClick={() => onOpen()}>
-            {t("turns.all")}
-          </button>
-        )}
       </div>
       {logbook.sheets.some((sheet) => !sheetInterval(sheet)) && (
         <p>{t("turns.unassigned")}</p>
@@ -116,28 +133,43 @@ export function TurnsPage({
         <p className="empty-state">{t("turns.empty")}</p>
       )}
       <div className="turn-cards">
-        {(selected ? [selected] : descriptions.slice().reverse()).map(
-          (turn) => {
+        {descriptions
+          .slice()
+          .reverse()
+          .map((turn) => {
             const index = descriptions.findIndex(
                 (candidate) => candidate.id === turn.id,
               ),
-              next = descriptions[index + 1];
+              next = descriptions[index + 1],
+              previous = descriptions[index - 1];
             return (
-              <article className="info-card turn-card" key={turn.id}>
-                <h2>
+              <article
+                className="info-card turn-card"
+                key={turn.id}
+                data-turn-id={turn.id}
+                aria-labelledby={`turn-heading-${turn.id}`}
+              >
+                <h2 id={`turn-heading-${turn.id}`}>
                   <button
                     type="button"
-                    className="table-title-button"
-                    onClick={() => onOpen(turn.id)}
+                    className="turn-title-button"
+                    aria-expanded={expanded.has(turn.id)}
+                    aria-controls={`turn-details-${turn.id}`}
+                    onClick={() => toggleTurn(turn.id)}
                   >
-                    {turn.name || t("turns.unnamed")}
+                    <span>{turn.name || t("turns.unnamed")}</span>
+                    <span aria-hidden="true">
+                      {expanded.has(turn.id) ? "▾" : "▸"}
+                    </span>
                   </button>
                 </h2>
                 <p>
                   {formatDateTime(turn.start)} — {t("turns.through")}{" "}
                   {formatDateTime(turn.through)}{" "}
                   {turn.ongoing && (
-                    <span className="status-pill">{t("turns.ongoing")}</span>
+                    <span className="status-pill turn-ongoing">
+                      {t("turns.ongoing")}
+                    </span>
                   )}
                 </p>
                 <p>
@@ -166,10 +198,15 @@ export function TurnsPage({
                   (part) => part.estimated || part.estimatedCrew,
                 ) && <p className="status-pill">{t("turns.estimated")}</p>}
                 <div className="turn-actions">
-                  <button type="button" onClick={() => onSheets(turn.id)}>
+                  <button
+                    className="edit-chip"
+                    type="button"
+                    onClick={() => onSheets(turn.id)}
+                  >
                     {t("turns.viewSheets")}
                   </button>
                   <button
+                    className="edit-chip"
                     type="button"
                     onClick={() =>
                       begin({
@@ -182,6 +219,7 @@ export function TurnsPage({
                     {t("turns.rename")}
                   </button>
                   <button
+                    className="edit-chip"
                     type="button"
                     onClick={() =>
                       begin({
@@ -198,6 +236,7 @@ export function TurnsPage({
                   </button>
                   {index > 0 && (
                     <button
+                      className="edit-chip"
                       type="button"
                       onClick={() =>
                         begin({
@@ -210,32 +249,25 @@ export function TurnsPage({
                       {t("turns.boundary")}
                     </button>
                   )}
-                  {next && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        begin({
-                          action: "merge",
-                          turnId: turn.id,
-                          nextId: next.id,
-                          name:
-                            turn.nameMode === "manual"
-                              ? turn.name
-                              : next.nameMode === "manual"
-                                ? next.name
-                                : "",
-                          automatic:
-                            turn.nameMode !== "manual" &&
-                            next.nameMode !== "manual",
-                        })
-                      }
-                    >
-                      {t("turns.merge")}
-                    </button>
-                  )}
+                  <button
+                    className="edit-chip"
+                    type="button"
+                    disabled={!previous || saving}
+                    onClick={() => beginMerge(previous, turn)}
+                  >
+                    {t("turns.mergePrevious")}
+                  </button>
+                  <button
+                    className="edit-chip"
+                    type="button"
+                    disabled={!next || saving}
+                    onClick={() => beginMerge(turn, next)}
+                  >
+                    {t("turns.merge")}
+                  </button>
                 </div>
-                {selected && (
-                  <>
+                {expanded.has(turn.id) && (
+                  <div id={`turn-details-${turn.id}`} className="turn-details">
                     <p>
                       {t("turns.crew")}: {crewNames(turn.crewIds)}
                     </p>
@@ -265,7 +297,7 @@ export function TurnsPage({
                           <li key={part.sheetId}>
                             <button
                               type="button"
-                              className="table-title-button"
+                              className="turn-sheet-button"
                               onClick={() => onSheet(sheet.id)}
                             >
                               {sheet.title}
@@ -284,6 +316,7 @@ export function TurnsPage({
                             )}
                             {(part.partial || part.review) && (
                               <button
+                                className="edit-chip"
                                 type="button"
                                 onClick={() =>
                                   begin({
@@ -326,7 +359,7 @@ export function TurnsPage({
                         );
                       })}
                     </ul>
-                  </>
+                  </div>
                 )}
                 {suggestions
                   .filter(
@@ -344,6 +377,7 @@ export function TurnsPage({
                         {t("turns.joining")}: {crewNames(suggestion.joining)}
                       </p>
                       <button
+                        className="edit-chip"
                         type="button"
                         onClick={() =>
                           begin({
@@ -356,6 +390,7 @@ export function TurnsPage({
                         {t("turns.preview")}
                       </button>
                       <button
+                        className="edit-chip"
                         type="button"
                         onClick={() =>
                           begin({ action: "dismiss", key: suggestion.key })
@@ -367,8 +402,7 @@ export function TurnsPage({
                   ))}
               </article>
             );
-          },
-        )}
+          })}
       </div>
       {operation && (
         <section
@@ -546,10 +580,15 @@ export function TurnsPage({
             )}
             {error && <p role="alert">{error}</p>}
             <div className="turn-actions">
-              <button type="submit" disabled={saving || Boolean(previewError)}>
+              <button
+                className="primary-action"
+                type="submit"
+                disabled={saving || Boolean(previewError)}
+              >
                 {preview ? t("turns.apply") : t("turns.preview")}
               </button>
               <button
+                className="edit-chip"
                 type="button"
                 disabled={saving}
                 onClick={() => setOperation(null)}

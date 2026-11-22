@@ -485,3 +485,19 @@ it("keeps a surviving named turn when its first sheet is deleted", () => {
     nameMode: "manual",
   });
 });
+
+
+it("marks a started turn ongoing even when today's arrival is still ahead",()=>{
+ const sheets=[sheet()];const state=reconcileTurns(sheets);
+ expect(describeTurns(sheets,state,Date.parse(at(12,"12:00")))[0].ongoing).toBe(true);
+ expect(describeTurns(sheets,state,Date.parse(at(12,"07:00")))[0].ongoing).toBe(false);
+ expect(describeTurns(sheets,state,Date.parse(at(20)))[0].ongoing).toBe(false);
+});
+it("only marks the latest started turn ongoing",()=>{
+ const sheets=[sheet(),sheet(15)];const state=reconcileTurns(sheets);
+ expect(describeTurns(sheets,state,Date.parse(at(15,"12:00"))).map(turn=>turn.ongoing)).toEqual([false,true]);
+});
+it("lists a turn's sheet portions chronologically regardless of source order",()=>{
+ const sheets=[sheet(14),sheet(12),sheet(13)];const state=reconcileTurns(sheets);
+ expect(describeTurns(sheets,state)[0].portions.map(portion=>portion.sheetId)).toEqual(["sheet-12","sheet-13","sheet-14"]);
+});

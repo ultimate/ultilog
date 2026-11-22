@@ -1,4 +1,4 @@
-import { turnPortions, filteredTurnPortions } from "../../../domain/logbook/turns";
+import { turnPortions, filteredTurnPortions, sheetInterval } from "../../../domain/logbook/turns";
 import { emptyTurnState } from "../../../models/turn";
 import { formatEngineHours } from "../../../lib/log-input";
 import { DateFilterInput } from "../DateFilterInput";
@@ -131,7 +131,7 @@ export function LogbookListPage({
     })(),
   })), [calculateSheetSummary, filteredSheets, logbook.boats, logbook.turnState, turnFilterId, fromDate, toDate, threshold]);
   const columns = useMemo(() => [
-    { key: "startDate", value: (row: SheetListRow) => row.sheet.route.departed },
+    { key: "startDate", value: (row: SheetListRow) => row.sheet.route.departed, sortValue: (row: SheetListRow) => sheetInterval(row.sheet)?.start ?? -Infinity },
     { key: "endDate", value: (row: SheetListRow) => row.sheet.route.arrived },
     { key: "status", value: (row: SheetListRow) => t(row.sheet.status === "Locked" ? "sheet.status.locked" : "sheet.status.draft") },
     { key: "entry", value: (row: SheetListRow) => row.sheet.title },
@@ -144,7 +144,7 @@ export function LogbookListPage({
     { key: "motionDuration", value: (row: SheetListRow) => row.summary.motionDuration },
     { key: "motorHours", value: (row: SheetListRow) => row.summary.motorHours },
   ], [t]);
-  const list = useSortableList(rows, columns, defaultPageSize, "", overviewState);
+  const list = useSortableList(rows, columns, defaultPageSize, "startDate", overviewState ?? {query:"",sort:{key:"startDate",direction:"descending"},page:1,pageSize:defaultPageSize});
   const totals = list.pageItems.reduce((sum, { summary }) => ({
     sailMiles: sum.sailMiles + summary.sailMiles,
     motorMiles: sum.motorMiles + summary.motorMiles,

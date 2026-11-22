@@ -125,6 +125,7 @@ test("names, splits, filters and merges turns with a shared changeover sheet", a
   const state = await (await page.request.get("/api/logbook/turns")).json();
   expect(state.turns).toHaveLength(2);
   await page
+    .getByRole("article", { name: "My Croatia week", exact: true })
     .getByRole("button", { name: "View logsheets", exact: true })
     .click();
   await expect(
@@ -185,8 +186,8 @@ test("names, splits, filters and merges turns with a shared changeover sheet", a
           .corrections.length,
     )
     .toBe(1);
-  await page.getByRole("button", { name: "All turns", exact: true }).click();
   await page
+    .getByRole("article", { name: "My Croatia week", exact: true })
     .getByRole("button", { name: "Merge with next turn", exact: true })
     .click();
   await page
@@ -244,4 +245,169 @@ test("unnamed and suggested names survive reload on a mobile viewport", async ({
       () => document.documentElement.scrollWidth <= window.innerWidth,
     ),
   ).toBe(true);
+});
+
+test("turn cards expand independently, sort sheets, and merge in either direction", async ({
+  page,
+}) => {
+  await seed(page);
+  const base = (await (await page.request.get("/api/logbook")).json())
+    .sheets[0];
+  const voyage = (id: string, title: string, day: number) => ({
+    ...base,
+    id,
+    title,
+    crew: [],
+    lines: [],
+    route: {
+      from: "Split",
+      to: "Split",
+      departed: `2026-07-${day}T08:00:00Z`,
+      arrived: `2026-07-${day}T18:00:00Z`,
+    },
+  });
+  const early = voyage("early", "Earlier voyage", 12),
+    middle1 = voyage("middle-1", "Middle voyage Day 1", 15),
+    middle2 = voyage("middle-2", "Middle voyage Day 2", 16),
+    late = voyage("late", "Later voyage", 19);
+  const response = await page.request.put("/api/logbook/import", {
+    headers,
+    data: {
+      boats: sampleBoats,
+      crewMembers: [],
+      sheets: [middle2, early, late, middle1],
+    },
+  });
+  expect(response.ok(), await response.text()).toBe(true);
+  await page.goto("/logbooks");
+  await expect(page.locator(".logbook-sheet-title .table-vessel")).toHaveText([
+    "Later voyage",
+    "Middle voyage Day 2",
+    "Middle voyage Day 1",
+    "Earlier voyage",
+  ]);
+  await page.getByRole("link", { name: "Later voyage", exact: true }).click();
+  const marker = page.locator(".sheet-turn-markers .turn-marker");
+  await expect(marker).toHaveCount(1);
+  await expect(marker.locator("img")).toHaveAttribute(
+    "src",
+    "/icons/icon_turn.svg",
+  );
+  expect(
+    await marker.evaluate((button) => getComputedStyle(button).borderRadius),
+  ).toBe("999px");
+  await marker.click();
+  await expect(page.locator(".turn-card")).toHaveCount(3);
+  await expect(
+    page
+      .getByRole("article", { name: "Later voyage", exact: true })
+      .locator(".turn-title-button"),
+  ).toHaveAttribute("aria-expanded", "true");
+  await page.goto("/turns");
+  const earlier = page.getByRole("article", {
+      name: "Earlier voyage",
+      exact: true,
+    }),
+    middle = page.getByRole("article", { name: "Middle voyage", exact: true }),
+    later = page.getByRole("article", { name: "Later voyage", exact: true });
+  await expect(
+    page.getByRole("button", { name: "Merge with next turn", exact: true }),
+  ).toHaveCount(3);
+  await expect(
+    page.getByRole("button", { name: "Merge with previous turn", exact: true }),
+  ).toHaveCount(3);
+  await expect(
+    earlier.getByRole("button", {
+      name: "Merge with previous turn",
+      exact: true,
+    }),
+  ).toBeDisabled();
+  await expect(
+    later.getByRole("button", { name: "Merge with next turn", exact: true }),
+  ).toBeDisabled();
+  await expect(
+    middle.getByRole("button", {
+      name: "Merge with previous turn",
+      exact: true,
+    }),
+  ).toBeEnabled();
+  await expect(
+    middle.getByRole("button", { name: "Merge with next turn", exact: true }),
+  ).toBeEnabled();
+  const rename = middle.getByRole("button", { name: "Rename", exact: true });
+  expect(
+    await rename.evaluate((button) => getComputedStyle(button).borderRadius),
+  ).toBe("999px");
+  await middle
+    .getByRole("button", { name: "Middle voyage", exact: true })
+    .click();
+  await expect(middle.locator(".turn-details .turn-sheet-button")).toHaveText([
+    "Middle voyage Day 1",
+    "Middle voyage Day 2",
+  ]);
+  await expect(earlier).toBeVisible();
+  await expect(later).toBeVisible();
+  await earlier
+    .getByRole("button", { name: "Earlier voyage", exact: true })
+    .click();
+  await middle
+    .getByRole("button", { name: "Middle voyage", exact: true })
+    .click();
+  await expect(middle.locator(".turn-details")).toHaveCount(0);
+  await expect(earlier.locator(".turn-details")).toBeVisible();
+  await middle
+    .getByRole("button", { name: "Merge with previous turn", exact: true })
+    .click();
+  await page.getByLabel("Turn name", { exact: true }).fill("Combined voyage");
+  await page
+    .getByRole("button", { name: "Preview changes", exact: true })
+    .last()
+    .click();
+  await page
+    .getByRole("button", { name: "Apply changes", exact: true })
+    .click();
+  await expect(page.locator(".turn-card")).toHaveCount(2);
+  const combined = page.getByRole("article", {
+    name: "Combined voyage",
+    exact: true,
+  });
+  await combined
+    .getByRole("button", { name: "Merge with next turn", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Preview changes", exact: true })
+    .last()
+    .click();
+  await page
+    .getByRole("button", { name: "Apply changes", exact: true })
+    .click();
+  await expect(page.locator(".turn-card")).toHaveCount(1);
+  await expect(
+    combined.getByRole("button", {
+      name: "Merge with previous turn",
+      exact: true,
+    }),
+  ).toBeDisabled();
+  await expect(
+    combined.getByRole("button", { name: "Merge with next turn", exact: true }),
+  ).toBeDisabled();
+});
+
+test("shows an ongoing turn before arrival and expires it without another save", async ({
+  page,
+}) => {
+  await seed(page);
+  await page.clock.install({ time: new Date("2026-07-12T12:00:00Z") });
+  await page.reload();
+  await expect(page.locator(".turn-ongoing")).toHaveText("Ongoing");
+  const state = await (await page.request.get("/api/logbook/turns")).json();
+  await page.getByRole("button", { name: "Dashboard", exact: true }).click();
+  await expect(page.locator(".turn-dashboard .turn-ongoing")).toHaveText(
+    "Ongoing",
+  );
+  await page.clock.fastForward(8 * 86400000);
+  await expect(page.locator(".turn-dashboard .turn-ongoing")).toHaveCount(0);
+  expect(
+    (await (await page.request.get("/api/logbook/turns")).json()).turns,
+  ).toEqual(state.turns);
 });

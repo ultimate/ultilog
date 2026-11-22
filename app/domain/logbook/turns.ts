@@ -467,7 +467,14 @@ export function describeTurns(
     turnPortions(sheet, state, threshold),
   );
   return state.turns.map((turn, index) => {
-    const members = portions.filter((portion) => portion.turnId === turn.id);
+    const members = portions
+      .filter((portion) => portion.turnId === turn.id)
+      .sort(
+        (left, right) =>
+          turnTime(left.start) - turnTime(right.start) ||
+          turnTime(left.end) - turnTime(right.end) ||
+          left.sheetId.localeCompare(right.sheetId),
+      );
     const through = Math.max(
       turnTime(turn.start),
       ...members.map((member) => turnTime(member.end)),
@@ -478,7 +485,7 @@ export function describeTurns(
       through: stamp(through),
       ongoing:
         index === state.turns.length - 1 &&
-        through <= now &&
+        turnTime(turn.start) <= now &&
         now - through < 7 * 86400000,
       crewIds: [...new Set(members.flatMap((member) => member.crewIds))],
       totals: members.reduce(

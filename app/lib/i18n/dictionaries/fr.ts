@@ -14,6 +14,7 @@ export const fr: Dictionary = {
   "turns.suggested": "Utiliser le nom proposé",
   "turns.boundary": "Ajuster le début",
   "turns.split": "Scinder à une date et heure",
+  "turns.mergePrevious": "Fusionner avec la croisière précédente",
   "turns.merge": "Fusionner avec la croisière suivante",
   "turns.preview": "Aperçu des modifications",
   "turns.apply": "Appliquer les modifications",

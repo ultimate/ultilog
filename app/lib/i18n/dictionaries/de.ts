@@ -14,6 +14,7 @@ export const de: Dictionary = {
   "turns.suggested": "Vorgeschlagenen Namen verwenden",
   "turns.boundary": "Anfangsgrenze anpassen",
   "turns.split": "Bei Datum und Uhrzeit teilen",
+  "turns.mergePrevious": "Mit vorherigem Törn zusammenführen",
   "turns.merge": "Mit folgendem Törn zusammenführen",
   "turns.preview": "Änderungen prüfen",
   "turns.apply": "Änderungen übernehmen",

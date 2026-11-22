@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 import { TurnsPage } from "./logbook/pages/TurnsPage";
 import { turnPortions } from "../domain/logbook/turns";
 import { emptyTurnState, type TurnAction, type TurnState } from "../models/turn";
@@ -2061,7 +2063,7 @@ export function LogbookApp({
         )}
 
         <section className="workspace module-workspace">
-          {activeModule === "turns" && <TurnsPage key={routePath} logbook={logbook} turnId={routeFromPathname(routePath).itemId} now={turnClock} threshold={preferences.motionStationaryThresholdNm} onOpen={id => navigate("turns",id)} onSheets={openTurnSheets} onSheet={id => navigate("details",id)} onMutate={mutateTurn} />}
+          {activeModule === "turns" && <TurnsPage key={routePath} logbook={logbook} turnId={routeFromPathname(routePath).itemId} now={turnClock} threshold={preferences.motionStationaryThresholdNm} onSheets={openTurnSheets} onSheet={id => navigate("details",id)} onMutate={mutateTurn} />}
           {activeModule === "logbooks" && (
             <LogbookListPage
               threshold={preferences.motionStationaryThresholdNm}
@@ -2095,7 +2097,7 @@ export function LogbookApp({
 
           {activeModule === "details" && editorRoutePath === routePath && (
             <>
-            <div className="turn-actions">{turnPortions(activeSheet,logbook.turnState ?? emptyTurnState()).map(portion => <button type="button" key={portion.turnId} onClick={() => navigate("turns",portion.turnId)}>{logbook.turnState?.turns.find(turn => turn.id === portion.turnId)?.name || t("turns.unnamed")} {portion.partial && `· ${t("turns.partial")}`}</button>)}</div>
+            <div className="turn-actions sheet-turn-markers">{turnPortions(activeSheet,logbook.turnState ?? emptyTurnState()).map(portion => <button type="button" className="edit-chip turn-marker" key={portion.turnId} onClick={() => navigate("turns",portion.turnId)}><Image src="/icons/icon_turn.svg" alt="" width={20} height={20} />{logbook.turnState?.turns.find(turn => turn.id === portion.turnId)?.name || t("turns.unnamed")} {portion.partial && `· ${t("turns.partial")}`}</button>)}</div>
             <LogbookDetailsPage
               key={routePath}
               previousSheetId={sheetNavigationIndex > 0 ? navigationIds[sheetNavigationIndex - 1] : undefined}

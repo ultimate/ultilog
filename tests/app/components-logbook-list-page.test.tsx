@@ -80,7 +80,7 @@ describe("logsheet date filter", () => {
     await changeDate(1, "2026-05-20");
     const expected = ["spanning", "start-boundary", "end-boundary", "draft", "other-boat"];
     expect(mapIds()).toEqual(expected);
-    expect(tableIds()).toEqual(expected);
+    expect(tableIds()).toEqual(["end-boundary", "draft", "other-boat", "start-boundary", "spanning"]);
     expect(renderer.root.findByType(ListPagination).props.list.page).toBe(1);
     await act(async () => renderer.root.findAllByType("button").find((button) => button.children.includes("logbooks.allTime"))!.props.onClick());
     expect(mapIds()).toHaveLength(8);
@@ -224,6 +224,21 @@ describe("logsheet date filter", () => {
     expect(from().props["aria-invalid"]).toBe(true);
     await act(async () => from().props.onChange({ currentTarget: { value: "" } }));
     expect(mapIds()).toHaveLength(8);
+  });
+
+  it("defaults to newest sailing time first, keeping undated sheets last", async () => {
+    await render();
+    expect(tableIds()).toEqual(["end-boundary", "after", "draft", "other-boat", "start-boundary"]);
+    const list = renderer.root.findByType(ListPagination).props.list;
+    expect(list.sort).toEqual({key:"startDate",direction:"descending"});
+    await act(async()=>list.setPage(2));
+    expect(tableIds()).toEqual(["before","spanning","undated"]);
+  });
+
+  it("keeps sailing dates searchable when sorting by their timestamps", async () => {
+    await render();
+    await act(async()=>renderer.root.findByProps({type:"search"}).props.onChange({target:{value:"2026-05-01"}}));
+    expect(tableIds()).toEqual(["before", "spanning"]);
   });
 
   it("captures the complete sorted navigation sequence and restores overview pagination", async () => {
