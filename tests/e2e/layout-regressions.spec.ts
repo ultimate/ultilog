@@ -135,3 +135,55 @@ test("navigation follows the dark palette across desktop, collapsed, and mobile 
     await nav.getByRole("button", { name: "Boat manager", exact: true }).press("Enter");
   }
 });
+
+test("mobile profile stays visible and usable as navigation grows", async ({ page }, testInfo) => {
+  test.setTimeout(120_000);
+  await page.addInitScript(() => localStorage.setItem("ultilog-cookie-notice-acknowledged", "true"));
+  await page.goto("/login");
+  await page.getByRole("button", { name: "Try the demo" }).click();
+  await expect(page.locator("[data-backend-ready]")).toHaveAttribute("data-backend-ready", "true");
+  const nav = page.locator(".mobile-bottom-nav");
+  const profile = nav.getByRole("button", { name: "Profile", exact: true });
+  for (const adminSlot of [false, true]) {
+    if (adminSlot) {
+      // Exercise the optional admin slot without altering server-side permissions.
+      await nav.evaluate(element => {
+        const admin = element.querySelector("button")!.cloneNode(true) as HTMLButtonElement;
+        admin.className = "";
+        admin.setAttribute("aria-label", "User management");
+        admin.querySelector("img")!.setAttribute("src", "/icons/icon_admin.svg");
+        admin.querySelector(".nav-label")!.textContent = "Admin";
+        element.insertBefore(admin, element.querySelector(".mobile-sync-action"));
+        element.classList.add("has-admin-tab");
+      });
+    }
+    for (const width of [320, 360, 390, 430, 768, 1000]) {
+      await page.setViewportSize({ width, height: Math.max(844, width + 200) });
+      await expect(nav).toBeVisible();
+      await expect(profile).toBeInViewport({ ratio: .99 });
+      await expect(profile.locator("img")).toBeInViewport({ ratio: .99 });
+      const geometry = await nav.evaluate(element => {
+        const bar = element.getBoundingClientRect();
+        return { left: bar.left, right: bar.right, top: bar.top, bottom: bar.bottom,
+          controls: [...element.children].map(child => {
+            const box = child.getBoundingClientRect();
+            return { left: box.left, right: box.right, top: box.top, bottom: box.bottom };
+          }),
+        };
+      });
+      for (const control of geometry.controls) {
+        expect(control.left).toBeGreaterThanOrEqual(geometry.left - 1);
+        expect(control.right).toBeLessThanOrEqual(geometry.right + 1);
+        expect(control.top).toBeGreaterThanOrEqual(geometry.top - 1);
+        expect(control.bottom).toBeLessThanOrEqual(geometry.bottom + 1);
+      }
+      expect(Math.max(...geometry.controls.map(control => (control.top + control.bottom) / 2)) - Math.min(...geometry.controls.map(control => (control.top + control.bottom) / 2))).toBeLessThan(1);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    }
+  }
+  await page.setViewportSize({ width: 320, height: 844 });
+  await page.screenshot({ path: testInfo.outputPath("mobile-profile-with-extra-menu.png") });
+  await profile.click();
+  await expect(page).toHaveURL(/\/profile$/);
+  await expect(page.getByRole("heading", { name: "Profile", exact: true })).toBeVisible();
+});

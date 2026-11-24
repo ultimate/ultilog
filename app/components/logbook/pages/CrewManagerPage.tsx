@@ -1,3 +1,5 @@
+import { describeTurns } from "../../../domain/logbook/turns";
+import { emptyTurnState } from "../../../models/turn";
 import { SaveButton } from "../SaveButton";
 import { useEditorRequest } from "../use-editor-request";
 import { PreferenceDateInput } from "../PreferenceDateInput";
@@ -47,6 +49,8 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
     { key: "address", value: (person: PersistedLogbook["crewMembers"][number]) => person.address },
     { key: "certificate", value: (person: PersistedLogbook["crewMembers"][number]) => person.certificate },
   ], []);
+  const turns = useMemo(() => describeTurns(logbook.sheets,logbook.turnState ?? emptyTurnState()), [logbook.sheets,logbook.turnState]);
+  const counts = (id: string) => `${t("crew.logSheets")}: ${logbook.sheets.filter(sheet => sheet.crew.some(member => member.id === id)).length} · ${t("turns.shared")}: ${turns.filter(turn => turn.crewIds.includes(id)).length}`;
   const list = useSortableList(logbook.crewMembers, columns, props.defaultPageSize as number, "name");
 
   return (
@@ -85,7 +89,7 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
                       {person.isPrimary ? "⭐ " : ""}
                       {person.name}
                     </strong>
-                    <small>{person.role || t("crew.member")}</small>
+                    <small>{person.role || t("crew.member")}</small><small>{counts(person.id)}</small>
                   </span>
                 </button>
               </li>
@@ -237,7 +241,7 @@ export function CrewManagerPage(props: CrewManagerPageProps) {
               {crewForm.image ? <small>{crewForm.image.width} × {crewForm.image.height} · {crewForm.image.mimeType}</small> : null}
             </div>
             <article className="info-card wide-field">
-              <h3>{t("crew.logSheets")}</h3>
+              <h3>{t("crew.logSheets")}</h3><p>{counts(crewForm.id)}</p>
               <ul className="stack-list">
                 {(
                   crewAssignments.find(

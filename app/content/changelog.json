@@ -200,6 +200,16 @@
     }
   },
   {
+    "id": "organize-logbook-into-named-turns",
+    "category": "feature",
+    "title": {
+      "en": "Organize logsheets into named turns with split, merge, crew participation and statistics",
+      "de": "Logblätter in benannte Törns mit Teilung, Zusammenführung, Crewteilnahme und Statistiken ordnen",
+      "fr": "Organiser les feuilles de bord en croisières nommées avec scission, fusion, équipage et statistiques",
+      "it": "Organizza i fogli di bordo in crociere con nome, divisione, unione, equipaggio e statistiche"
+    }
+  },
+  {
     "id": "preserve-postgres-ssl-verification",
     "category": "security",
     "title": {

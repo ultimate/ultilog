@@ -6,6 +6,7 @@ export type ListValue = string | number | boolean | null | undefined;
 export type SortableListColumn<T> = {
   key: string;
   value: (item: T) => ListValue | ListValue[];
+  sortValue?: (item: T) => ListValue | ListValue[];
 };
 
 export type SortDirection = "ascending" | "descending";
@@ -32,8 +33,9 @@ export function filterAndSortItems<T>(
   if (!sortColumn) return filtered;
 
   return filtered.map((item, index) => ({ item, index })).sort((left, right) => {
-    const leftValue = sortColumn.value(left.item);
-    const rightValue = sortColumn.value(right.item);
+    const sortValue = sortColumn.sortValue ?? sortColumn.value;
+    const leftValue = sortValue(left.item);
+    const rightValue = sortValue(right.item);
     const leftComparable = Array.isArray(leftValue) ? leftValue.join(" ") : leftValue;
     const rightComparable = Array.isArray(rightValue) ? rightValue.join(" ") : rightValue;
     const result = typeof leftComparable === "number" && typeof rightComparable === "number"

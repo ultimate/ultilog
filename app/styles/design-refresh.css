@@ -702,7 +702,9 @@ h3 { margin-block:.25rem .55rem; }
     inset:auto 0 0 0;
     z-index:50;
     display:grid;
-    grid-template-columns:repeat(11, minmax(0, 1fr));
+    grid-auto-flow:column;
+    grid-auto-columns:minmax(0, 1fr);
+    grid-template-rows:auto;
     align-items:center;
     gap:.12rem;
     height:4.15rem;
@@ -712,7 +714,6 @@ h3 { margin-block:.25rem .55rem; }
     box-shadow:0 -10px 28px rgba(15,35,70,.1);
     overflow:hidden;
   }
-  .mobile-bottom-nav.has-admin-tab { grid-template-columns:repeat(12, minmax(0, 1fr)); }
   .mobile-bottom-nav button,
   .mobile-bottom-nav .mobile-locale-action {
     all:unset;
@@ -745,14 +746,14 @@ h3 { margin-block:.25rem .55rem; }
   .mobile-bottom-nav .mobile-profile-action > span {
     display:grid;
     place-items:center;
-    width:1.85rem;
+    width:min(1.85rem, 100%);
     height:1.85rem;
     margin:auto;
     background:transparent!important;
     box-shadow:none!important;
   }
   .mobile-bottom-nav .tab-icon img,
-  .mobile-bottom-nav .mobile-profile-action img { width:1.42rem; height:1.42rem; object-fit:contain; }
+  .mobile-bottom-nav .mobile-profile-action img { width:1.42rem; max-width:100%; height:1.42rem; object-fit:contain; }
   .mobile-bottom-nav .nav-label,
   .mobile-bottom-nav small { display:none!important; }
   .mobile-bottom-nav .mobile-locale-action > span {
@@ -785,7 +786,7 @@ h3 { margin-block:.25rem .55rem; }
   .mobile-bottom-nav .mobile-sync-action .sync-icon,
   .mobile-bottom-nav .mobile-locale-action > span,
   .mobile-bottom-nav .mobile-theme-action > span,
-  .mobile-bottom-nav .mobile-profile-action > span { width:1.7rem; height:1.7rem; }
+  .mobile-bottom-nav .mobile-profile-action > span { width:min(1.7rem, 100%); height:1.7rem; }
   .mobile-bottom-nav .tab-icon img,
   .mobile-bottom-nav .mobile-profile-action img { width:1.3rem; height:1.3rem; }
 }
